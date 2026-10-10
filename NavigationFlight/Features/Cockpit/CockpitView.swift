@@ -1,27 +1,89 @@
 import SwiftUI
 
-/// Static presentation data for the first cockpit UI checkpoint.
-private struct CockpitPreviewData {
-    let leg = "LEG 2 / 5"
-    let origin = "חדרה"
-    let destination = "עירון"
-    let heading = "074°"
-    let plannedTime = "04:23"
-    let elapsedTime = "02:17"
-    let altitude = "1500"
-    let frequencyName = "Pluto West"
-    let frequency = "118.40"
+fileprivate struct CockpitPresentationData {
+    struct PlannedReference {
+        let station: String
+        let radialFrom: String
+        let dmeDistance: String
+    }
+
+    struct Frequency {
+        let role: String
+        let service: String
+        let value: String
+    }
+
+    struct UpcomingInstruction {
+        let trigger: String
+        let altitude: String?
+        let frequency: Frequency?
+    }
+
+    let leg: String
+    let origin: String
+    let destination: String
+    let pilotHeading: String?
+    let plannedCourse: String
+    let plannedTime: String
+    let elapsedTime: String
+    let altitude: String
+    let plannedReference: PlannedReference?
+    let primaryFrequency: Frequency?
+    let secondaryFrequency: Frequency?
+    let upcomingInstruction: UpcomingInstruction?
+
+    static let minimal = CockpitPresentationData(
+        leg: "LEG 2 / 5",
+        origin: "חדרה",
+        destination: "עירון",
+        pilotHeading: nil,
+        plannedCourse: "068° M",
+        plannedTime: "04:23",
+        elapsedTime: "02:17",
+        altitude: "1,500 ft",
+        plannedReference: nil,
+        primaryFrequency: Frequency(role: "PRIMARY", service: "Pluto West", value: "118.40 MHz"),
+        secondaryFrequency: nil,
+        upcomingInstruction: nil
+    )
+
+    static let fullyPopulated = CockpitPresentationData(
+        leg: "LEG 2 / 5",
+        origin: "חדרה",
+        destination: "עירון",
+        pilotHeading: "074° M",
+        plannedCourse: "068° M",
+        plannedTime: "04:23",
+        elapsedTime: "02:17",
+        altitude: "1,500 ft",
+        plannedReference: PlannedReference(station: "HDF", radialFrom: "R-245 FROM", dmeDistance: "18.6 NM DME"),
+        primaryFrequency: Frequency(role: "PRIMARY", service: "Pluto West", value: "118.40 MHz"),
+        secondaryFrequency: Frequency(role: "ATIS", service: "Ben Gurion", value: "132.50 MHz"),
+        upcomingInstruction: UpcomingInstruction(
+            trigger: "At identification point",
+            altitude: "2,500 ft",
+            frequency: Frequency(role: "PRIMARY", service: "Pluto East", value: "120.60 MHz")
+        )
+    )
 }
 
 struct CockpitView: View {
-    private let data = CockpitPreviewData()
+    private let data: CockpitPresentationData
     @State private var presentedAction: MockAction?
+
+    init() {
+        data = .fullyPopulated
+    }
+
+    fileprivate init(data: CockpitPresentationData) {
+        self.data = data
+    }
 
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 mapSurface
-                    // Use safe-area height: the floating header is part of the map.
+                    // The floating header remains part of the chart-first map region.
                     .frame(height: geometry.size.height * 0.72)
                 controlPanel
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -115,68 +177,154 @@ struct CockpitView: View {
     }
 
     private var controlPanel: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 7) {
             HStack(alignment: .top, spacing: 0) {
-                metric("HEADING", value: data.heading, detail: "Planned")
+                headingMetric
                 metric("TIME", value: data.plannedTime, detail: "Planned · \(data.elapsedTime) elapsed")
-                metric("ALTITUDE", value: data.altitude + " ft", detail: "Planned")
+                metric("ALTITUDE", value: data.altitude, detail: "Current planned")
             }
-            HStack {
-                Text(data.frequencyName)
-                Spacer()
-                Text(data.frequency)
-                    .fontWeight(.semibold)
-                    .monospacedDigit()
-                    .accessibilityLabel("Frequency \(data.frequency) megahertz")
+
+            if let reference = data.plannedReference {
+                compactRow(title: "PLANNED REFERENCE") {
+                    compactValue(reference.station)
+                    compactValue(reference.radialFrom)
+                    compactValue(reference.dmeDistance)
+                }
             }
-            .font(.headline)
-            .padding(.vertical, 8)
-            .overlay(alignment: .top) { Divider() }
-            .overlay(alignment: .bottom) { Divider() }
+
+            if data.primaryFrequency != nil || data.secondaryFrequency != nil {
+                compactRow(title: "PLANNED FREQUENCIES") {
+                    if let primary = data.primaryFrequency {
+                        frequencyValue(primary)
+                    }
+                    if let secondary = data.secondaryFrequency {
+                        frequencyValue(secondary)
+                    }
+                }
+            }
+
+            if let next = data.upcomingInstruction {
+                compactRow(title: "NEXT · \(next.trigger.uppercased())", emphasis: true) {
+                    if let altitude = next.altitude {
+                        compactValue("ALTITUDE  \(altitude)")
+                    }
+                    if let frequency = next.frequency {
+                        frequencyValue(frequency)
+                    }
+                }
+            }
 
             HStack(spacing: 12) {
                 secondaryButton("Correct", icon: "slider.horizontal.3", action: .correct)
                 secondaryButton("Modify Route", icon: "point.topleft.down.to.point.bottomright.curvepath", action: .modifyRoute)
             }
+
             Button { presentedAction = .waypointReached } label: {
-                Label("Waypoint Reached", systemImage: "checkmark")
+                Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
                     .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.white)
-            .background(Color(red: 0.16, green: 0.29, blue: 0.32), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color.blue, in: RoundedRectangle(cornerRadius: 10))
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 14)
+        .padding(.vertical, 10)
+    }
+
+    private var headingMetric: some View {
+        VStack(spacing: 3) {
+            Text("HEADING · MAGNETIC")
+                .font(.caption.weight(.semibold))
+                .tracking(0.8)
+                .foregroundStyle(.secondary)
+            Text(data.pilotHeading ?? data.plannedCourse)
+                .font(.system(size: 30, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+            Text(
+                data.pilotHeading == nil
+                    ? "Planned course · Heading not set"
+                    : "Planned course \(data.plannedCourse)"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 
     private func metric(_ title: String, value: String, detail: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 3) {
             Text(title)
                 .font(.caption.weight(.semibold))
                 .tracking(1)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
+                .font(.system(size: 30, weight: .semibold, design: .rounded))
                 .monospacedDigit()
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
             Text(detail)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)
+    }
+
+    private func compactRow<Content: View>(
+        title: String,
+        emphasis: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: 14) {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .tracking(0.7)
+                .foregroundStyle(emphasis ? Color.blue : .secondary)
+                .frame(width: 176, alignment: .leading)
+            content()
+            Spacer(minLength: 0)
+        }
+        .frame(minHeight: 23)
+        .padding(.horizontal, 10)
+        .background(
+            emphasis ? Color.blue.opacity(0.08) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 6)
+        )
+        .overlay(alignment: .top) { Divider() }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func compactValue(_ value: String) -> some View {
+        Text(value)
+            .font(.subheadline.weight(.semibold))
+            .monospacedDigit()
+            .lineLimit(1)
+    }
+
+    private func frequencyValue(_ frequency: CockpitPresentationData.Frequency) -> some View {
+        HStack(spacing: 5) {
+            Text(frequency.role)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(frequency.service)
+                .font(.subheadline)
+            Text(frequency.value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+        }
+        .lineLimit(1)
+        .accessibilityLabel("\(frequency.role), \(frequency.service), planned frequency \(frequency.value)")
     }
 
     private func secondaryButton(_ title: String, icon: String, action: MockAction) -> some View {
         Button { presentedAction = action } label: {
             Label(title, systemImage: icon)
                 .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity, minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: 42)
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
@@ -193,17 +341,15 @@ private enum MockAction: String, Identifiable {
     var id: String { rawValue }
 }
 
-// PreviewProvider keeps these device-specific previews usable without macro plugins.
-struct CockpitView_Previews: PreviewProvider {
-    static var previews: some View {
-        Group {
-            CockpitView()
-                .previewDisplayName("11-inch iPad · Portrait")
-            CockpitView()
-                .preferredColorScheme(.dark)
-                .previewDisplayName("11-inch iPad · Portrait · Dark")
-        }
-        .previewDevice(PreviewDevice(rawValue: "iPad Pro 11-inch (M4)"))
-        .previewInterfaceOrientation(.portrait)
-    }
+#Preview("11-inch iPad Portrait · Minimal", traits: .fixedLayout(width: 834, height: 1210)) {
+    CockpitView(data: .minimal)
+}
+
+#Preview("11-inch iPad Portrait · Full", traits: .fixedLayout(width: 834, height: 1210)) {
+    CockpitView(data: .fullyPopulated)
+}
+
+#Preview("11-inch iPad Portrait · Full · Dark", traits: .fixedLayout(width: 834, height: 1210)) {
+    CockpitView(data: .fullyPopulated)
+        .preferredColorScheme(.dark)
 }

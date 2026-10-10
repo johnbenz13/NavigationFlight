@@ -194,11 +194,20 @@ struct CockpitView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
-                mapSurface
-                    .frame(height: geometry.size.height * 0.74)
-                controlPanel
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if geometry.size.width > geometry.size.height {
+                HStack(spacing: 0) {
+                    mapSurface
+                        .frame(width: geometry.size.width * 0.74)
+                    landscapeControlPanel
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else {
+                VStack(spacing: 0) {
+                    mapSurface
+                        .frame(height: geometry.size.height * 0.74)
+                    portraitControlPanel
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
         }
         .background(Color(.systemBackground))
@@ -214,13 +223,14 @@ struct CockpitView: View {
         GeometryReader { geometry in
             ZStack {
                 Color(.secondarySystemBackground)
+
+                schematicGrid
+                routeLine(in: geometry.size)
+                Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selectedEventID = nil
                     }
-
-                schematicGrid
-                routeLine(in: geometry.size)
                 waypointAnnotations(in: geometry.size)
                 eventAnnotations(in: geometry.size)
                 schematicNotice
@@ -604,7 +614,7 @@ struct CockpitView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private var controlPanel: some View {
+    private var portraitControlPanel: some View {
         VStack(spacing: 9) {
             HStack(alignment: .top, spacing: 0) {
                 headingMetric
@@ -613,18 +623,41 @@ struct CockpitView: View {
             }
 
             frequencyRow
-
-            Button { presentedAction = .waypointReached } label: {
-                Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.white)
-            .background(Color.blue, in: RoundedRectangle(cornerRadius: 10))
+            waypointReachedButton
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 10)
+    }
+
+    private var landscapeControlPanel: some View {
+        VStack(spacing: 14) {
+            headingMetric
+            Divider()
+            timeMetric
+            Divider()
+            metric("ALTITUDE", value: data.altitude, detail: "Current planned")
+            Divider()
+            frequencyColumn
+            Spacer(minLength: 8)
+            waypointReachedButton
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .background(Color(.systemBackground))
+        .overlay(alignment: .leading) {
+            Divider()
+        }
+    }
+
+    private var waypointReachedButton: some View {
+        Button { presentedAction = .waypointReached } label: {
+            Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
+                .font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 50)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.white)
+        .background(Color.blue, in: RoundedRectangle(cornerRadius: 10))
     }
 
     private var headingMetric: some View {
@@ -714,6 +747,29 @@ struct CockpitView: View {
         .padding(.horizontal, 10)
         .overlay(alignment: .top) { Divider() }
         .overlay(alignment: .bottom) { Divider() }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var frequencyColumn: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("PLANNED FREQUENCIES")
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.7)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Not tuned")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let primary = data.primaryFrequency {
+                frequencyValue(primary)
+            }
+            if let secondary = data.secondaryFrequency {
+                frequencyValue(secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
     }
 
@@ -837,6 +893,39 @@ private enum MockAction: String, Identifiable {
 }
 
 #Preview("11-inch iPad Portrait · Full · Dark", traits: .fixedLayout(width: 834, height: 1210)) {
+    CockpitView(data: .fullyPopulated)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("11-inch iPad Landscape · Minimal", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(data: .minimal)
+}
+
+#Preview("11-inch iPad Landscape · Full Labels", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(data: .fullyPopulated)
+}
+
+#Preview("11-inch iPad Landscape · Symbols Only", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(data: .fullyPopulated, displayMode: .symbolsOnly)
+}
+
+#Preview("11-inch iPad Landscape · Expanded Event", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(
+        data: .fullyPopulated,
+        displayMode: .symbolsOnly,
+        selectedEventID: "combined-event"
+    )
+}
+
+#Preview("11-inch iPad Landscape · Near Arrival", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(data: .nearArrival)
+}
+
+#Preview("11-inch iPad Landscape · Planned Time Exceeded", traits: .fixedLayout(width: 1210, height: 834)) {
+    CockpitView(data: .plannedTimeExceeded)
+}
+
+#Preview("11-inch iPad Landscape · Full · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
     CockpitView(data: .fullyPopulated)
         .preferredColorScheme(.dark)
 }

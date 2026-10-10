@@ -1,0 +1,11 @@
+{
+  "name": "navigation-flight-contract-tools",
+  "private": true,
+  "scripts": {
+    "contract:refresh": "sh scripts/refresh-fplnav-contract.sh",
+    "contract:verify": "node scripts/verify-fplnav-contract.mjs"
+  },
+  "devDependencies": {
+    "@johnbenz13/fplnav-spec": "0.1.1"
+  }
+}

@@ -1,0 +1,545 @@
+{
+  "format": "fpl-navigation-project",
+  "formatVersion": 7,
+  "project": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "title": "Synthetic Editor V7 calm handoff",
+    "createdAt": "2026-08-27T08:00:00.000Z",
+    "modifiedAt": "2026-08-27T09:00:00.000Z"
+  },
+  "navigation": {
+    "parameters": {
+      "magneticVariationEastDegrees": 5,
+      "defaultAltitudeFeet": 3000,
+      "driftAngleDegrees": 10,
+      "nextGeneratedWaypointNumber": 4,
+      "planningAirspeedKnots": 95,
+      "fuelBurnUsGallonsPerHour": 8.5,
+      "fuelAtStartUsGallons": 42,
+      "fuelAllowances": {
+        "startupTaxiUsGallons": 1,
+        "takeoffUsGallons": 0.5,
+        "landingUsGallons": 1.5,
+        "reserveUsGallons": 4,
+        "alternateUsGallons": 5
+      }
+    },
+    "route": {
+      "waypointOrder": [
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "waypoints": [
+        {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "name": "BAZRA",
+          "position": {
+            "latitude": 32.09999999999998,
+            "longitude": 34.5
+          },
+          "altitudeFeet": 3000,
+          "generatedNumber": 1,
+          "reportingPointReference": {
+            "catalogId": "bazra",
+            "snapshot": {
+              "name": "BAZRA",
+              "position": {
+                "latitude": 32.1,
+                "longitude": 34.5
+              }
+            }
+          }
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "name": "Visual checkpoint",
+          "position": {
+            "latitude": 32.30000000000001,
+            "longitude": 34.7
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 3
+        }
+      ],
+      "legs": [
+        {
+          "id": "00000000-0000-4000-8000-000000000004",
+          "departureWaypointId": "00000000-0000-4000-8000-000000000002",
+          "arrivalWaypointId": "00000000-0000-4000-8000-000000000003",
+          "remark": "Remain clear of controlled airspace"
+        }
+      ]
+    },
+    "identificationPoints": [
+      {
+        "id": "00000000-0000-4000-8000-000000000005",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "legProgress": 0.4,
+        "lateralOffsetMetres": 120,
+        "timeLabelArrangement": {
+          "longitudinalMetres": 34,
+          "lateralMetres": -12,
+          "rotationDegrees": 18
+        }
+      }
+    ],
+    "altitudeChanges": [
+      {
+        "id": "00000000-0000-4000-8000-000000000006",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "anchor": {
+          "kind": "leg-progress",
+          "legProgress": 0.25
+        },
+        "targetAltitudeFeet": 4000,
+        "symbolDirection": "up",
+        "showAnchorMark": true,
+        "arrangement": {
+          "longitudinalMetres": 10,
+          "lateralMetres": 20,
+          "rotationDegrees": 5
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000007",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "anchor": {
+          "kind": "waypoint",
+          "waypointId": "00000000-0000-4000-8000-000000000003"
+        },
+        "targetAltitudeFeet": 2500,
+        "symbolDirection": "down",
+        "showAnchorMark": false,
+        "arrangement": {
+          "longitudinalMetres": 15,
+          "lateralMetres": -30,
+          "rotationDegrees": -10
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000008",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "anchor": {
+          "kind": "identification-point",
+          "identificationPointId": "00000000-0000-4000-8000-000000000005"
+        },
+        "targetAltitudeFeet": 3200,
+        "symbolDirection": "up",
+        "showAnchorMark": true,
+        "arrangement": {
+          "longitudinalMetres": 5,
+          "lateralMetres": 25,
+          "rotationDegrees": 0
+        }
+      }
+    ],
+    "radioFrequencyChanges": [
+      {
+        "id": "00000000-0000-4000-8000-000000000009",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "legProgress": 0.7,
+        "service": {
+          "catalogId": "tel-aviv-control",
+          "name": "Tel Aviv Control"
+        },
+        "frequencyMhz": 120.5,
+        "flippedHorizontally": true,
+        "arrangement": {
+          "longitudinalMetres": 4,
+          "lateralMetres": 40,
+          "rotationDegrees": 12
+        }
+      }
+    ],
+    "presentation": {
+      "showArrivalNameInEta": true,
+      "showTotalEllapsedTimeInEta": true,
+      "stylePreset": {
+        "id": "application-default",
+        "version": 1
+      },
+      "annotationArrangements": [
+        {
+          "legId": "00000000-0000-4000-8000-000000000004",
+          "kind": "direction-house",
+          "arrangement": {
+            "longitudinalMetres": 1,
+            "lateralMetres": 2,
+            "rotationDegrees": 3
+          }
+        },
+        {
+          "legId": "00000000-0000-4000-8000-000000000004",
+          "kind": "eta",
+          "arrangement": {
+            "longitudinalMetres": 4,
+            "lateralMetres": 5,
+            "rotationDegrees": 6
+          }
+        },
+        {
+          "legId": "00000000-0000-4000-8000-000000000004",
+          "kind": "aat",
+          "arrangement": {
+            "longitudinalMetres": 7,
+            "lateralMetres": 8,
+            "rotationDegrees": 9
+          }
+        }
+      ],
+      "globalStyleOverrides": {
+        "leg": {
+          "color": "#112233",
+          "widthPagePixels": 3
+        }
+      },
+      "entityStyleOverrides": [
+        {
+          "target": {
+            "kind": "waypoint",
+            "id": "00000000-0000-4000-8000-000000000002"
+          },
+          "overrides": {
+            "waypoint": {
+              "fillColor": "#abcdef"
+            }
+          }
+        },
+        {
+          "target": {
+            "kind": "identification-point",
+            "id": "00000000-0000-4000-8000-000000000005"
+          },
+          "overrides": {
+            "identificationPoint": {
+              "etaFontSizePagePixels": 14
+            }
+          }
+        },
+        {
+          "target": {
+            "kind": "altitude-change",
+            "id": "00000000-0000-4000-8000-000000000006"
+          },
+          "overrides": {
+            "altitudeChange": {
+              "showBorderBox": true
+            }
+          }
+        },
+        {
+          "target": {
+            "kind": "radio-frequency-change",
+            "id": "00000000-0000-4000-8000-000000000009"
+          },
+          "overrides": {
+            "radioFrequencyChange": {
+              "fontWeight": 700
+            }
+          }
+        },
+        {
+          "target": {
+            "kind": "vor-dme-annotation",
+            "id": "00000000-0000-4000-8000-00000000000b"
+          },
+          "overrides": {
+            "vorDme": {
+              "symbolWidthPagePixels": 2
+            }
+          }
+        }
+      ],
+      "navigationLog": {
+        "legLabelMode": "from-to",
+        "optionalColumns": [
+          "distance",
+          "fuel-remaining"
+        ],
+        "windEnabled": true,
+        "printFormat": "A5-landscape"
+      }
+    },
+    "operationalContext": {
+      "defaultWind": {
+        "directionFromTrueDegrees": 0,
+        "speedKnots": 0
+      },
+      "departureAerodromeReference": {
+        "catalogId": "llhz",
+        "snapshot": {
+          "name": "Herzliya Airport",
+          "position": {
+            "latitude": 32.18,
+            "longitude": 34.83
+          },
+          "icao": "LLHZ"
+        }
+      },
+      "arrivalAerodromeReference": {
+        "catalogId": "llmg",
+        "snapshot": {
+          "name": "Megiddo Airfield",
+          "position": {
+            "latitude": 32.6,
+            "longitude": 35.23
+          },
+          "localCode": "LLMG"
+        }
+      },
+      "frequencyEntries": [
+        {
+          "id": "handoff-override",
+          "phase": "departure",
+          "name": "Synthetic pilot tower",
+          "frequencyMhz": 123.45,
+          "replaces": {
+            "name": "HERZLIA",
+            "role": "primary",
+            "frequencyMhz": 122.2
+          }
+        }
+      ],
+      "frequencyOrderByPhase": {
+        "departure": [
+          "user:handoff-override",
+          "vor-dme:00000000-0000-4000-8000-00000000000a"
+        ],
+        "en-route": [],
+        "arrival": []
+      }
+    },
+    "vorDmeReferences": [
+      {
+        "id": "00000000-0000-4000-8000-00000000000a",
+        "waypointId": "00000000-0000-4000-8000-000000000002",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "Ben Gurion VOR/DME",
+            "position": {
+              "latitude": 32.01,
+              "longitude": 34.88
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 0,
+            "lateralMetres": 50,
+            "rotationDegrees": 0
+          }
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-00000000000b",
+        "waypointId": "00000000-0000-4000-8000-000000000003",
+        "calculation": {
+          "mode": "manual",
+          "radialDegrees": 270,
+          "distanceNm": 12.4
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "Ben Gurion VOR/DME",
+            "position": {
+              "latitude": 32.01,
+              "longitude": 34.88
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 0,
+            "lateralMetres": -50,
+            "rotationDegrees": 15
+          }
+        }
+      }
+    ]
+  },
+  "workspace": {
+    "selectedMapId": "north-navigation",
+    "frame": {
+      "center": {
+        "latitude": 32.199999999999974,
+        "longitude": 34.6
+      },
+      "paperSize": "A3",
+      "orientation": "landscape",
+      "rotationDegrees": 22
+    },
+    "referenceLayers": {
+      "reportingPointsVisible": true,
+      "aerodromesVisible": false,
+      "navigationAidsVisible": true
+    }
+  },
+  "printDocument": {
+    "id": "00000000-0000-4000-8000-00000000000c",
+    "items": []
+  },
+  "execution": {
+    "calculationVersion": "editor-execution-1/editor-navigation-1/editor-annotations-1/editor-vor-dme-slant-1",
+    "altitudeReference": "MSL",
+    "legs": [
+      {
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "trueCourseDegrees": 40.23764544187969,
+        "magneticCourseDegrees": 35.23764544187969,
+        "distanceNauticalMiles": 15.73035143566968,
+        "initialAltitudeFeetMsl": 3000,
+        "noWind": {
+          "plannedDurationSeconds": 596,
+          "plannedGroundSpeedKnots": 95
+        },
+        "withWind": {
+          "plannedDurationSeconds": 596,
+          "plannedGroundSpeedKnots": 95,
+          "effectiveWind": {
+            "directionFromTrueDegrees": 0,
+            "speedKnots": 0
+          },
+          "trueHeadingDegrees": 40.23764544187969,
+          "magneticHeadingDegrees": 35.23764544187969,
+          "windCorrectionDegrees": 0
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "entityId": "00000000-0000-4000-8000-000000000005",
+        "kind": "identification-point",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "position": {
+          "latitude": 32.179463389700274,
+          "longitude": 34.58082289823876
+        },
+        "noWindTimeFromLegStartSeconds": 238,
+        "withWindTimeFromLegStartSeconds": 238
+      },
+      {
+        "entityId": "00000000-0000-4000-8000-000000000006",
+        "kind": "altitude-change",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "position": {
+          "latitude": 32.15004120453246,
+          "longitude": 34.55
+        },
+        "noWindTimeFromLegStartSeconds": 149,
+        "withWindTimeFromLegStartSeconds": 149
+      },
+      {
+        "entityId": "00000000-0000-4000-8000-000000000007",
+        "kind": "altitude-change",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "position": {
+          "latitude": 32.30000000000001,
+          "longitude": 34.7
+        },
+        "noWindTimeFromLegStartSeconds": 596,
+        "withWindTimeFromLegStartSeconds": 596
+      },
+      {
+        "entityId": "00000000-0000-4000-8000-000000000008",
+        "kind": "altitude-change",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "position": {
+          "latitude": 32.179463389700274,
+          "longitude": 34.58082289823876
+        },
+        "noWindTimeFromLegStartSeconds": 238,
+        "withWindTimeFromLegStartSeconds": 238
+      },
+      {
+        "entityId": "00000000-0000-4000-8000-000000000009",
+        "kind": "radio-frequency-change",
+        "legId": "00000000-0000-4000-8000-000000000004",
+        "position": {
+          "latitude": 32.24004617224213,
+          "longitude": 34.64
+        },
+        "noWindTimeFromLegStartSeconds": 417,
+        "withWindTimeFromLegStartSeconds": 417
+      }
+    ],
+    "vorDmeReferences": [
+      {
+        "referenceId": "00000000-0000-4000-8000-00000000000a",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 281,
+        "slantRangeNauticalMiles": 20.08342967034671,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "00000000-0000-4000-8000-00000000000b",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 270,
+        "slantRangeNauticalMiles": 12.4,
+        "source": "manual"
+      }
+    ],
+    "frequenciesByPhase": {
+      "departure": [
+        {
+          "id": "user:handoff-override",
+          "name": "Synthetic pilot tower",
+          "role": "Override",
+          "frequencyMhz": 123.45,
+          "source": "user"
+        },
+        {
+          "id": "vor-dme:00000000-0000-4000-8000-00000000000a",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "catalog:herzlia:secondary",
+          "name": "HERZLIA",
+          "role": "secondary",
+          "frequencyMhz": 129.4,
+          "source": "departure"
+        },
+        {
+          "id": "catalog:herzlia:cpt",
+          "name": "HERZLIA",
+          "role": "cpt",
+          "frequencyMhz": 121.7,
+          "source": "departure"
+        }
+      ],
+      "en-route": [
+        {
+          "id": "route:00000000-0000-4000-8000-000000000009",
+          "name": "Tel Aviv Control",
+          "frequencyMhz": 120.5,
+          "source": "route"
+        }
+      ],
+      "arrival": [
+        {
+          "id": "catalog:megiddo:published",
+          "name": "MEGIDDO",
+          "role": "published",
+          "frequencyMhz": 124.4,
+          "source": "arrival"
+        },
+        {
+          "id": "vor-dme:00000000-0000-4000-8000-00000000000b",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        }
+      ]
+    }
+  }
+}

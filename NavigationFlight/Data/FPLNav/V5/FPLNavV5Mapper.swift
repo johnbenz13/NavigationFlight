@@ -204,7 +204,8 @@ struct FPLNavV5Mapper {
             altitudeChanges: altitudeChanges,
             frequencyChanges: frequencyChanges,
             vorDmeReferences: vorDmeReferences,
-            operationalContext: try mapOperationalContext(source.navigation.operationalContext)
+            operationalContext: try mapOperationalContext(source.navigation.operationalContext),
+            execution: .unavailableLegacyFormat(version: 5)
         )
     }
 

@@ -39,6 +39,7 @@ struct NavigationFlightTests {
         )
         #expect(flight.operationalContext.departureAerodrome?.icao == "LLHZ")
         #expect(flight.operationalContext.arrivalAerodrome?.localCode == "LLMG")
+        #expect(flight.execution == .unavailableLegacyFormat(version: 5))
     }
 
     @Test func documentMetadataIdentifiesV5() throws {
@@ -96,6 +97,120 @@ struct NavigationFlightTests {
         #expect(flight.frequencyChanges[0].progress == LegProgress(fraction: 0.25))
     }
 
+    @Test func officialV7MapsSavedExecutionWithoutRecalculation() throws {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var execution = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(execution["legs"] as? [[String: Any]])
+        legs[0]["trueCourseDegrees"] = 123.456789
+        legs[0]["distanceNauticalMiles"] = 9.87654321
+        legs[0]["initialAltitudeFeetMsl"] = 4100
+        var withWind = try #require(legs[0]["withWind"] as? [String: Any])
+        withWind["trueHeadingDegrees"] = 222.25
+        legs[0]["withWind"] = withWind
+        execution["legs"] = legs
+        var references = try #require(execution["vorDmeReferences"] as? [[String: Any]])
+        references[0]["magneticRadialFromDegrees"] = 17.125
+        references[0]["slantRangeNauticalMiles"] = 8.7654321
+        execution["vorDmeReferences"] = references
+        object["execution"] = execution
+
+        let flight = try decode(object)
+        let saved = try eligibleExecution(flight)
+        #expect(saved.calculationVersion == "synthetic-conformance-1")
+        #expect(saved.altitudeReference == .msl)
+        #expect(saved.legs[0].trueCourse.value == 123.456789)
+        #expect(saved.legs[0].groundDistance.value == 9.87654321)
+        #expect(saved.legs[0].initialAltitudeMsl.value == 4100)
+        #expect(flight.waypoints[0].plannedAltitude.value == 2000)
+        #expect(saved.legs[0].withWind?.trueHeading.value == 222.25)
+        #expect(saved.vorDmeReferences[0].magneticRadialFrom.value == 17.125)
+        #expect(saved.vorDmeReferences[0].slantRange.value == 8.7654321)
+        #expect(saved.legs[0].noWind.groundSpeed == Knots(value: 90))
+    }
+
+    @Test(arguments: ["editor-wind", "editor-no-wind", "editor-calm"])
+    func editorV7VectorsDecode(_ name: String) throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
+        let execution = try eligibleExecution(flight)
+        #expect(execution.legs.count == 1)
+        #expect(execution.annotations.count == 5)
+        #expect(execution.vorDmeReferences.count == 2)
+        #expect(execution.legs[0].initialAltitudeMsl.value == 3000)
+        #expect(flight.waypoints[0].plannedAltitude.value == 3000)
+        #expect(flight.waypoints[1].plannedAltitude.value == 3500)
+        #expect(flight.altitudeChanges.map(\.targetAltitude.value) == [4000, 2500, 3200])
+        #expect(execution.annotations[0].position.longitudeDegrees == 34.58082289823876)
+        #expect(execution.annotations[0].noWindTimeFromLegStartSeconds == 238)
+        #expect(execution.vorDmeReferences[1].source == .manual)
+        #expect(execution.vorDmeReferences[0].slantRange.value == 20.08342967034671)
+        #expect(execution.vorDmeReferences[1].magneticRadialFrom.value == 270)
+        #expect(execution.vorDmeReferences[1].slantRange.value == 12.4)
+        #expect(execution.frequenciesByPhase[.departure]?.map(\.id) == [
+            "user:handoff-override", "vor-dme:00000000-0000-4000-8000-00000000000a",
+            "catalog:herzlia:secondary", "catalog:herzlia:cpt"
+        ])
+        #expect(execution.frequenciesByPhase[.departure]?.first?.role == "Override")
+
+        if name == "editor-no-wind" {
+            #expect(execution.defaultMode == .noWind)
+            #expect(execution.legs[0].withWind == nil)
+            #expect(execution.annotations[0].withWindTimeFromLegStartSeconds == nil)
+        } else {
+            #expect(execution.defaultMode == .wind)
+            #expect(execution.legs[0].withWind != nil)
+            #expect(execution.annotations[0].withWindTimeFromLegStartSeconds == (name == "editor-wind" ? 222 : 238))
+        }
+        if name == "editor-wind" {
+            #expect(execution.legs[0].withWind?.effectiveWind == Wind(directionFromTrue: .init(value: 250), speed: .init(value: 8)))
+            #expect(execution.legs[0].withWind?.windCorrection.value == -2.395800157284725)
+        }
+        if name == "editor-calm" {
+            #expect(execution.legs[0].withWind?.effectiveWind.speed.value == 0)
+            #expect(execution.legs[0].withWind?.trueHeading.value == execution.legs[0].trueCourse.value)
+        }
+    }
+
+    @Test func validEmptyV7IsDecodedButNotExecutionEligible() throws {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var navigation = try #require(object["navigation"] as? [String: Any])
+        var route = try #require(navigation["route"] as? [String: Any])
+        route["waypointOrder"] = []
+        route["waypoints"] = []
+        route["legs"] = []
+        navigation["route"] = route
+        navigation["identificationPoints"] = []
+        navigation["altitudeChanges"] = []
+        navigation["radioFrequencyChanges"] = []
+        navigation["vorDmeReferences"] = []
+        object["navigation"] = navigation
+        var execution = try #require(object["execution"] as? [String: Any])
+        execution["legs"] = []
+        execution["annotations"] = []
+        execution["vorDmeReferences"] = []
+        execution["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
+        object["execution"] = execution
+
+        let flight = try decode(object)
+        #expect(!flight.execution.isExecutionEligible)
+        guard case .emptyPlan(let saved) = flight.execution else { Issue.record("Expected empty V7 execution"); return }
+        #expect(saved.legs.isEmpty)
+    }
+
+    @Test(arguments: V7Mutation.allCases)
+    func invalidV7ExecutionIsRejected(_ mutation: V7Mutation) throws {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        try mutation.apply(to: &object)
+        do {
+            _ = try decode(object)
+            Issue.record("Expected mutation to be rejected: \(mutation)")
+        } catch let FPLNavDecoderError.invalidV7Execution(error) {
+            #expect(!error.path.isEmpty)
+            #expect(!error.reason.isEmpty)
+        } catch {
+            Issue.record("Expected typed V7 execution error for \(mutation), received \(error)")
+        }
+    }
+
     private func representativeData() throws -> Data {
         let bundle = Bundle(for: FixtureLocator.self)
         let nestedURL = bundle.url(
@@ -109,5 +224,137 @@ struct NavigationFlightTests {
 
     private func representativeJSONObject() throws -> [String: Any] {
         try #require(JSONSerialization.jsonObject(with: representativeData()) as? [String: Any])
+    }
+
+    private func fixtureData(_ name: String, directory: String) throws -> Data {
+        let bundle = Bundle(for: FixtureLocator.self)
+        let nested = bundle.url(forResource: name, withExtension: "fplnav", subdirectory: "Fixtures/FPLNav/\(directory)")
+        let flat = bundle.url(forResource: name, withExtension: "fplnav")
+        return try Data(contentsOf: #require(nested ?? flat))
+    }
+
+    private func fixtureJSONObject(_ name: String, directory: String) throws -> [String: Any] {
+        try #require(JSONSerialization.jsonObject(with: fixtureData(name, directory: directory)) as? [String: Any])
+    }
+
+    private func decode(_ object: [String: Any]) throws -> NavigationFlight {
+        try FPLNavDecoder().decode(JSONSerialization.data(withJSONObject: object))
+    }
+
+    private func eligibleExecution(_ flight: NavigationFlight) throws -> NavigationExecution {
+        guard case .eligible(let execution) = flight.execution else {
+            throw FPLNavV7ValidationError(path: "execution", reason: "expected eligible execution")
+        }
+        return execution
+    }
+}
+
+enum V7Mutation: String, CaseIterable, CustomStringConvertible, Sendable {
+    case missingLeg, duplicateLeg, reorderedLeg, missingAnnotation, duplicateAnnotation
+    case missingReference, duplicateReference, invalidCourse, invalidDuration, invalidAnnotationTime
+    case absentWind, unexpectedWind, mismatchedWind, missingAutomaticElevation, inconsistentManualValues
+    case invalidFrequency, missingRouteFrequency, missingUserFrequency, duplicatePhaseFrequency, unknownExecutionProperty
+
+    var description: String { rawValue }
+
+    func apply(to object: inout [String: Any]) throws {
+        var navigation = try required(object["navigation"] as? [String: Any])
+        var execution = try required(object["execution"] as? [String: Any])
+        switch self {
+        case .missingLeg:
+            execution["legs"] = []
+        case .duplicateLeg:
+            var legs = try required(execution["legs"] as? [[String: Any]])
+            legs.append(legs[0]); execution["legs"] = legs
+        case .reorderedLeg:
+            try makeTwoLegPlan(navigation: &navigation, execution: &execution)
+            var legs = try required(execution["legs"] as? [[String: Any]])
+            legs.swapAt(0, 1); execution["legs"] = legs
+        case .missingAnnotation:
+            var values = try required(execution["annotations"] as? [[String: Any]])
+            values.removeLast(); execution["annotations"] = values
+        case .duplicateAnnotation:
+            var values = try required(execution["annotations"] as? [[String: Any]])
+            values[1] = values[0]; execution["annotations"] = values
+        case .missingReference:
+            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
+            values.removeLast(); execution["vorDmeReferences"] = values
+        case .duplicateReference:
+            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
+            values[1] = values[0]; execution["vorDmeReferences"] = values
+        case .invalidCourse:
+            try mutateFirstLeg(&execution) { $0["trueCourseDegrees"] = 360 }
+        case .invalidDuration:
+            try mutateFirstLeg(&execution) { leg in
+                var timing = try required(leg["noWind"] as? [String: Any]); timing["plannedDurationSeconds"] = 0; leg["noWind"] = timing
+            }
+        case .invalidAnnotationTime:
+            var values = try required(execution["annotations"] as? [[String: Any]])
+            values[0]["noWindTimeFromLegStartSeconds"] = 41; execution["annotations"] = values
+        case .absentWind:
+            try mutateFirstLeg(&execution) { $0.removeValue(forKey: "withWind") }
+        case .unexpectedWind:
+            var presentation = try required(navigation["presentation"] as? [String: Any])
+            var log = try required(presentation["navigationLog"] as? [String: Any]); log["windEnabled"] = false
+            presentation["navigationLog"] = log; navigation["presentation"] = presentation
+        case .mismatchedWind:
+            try mutateFirstLeg(&execution) { leg in
+                var wind = try required(leg["withWind"] as? [String: Any])
+                wind["effectiveWind"] = ["directionFromTrueDegrees": 90, "speedKnots": 1]; leg["withWind"] = wind
+            }
+        case .missingAutomaticElevation:
+            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
+            values[0].removeValue(forKey: "stationElevationFeetMsl"); execution["vorDmeReferences"] = values
+        case .inconsistentManualValues:
+            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
+            values[1]["slantRangeNauticalMiles"] = 12.5; execution["vorDmeReferences"] = values
+        case .invalidFrequency:
+            var phases = try required(execution["frequenciesByPhase"] as? [String: Any])
+            var values = try required(phases["departure"] as? [[String: Any]])
+            values[0]["frequencyMhz"] = 1000; phases["departure"] = values; execution["frequenciesByPhase"] = phases
+        case .missingRouteFrequency:
+            var phases = try required(execution["frequenciesByPhase"] as? [String: Any]); phases["en-route"] = []; execution["frequenciesByPhase"] = phases
+        case .missingUserFrequency:
+            var context = try required(navigation["operationalContext"] as? [String: Any])
+            context["frequencyEntries"] = [["id": "required", "phase": "departure", "name": "Required", "frequencyMhz": 123.4]]
+            navigation["operationalContext"] = context
+        case .duplicatePhaseFrequency:
+            var phases = try required(execution["frequenciesByPhase"] as? [String: Any])
+            var values = try required(phases["departure"] as? [[String: Any]]); values.append(values[0]); phases["departure"] = values; execution["frequenciesByPhase"] = phases
+        case .unknownExecutionProperty:
+            execution["invented"] = true
+        }
+        object["navigation"] = navigation
+        object["execution"] = execution
+    }
+
+    private func mutateFirstLeg(_ execution: inout [String: Any], mutation: (inout [String: Any]) throws -> Void) throws {
+        var legs = try required(execution["legs"] as? [[String: Any]])
+        try mutation(&legs[0]); execution["legs"] = legs
+    }
+
+    private func makeTwoLegPlan(navigation: inout [String: Any], execution: inout [String: Any]) throws {
+        var route = try required(navigation["route"] as? [String: Any])
+        var waypoints = try required(route["waypoints"] as? [[String: Any]])
+        var third = waypoints[1]
+        let thirdID = "00000000-0000-4000-8000-000000000020"
+        third["id"] = thirdID
+        third["position"] = ["latitude": 0.03, "longitude": 0.01]
+        waypoints.append(third); route["waypoints"] = waypoints
+        let firstID = try required(waypoints[0]["id"] as? String)
+        let secondWaypointID = try required(waypoints[1]["id"] as? String)
+        route["waypointOrder"] = [firstID, secondWaypointID, thirdID]
+        var sourceLegs = try required(route["legs"] as? [[String: Any]])
+        var second = sourceLegs[0]
+        let secondID = "00000000-0000-4000-8000-000000000021"
+        second["id"] = secondID; second["departureWaypointId"] = secondWaypointID; second["arrivalWaypointId"] = thirdID
+        sourceLegs.append(second); route["legs"] = sourceLegs; navigation["route"] = route
+        var legs = try required(execution["legs"] as? [[String: Any]])
+        var resolved = legs[0]; resolved["legId"] = secondID; legs.append(resolved); execution["legs"] = legs
+    }
+
+    private func required<T>(_ value: T?) throws -> T {
+        guard let value else { throw FPLNavV7ValidationError(path: "test", reason: "fixture shape") }
+        return value
     }
 }

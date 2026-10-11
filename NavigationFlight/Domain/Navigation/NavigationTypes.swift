@@ -174,3 +174,110 @@ struct VORDMEReference: Identifiable, Equatable, Sendable {
     let calculation: VORDMECalculation
     let navigationAid: NavigationAidReference
 }
+
+enum AltitudeReference: String, Equatable, Sendable {
+    case msl = "MSL"
+}
+
+enum NavigationMode: Equatable, Sendable {
+    case noWind
+    case wind
+}
+
+struct PlannedTiming: Equatable, Sendable {
+    let durationSeconds: Int
+    let groundSpeed: Knots
+}
+
+struct WindExecution: Equatable, Sendable {
+    let timing: PlannedTiming
+    let effectiveWind: Wind
+    let trueHeading: Degrees
+    let magneticHeading: Degrees
+    let windCorrection: Degrees
+}
+
+struct LegExecution: Identifiable, Equatable, Sendable {
+    var id: UUID { legID }
+    let legID: UUID
+    let trueCourse: Degrees
+    let magneticCourse: Degrees
+    let groundDistance: NauticalMiles
+    let initialAltitudeMsl: AltitudeFeet
+    let noWind: PlannedTiming
+    let withWind: WindExecution?
+}
+
+enum ExecutionAnnotationKind: String, Equatable, Sendable {
+    case identificationPoint = "identification-point"
+    case altitudeChange = "altitude-change"
+    case radioFrequencyChange = "radio-frequency-change"
+}
+
+struct AnnotationExecution: Identifiable, Equatable, Sendable {
+    var id: UUID { entityID }
+    let entityID: UUID
+    let kind: ExecutionAnnotationKind
+    let legID: UUID
+    let position: WGS84Coordinate
+    let noWindTimeFromLegStartSeconds: Int
+    let withWindTimeFromLegStartSeconds: Int?
+}
+
+enum VORDMEExecutionSource: String, Equatable, Sendable {
+    case automatic
+    case manual
+}
+
+struct VORDMEExecution: Identifiable, Equatable, Sendable {
+    var id: UUID { referenceID }
+    let referenceID: UUID
+    let frequency: FrequencyMHz
+    let stationElevationMsl: AltitudeFeet?
+    let magneticRadialFrom: Degrees
+    let slantRange: NauticalMiles
+    let source: VORDMEExecutionSource
+}
+
+enum ExecutionFrequencySource: String, Equatable, Sendable {
+    case departure
+    case route
+    case arrival
+    case vorDme = "vor-dme"
+    case user
+}
+
+struct ExecutionFrequency: Identifiable, Equatable, Sendable {
+    let id: String
+    let name: String
+    let role: String?
+    let frequency: FrequencyMHz
+    let source: ExecutionFrequencySource
+}
+
+struct NavigationExecution: Equatable, Sendable {
+    let calculationVersion: String
+    let altitudeReference: AltitudeReference
+    let legs: [LegExecution]
+    let annotations: [AnnotationExecution]
+    let vorDmeReferences: [VORDMEExecution]
+    let frequenciesByPhase: [FlightPhase: [ExecutionFrequency]]
+    let defaultMode: NavigationMode
+}
+
+enum NavigationExecutionAvailability: Equatable, Sendable {
+    case unavailableLegacyFormat(version: Int)
+    case emptyPlan(NavigationExecution)
+    case eligible(NavigationExecution)
+
+    var execution: NavigationExecution? {
+        switch self {
+        case .unavailableLegacyFormat: nil
+        case .emptyPlan(let execution), .eligible(let execution): execution
+        }
+    }
+
+    var isExecutionEligible: Bool {
+        if case .eligible = self { true } else { false }
+    }
+}

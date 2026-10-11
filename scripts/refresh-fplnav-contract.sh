@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-expected_version="0.1.1"
-expected_revision="f8dc139057e088552a83d92882ebd3b0052392a3"
+expected_version="0.2.0"
+expected_revision="c6c904aedad0cf72192b4e0b02e6edce52fd2e70"
 npm_cache="${TMPDIR:-/tmp}/navigationflight-npm-cache"
 
 if [ -z "${FPLNAV_PACKAGES_TOKEN:-}" ]; then
@@ -18,6 +18,9 @@ fi
 
 npm ci --ignore-scripts --cache "$npm_cache"
 mkdir -p NavigationFlightTests/Fixtures/FPLNav/V5
+mkdir -p NavigationFlightTests/Fixtures/FPLNav/V7/Official
 cp node_modules/@johnbenz13/fplnav-spec/examples/v5/representative.fplnav \
     NavigationFlightTests/Fixtures/FPLNav/V5/representative.fplnav
+cp node_modules/@johnbenz13/fplnav-spec/examples/v7/representative.fplnav \
+    NavigationFlightTests/Fixtures/FPLNav/V7/Official/representative-v7.fplnav
 npm run contract:verify

@@ -15,4 +15,5 @@ struct NavigationFlight: Equatable, Sendable {
     let frequencyChanges: [FrequencyChange]
     let vorDmeReferences: [VORDMEReference]
     let operationalContext: OperationalContext
+    let execution: NavigationExecutionAvailability
 }

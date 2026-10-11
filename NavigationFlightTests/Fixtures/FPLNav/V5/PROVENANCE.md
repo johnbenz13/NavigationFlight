@@ -2,10 +2,10 @@
 
 `representative.fplnav` is generated test input copied without modification from:
 
-- npm package: `@johnbenz13/fplnav-spec@0.1.1`
-- npm `gitHead`: `f8dc139057e088552a83d92882ebd3b0052392a3`
+- npm package: `@johnbenz13/fplnav-spec@0.2.0`
+- npm `gitHead`: `c6c904aedad0cf72192b4e0b02e6edce52fd2e70`
 - package path: `examples/v5/representative.fplnav`
-- package integrity: `sha512-0FQoY+XaEie9b5XjG3w3B+CAkiq5bOL4/e3UOBRQBHNHWlFFZR+fbxlbUg6FGCLqInuqYQV3oPMIQQVEU/mBzQ==`
+- package integrity: `sha512-/Xzd+fe46Ckt0VuXurWziGzpaPrYj4tuWMsb5GP8mfq9Ufk5pwvZMkqlKQKKAUgw5dlH1kGoravtlTzBDZHX3g==`
 
 The release has no corresponding Git tag. Refresh and verify this generated test
 vector with `npm run contract:refresh`. It belongs only to the unit-test target.

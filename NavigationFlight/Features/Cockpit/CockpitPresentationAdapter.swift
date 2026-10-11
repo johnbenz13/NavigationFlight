@@ -22,7 +22,8 @@ struct CockpitPresentationData: Equatable, Sendable {
 
     struct RouteEvent: Identifiable, Equatable, Sendable {
         let id: UUID
-        let kind: ExecutionAnnotationKind
+        let entityIDs: [UUID]
+        let kinds: [ExecutionAnnotationKind]
         let normalizedX: Double
         let normalizedY: Double
         let position: WGS84Coordinate
@@ -138,7 +139,7 @@ struct CockpitPresentationAdapter: Sendable {
             origin: sourceLeg.departure.position,
             destination: sourceLeg.arrival.position
         )
-        let routeEvents = try annotations.enumerated().map { index, annotation in
+        let individualEvents = try annotations.enumerated().map { index, annotation in
             let time: Int
             switch mode {
             case .noWind:
@@ -163,7 +164,8 @@ struct CockpitPresentationAdapter: Sendable {
             }
             return CockpitPresentationData.RouteEvent(
                 id: annotation.entityID,
-                kind: annotation.kind,
+                entityIDs: [annotation.entityID],
+                kinds: [annotation.kind],
                 normalizedX: projected[index + 2].0,
                 normalizedY: projected[index + 2].1,
                 position: annotation.position,
@@ -172,6 +174,7 @@ struct CockpitPresentationAdapter: Sendable {
                 detail: label.1
             )
         }
+        let routeEvents = groupCoincidentEvents(individualEvents)
 
         return .init(
             planTitle: flight.title,
@@ -212,9 +215,34 @@ struct CockpitPresentationAdapter: Sendable {
         let minimumLatitude = latitudes.min() ?? 0
         let minimumLongitude = longitudes.min() ?? 0
         return positions.map {
-            let x = 0.14 + (($0.longitudeDegrees - minimumLongitude) / longitudeSpan) * 0.72
-            let y = 0.86 - (($0.latitudeDegrees - minimumLatitude) / latitudeSpan) * 0.72
+            let x = 0.18 + (($0.longitudeDegrees - minimumLongitude) / longitudeSpan) * 0.58
+            let y = 0.78 - (($0.latitudeDegrees - minimumLatitude) / latitudeSpan) * 0.50
             return (x, y)
+        }
+    }
+
+    private func groupCoincidentEvents(
+        _ events: [CockpitPresentationData.RouteEvent]
+    ) -> [CockpitPresentationData.RouteEvent] {
+        events.reduce(into: []) { grouped, event in
+            if let index = grouped.firstIndex(where: {
+                $0.position == event.position && $0.timeFromLegStartSeconds == event.timeFromLegStartSeconds
+            }) {
+                let existing = grouped[index]
+                grouped[index] = .init(
+                    id: existing.id,
+                    entityIDs: existing.entityIDs + event.entityIDs,
+                    kinds: existing.kinds + event.kinds,
+                    normalizedX: existing.normalizedX,
+                    normalizedY: existing.normalizedY,
+                    position: existing.position,
+                    timeFromLegStartSeconds: existing.timeFromLegStartSeconds,
+                    title: "Combined planned events",
+                    detail: "\(existing.detail) · \(event.detail)"
+                )
+            } else {
+                grouped.append(event)
+            }
         }
     }
 

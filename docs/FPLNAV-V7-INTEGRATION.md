@@ -53,12 +53,16 @@ failure preserve the current plan, selected leg, and calculation mode. Legacy V5
 plans explain that they need resaving in Navigation Editor; empty V7 plans explain
 that route legs are required.
 
-The Cockpit is an inspection surface for imported immutable execution data. A
-domain-to-presentation adapter selects saved wind/no-wind timing, heading and
-annotation offsets, sums saved durations for cumulative time, associates accepted
-VOR/DME references with leg endpoints, and retains final frequency phase ordering.
-The schematic scales saved WGS84 positions for display only. Fictional examples
-remain preview-only.
+Plan Inspection is the preflight surface for browsing imported immutable execution
+data and selecting the whole-plan wind/no-wind mode. Cockpit is a separate adaptive
+portrait/landscape presentation of that same selected resolved leg and mode. A
+domain-to-presentation adapter selects saved timing, heading and annotation offsets,
+sums saved durations for cumulative time, associates accepted VOR/DME references
+with leg endpoints, and retains final frequency phase ordering. The schematic scales
+saved WGS84 positions for display only. Fictional examples remain preview-only.
+
+Cockpit deliberately shows planned time alongside an unavailable elapsed value and
+keeps Waypoint Reached disabled. It has no flight-session or live-aircraft state.
 
 This delivery does not add flight start, running timers, pilot-corrected headings,
 GPS, automatic leg advancement, reminders, safety assistance, route editing, or

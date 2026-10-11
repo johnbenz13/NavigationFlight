@@ -225,6 +225,8 @@ struct NavigationFlightTests {
         #expect(noWind.initialAltitudeFeetMsl == 3000)
         #expect(noWind.destinationCrossingAltitudeFeet == 3500)
         #expect(noWind.routeEvents[0].id == execution.annotations[0].entityID)
+        #expect(noWind.routeEvents[0].entityIDs == [execution.annotations[0].entityID, execution.annotations[3].entityID])
+        #expect(noWind.routeEvents[0].kinds == [.identificationPoint, .altitudeChange])
         #expect(noWind.routeEvents[0].position == execution.annotations[0].position)
         #expect(noWind.routeEvents[0].timeFromLegStartSeconds == 238)
         #expect(noWind.references[0].slantRangeNauticalMiles == 20.08342967034671)
@@ -296,6 +298,25 @@ struct NavigationFlightTests {
         var state = CockpitFeatureState()
         try state.accept(flight)
         #expect(state.flight?.title == "Synthetic Editor V7 wind handoff")
+    }
+
+    @Test func cockpitAdapterPresentsTheSelectedResolvedLegAndOnlySumsSavedTime() throws {
+        let flight = try twoLegFlight()
+        let presentation = try CockpitPresentationAdapter().makePresentation(
+            flight: flight,
+            legIndex: 1,
+            mode: .wind
+        )
+
+        #expect(presentation.legPosition == "Leg 2 of 2")
+        #expect(presentation.origin == "Synthetic waypoint 2")
+        #expect(presentation.destination == "Third waypoint")
+        #expect(presentation.magneticCourseDegrees == 355)
+        #expect(presentation.magneticHeadingDegrees == 355)
+        #expect(presentation.legDurationSeconds == 40)
+        #expect(presentation.cumulativeDurationSeconds == 80)
+        #expect(presentation.initialAltitudeFeetMsl == 2000)
+        #expect(presentation.routeEvents.isEmpty)
     }
 
     private func representativeData() throws -> Data {

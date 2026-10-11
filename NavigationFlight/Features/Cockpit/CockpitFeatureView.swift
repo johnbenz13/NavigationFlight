@@ -8,6 +8,7 @@ extension UTType {
 struct CockpitFeatureView: View {
     @State private var state = CockpitFeatureState()
     @State private var isImporterPresented = false
+    @State private var isCockpitPresented = false
     @State private var presentedError: PresentedPlanError?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
@@ -52,15 +53,20 @@ struct CockpitFeatureView: View {
                legIndex: state.selectedLegIndex,
                mode: state.mode
            ) {
-            CockpitView(
-                data: presentation,
-                onOpenPlan: { isImporterPresented = true },
-                canSelectPreviousLeg: state.canSelectPreviousLeg,
-                canSelectNextLeg: state.canSelectNextLeg,
-                onSelectPreviousLeg: { state.selectPreviousLeg() },
-                onSelectNextLeg: { state.selectNextLeg() },
-                onSelectMode: { state.selectMode($0) }
-            )
+            if isCockpitPresented {
+                CockpitView(data: presentation, onShowPlanInspection: { isCockpitPresented = false })
+            } else {
+                PlanInspectionView(
+                    data: presentation,
+                    canSelectPreviousLeg: state.canSelectPreviousLeg,
+                    canSelectNextLeg: state.canSelectNextLeg,
+                    onOpenPlan: { isImporterPresented = true },
+                    onOpenCockpit: { isCockpitPresented = true },
+                    onSelectPreviousLeg: { state.selectPreviousLeg() },
+                    onSelectNextLeg: { state.selectNextLeg() },
+                    onSelectMode: { state.selectMode($0) }
+                )
+            }
         } else {
             ContentUnavailableView {
                 Label("No Navigation Plan", systemImage: "map")
@@ -84,6 +90,7 @@ struct CockpitFeatureView: View {
             guard let url = try result.get().first else { return }
             let candidate = try loader.load(url)
             try state.accept(candidate)
+            isCockpitPresented = false
         } catch let error as CockpitPlanError {
             presentedError = .init(message: error.localizedDescription)
         } catch {

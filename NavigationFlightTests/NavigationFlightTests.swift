@@ -211,6 +211,93 @@ struct NavigationFlightTests {
         }
     }
 
+    @Test(arguments: ["editor-wind", "editor-no-wind", "editor-calm"])
+    func cockpitPresentationUsesSavedModes(_ name: String) throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
+        let execution = try eligibleExecution(flight)
+        let adapter = CockpitPresentationAdapter()
+        let noWind = try adapter.makePresentation(flight: flight, legIndex: 0, mode: .noWind)
+
+        #expect(noWind.magneticCourseDegrees == 35.23764544187969)
+        #expect(noWind.magneticHeadingDegrees == nil)
+        #expect(noWind.groundSpeedKnots == 95)
+        #expect(noWind.legDurationSeconds == 596)
+        #expect(noWind.initialAltitudeFeetMsl == 3000)
+        #expect(noWind.destinationCrossingAltitudeFeet == 3500)
+        #expect(noWind.routeEvents[0].id == execution.annotations[0].entityID)
+        #expect(noWind.routeEvents[0].position == execution.annotations[0].position)
+        #expect(noWind.routeEvents[0].timeFromLegStartSeconds == 238)
+        #expect(noWind.references[0].slantRangeNauticalMiles == 20.08342967034671)
+        #expect(noWind.references[1].slantRangeNauticalMiles == 12.4)
+        #expect(noWind.frequencies[.departure]?.map(\.id) == [
+            "user:handoff-override", "vor-dme:00000000-0000-4000-8000-00000000000a",
+            "catalog:herzlia:secondary", "catalog:herzlia:cpt"
+        ])
+        #expect(noWind.frequencies[.departure]?.first?.role == "Override")
+
+        if name == "editor-no-wind" {
+            #expect(!noWind.supportsWindMode)
+            #expect(throws: CockpitPresentationError.unavailableWindMode) {
+                try adapter.makePresentation(flight: flight, legIndex: 0, mode: .wind)
+            }
+        } else {
+            let wind = try adapter.makePresentation(flight: flight, legIndex: 0, mode: .wind)
+            #expect(wind.supportsWindMode)
+            #expect(wind.magneticHeadingDegrees != nil)
+            #expect(wind.routeEvents[0].timeFromLegStartSeconds == (name == "editor-wind" ? 222 : 238))
+            if name == "editor-wind" {
+                #expect(wind.groundSpeedKnots == 101.86169458001739)
+                #expect(wind.legDurationSeconds == 556)
+            } else {
+                #expect(wind.groundSpeedKnots == 95)
+                #expect(wind.legDurationSeconds == 596)
+                #expect(wind.magneticHeadingDegrees == wind.magneticCourseDegrees)
+            }
+        }
+    }
+
+    @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        #expect(state.selectedLegIndex == 0)
+        #expect(state.mode == .wind)
+
+        state.selectMode(.noWind)
+        state.selectNextLeg()
+        #expect(state.selectedLegIndex == 1)
+        #expect(state.mode == .noWind)
+        state.selectPreviousLeg()
+        #expect(state.selectedLegIndex == 0)
+        #expect(state.mode == .noWind)
+
+        let preserved = state
+        state.cancelImport()
+        #expect(state == preserved)
+        do {
+            try state.accept(FPLNavDecoder().decode(try representativeData()))
+            Issue.record("V5 should not enter the executable Cockpit")
+        } catch CockpitPlanError.legacyPlan(version: 5) {
+            #expect(state == preserved)
+        }
+        do {
+            try state.accept(try emptyV7Flight())
+            Issue.record("Empty V7 should not enter the executable Cockpit")
+        } catch CockpitPlanError.emptyPlan {
+            #expect(state == preserved)
+        }
+    }
+
+    @Test func fileLoaderOpensAStagedV7Fixture() throws {
+        let bundle = Bundle(for: FixtureLocator.self)
+        let nested = bundle.url(forResource: "editor-wind", withExtension: "fplnav", subdirectory: "Fixtures/FPLNav/V7/Editor")
+        let url = try #require(nested ?? bundle.url(forResource: "editor-wind", withExtension: "fplnav"))
+        let flight = try FPLNavFileLoader().load(url)
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        #expect(state.flight?.title == "Synthetic Editor V7 wind handoff")
+    }
+
     private func representativeData() throws -> Data {
         let bundle = Bundle(for: FixtureLocator.self)
         let nestedURL = bundle.url(
@@ -246,6 +333,48 @@ struct NavigationFlightTests {
             throw FPLNavV7ValidationError(path: "execution", reason: "expected eligible execution")
         }
         return execution
+    }
+
+    private func emptyV7Flight() throws -> NavigationFlight {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var navigation = try #require(object["navigation"] as? [String: Any])
+        var route = try #require(navigation["route"] as? [String: Any])
+        route["waypointOrder"] = []; route["waypoints"] = []; route["legs"] = []
+        navigation["route"] = route
+        navigation["identificationPoints"] = []; navigation["altitudeChanges"] = []
+        navigation["radioFrequencyChanges"] = []; navigation["vorDmeReferences"] = []
+        object["navigation"] = navigation
+        var execution = try #require(object["execution"] as? [String: Any])
+        execution["legs"] = []; execution["annotations"] = []; execution["vorDmeReferences"] = []
+        execution["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
+        object["execution"] = execution
+        return try decode(object)
+    }
+
+    private func twoLegFlight() throws -> NavigationFlight {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var navigation = try #require(object["navigation"] as? [String: Any])
+        var route = try #require(navigation["route"] as? [String: Any])
+        var waypoints = try #require(route["waypoints"] as? [[String: Any]])
+        var third = waypoints[1]
+        let thirdID = "00000000-0000-4000-8000-000000000020"
+        third["id"] = thirdID; third["name"] = "Third waypoint"
+        third["position"] = ["latitude": 0.03, "longitude": 0.01]
+        waypoints.append(third); route["waypoints"] = waypoints
+        let firstID = try #require(waypoints[0]["id"] as? String)
+        let secondWaypointID = try #require(waypoints[1]["id"] as? String)
+        route["waypointOrder"] = [firstID, secondWaypointID, thirdID]
+        var sourceLegs = try #require(route["legs"] as? [[String: Any]])
+        var second = sourceLegs[0]
+        let secondID = "00000000-0000-4000-8000-000000000021"
+        second["id"] = secondID; second["departureWaypointId"] = secondWaypointID; second["arrivalWaypointId"] = thirdID
+        sourceLegs.append(second); route["legs"] = sourceLegs
+        navigation["route"] = route; object["navigation"] = navigation
+        var execution = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(execution["legs"] as? [[String: Any]])
+        var resolved = legs[0]; resolved["legId"] = secondID
+        legs.append(resolved); execution["legs"] = legs; object["execution"] = execution
+        return try decode(object)
     }
 }
 

@@ -44,9 +44,23 @@ Node dependencies, scripts, schemas, and all synthetic fixtures are development
 or unit-test inputs only; none are members of the application target. The fixtures
 are regression/training data and never operational flight plans.
 
-## Delivery boundary
+## Cockpit inspection delivery
 
-This delivery does not change Cockpit presentation and does not add import UI,
-mode-switch UI, timers, GPS, reminders, or safety assistance. The next delivery
-is Cockpit wiring to these domain execution values; whole-plan mode switching and
-session behavior remain later work.
+Navigation Flight now opens `.fplnav` files with the platform document picker,
+balances security-scoped access, decodes the complete candidate before replacing
+the current plan, and admits only execution-eligible V7 plans. Cancellation and
+failure preserve the current plan, selected leg, and calculation mode. Legacy V5
+plans explain that they need resaving in Navigation Editor; empty V7 plans explain
+that route legs are required.
+
+The Cockpit is an inspection surface for imported immutable execution data. A
+domain-to-presentation adapter selects saved wind/no-wind timing, heading and
+annotation offsets, sums saved durations for cumulative time, associates accepted
+VOR/DME references with leg endpoints, and retains final frequency phase ordering.
+The schematic scales saved WGS84 positions for display only. Fictional examples
+remain preview-only.
+
+This delivery does not add flight start, running timers, pilot-corrected headings,
+GPS, automatic leg advancement, reminders, safety assistance, route editing, or
+persistent flight sessions. Those controls and any started-flight mode-switch
+warning remain future work.

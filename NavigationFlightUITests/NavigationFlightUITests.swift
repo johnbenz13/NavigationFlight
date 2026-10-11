@@ -23,14 +23,32 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testEmptyStateOffersPlanImport() throws {
         let app = XCUIApplication()
         app.launch()
+        XCTAssertTrue(app.staticTexts["No Navigation Plan"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["open-plan"].isEnabled)
+    }
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+    @MainActor
+    func testImportedEditorPlanShowsSavedValuesAndModeSelection() throws {
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repository = sourceFile.deletingLastPathComponent().deletingLastPathComponent()
+        let fixture = repository.appending(path: "NavigationFlightTests/Fixtures/FPLNav/V7/Editor/editor-wind.fplnav")
+        let data = try Data(contentsOf: fixture)
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = data.base64EncodedString()
+        app.launch()
+
+        XCTAssertTrue(app.staticTexts["Synthetic Editor V7 wind handoff"].waitForExistence(timeout: 3))
+        let course = app.descendants(matching: .any)["magnetic-course"]
+        XCTAssertTrue(course.label.contains("35° M"))
+        let heading = app.descendants(matching: .any)["magnetic-heading"]
+        XCTAssertTrue(heading.label.contains("33° M"))
+
+        app.buttons["No wind"].tap()
+        XCTAssertTrue(heading.label.contains("Unavailable"))
+        XCTAssertTrue(course.label.contains("MAGNETIC COURSE"))
     }
 
     @MainActor

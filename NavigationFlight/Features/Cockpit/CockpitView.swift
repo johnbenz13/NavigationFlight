@@ -43,26 +43,36 @@ private extension CockpitPresentationData {
     }
 }
 
+private extension FlightSession {
+    static let preview = FlightSession(
+        flightID: UUID(),
+        activeLegIndex: 1,
+        executionMode: .wind
+    )
+}
+
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
 
 struct CockpitView: View {
     let data: CockpitPresentationData
+    let session: FlightSession
+    let onStartLeg: () -> Void
     let onShowPlanInspection: () -> Void
     @State private var displayMode = CockpitMapDisplayMode.labels
     @State private var selectedEventID: UUID?
@@ -345,14 +355,10 @@ struct CockpitView: View {
     }
 
     private var timeMetric: some View {
-        VStack(spacing: 2) {
-            Text("TIME").font(.caption.weight(.semibold)).tracking(1).foregroundStyle(.secondary)
-            Text(Self.duration(data.legDurationSeconds))
-                .font(.system(size: 32, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
-            Text("PLANNED").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            Text("Elapsed  --:--").font(.caption2.weight(.medium)).foregroundStyle(.secondary).monospacedDigit()
-        }
-        .frame(maxWidth: .infinity).accessibilityElement(children: .combine).accessibilityIdentifier("cockpit-time")
+        CockpitTimeMetric(
+            plannedDurationSeconds: data.legDurationSeconds,
+            legStartedAt: session.legStartedAt
+        )
     }
 
     private var altitudeMetric: some View {
@@ -410,16 +416,27 @@ struct CockpitView: View {
         }
     }
 
+    @ViewBuilder
     private var waypointReachedButton: some View {
-        Button {} label: {
-            Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
-                .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+        if session.legState == .ready {
+            Button(action: onStartLeg) {
+                Label("Start Leg", systemImage: "play.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("Starts timing the current navigation leg")
+            .accessibilityIdentifier("start-leg")
+        } else {
+            Button {} label: {
+                Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(.plain).foregroundStyle(.secondary)
+            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+            .disabled(true)
+            .accessibilityHint("Waypoint progression is not implemented in this delivery")
+            .accessibilityIdentifier("waypoint-reached")
         }
-        .buttonStyle(.plain).foregroundStyle(.secondary)
-        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
-        .disabled(true)
-        .accessibilityHint("Unavailable until a flight session is started in a future delivery")
-        .accessibilityIdentifier("waypoint-reached")
     }
 
     private var displayOptionsSheet: some View {
@@ -467,5 +484,53 @@ struct CockpitView: View {
     private static func duration(_ seconds: Int) -> String { String(format: "%02d:%02d", seconds / 60, seconds % 60) }
     private static func phaseAbbreviation(_ phase: FlightPhase) -> String {
         switch phase { case .departure: "DEP"; case .enRoute: "ENR"; case .arrival: "ARR" }
+    }
+}
+
+private struct CockpitTimeMetric: View {
+    let plannedDurationSeconds: Int
+    let legStartedAt: Date?
+
+    var body: some View {
+        if let legStartedAt {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                metric(
+                    primaryValue: duration(elapsedSeconds(from: legStartedAt, to: context.date)),
+                    primaryLabel: "ELAPSED",
+                    secondaryValue: "Planned  \(duration(plannedDurationSeconds))"
+                )
+            }
+        } else {
+            metric(
+                primaryValue: duration(plannedDurationSeconds),
+                primaryLabel: "PLANNED",
+                secondaryValue: "Elapsed  --:--"
+            )
+        }
+    }
+
+    private func metric(
+        primaryValue: String,
+        primaryLabel: LocalizedStringKey,
+        secondaryValue: String
+    ) -> some View {
+        VStack(spacing: 2) {
+            Text("TIME").font(.caption.weight(.semibold)).tracking(1).foregroundStyle(.secondary)
+            Text(primaryValue)
+                .font(.system(size: 32, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
+            Text(primaryLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text(secondaryValue).font(.caption2.weight(.medium)).foregroundStyle(.secondary).monospacedDigit()
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("cockpit-time")
+    }
+
+    private func elapsedSeconds(from start: Date, to now: Date) -> Int {
+        max(0, Int(now.timeIntervalSince(start)))
+    }
+
+    private func duration(_ seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }

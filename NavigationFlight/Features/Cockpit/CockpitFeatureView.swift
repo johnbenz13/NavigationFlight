@@ -48,13 +48,19 @@ struct CockpitFeatureView: View {
     @ViewBuilder
     private var content: some View {
         if let flight = state.flight,
+           let session = state.session,
            let presentation = try? adapter.makePresentation(
                flight: flight,
                legIndex: state.selectedLegIndex,
                mode: state.mode
            ) {
             if isCockpitPresented {
-                CockpitView(data: presentation, onShowPlanInspection: { isCockpitPresented = false })
+                CockpitView(
+                    data: presentation,
+                    session: session,
+                    onStartLeg: { state.startLeg() },
+                    onShowPlanInspection: { isCockpitPresented = false }
+                )
             } else {
                 PlanInspectionView(
                     data: presentation,

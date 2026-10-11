@@ -258,6 +258,70 @@ struct NavigationFlightTests {
         }
     }
 
+    @Test func newFlightSessionIsReadyForExpectedLegAndMode() {
+        let flightID = UUID()
+        let session = FlightSession(
+            flightID: flightID,
+            activeLegIndex: 2,
+            executionMode: .wind
+        )
+
+        #expect(session.flightID == flightID)
+        #expect(session.activeLegIndex == 2)
+        #expect(session.executionMode == .wind)
+        #expect(session.legState == .ready)
+        #expect(session.legStartedAt == nil)
+    }
+
+    @Test func startingLegRecordsTimestampAndDerivesElapsedTime() throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var session = FlightSession(
+            flightID: UUID(),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        let didStart = session.startLeg(at: startedAt)
+        #expect(didStart)
+        #expect(session.legState == .active)
+        #expect(session.legStartedAt == startedAt)
+        #expect(try #require(session.elapsedTime(at: startedAt.addingTimeInterval(37))) == 37)
+    }
+
+    @Test func startingActiveLegDoesNotReplaceOriginalTimestamp() {
+        let originalStart = Date(timeIntervalSince1970: 1_000)
+        var session = FlightSession(
+            flightID: UUID(),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+
+        let didStart = session.startLeg(at: originalStart)
+        let didRestart = session.startLeg(at: originalStart.addingTimeInterval(20))
+        #expect(didStart)
+        #expect(!didRestart)
+        #expect(session.legStartedAt == originalStart)
+    }
+
+    @Test func startingLegDoesNotMutateImportedResolvedExecution() throws {
+        let flight = try FPLNavDecoder().decode(
+            try fixtureData("editor-wind", directory: "V7/Editor")
+        )
+        let originalFlight = flight
+        let originalExecution = try eligibleExecution(flight)
+        var session = FlightSession(
+            flightID: flight.id,
+            activeLegIndex: 0,
+            executionMode: originalExecution.defaultMode
+        )
+
+        session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+
+        #expect(flight == originalFlight)
+        #expect(try eligibleExecution(flight) == originalExecution)
+        #expect(session.executionMode == originalExecution.defaultMode)
+    }
+
     @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
         let flight = try twoLegFlight()
         var state = CockpitFeatureState()

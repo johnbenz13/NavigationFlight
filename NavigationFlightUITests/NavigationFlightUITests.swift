@@ -46,28 +46,35 @@ final class NavigationFlightUITests: XCTestCase {
         let heading = app.descendants(matching: .any)["magnetic-heading"]
         XCTAssertTrue(heading.label.contains("33° M"))
 
+        app.buttons["No wind"].tap()
+        XCTAssertTrue(heading.label.contains("Unavailable"))
+        XCTAssertTrue(course.label.contains("MAGNETIC COURSE"))
+        app.buttons["Wind"].tap()
+        XCTAssertTrue(heading.label.contains("33° M"))
+
         app.buttons["open-cockpit"].tap()
         let cockpitHeading = app.descendants(matching: .any)["cockpit-heading"]
         XCTAssertTrue(cockpitHeading.waitForExistence(timeout: 2))
         XCTAssertTrue(cockpitHeading.label.contains("33° M"))
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:16"))
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("3,000"))
-        XCTAssertFalse(app.buttons["waypoint-reached"].isEnabled)
+        let startLeg = app.buttons["start-leg"]
+        XCTAssertTrue(startLeg.isEnabled)
+        startLeg.tap()
+
+        let waypointReached = app.buttons["waypoint-reached"]
+        XCTAssertTrue(waypointReached.waitForExistence(timeout: 2))
+        XCTAssertFalse(waypointReached.isEnabled)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("ELAPSED"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:16"))
+        XCTAssertTrue(cockpitHeading.label.contains("33° M"))
 
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(cockpitHeading.waitForExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["waypoint-reached"].exists)
+        XCTAssertTrue(waypointReached.exists)
+        XCTAssertFalse(waypointReached.isEnabled)
         XCUIDevice.shared.orientation = .portrait
-
-        app.buttons["show-plan-inspection"].tap()
-
-        app.buttons["No wind"].tap()
-        XCTAssertTrue(heading.label.contains("Unavailable"))
-        XCTAssertTrue(course.label.contains("MAGNETIC COURSE"))
-        app.buttons["open-cockpit"].tap()
-        XCTAssertTrue(cockpitHeading.label.contains("COURSE · MAGNETIC"))
-        XCTAssertTrue(cockpitHeading.label.contains("35° M"))
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:56"))
+        XCTAssertTrue(waypointReached.waitForExistence(timeout: 2))
     }
 
     @MainActor

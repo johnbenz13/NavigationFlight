@@ -27,10 +27,12 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var flight: NavigationFlight?
     private(set) var selectedLegIndex = 0
     private(set) var mode = NavigationMode.noWind
+    private(set) var session: FlightSession?
 
-    var canSelectPreviousLeg: Bool { selectedLegIndex > 0 }
+    var canSelectPreviousLeg: Bool { session?.legState == .ready && selectedLegIndex > 0 }
     var canSelectNextLeg: Bool {
-        guard case .eligible(let execution)? = flight?.execution else { return false }
+        guard session?.legState == .ready,
+              case .eligible(let execution)? = flight?.execution else { return false }
         return selectedLegIndex + 1 < execution.legs.count
     }
 
@@ -45,23 +47,36 @@ struct CockpitFeatureState: Equatable, Sendable {
             flight = candidate
             selectedLegIndex = 0
             mode = execution.defaultMode
+            session = FlightSession(
+                flightID: candidate.id,
+                activeLegIndex: selectedLegIndex,
+                executionMode: mode
+            )
         }
     }
 
     mutating func selectPreviousLeg() {
         guard canSelectPreviousLeg else { return }
         selectedLegIndex -= 1
+        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
     }
 
     mutating func selectNextLeg() {
         guard canSelectNextLeg else { return }
         selectedLegIndex += 1
+        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
     }
 
     mutating func selectMode(_ newMode: NavigationMode) {
-        guard let flight, case .eligible(let execution) = flight.execution else { return }
+        guard session?.legState == .ready,
+              let flight, case .eligible(let execution) = flight.execution else { return }
         if newMode == .wind && !execution.legs.allSatisfy({ $0.withWind != nil }) { return }
         mode = newMode
+        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
+    }
+
+    mutating func startLeg(at timestamp: Date = .now) {
+        session?.startLeg(at: timestamp)
     }
 
     mutating func cancelImport() {

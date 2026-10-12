@@ -62,7 +62,13 @@ private extension AviationMapPresentation {
             legs: [.init(id: UUID(), index: 0, from: from, to: to)],
             activeLegIndex: 0,
             nextLegPreview: nil,
-            endpointReferences: []
+            endpointReferences: [],
+            plannedDurationSeconds: 382,
+            minuteMarkers: AviationMapSymbology.minuteMarkers(
+                from: from,
+                to: to,
+                plannedDurationSeconds: 382
+            )
         )
     }()
 }

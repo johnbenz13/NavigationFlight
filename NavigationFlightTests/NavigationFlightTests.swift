@@ -467,6 +467,9 @@ struct NavigationFlightTests {
         #expect(presentation.nextLegPreview == nil)
         #expect(presentation.readyFocusTarget == presentation.activeLeg?.from)
         #expect(presentation.activeFocusTarget == presentation.activeLeg?.to)
+        #expect(presentation.plannedDurationSeconds == 40)
+        #expect(presentation.plannedDurationText == "00:40")
+        #expect(presentation.minuteMarkers.isEmpty)
         #expect(flight == originalFlight)
 
         session.startLeg(at: Date(timeIntervalSince1970: 1_000))
@@ -510,6 +513,52 @@ struct NavigationFlightTests {
         expected: Double
     ) {
         #expect(abs(AviationMapGeometry.bearing(from: from, to: to) - expected) < 0.000_001)
+    }
+
+    @Test func mapMinuteMarkersUseEveryFullMinuteOfSavedPlannedDuration() {
+        let from = AviationMapCoordinate(latitude: 32, longitude: 34)
+        let to = AviationMapCoordinate(latitude: 33, longitude: 35)
+
+        let markers = AviationMapSymbology.minuteMarkers(
+            from: from,
+            to: to,
+            plannedDurationSeconds: 382
+        )
+
+        #expect(markers.map(\.minute) == [1, 2, 3, 4, 5, 6])
+        for marker in markers {
+            #expect(abs(marker.fraction - Double(marker.minute * 60) / 382) < 0.000_001)
+        }
+        #expect(markers.filter(\.showsLabel).map(\.minute) == [2, 4, 6])
+    }
+
+    @Test func mapMinuteMarkersOmitDurationsShorterThanOneMinute() {
+        let point = AviationMapCoordinate(latitude: 32, longitude: 34)
+        #expect(AviationMapSymbology.minuteMarkers(
+            from: point,
+            to: point,
+            plannedDurationSeconds: 59
+        ).isEmpty)
+    }
+
+    @Test func mapMinuteMarkersAtExactMinuteDoNotExtendBeyondArrival() {
+        let from = AviationMapCoordinate(latitude: 0, longitude: 0)
+        let to = AviationMapCoordinate(latitude: 1, longitude: 1)
+        let markers = AviationMapSymbology.minuteMarkers(
+            from: from,
+            to: to,
+            plannedDurationSeconds: 300
+        )
+
+        #expect(markers.map(\.minute) == [1, 2, 3, 4, 5])
+        #expect(markers.last?.fraction == 1)
+        #expect(markers.allSatisfy { $0.fraction <= 1 })
+    }
+
+    @Test func mapDestinationCalloutFormatsSavedDurationWithoutChangingIt() {
+        let savedDuration = 382
+        #expect(AviationMapSymbology.formatDuration(savedDuration) == "06:22")
+        #expect(savedDuration == 382)
     }
 
     private func representativeData() throws -> Data {

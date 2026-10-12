@@ -101,6 +101,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
             static let previewLayer = "next-leg-preview-layer"
             static let waypointSource = "route-waypoint-source"
             static let waypointLayer = "route-waypoint-layer"
+            static let minuteMarkSource = "active-leg-minute-mark-source"
+            static let minuteMarkCasingLayer = "active-leg-minute-mark-casing-layer"
+            static let minuteMarkLayer = "active-leg-minute-mark-layer"
         }
 
         private var presentation: AviationMapPresentation
@@ -135,6 +138,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             addChart(to: style)
             addRoute(to: style)
             addWaypoints(to: style)
+            addMinuteMarks(to: style)
             updateEndpointAnnotations(on: mapView)
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
@@ -166,9 +170,14 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
-            guard let annotation = annotation as? EndpointAnnotation else { return nil }
-            let identifier = "endpoint-\(annotation.identifier.uuidString)"
-            return EndpointAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            if let annotation = annotation as? EndpointAnnotation {
+                let identifier = "endpoint-\(annotation.identifier.uuidString)"
+                return EndpointAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+            }
+            if let annotation = annotation as? MinuteLabelAnnotation {
+                return MinuteLabelAnnotationView(annotation: annotation)
+            }
+            return nil
         }
 
         func update(
@@ -178,6 +187,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             mapView: MLNMapView
         ) {
             let becameActive = self.legState == .ready && legState == .active
+            let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
             self.presentation = presentation
             self.legState = legState
@@ -189,6 +199,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
             if presentationChanged, let style = mapView.style {
                 updateShapes(in: style)
+            }
+            if presentationChanged || legStateChanged {
                 updateEndpointAnnotations(on: mapView)
             }
 
@@ -274,10 +286,32 @@ struct OfflineAviationMapView: UIViewRepresentable {
             style.addLayer(points)
         }
 
+        private func addMinuteMarks(to style: MLNStyle) {
+            let source = MLNShapeSource(
+                identifier: Identifier.minuteMarkSource,
+                shape: minuteMarkShape(),
+                options: nil
+            )
+            style.addSource(source)
+
+            let casing = MLNLineStyleLayer(identifier: Identifier.minuteMarkCasingLayer, source: source)
+            casing.lineColor = NSExpression(forConstantValue: UIColor.white.withAlphaComponent(0.9))
+            casing.lineWidth = NSExpression(forConstantValue: 5)
+            casing.lineCap = NSExpression(forConstantValue: "round")
+            style.addLayer(casing)
+
+            let marks = MLNLineStyleLayer(identifier: Identifier.minuteMarkLayer, source: source)
+            marks.lineColor = NSExpression(forConstantValue: UIColor.systemCyan)
+            marks.lineWidth = NSExpression(forConstantValue: 2.5)
+            marks.lineCap = NSExpression(forConstantValue: "round")
+            style.addLayer(marks)
+        }
+
         private func updateShapes(in style: MLNStyle) {
             (style.source(withIdentifier: Identifier.routeSource) as? MLNShapeSource)?.shape = routeShape()
             (style.source(withIdentifier: Identifier.previewSource) as? MLNShapeSource)?.shape = previewShape()
             (style.source(withIdentifier: Identifier.waypointSource) as? MLNShapeSource)?.shape = waypointShape()
+            (style.source(withIdentifier: Identifier.minuteMarkSource) as? MLNShapeSource)?.shape = minuteMarkShape()
             (style.layer(withIdentifier: Identifier.activeLayer) as? MLNLineStyleLayer)?.predicate =
                 NSPredicate(format: "legIndex == %d", presentation.activeLegIndex)
         }
@@ -304,6 +338,33 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 feature.coordinate = coordinate(waypoint.coordinate)
                 return feature
             })
+        }
+
+        private func minuteMarkShape() -> MLNShapeCollectionFeature {
+            guard let leg = presentation.activeLeg else {
+                return MLNShapeCollectionFeature(shapes: [])
+            }
+            return MLNShapeCollectionFeature(shapes: presentation.minuteMarkers.map { marker in
+                let end = minuteMarkEnd(from: marker.coordinate, on: leg, emphasized: marker.showsLabel)
+                return lineFeature(from: marker.coordinate, to: end, attributes: [:])
+            })
+        }
+
+        private func minuteMarkEnd(
+            from coordinate: AviationMapCoordinate,
+            on leg: AviationMapLeg,
+            emphasized: Bool
+        ) -> AviationMapCoordinate {
+            let latitudeRadians = coordinate.latitude * .pi / 180
+            let longitudeScale = max(cos(latitudeRadians), 0.2)
+            let east = (leg.to.longitude - leg.from.longitude) * longitudeScale
+            let north = leg.to.latitude - leg.from.latitude
+            let magnitude = max(hypot(east, north), .leastNonzeroMagnitude)
+            let length = magnitude * (emphasized ? 0.025 : 0.018)
+            return AviationMapCoordinate(
+                latitude: coordinate.latitude - (east / magnitude) * length,
+                longitude: coordinate.longitude + (north / magnitude) * length / longitudeScale
+            )
         }
 
         private func focusLeg(on mapView: MLNMapView, animated: Bool) {
@@ -435,8 +496,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
             endpointAnnotations = presentation.waypoints.compactMap { waypoint in
                 guard waypoint.role != .route else { return nil }
                 let reference = presentation.endpointReferences.first { $0.waypointID == waypoint.id }
-                return EndpointAnnotation(waypoint: waypoint, reference: reference)
+                return EndpointAnnotation(
+                    waypoint: waypoint,
+                    reference: reference,
+                    plannedDurationText: waypoint.role == .to ? presentation.plannedDurationText : nil,
+                    isActive: legState == .active
+                )
             }
+            endpointAnnotations.append(contentsOf: presentation.minuteMarkers.compactMap { marker in
+                marker.showsLabel ? MinuteLabelAnnotation(marker: marker) : nil
+            })
             mapView.addAnnotations(endpointAnnotations)
         }
 
@@ -469,16 +538,25 @@ struct OfflineAviationMapView: UIViewRepresentable {
 private final class EndpointAnnotation: MLNPointAnnotation {
     let identifier: UUID
     let role: AviationMapWaypoint.Role
-    let titleText: String
+    let waypointName: String
+    let plannedDurationText: String?
     let referenceText: String?
+    let isActive: Bool
 
-    init(waypoint: AviationMapWaypoint, reference: AviationMapVORDMEReference?) {
+    init(
+        waypoint: AviationMapWaypoint,
+        reference: AviationMapVORDMEReference?,
+        plannedDurationText: String?,
+        isActive: Bool
+    ) {
         identifier = waypoint.id
         role = waypoint.role
-        titleText = "\(waypoint.role == .from ? "FROM" : "TO") · \(waypoint.name)"
+        waypointName = waypoint.name
+        self.plannedDurationText = plannedDurationText
+        self.isActive = isActive
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
-            referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° FROM · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+            referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
         } else {
             referenceText = nil
         }
@@ -497,24 +575,191 @@ private final class EndpointAnnotation: MLNPointAnnotation {
 private final class EndpointAnnotationView: MLNAnnotationView {
     init(annotation: EndpointAnnotation, reuseIdentifier: String) {
         super.init(reuseIdentifier: reuseIdentifier)
+        if annotation.role == .to {
+            configureDestination(annotation)
+        } else {
+            configureDeparture(annotation)
+        }
+        isEnabled = false
+    }
 
+    private func configureDeparture(_ annotation: EndpointAnnotation) {
         let label = UILabel()
         label.numberOfLines = annotation.referenceText == nil ? 1 : 2
-        label.textAlignment = .center
         label.font = .preferredFont(forTextStyle: .caption2)
         label.textColor = .label
-        label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
-        label.layer.cornerRadius = 7
-        label.layer.borderColor = UIColor.systemBlue.cgColor
-        label.layer.borderWidth = annotation.role == .to ? 2.5 : 1.5
+        label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.84)
+        label.layer.cornerRadius = 4
         label.layer.masksToBounds = true
-        label.text = [annotation.titleText, annotation.referenceText].compactMap { $0 }.joined(separator: "\n")
-        let measured = label.sizeThatFits(CGSize(width: 220, height: 80))
-        let size = CGSize(width: measured.width + 14, height: measured.height + 8)
+        label.text = [annotation.waypointName, annotation.referenceText].compactMap { $0 }.joined(separator: "\n")
+        let measured = label.sizeThatFits(CGSize(width: 200, height: 52))
+        let labelSize = CGSize(width: measured.width + 10, height: measured.height + 5)
+        let size = CGSize(width: labelSize.width + 32, height: max(34, labelSize.height))
         frame = CGRect(origin: .zero, size: size)
+
+        let symbol = WaypointSymbolView(destination: false)
+        symbol.frame = CGRect(x: 4, y: bounds.midY - 9, width: 18, height: 18)
+        addSubview(symbol)
+        label.frame = CGRect(x: 28, y: bounds.midY - labelSize.height / 2, width: labelSize.width, height: labelSize.height)
+        addSubview(label)
+        centerOffset = CGVector(dx: bounds.midX - 13, dy: 0)
+    }
+
+    private func configureDestination(_ annotation: EndpointAnnotation) {
+        let calloutWidth: CGFloat = 146
+        let calloutHeight: CGFloat = annotation.referenceText == nil ? 55 : 70
+        let size = CGSize(width: 188, height: calloutHeight + 42)
+        frame = CGRect(origin: .zero, size: size)
+
+        let callout = DestinationCalloutView(annotation: annotation)
+        callout.frame = CGRect(x: 0, y: 0, width: calloutWidth, height: calloutHeight)
+        addSubview(callout)
+
+        let circleCenter = CGPoint(x: 168, y: calloutHeight + 20)
+        let leader = CAShapeLayer()
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: calloutWidth - 1, y: calloutHeight * 0.55))
+        path.addLine(to: CGPoint(x: circleCenter.x - 19, y: circleCenter.y - 8))
+        leader.path = path.cgPath
+        leader.strokeColor = UIColor.label.withAlphaComponent(0.85).cgColor
+        leader.lineWidth = 1.5
+        leader.fillColor = UIColor.clear.cgColor
+        layer.addSublayer(leader)
+
+        let symbol = WaypointSymbolView(destination: true)
+        symbol.frame = CGRect(x: circleCenter.x - 19, y: circleCenter.y - 19, width: 38, height: 38)
+        addSubview(symbol)
+        centerOffset = CGVector(dx: bounds.midX - circleCenter.x, dy: bounds.midY - circleCenter.y)
+        alpha = annotation.isActive ? 1 : 0.78
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
+private final class WaypointSymbolView: UIView {
+    private let destination: Bool
+
+    init(destination: Bool) {
+        self.destination = destination
+        super.init(frame: .zero)
+        backgroundColor = .clear
+        isOpaque = false
+    }
+
+    override func draw(_ rect: CGRect) {
+        let context = UIGraphicsGetCurrentContext()
+        let inset: CGFloat = destination ? 2 : 3
+        let circle = bounds.insetBy(dx: inset, dy: inset)
+        UIColor.systemBackground.withAlphaComponent(0.88).setFill()
+        context?.fillEllipse(in: circle)
+        UIColor.label.setStroke()
+        context?.setLineWidth(destination ? 3 : 2)
+        context?.strokeEllipse(in: circle)
+
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        let radius: CGFloat = destination ? 6 : 3.5
+        let triangle = UIBezierPath()
+        triangle.move(to: CGPoint(x: center.x, y: center.y - radius))
+        triangle.addLine(to: CGPoint(x: center.x + radius, y: center.y + radius * 0.8))
+        triangle.addLine(to: CGPoint(x: center.x - radius, y: center.y + radius * 0.8))
+        triangle.close()
+        UIColor.systemBlue.setFill()
+        triangle.fill()
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
+private final class DestinationCalloutView: UIView {
+    init(annotation: EndpointAnnotation) {
+        super.init(frame: .zero)
+        backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
+        layer.borderColor = UIColor.label.withAlphaComponent(0.8).cgColor
+        layer.borderWidth = 1.5
+        layer.cornerRadius = 3
+
+        let name = UILabel()
+        name.text = annotation.waypointName
+        name.textAlignment = .center
+        name.font = .preferredFont(forTextStyle: .caption2)
+        name.textColor = .secondaryLabel
+
+        let duration = UILabel()
+        duration.text = annotation.plannedDurationText
+        duration.textAlignment = .center
+        duration.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
+        duration.textColor = .label
+
+        let reference = UILabel()
+        reference.text = annotation.referenceText
+        reference.textAlignment = .center
+        reference.font = .systemFont(ofSize: 9, weight: .medium)
+        reference.textColor = .secondaryLabel
+        reference.adjustsFontSizeToFitWidth = true
+        reference.minimumScaleFactor = 0.75
+
+        [name, duration, reference].forEach(addSubview)
+        name.translatesAutoresizingMaskIntoConstraints = false
+        duration.translatesAutoresizingMaskIntoConstraints = false
+        reference.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            name.topAnchor.constraint(equalTo: topAnchor, constant: 5),
+            name.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
+            name.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
+            duration.topAnchor.constraint(equalTo: name.bottomAnchor, constant: -1),
+            duration.centerXAnchor.constraint(equalTo: centerXAnchor),
+            reference.topAnchor.constraint(equalTo: duration.bottomAnchor, constant: 1),
+            reference.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
+            reference.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5)
+        ])
+        reference.isHidden = annotation.referenceText == nil
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
+private final class MinuteLabelAnnotation: MLNPointAnnotation {
+    let minute: Int
+    let isNearDestination: Bool
+
+    init(marker: AviationMapMinuteMarker) {
+        minute = marker.minute
+        isNearDestination = marker.fraction >= 0.9
+        super.init()
+        coordinate = CLLocationCoordinate2D(
+            latitude: marker.coordinate.latitude,
+            longitude: marker.coordinate.longitude
+        )
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
+private final class MinuteLabelAnnotationView: MLNAnnotationView {
+    init(annotation: MinuteLabelAnnotation) {
+        super.init(reuseIdentifier: "minute-\(annotation.minute)")
+        let label = UILabel()
+        label.text = String(annotation.minute)
+        label.textAlignment = .center
+        label.font = .monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
+        label.textColor = .label
+        label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.82)
+        label.layer.cornerRadius = 7
+        label.layer.masksToBounds = true
+        frame = CGRect(x: 0, y: 0, width: 18, height: 16)
         label.frame = bounds
         addSubview(label)
-        centerOffset = CGVector(dx: 0, dy: -(size.height / 2 + 8))
+        centerOffset = annotation.isNearDestination
+            ? CGVector(dx: 36, dy: 10)
+            : CGVector(dx: 23, dy: 0)
         isEnabled = false
     }
 

@@ -41,12 +41,21 @@ struct AviationMapVORDMEReference: Identifiable, Equatable, Sendable {
     let slantRangeNauticalMiles: Double
 }
 
+struct AviationMapMinuteMarker: Equatable, Sendable {
+    let minute: Int
+    let fraction: Double
+    let coordinate: AviationMapCoordinate
+    let showsLabel: Bool
+}
+
 struct AviationMapPresentation: Equatable, Sendable {
     let waypoints: [AviationMapWaypoint]
     let legs: [AviationMapLeg]
     let activeLegIndex: Int
     let nextLegPreview: AviationMapLeg?
     let endpointReferences: [AviationMapVORDMEReference]
+    let plannedDurationSeconds: Int
+    let minuteMarkers: [AviationMapMinuteMarker]
 
     var activeLeg: AviationMapLeg? {
         legs.first { $0.index == activeLegIndex }
@@ -59,11 +68,17 @@ struct AviationMapPresentation: Equatable, Sendable {
     var activeFocusTarget: AviationMapCoordinate? {
         activeLeg?.to
     }
+
+    var plannedDurationText: String {
+        AviationMapSymbology.formatDuration(plannedDurationSeconds)
+    }
 }
 
 enum AviationMapPresentationError: Error, Equatable {
     case invalidActiveLegIndex(Int)
     case missingExecutionReference(UUID)
+    case unavailableExecution
+    case unavailableWindMode
 }
 
 struct AviationMapPresentationFactory {
@@ -74,8 +89,23 @@ struct AviationMapPresentationFactory {
         guard flight.legs.indices.contains(session.activeLegIndex) else {
             throw AviationMapPresentationError.invalidActiveLegIndex(session.activeLegIndex)
         }
+        guard case .eligible(let execution) = flight.execution,
+              execution.legs.indices.contains(session.activeLegIndex) else {
+            throw AviationMapPresentationError.unavailableExecution
+        }
 
         let activeSourceLeg = flight.legs[session.activeLegIndex]
+        let resolvedLeg = execution.legs[session.activeLegIndex]
+        let plannedDurationSeconds: Int
+        switch session.executionMode {
+        case .noWind:
+            plannedDurationSeconds = resolvedLeg.noWind.durationSeconds
+        case .wind:
+            guard let wind = resolvedLeg.withWind else {
+                throw AviationMapPresentationError.unavailableWindMode
+            }
+            plannedDurationSeconds = wind.timing.durationSeconds
+        }
         let waypoints = flight.waypoints.map { waypoint in
             AviationMapWaypoint(
                 id: waypoint.id,
@@ -128,7 +158,13 @@ struct AviationMapPresentationFactory {
             legs: legs,
             activeLegIndex: session.activeLegIndex,
             nextLegPreview: legs.first { $0.index == session.activeLegIndex + 1 },
-            endpointReferences: endpointReferences
+            endpointReferences: endpointReferences,
+            plannedDurationSeconds: plannedDurationSeconds,
+            minuteMarkers: AviationMapSymbology.minuteMarkers(
+                from: coordinate(activeSourceLeg.departure.position),
+                to: coordinate(activeSourceLeg.arrival.position),
+                plannedDurationSeconds: plannedDurationSeconds
+            )
         )
     }
 
@@ -147,6 +183,32 @@ struct AviationMapPresentationFactory {
             latitude: value.latitudeDegrees,
             longitude: value.longitudeDegrees
         )
+    }
+}
+
+enum AviationMapSymbology {
+    static let minuteLabelCadence = 2
+
+    static func minuteMarkers(
+        from: AviationMapCoordinate,
+        to: AviationMapCoordinate,
+        plannedDurationSeconds: Int
+    ) -> [AviationMapMinuteMarker] {
+        guard plannedDurationSeconds >= 60 else { return [] }
+
+        return (1...(plannedDurationSeconds / 60)).map { minute in
+            let fraction = Double(minute * 60) / Double(plannedDurationSeconds)
+            return AviationMapMinuteMarker(
+                minute: minute,
+                fraction: fraction,
+                coordinate: AviationMapGeometry.interpolate(from: from, to: to, fraction: fraction),
+                showsLabel: minute.isMultiple(of: minuteLabelCadence)
+            )
+        }
+    }
+
+    static func formatDuration(_ seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }
 

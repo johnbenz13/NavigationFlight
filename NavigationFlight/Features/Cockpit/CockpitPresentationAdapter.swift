@@ -20,6 +20,15 @@ struct CockpitPresentationData: Equatable, Sendable {
         let source: ExecutionFrequencySource
     }
 
+    struct DisplayFrequency: Identifiable, Equatable, Sendable {
+        let id: String
+        let phases: [FlightPhase]
+        let service: String
+        let serviceType: String
+        let frequencyMHz: Double
+        let source: ExecutionFrequencySource
+    }
+
     struct RouteEvent: Identifiable, Equatable, Sendable {
         let id: UUID
         let entityIDs: [UUID]
@@ -53,6 +62,7 @@ struct CockpitPresentationData: Equatable, Sendable {
     let supportsWindMode: Bool
     let references: [PlannedReference]
     let frequencies: [FlightPhase: [Frequency]]
+    let displayFrequencies: [DisplayFrequency]
     let routeEvents: [RouteEvent]
 }
 
@@ -129,6 +139,8 @@ struct CockpitPresentationAdapter: Sendable {
             })
         })
 
+        let displayFrequencies = makeDisplayFrequencies(from: frequencies)
+
         let sourcePoints = Dictionary(uniqueKeysWithValues: flight.identificationPoints.map { ($0.id, $0) })
         let altitudeChanges = Dictionary(uniqueKeysWithValues: flight.altitudeChanges.map { ($0.id, $0) })
         let frequencyChanges = Dictionary(uniqueKeysWithValues: flight.frequencyChanges.map { ($0.id, $0) })
@@ -198,8 +210,58 @@ struct CockpitPresentationAdapter: Sendable {
             supportsWindMode: execution.legs.allSatisfy { $0.withWind != nil },
             references: references,
             frequencies: frequencies,
+            displayFrequencies: displayFrequencies,
             routeEvents: routeEvents
         )
+    }
+
+    func makeDisplayFrequencies(
+        from frequencies: [FlightPhase: [CockpitPresentationData.Frequency]]
+    ) -> [CockpitPresentationData.DisplayFrequency] {
+        FlightPhase.allCases
+            .flatMap { frequencies[$0] ?? [] }
+            .reduce(into: []) { groups, frequency in
+                if let index = groups.firstIndex(where: {
+                    $0.service == frequency.service &&
+                    $0.serviceType == serviceTypeLabel(for: frequency) &&
+                    $0.frequencyMHz == frequency.frequencyMHz &&
+                    $0.source == frequency.source
+                }) {
+                    let existing = groups[index]
+                    groups[index] = .init(
+                        id: existing.id,
+                        phases: existing.phases.contains(frequency.phase)
+                            ? existing.phases
+                            : existing.phases + [frequency.phase],
+                        service: existing.service,
+                        serviceType: existing.serviceType,
+                        frequencyMHz: existing.frequencyMHz,
+                        source: existing.source
+                    )
+                } else {
+                    groups.append(.init(
+                        id: frequency.id,
+                        phases: [frequency.phase],
+                        service: frequency.service,
+                        serviceType: serviceTypeLabel(for: frequency),
+                        frequencyMHz: frequency.frequencyMHz,
+                        source: frequency.source
+                    ))
+                }
+            }
+    }
+
+    private func serviceTypeLabel(for frequency: CockpitPresentationData.Frequency) -> String {
+        if let role = frequency.role, !role.isEmpty {
+            return role
+        }
+        return switch frequency.source {
+        case .departure: "Departure"
+        case .route: "Route"
+        case .arrival: "Arrival"
+        case .vorDme: "VOR/DME"
+        case .user: "User"
+        }
     }
 
     private func project(
@@ -248,4 +310,12 @@ struct CockpitPresentationAdapter: Sendable {
 
     private func formatFeet(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
     private func formatFrequency(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2...3))) }
+}
+
+enum CockpitPresentationFormatter {
+    static func aviationDegrees(_ value: Double) -> String {
+        let roundedDegrees = Int(value.rounded())
+        let normalizedDegrees = ((roundedDegrees % 360) + 360) % 360
+        return String(format: "%03d°", normalizedDegrees)
+    }
 }

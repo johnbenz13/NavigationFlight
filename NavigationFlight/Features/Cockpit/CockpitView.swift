@@ -35,6 +35,9 @@ private extension CockpitPresentationData {
             frequencies: populated ? [
                 .departure: [.init(id: "preview-frequency", phase: .departure, role: "Pilot override", service: "Very Long Preview Tower Service", frequencyMHz: 118.4, source: .user)]
             ] : [:],
+            displayFrequencies: populated ? [
+                .init(id: "preview-frequency", phases: [.departure], service: "Very Long Preview Tower Service", serviceType: "Pilot override", frequencyMHz: 118.4, source: .user)
+            ] : [],
             routeEvents: populated ? [
                 .init(id: UUID(), entityIDs: [UUID()], kinds: [.altitudeChange], normalizedX: 0.40, normalizedY: 0.57, position: .init(latitudeDegrees: 32.2, longitudeDegrees: 34.6), timeFromLegStartSeconds: 132, title: "Altitude change", detail: "After passing anchor: 2,500 ft MSL"),
                 .init(id: UUID(), entityIDs: [UUID()], kinds: [.radioFrequencyChange], normalizedX: 0.61, normalizedY: 0.44, position: .init(latitudeDegrees: 32.25, longitudeDegrees: 34.65), timeFromLegStartSeconds: 190, title: "Frequency change", detail: "Very Long Preview Control Service · 120.600 MHz")
@@ -323,7 +326,7 @@ struct CockpitView: View {
             frequencyRow
             waypointReachedButton
         }
-        .padding(.horizontal, 24).padding(.vertical, 10)
+        .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 10)
     }
 
     private var landscapeControlPanel: some View {
@@ -346,10 +349,15 @@ struct CockpitView: View {
         VStack(spacing: 3) {
             Text(data.magneticHeadingDegrees == nil ? "COURSE · MAGNETIC" : "HEADING · MAGNETIC")
                 .font(.caption.weight(.semibold)).tracking(0.8).foregroundStyle(.secondary)
-            Text(Self.degrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees))
+            Text(CockpitPresentationFormatter.aviationDegrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees))
                 .font(.system(size: 30, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
-            Text(data.magneticHeadingDegrees == nil ? "Saved course · No planned heading" : "Saved planned · Course \(Self.degrees(data.magneticCourseDegrees))")
-                .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+            if data.magneticHeadingDegrees == nil {
+                Text("Saved course · No planned heading")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+            } else {
+                Text("COURSE \(CockpitPresentationFormatter.aviationDegrees(data.magneticCourseDegrees))")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+            }
         }
         .frame(maxWidth: .infinity).accessibilityElement(children: .combine).accessibilityIdentifier("cockpit-heading")
     }
@@ -371,8 +379,8 @@ struct CockpitView: View {
         .frame(maxWidth: .infinity).accessibilityElement(children: .combine).accessibilityIdentifier("cockpit-altitude")
     }
 
-    private var orderedFrequencies: [CockpitPresentationData.Frequency] {
-        FlightPhase.allCases.flatMap { data.frequencies[$0] ?? [] }
+    private var orderedFrequencies: [CockpitPresentationData.DisplayFrequency] {
+        data.displayFrequencies
     }
 
     private var frequencyRow: some View {
@@ -405,14 +413,16 @@ struct CockpitView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func frequencyValue(_ frequency: CockpitPresentationData.Frequency) -> some View {
+    private func frequencyValue(_ frequency: CockpitPresentationData.DisplayFrequency) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(frequency.service).font(.subheadline).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 5) {
-                Text(Self.phaseAbbreviation(frequency.phase)).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text(frequency.role ?? frequency.source.rawValue).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text("\(Self.frequency(frequency.frequencyMHz)) MHz").font(.subheadline.weight(.semibold)).monospacedDigit()
+            HStack(spacing: 7) {
+                Text("\(frequency.service) · \(frequency.serviceType)")
+                    .font(.subheadline).lineLimit(1).minimumScaleFactor(0.8)
+                Text("\(Self.frequency(frequency.frequencyMHz)) MHz")
+                    .font(.subheadline.weight(.semibold)).monospacedDigit().lineLimit(1)
             }
+            Text(frequency.phases.map(Self.phaseAbbreviation).joined(separator: " → "))
+                .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
         }
     }
 
@@ -482,7 +492,7 @@ struct CockpitView: View {
     private static func decimal(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1))) }
     private static func frequency(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2...3))) }
     private static func duration(_ seconds: Int) -> String { String(format: "%02d:%02d", seconds / 60, seconds % 60) }
-    private static func phaseAbbreviation(_ phase: FlightPhase) -> String {
+    nonisolated private static func phaseAbbreviation(_ phase: FlightPhase) -> String {
         switch phase { case .departure: "DEP"; case .enRoute: "ENR"; case .arrival: "ARR" }
     }
 }
@@ -497,7 +507,7 @@ private struct CockpitTimeMetric: View {
                 metric(
                     primaryValue: duration(elapsedSeconds(from: legStartedAt, to: context.date)),
                     primaryLabel: "ELAPSED",
-                    secondaryValue: "Planned  \(duration(plannedDurationSeconds))"
+                    secondaryValue: "PLAN \(duration(plannedDurationSeconds))"
                 )
             }
         } else {
@@ -519,7 +529,7 @@ private struct CockpitTimeMetric: View {
             Text(primaryValue)
                 .font(.system(size: 32, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
             Text(primaryLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            Text(secondaryValue).font(.caption2.weight(.medium)).foregroundStyle(.secondary).monospacedDigit()
+            Text(secondaryValue).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
         }
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .combine)

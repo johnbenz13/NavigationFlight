@@ -258,6 +258,69 @@ struct NavigationFlightTests {
         }
     }
 
+    @Test(arguments: [
+        (2.0, "002°"),
+        (5.0, "005°"),
+        (348.0, "348°")
+    ])
+    func cockpitUsesThreeDigitAviationDegrees(_ value: Double, _ expected: String) {
+        let formatted = CockpitPresentationFormatter.aviationDegrees(value)
+
+        #expect(formatted == expected)
+        #expect(!formatted.contains("M"))
+    }
+
+    @Test func cockpitCollapsesIdenticalFrequenciesAcrossPhasesForDisplayOnly() throws {
+        let enRoute = CockpitPresentationData.Frequency(
+            id: "en-route-nat",
+            phase: .enRoute,
+            role: nil,
+            service: "NAT",
+            frequencyMHz: 112.4,
+            source: .vorDme
+        )
+        let arrival = CockpitPresentationData.Frequency(
+            id: "arrival-nat",
+            phase: .arrival,
+            role: nil,
+            service: "NAT",
+            frequencyMHz: 112.4,
+            source: .vorDme
+        )
+        let frequencies: [FlightPhase: [CockpitPresentationData.Frequency]] = [
+            .enRoute: [enRoute],
+            .arrival: [arrival]
+        ]
+
+        let display = CockpitPresentationAdapter().makeDisplayFrequencies(from: frequencies)
+
+        #expect(display.count == 1)
+        let collapsed = try #require(display.first)
+        #expect(collapsed.service == "NAT")
+        #expect(collapsed.serviceType == "VOR/DME")
+        #expect(collapsed.frequencyMHz == 112.4)
+        #expect(collapsed.phases == [.enRoute, .arrival])
+        #expect(frequencies[.enRoute] == [enRoute])
+        #expect(frequencies[.arrival] == [arrival])
+    }
+
+    @Test func cockpitKeepsMeaningfullyDifferentFrequenciesDistinct() {
+        let frequencies: [FlightPhase: [CockpitPresentationData.Frequency]] = [
+            .enRoute: [
+                .init(id: "en-route-nat", phase: .enRoute, role: nil, service: "NAT", frequencyMHz: 112.4, source: .vorDme)
+            ],
+            .arrival: [
+                .init(id: "arrival-nat", phase: .arrival, role: nil, service: "NAT", frequencyMHz: 113.5, source: .vorDme)
+            ]
+        ]
+
+        let display = CockpitPresentationAdapter().makeDisplayFrequencies(from: frequencies)
+
+        #expect(display.count == 2)
+        #expect(display.map(\.frequencyMHz) == [112.4, 113.5])
+        #expect(display.allSatisfy { $0.serviceType == "VOR/DME" })
+    }
+
     @Test func newFlightSessionIsReadyForExpectedLegAndMode() {
         let flightID = UUID()
         let session = FlightSession(

@@ -1,11 +1,5 @@
 import SwiftUI
 
-private enum CockpitMapDisplayMode: String, CaseIterable, Identifiable {
-    case labels = "Symbols + Labels"
-    case symbolsOnly = "Symbols Only"
-    var id: Self { self }
-}
-
 #if DEBUG
 private extension CockpitPresentationData {
     static func cockpitPreview(heading: Double?, populated: Bool, hebrew: Bool = false) -> CockpitPresentationData {
@@ -54,33 +48,53 @@ private extension FlightSession {
     )
 }
 
+private extension AviationMapPresentation {
+    static let preview: AviationMapPresentation = {
+        let from = AviationMapCoordinate(latitude: 32.45, longitude: 34.90)
+        let to = AviationMapCoordinate(latitude: 32.60, longitude: 35.03)
+        let fromID = UUID()
+        let toID = UUID()
+        return AviationMapPresentation(
+            waypoints: [
+                .init(id: fromID, name: "Departure", coordinate: from, role: .from),
+                .init(id: toID, name: "Destination", coordinate: to, role: .to)
+            ],
+            legs: [.init(id: UUID(), index: 0, from: from, to: to)],
+            activeLegIndex: 0,
+            nextLegPreview: nil,
+            endpointReferences: []
+        )
+    }()
+}
+
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
 
 struct CockpitView: View {
     let data: CockpitPresentationData
+    let mapPresentation: AviationMapPresentation
     let session: FlightSession
     let onStartLeg: () -> Void
     let onShowPlanInspection: () -> Void
-    @State private var displayMode = CockpitMapDisplayMode.labels
-    @State private var selectedEventID: UUID?
-    @State private var showsDisplayOptions = false
     @State private var showsChartsUnavailable = false
+    @State private var mapFocusRequest = AviationMapFocusRequest(mode: .leg)
+    @State private var preservedMapCamera: AviationMapCameraState?
+    @State private var isMapCameraUserControlled = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -101,7 +115,6 @@ struct CockpitView: View {
             }
         }
         .background(Color(.systemBackground))
-        .sheet(isPresented: $showsDisplayOptions) { displayOptionsSheet }
         .alert("Charts Unavailable", isPresented: $showsChartsUnavailable) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -110,155 +123,18 @@ struct CockpitView: View {
     }
 
     private var mapSurface: some View {
-        GeometryReader { geometry in
-            ZStack {
-                Color(.secondarySystemBackground)
-                schematicGrid
-                routeLine(in: geometry.size)
-                Color.clear.contentShape(Rectangle()).onTapGesture { selectedEventID = nil }
-                waypointAnnotations(in: geometry.size)
-                eventAnnotations(in: geometry.size)
-                schematicNotice
-                mapControls
-                legHeader
-            }
+        ZStack {
+            OfflineAviationMapView(
+                presentation: mapPresentation,
+                legState: session.legState,
+                focusRequest: mapFocusRequest,
+                preservedCamera: $preservedMapCamera,
+                isCameraUserControlled: $isMapCameraUserControlled
+            )
+            mapControls
+            legHeader
         }
         .clipped()
-    }
-
-    private var schematicGrid: some View {
-        Canvas { context, size in
-            var grid = Path()
-            for x in stride(from: CGFloat.zero, through: size.width, by: 80) {
-                grid.move(to: CGPoint(x: x, y: 0)); grid.addLine(to: CGPoint(x: x, y: size.height))
-            }
-            for y in stride(from: CGFloat.zero, through: size.height, by: 80) {
-                grid.move(to: CGPoint(x: 0, y: y)); grid.addLine(to: CGPoint(x: size.width, y: y))
-            }
-            context.stroke(grid, with: .color(.gray.opacity(0.12)), lineWidth: 1)
-        }
-        .accessibilityHidden(true)
-    }
-
-    private func routeLine(in size: CGSize) -> some View {
-        Canvas { context, _ in
-            var route = Path()
-            route.move(to: point(data.originNormalizedX, data.originNormalizedY, in: size))
-            route.addLine(to: point(data.destinationNormalizedX, data.destinationNormalizedY, in: size))
-            context.stroke(route, with: .color(.blue.opacity(0.82)), style: StrokeStyle(lineWidth: 4, dash: [10, 7]))
-            for event in data.routeEvents {
-                let position = point(event.normalizedX, event.normalizedY, in: size)
-                var guide = Path()
-                guide.move(to: CGPoint(x: position.x, y: position.y - 12))
-                guide.addLine(to: CGPoint(x: position.x, y: position.y + 12))
-                context.stroke(guide, with: .color(.blue.opacity(0.35)), lineWidth: 2)
-            }
-        }
-        .accessibilityLabel("Schematic of the selected imported leg")
-    }
-
-    private func waypointAnnotations(in size: CGSize) -> some View {
-        ZStack {
-            Circle().fill(.blue).frame(width: 12, height: 12)
-                .position(point(data.originNormalizedX, data.originNormalizedY, in: size))
-            VStack(alignment: .leading, spacing: 7) {
-                waypoint(title: data.origin, subtitle: "DEPARTURE · \(Self.feet(data.originCrossingAltitudeFeet)) FT MSL", symbol: "circle.fill")
-                ForEach(data.references.filter { $0.endpointName == data.origin }) { reference in
-                    referenceAnnotation(reference)
-                }
-            }
-            .position(point(min(data.originNormalizedX + 0.10, 0.82), max(data.originNormalizedY - 0.10, 0.24), in: size))
-            Image(systemName: "flag.checkered").foregroundStyle(.blue)
-                .position(point(data.destinationNormalizedX, data.destinationNormalizedY, in: size))
-            VStack(alignment: .leading, spacing: 7) {
-                waypoint(title: data.destination, subtitle: "ARRIVAL · \(Self.feet(data.destinationCrossingAltitudeFeet)) FT MSL", symbol: "flag.checkered")
-                ForEach(data.references.filter { $0.endpointName == data.destination }) { reference in
-                    referenceAnnotation(reference)
-                }
-            }
-            .position(point(max(data.destinationNormalizedX - 0.10, 0.22), max(data.destinationNormalizedY - 0.10, 0.18), in: size))
-        }
-    }
-
-    private func waypoint(title: String, subtitle: String, symbol: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Image(systemName: symbol).font(.title3.weight(.semibold)).foregroundStyle(.blue)
-            Text(title).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
-            Text(subtitle).font(.caption2.weight(.bold)).tracking(0.6).foregroundStyle(.secondary)
-        }
-        .padding(8)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 9))
-        .accessibilityElement(children: .combine)
-    }
-
-    private func referenceAnnotation(_ reference: CockpitPresentationData.PlannedReference) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("PLANNED REFERENCE · \(reference.source.rawValue.uppercased())")
-                .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-            Text("\(reference.station) · \(Self.frequency(reference.frequencyMHz)) MHz · \(Self.degrees(reference.magneticRadialFromDegrees)) FROM")
-                .font(.caption.weight(.semibold)).lineLimit(1)
-            Text("\(Self.decimal(reference.slantRangeNauticalMiles)) NM DME")
-                .font(.caption).monospacedDigit()
-        }
-        .padding(8)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-        .accessibilityElement(children: .combine)
-    }
-
-    private func eventAnnotations(in size: CGSize) -> some View {
-        ZStack {
-            ForEach(data.routeEvents) { event in
-                eventAnnotation(event)
-                    .position(point(event.normalizedX, event.normalizedY, in: size))
-            }
-        }
-    }
-
-    private func eventAnnotation(_ event: CockpitPresentationData.RouteEvent) -> some View {
-        ZStack {
-            Button {
-                guard displayMode == .symbolsOnly else { return }
-                selectedEventID = selectedEventID == event.id ? nil : event.id
-            } label: {
-                Image(systemName: symbol(for: event.kinds))
-                    .font(.headline.weight(.semibold))
-                    .frame(width: 44, height: 44)
-                    .foregroundStyle(.white)
-                    .background(Color.indigo, in: Circle())
-                    .overlay { Circle().strokeBorder(.white.opacity(0.9), lineWidth: 2) }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(event.title), \(event.detail), planned at \(Self.duration(event.timeFromLegStartSeconds)) from leg start")
-
-            if displayMode == .labels {
-                eventLabel(event, expanded: false).offset(calloutOffset(for: event))
-            } else if selectedEventID == event.id {
-                eventLabel(event, expanded: true).offset(calloutOffset(for: event)).zIndex(2)
-            }
-        }
-    }
-
-    private func eventLabel(_ event: CockpitPresentationData.RouteEvent, expanded: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(event.title.uppercased()).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-            Text(event.detail).font(.caption.weight(.semibold)).monospacedDigit()
-            Text("+\(Self.duration(event.timeFromLegStartSeconds)) planned")
-                .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
-            if expanded { Text("Passive note · no action applied").font(.caption2).foregroundStyle(.secondary) }
-        }
-        .lineLimit(expanded ? 3 : 1)
-        .padding(.horizontal, 8).padding(.vertical, 6)
-        .background(expanded ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(.regularMaterial), in: RoundedRectangle(cornerRadius: 7))
-        .accessibilityElement(children: .combine)
-    }
-
-    private var schematicNotice: some View {
-        Text("SCHEMATIC · SAVED POSITIONS · NOT FOR NAVIGATION")
-            .font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
-            .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(.ultraThinMaterial, in: Capsule())
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .padding(.leading, 20).padding(.bottom, 14)
     }
 
     private var legHeader: some View {
@@ -290,13 +166,9 @@ struct CockpitView: View {
 
     private var mapControls: some View {
         VStack(spacing: 8) {
-            disabledMapControl(icon: "slider.horizontal.3", label: "Heading correction unavailable")
-            disabledMapControl(icon: "point.topleft.down.to.point.bottomright.curvepath", label: "Route editing unavailable")
-            Button { showsDisplayOptions = true } label: {
-                Image(systemName: "map.circle").font(.headline).frame(width: 44, height: 44)
-                    .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
-            }
-            .buttonStyle(.plain).accessibilityLabel("Map Display Options")
+            mapFocusButton(icon: "location.north.line.fill", label: "Focus Leg", mode: .leg)
+            mapFocusButton(icon: "scope", label: "Focus Waypoint", mode: .waypoint)
+            mapFocusButton(icon: "map", label: "Route Overview", mode: .overview)
             Button(action: onShowPlanInspection) {
                 Image(systemName: "list.bullet.clipboard").font(.headline).frame(width: 44, height: 44)
                     .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
@@ -306,6 +178,22 @@ struct CockpitView: View {
         .padding(8).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         .padding(.top, 96).padding(.trailing, 20)
+    }
+
+    private func mapFocusButton(
+        icon: String,
+        label: String,
+        mode: AviationMapFocusMode
+    ) -> some View {
+        Button {
+            isMapCameraUserControlled = false
+            mapFocusRequest = AviationMapFocusRequest(mode: mode)
+        } label: {
+            Image(systemName: icon).font(.headline).frame(width: 44, height: 44)
+                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private func disabledMapControl(icon: String, label: String) -> some View {
@@ -449,49 +337,8 @@ struct CockpitView: View {
         }
     }
 
-    private var displayOptionsSheet: some View {
-        NavigationStack {
-            Form {
-                Section("Map annotations") {
-                    Picker("Display mode", selection: $displayMode) {
-                        ForEach(CockpitMapDisplayMode.allCases) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    Text("Symbols Only reveals a passive event callout when its symbol is tapped.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("Map Display Options")
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showsDisplayOptions = false } } }
-        }
-        .presentationDetents([.medium])
-    }
-
-    private func symbol(for kinds: [ExecutionAnnotationKind]) -> String {
-        if kinds.count > 1 { return "arrow.up.and.down.and.arrow.left.and.right" }
-        switch kinds.first {
-        case .identificationPoint: return "diamond"
-        case .altitudeChange: return "arrow.up.to.line.compact"
-        case .radioFrequencyChange: return "antenna.radiowaves.left.and.right"
-        case nil: return "diamond"
-        }
-    }
-
-    private func calloutOffset(for event: CockpitPresentationData.RouteEvent) -> CGSize {
-        if event.normalizedX > 0.68 && event.normalizedY < 0.40 {
-            return CGSize(width: -145, height: 95)
-        }
-        return event.normalizedY < 0.5
-            ? CGSize(width: 45, height: 85)
-            : CGSize(width: -45, height: -90)
-    }
-
-    private func point(_ x: Double, _ y: Double, in size: CGSize) -> CGPoint { CGPoint(x: size.width * x, y: size.height * y) }
-    private static func degrees(_ value: Double) -> String { "\(value.formatted(.number.precision(.fractionLength(0))))° M" }
     private static func feet(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
-    private static func decimal(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(1))) }
     private static func frequency(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2...3))) }
-    private static func duration(_ seconds: Int) -> String { String(format: "%02d:%02d", seconds / 60, seconds % 60) }
     nonisolated private static func phaseAbbreviation(_ phase: FlightPhase) -> String {
         switch phase { case .departure: "DEP"; case .enRoute: "ENR"; case .arrival: "ARR" }
     }

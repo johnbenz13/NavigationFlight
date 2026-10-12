@@ -55,12 +55,18 @@ struct CockpitFeatureView: View {
                mode: state.mode
            ) {
             if isCockpitPresented {
-                CockpitView(
-                    data: presentation,
-                    session: session,
-                    onStartLeg: { state.startLeg() },
-                    onShowPlanInspection: { isCockpitPresented = false }
-                )
+                if let mapPresentation = try? AviationMapPresentationFactory().makePresentation(
+                    flight: flight,
+                    session: session
+                ) {
+                    CockpitView(
+                        data: presentation,
+                        mapPresentation: mapPresentation,
+                        session: session,
+                        onStartLeg: { state.startLeg() },
+                        onShowPlanInspection: { isCockpitPresented = false }
+                    )
+                }
             } else {
                 PlanInspectionView(
                     data: presentation,

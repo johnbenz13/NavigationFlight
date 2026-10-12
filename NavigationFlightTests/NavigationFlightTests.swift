@@ -446,6 +446,72 @@ struct NavigationFlightTests {
         #expect(presentation.routeEvents.isEmpty)
     }
 
+    @Test func mapPresentationUsesDomainRouteOrderAndSessionActiveLeg() throws {
+        let flight = try twoLegFlight()
+        let originalFlight = flight
+        var session = FlightSession(
+            flightID: flight.id,
+            activeLegIndex: 1,
+            executionMode: .wind
+        )
+
+        let presentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+
+        #expect(presentation.waypoints.map(\.name) == flight.waypoints.map(\.name))
+        #expect(presentation.legs.map(\.id) == flight.legs.map(\.id))
+        #expect(presentation.activeLegIndex == session.activeLegIndex)
+        #expect(presentation.activeLeg?.id == flight.legs[1].id)
+        #expect(presentation.nextLegPreview == nil)
+        #expect(presentation.readyFocusTarget == presentation.activeLeg?.from)
+        #expect(presentation.activeFocusTarget == presentation.activeLeg?.to)
+        #expect(flight == originalFlight)
+
+        session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        let activePresentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+        #expect(activePresentation == presentation)
+        #expect(flight == originalFlight)
+    }
+
+    @Test func mapPresentationSelectsBeginningOfFollowingLeg() throws {
+        let flight = try twoLegFlight()
+        let session = FlightSession(
+            flightID: flight.id,
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+
+        let presentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+
+        #expect(presentation.activeLeg?.id == flight.legs[0].id)
+        #expect(presentation.nextLegPreview?.id == flight.legs[1].id)
+        #expect(presentation.nextLegPreview?.from == presentation.activeLeg?.to)
+        #expect(presentation.readyFocusTarget?.latitude == flight.legs[0].departure.position.latitudeDegrees)
+        #expect(presentation.activeFocusTarget?.longitude == flight.legs[0].arrival.position.longitudeDegrees)
+    }
+
+    @Test(arguments: [
+        (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: 1, longitude: 0), 0.0),
+        (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: 0, longitude: 1), 90.0),
+        (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: -1, longitude: 0), 180.0),
+        (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: 0, longitude: -1), 270.0)
+    ])
+    func mapBearingIsStable(
+        from: AviationMapCoordinate,
+        to: AviationMapCoordinate,
+        expected: Double
+    ) {
+        #expect(abs(AviationMapGeometry.bearing(from: from, to: to) - expected) < 0.000_001)
+    }
+
     private func representativeData() throws -> Data {
         let bundle = Bundle(for: FixtureLocator.self)
         let nestedURL = bundle.url(

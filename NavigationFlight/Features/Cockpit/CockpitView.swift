@@ -43,6 +43,7 @@ private extension CockpitPresentationData {
 private extension FlightSession {
     static let preview = FlightSession(
         flightID: UUID(),
+        legIDs: [UUID(), UUID()],
         activeLegIndex: 1,
         executionMode: .wind
     )
@@ -74,19 +75,19 @@ private extension AviationMapPresentation {
 }
 
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onWaypointReached: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onWaypointReached: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, session: .preview, onStartLeg: {}, onWaypointReached: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, session: .preview, onStartLeg: {}, onWaypointReached: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
@@ -96,6 +97,7 @@ struct CockpitView: View {
     let mapPresentation: AviationMapPresentation
     let session: FlightSession
     let onStartLeg: () -> Void
+    let onWaypointReached: () -> Void
     let onShowPlanInspection: () -> Void
     @State private var showsChartsUnavailable = false
     @State private var mapFocusRequest = AviationMapFocusRequest(mode: .leg)
@@ -126,6 +128,9 @@ struct CockpitView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Chart presentation is a later delivery. The imported plan remains unchanged.")
+        }
+        .onChange(of: session.activeLegIndex) { _, _ in
+            etaCalloutOffset = AviationMapVisualStyle.default.defaultEtaCalloutOffset
         }
     }
 
@@ -261,7 +266,7 @@ struct CockpitView: View {
     private var timeMetric: some View {
         CockpitTimeMetric(
             plannedDurationSeconds: data.legDurationSeconds,
-            legStartedAt: session.legStartedAt
+            legStartedAt: session.legState == .active ? session.legStartedAt : nil
         )
     }
 
@@ -324,7 +329,8 @@ struct CockpitView: View {
 
     @ViewBuilder
     private var waypointReachedButton: some View {
-        if session.legState == .ready {
+        switch session.legState {
+        case .ready:
             Button(action: onStartLeg) {
                 Label("Start Leg", systemImage: "play.fill")
                     .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
@@ -332,16 +338,23 @@ struct CockpitView: View {
             .buttonStyle(.borderedProminent)
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
-        } else {
-            Button {} label: {
+        case .active:
+            Button {
+                etaCalloutOffset = AviationMapVisualStyle.default.defaultEtaCalloutOffset
+                onWaypointReached()
+            } label: {
                 Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
                     .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
             }
-            .buttonStyle(.plain).foregroundStyle(.secondary)
-            .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
-            .disabled(true)
-            .accessibilityHint("Waypoint progression is not implemented in this delivery")
+            .buttonStyle(.borderedProminent)
+            .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
             .accessibilityIdentifier("waypoint-reached")
+        case .completed:
+            Label("Navigation Complete", systemImage: "checkmark.circle.fill")
+                .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+                .foregroundStyle(.secondary)
+                .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityIdentifier("navigation-complete")
         }
     }
 

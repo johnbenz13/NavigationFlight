@@ -24,14 +24,22 @@ enum CockpitPlanError: Error, Equatable, Sendable, LocalizedError {
 }
 
 struct CockpitFeatureState: Equatable, Sendable {
+    let progressionPolicy: FlightSession.ProgressionPolicy
     private(set) var flight: NavigationFlight?
     private(set) var selectedLegIndex = 0
     private(set) var mode = NavigationMode.noWind
     private(set) var session: FlightSession?
 
-    var canSelectPreviousLeg: Bool { session?.legState == .ready && selectedLegIndex > 0 }
+    init(progressionPolicy: FlightSession.ProgressionPolicy = .automaticNextLeg) {
+        self.progressionPolicy = progressionPolicy
+    }
+
+    var canSelectPreviousLeg: Bool {
+        session?.legState == .ready && session?.legTimings.isEmpty == true && selectedLegIndex > 0
+    }
     var canSelectNextLeg: Bool {
         guard session?.legState == .ready,
+              session?.legTimings.isEmpty == true,
               case .eligible(let execution)? = flight?.execution else { return false }
         return selectedLegIndex + 1 < execution.legs.count
     }
@@ -49,22 +57,26 @@ struct CockpitFeatureState: Equatable, Sendable {
             mode = execution.defaultMode
             session = FlightSession(
                 flightID: candidate.id,
+                legIDs: candidate.legs.map(\.id),
                 activeLegIndex: selectedLegIndex,
-                executionMode: mode
+                executionMode: mode,
+                progressionPolicy: progressionPolicy
             )
         }
     }
 
     mutating func selectPreviousLeg() {
         guard canSelectPreviousLeg else { return }
-        selectedLegIndex -= 1
-        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
+        let candidate = selectedLegIndex - 1
+        guard (try? session?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        selectedLegIndex = candidate
     }
 
     mutating func selectNextLeg() {
         guard canSelectNextLeg else { return }
-        selectedLegIndex += 1
-        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
+        let candidate = selectedLegIndex + 1
+        guard (try? session?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        selectedLegIndex = candidate
     }
 
     mutating func selectMode(_ newMode: NavigationMode) {
@@ -72,11 +84,18 @@ struct CockpitFeatureState: Equatable, Sendable {
               let flight, case .eligible(let execution) = flight.execution else { return }
         if newMode == .wind && !execution.legs.allSatisfy({ $0.withWind != nil }) { return }
         mode = newMode
-        session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
+        try? session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
     }
 
-    mutating func startLeg(at timestamp: Date = .now) {
-        session?.startLeg(at: timestamp)
+    mutating func startLeg(at timestamp: Date = .now) throws {
+        try session?.startLeg(at: timestamp)
+    }
+
+    mutating func reachCurrentWaypoint(at timestamp: Date = .now) throws {
+        try session?.reachCurrentWaypoint(at: timestamp)
+        if let activeLegIndex = session?.activeLegIndex {
+            selectedLegIndex = activeLegIndex
+        }
     }
 
     mutating func cancelImport() {

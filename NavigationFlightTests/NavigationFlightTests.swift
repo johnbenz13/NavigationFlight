@@ -323,13 +323,16 @@ struct NavigationFlightTests {
 
     @Test func newFlightSessionIsReadyForExpectedLegAndMode() {
         let flightID = UUID()
+        let legIDs = [UUID(), UUID(), UUID()]
         let session = FlightSession(
             flightID: flightID,
+            legIDs: legIDs,
             activeLegIndex: 2,
             executionMode: .wind
         )
 
         #expect(session.flightID == flightID)
+        #expect(session.legIDs == legIDs)
         #expect(session.activeLegIndex == 2)
         #expect(session.executionMode == .wind)
         #expect(session.legState == .ready)
@@ -340,29 +343,30 @@ struct NavigationFlightTests {
         let startedAt = Date(timeIntervalSince1970: 1_000)
         var session = FlightSession(
             flightID: UUID(),
+            legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
 
-        let didStart = session.startLeg(at: startedAt)
-        #expect(didStart)
+        try session.startLeg(at: startedAt)
         #expect(session.legState == .active)
         #expect(session.legStartedAt == startedAt)
         #expect(try #require(session.elapsedTime(at: startedAt.addingTimeInterval(37))) == 37)
     }
 
-    @Test func startingActiveLegDoesNotReplaceOriginalTimestamp() {
+    @Test func startingActiveLegDoesNotReplaceOriginalTimestamp() throws {
         let originalStart = Date(timeIntervalSince1970: 1_000)
         var session = FlightSession(
             flightID: UUID(),
+            legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .wind
         )
 
-        let didStart = session.startLeg(at: originalStart)
-        let didRestart = session.startLeg(at: originalStart.addingTimeInterval(20))
-        #expect(didStart)
-        #expect(!didRestart)
+        try session.startLeg(at: originalStart)
+        #expect(throws: FlightSession.TransitionError.legAlreadyStarted(0)) {
+            try session.startLeg(at: originalStart.addingTimeInterval(20))
+        }
         #expect(session.legStartedAt == originalStart)
     }
 
@@ -374,15 +378,143 @@ struct NavigationFlightTests {
         let originalExecution = try eligibleExecution(flight)
         var session = FlightSession(
             flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: originalExecution.defaultMode
         )
 
-        session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
 
         #expect(flight == originalFlight)
         #expect(try eligibleExecution(flight) == originalExecution)
         #expect(session.executionMode == originalExecution.defaultMode)
+    }
+
+    @Test func automaticWaypointProgressionUsesOneAtomicTimestamp() throws {
+        let legIDs = [UUID(), UUID()]
+        let startedAt = Date(timeIntervalSince1970: 36_000)
+        let reachedAt = Date(timeIntervalSince1970: 36_314)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: legIDs,
+            activeLegIndex: 0,
+            executionMode: .noWind,
+            progressionPolicy: .automaticNextLeg
+        )
+
+        try session.startLeg(at: startedAt)
+        try session.reachCurrentWaypoint(at: reachedAt)
+
+        #expect(session.activeLegIndex == 1)
+        #expect(session.legState == .active)
+        #expect(session.legTimings[0].legID == legIDs[0])
+        #expect(session.legTimings[0].reachedAt == reachedAt)
+        #expect(session.legTimings[0].actualElapsedDuration == 314)
+        #expect(session.legTimings[1].startedAt == reachedAt)
+        #expect(session.legTimings[0].reachedAt == session.legTimings[1].startedAt)
+        #expect(session.legStartedAt == reachedAt)
+    }
+
+    @Test func manualWaypointProgressionWaitsForASecondStartTimestamp() throws {
+        let reachedAt = Date(timeIntervalSince1970: 36_314)
+        let secondStart = Date(timeIntervalSince1970: 36_400)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID(), UUID()],
+            activeLegIndex: 0,
+            executionMode: .wind,
+            progressionPolicy: .manualNextLeg
+        )
+
+        try session.startLeg(at: Date(timeIntervalSince1970: 36_000))
+        try session.reachCurrentWaypoint(at: reachedAt)
+
+        #expect(session.activeLegIndex == 1)
+        #expect(session.legState == .ready)
+        #expect(session.legStartedAt == nil)
+        #expect(session.legTimings.count == 1)
+
+        try session.startLeg(at: secondStart)
+        #expect(session.legState == .active)
+        #expect(session.legStartedAt == secondStart)
+    }
+
+    @Test func waypointCannotBeReachedWhileReady() {
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID()],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        #expect(throws: FlightSession.TransitionError.legNotActive) {
+            try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 100))
+        }
+        #expect(session.legTimings.isEmpty)
+    }
+
+    @Test func duplicateFinalWaypointDoesNotOverwriteRecordedTimestamp() throws {
+        let reachedAt = Date(timeIntervalSince1970: 200)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID()],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        try session.reachCurrentWaypoint(at: reachedAt)
+
+        #expect(throws: FlightSession.TransitionError.waypointAlreadyReached(0)) {
+            try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 300))
+        }
+        #expect(session.legTimings[0].reachedAt == reachedAt)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legState == .completed)
+    }
+
+    @Test func progressionDoesNotMutateImportedResolvedExecution() throws {
+        let flight = try twoLegFlight()
+        let originalFlight = flight
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 200))
+
+        #expect(flight == originalFlight)
+        #expect(session.activeLegIndex == 1)
+    }
+
+    @Test func cockpitFeatureStateAdvancesPresentationInManualMode() throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
+        try state.accept(flight)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 200))
+
+        let session = try #require(state.session)
+        let cockpit = try CockpitPresentationAdapter().makePresentation(
+            flight: flight,
+            legIndex: state.selectedLegIndex,
+            mode: state.mode
+        )
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+
+        #expect(state.selectedLegIndex == 1)
+        #expect(session.legState == .ready)
+        #expect(session.legStartedAt == nil)
+        #expect(cockpit.origin == flight.legs[1].departure.name)
+        #expect(cockpit.destination == flight.legs[1].arrival.name)
+        #expect(map.activeLeg?.id == flight.legs[1].id)
+        #expect(map.nextLegPreview == nil)
+        #expect(map.readyFocusTarget == map.activeLeg?.from)
     }
 
     @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
@@ -451,6 +583,7 @@ struct NavigationFlightTests {
         let originalFlight = flight
         var session = FlightSession(
             flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
             activeLegIndex: 1,
             executionMode: .wind
         )
@@ -472,7 +605,7 @@ struct NavigationFlightTests {
         #expect(presentation.minuteMarkers.isEmpty)
         #expect(flight == originalFlight)
 
-        session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
         let activePresentation = try AviationMapPresentationFactory().makePresentation(
             flight: flight,
             session: session
@@ -485,6 +618,7 @@ struct NavigationFlightTests {
         let flight = try twoLegFlight()
         let session = FlightSession(
             flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
@@ -554,7 +688,12 @@ struct NavigationFlightTests {
     @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrResolvedExecution() throws {
         let flight = try twoLegFlight()
         let originalFlight = flight
-        let session = FlightSession(flightID: flight.id, activeLegIndex: 0, executionMode: .wind)
+        let session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
         let presentation = try AviationMapPresentationFactory().makePresentation(
             flight: flight,
             session: session

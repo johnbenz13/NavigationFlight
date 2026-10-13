@@ -225,6 +225,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             mapView: MLNMapView
         ) {
             let becameActive = self.legState == .ready && legState == .active
+            let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
             self.presentation = presentation
@@ -242,8 +243,14 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 updateEndpointAnnotations(on: mapView)
             }
 
-            if becameActive {
-                focusLeg(on: mapView, animated: true)
+            if becameActive || (activeLegChanged && legState == .active) {
+                focusLeg(
+                    on: mapView,
+                    animated: !UIAccessibility.isReduceMotionEnabled,
+                    duration: activeLegChanged ? 1.0 : nil
+                )
+            } else if activeLegChanged && legState == .ready {
+                focusLeg(on: mapView, animated: !UIAccessibility.isReduceMotionEnabled)
             } else if lastFocusRequest.id != focusRequest.id {
                 switch focusRequest.mode {
                 case .leg:
@@ -409,7 +416,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             )
         }
 
-        private func focusLeg(on mapView: MLNMapView, animated: Bool) {
+        private func focusLeg(
+            on mapView: MLNMapView,
+            animated: Bool,
+            duration: TimeInterval? = nil
+        ) {
             guard let leg = presentation.activeLeg else { return }
             isCameraUserControlled.wrappedValue = false
             if legState == .ready {
@@ -433,7 +444,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     on: mapView,
                     direction: AviationMapGeometry.bearing(from: leg.from, to: leg.to),
                     padding: UIEdgeInsets(top: 180, left: 75, bottom: 110, right: 120),
-                    animated: animated
+                    animated: animated,
+                    duration: duration
                 )
             }
         }
@@ -516,7 +528,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             on mapView: MLNMapView,
             direction: CLLocationDirection,
             padding: UIEdgeInsets,
-            animated: Bool
+            animated: Bool,
+            duration: TimeInterval? = nil
         ) {
             var mapCoordinates = coordinates.map(coordinate)
             let shape = MLNPolylineFeature(
@@ -528,7 +541,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 direction: direction,
                 edgePadding: padding
             )
-            mapView.setCamera(camera, animated: animated)
+            if animated, let duration {
+                mapView.setCamera(
+                    camera,
+                    withDuration: duration,
+                    animationTimingFunction: CAMediaTimingFunction(name: .easeInEaseOut)
+                )
+            } else {
+                mapView.setCamera(camera, animated: animated)
+            }
         }
 
         private func updateEndpointAnnotations(on mapView: MLNMapView) {

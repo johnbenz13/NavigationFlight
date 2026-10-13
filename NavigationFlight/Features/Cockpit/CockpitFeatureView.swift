@@ -14,7 +14,15 @@ struct CockpitFeatureView: View {
     private let adapter = CockpitPresentationAdapter()
 
     init() {
-        var initialState = CockpitFeatureState()
+        let progressionPolicy: FlightSession.ProgressionPolicy
+#if DEBUG
+        progressionPolicy = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] == "manual"
+            ? .manualNextLeg
+            : .automaticNextLeg
+#else
+        progressionPolicy = .automaticNextLeg
+#endif
+        var initialState = CockpitFeatureState(progressionPolicy: progressionPolicy)
 #if DEBUG
         if let encoded = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
            let data = Data(base64Encoded: encoded),
@@ -63,7 +71,8 @@ struct CockpitFeatureView: View {
                         data: presentation,
                         mapPresentation: mapPresentation,
                         session: session,
-                        onStartLeg: { state.startLeg() },
+                        onStartLeg: { try? state.startLeg(at: .now) },
+                        onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
                 }

@@ -526,10 +526,46 @@ struct NavigationFlightTests {
         )
 
         #expect(markers.map(\.minute) == [1, 2, 3, 4, 5, 6])
+        #expect(markers.map(\.level) == [.odd, .even, .odd, .even, .odd, .even])
         for marker in markers {
             #expect(abs(marker.fraction - Double(marker.minute * 60) / 382) < 0.000_001)
         }
         #expect(markers.filter(\.showsLabel).map(\.minute) == [2, 4, 6])
+    }
+
+    @Test func mapVisualStyleMakesEvenMinuteTicksLonger() {
+        let style = AviationMapVisualStyle.default
+
+        #expect(style.minuteTickLengthFraction(for: .even) > style.minuteTickLengthFraction(for: .odd))
+        #expect(style.evenMinuteTickLengthFraction / style.oddMinuteTickLengthFraction >= 1.6)
+        #expect(style.evenMinuteTickLengthFraction / style.oddMinuteTickLengthFraction <= 2)
+    }
+
+    @Test func mapVisualStyleUsesTranslucentSurfacesAndOpaqueDetails() {
+        let style = AviationMapVisualStyle.default
+
+        #expect(abs(style.destinationWaypointFillOpacity - 0.20) < 0.001)
+        #expect(style.destinationWaypointStrokeOpacity == 1)
+        #expect(abs(style.etaCalloutBackgroundOpacity - 0.20) < 0.001)
+        #expect(style.etaCalloutBorderOpacity == 1)
+        #expect(style.etaCalloutTextOpacity == 1)
+    }
+
+    @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrResolvedExecution() throws {
+        let flight = try twoLegFlight()
+        let originalFlight = flight
+        let session = FlightSession(flightID: flight.id, activeLegIndex: 0, executionMode: .wind)
+        let presentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+        let destination = try #require(presentation.activeFocusTarget)
+        let initial = AviationMapVisualStyle.default.defaultEtaCalloutOffset
+        let moved = initial.translated(x: 42, y: -18)
+
+        #expect(moved == AviationMapCalloutOffset(x: initial.x + 42, y: initial.y - 18))
+        #expect(presentation.activeFocusTarget == destination)
+        #expect(flight == originalFlight)
     }
 
     @Test func mapMinuteMarkersOmitDurationsShorterThanOneMinute() {

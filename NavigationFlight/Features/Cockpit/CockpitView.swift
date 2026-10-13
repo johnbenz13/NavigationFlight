@@ -101,6 +101,7 @@ struct CockpitView: View {
     @State private var mapFocusRequest = AviationMapFocusRequest(mode: .leg)
     @State private var preservedMapCamera: AviationMapCameraState?
     @State private var isMapCameraUserControlled = false
+    @State private var etaCalloutOffset = AviationMapVisualStyle.default.defaultEtaCalloutOffset
 
     var body: some View {
         GeometryReader { geometry in
@@ -134,6 +135,7 @@ struct CockpitView: View {
                 presentation: mapPresentation,
                 legState: session.legState,
                 focusRequest: mapFocusRequest,
+                etaCalloutOffset: $etaCalloutOffset,
                 preservedCamera: $preservedMapCamera,
                 isCameraUserControlled: $isMapCameraUserControlled
             )

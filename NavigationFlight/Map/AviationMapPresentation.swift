@@ -45,7 +45,9 @@ struct AviationMapMinuteMarker: Equatable, Sendable {
     let minute: Int
     let fraction: Double
     let coordinate: AviationMapCoordinate
-    let showsLabel: Bool
+    let level: AviationMapMinuteMarkLevel
+
+    var showsLabel: Bool { level == .even }
 }
 
 struct AviationMapPresentation: Equatable, Sendable {
@@ -202,7 +204,7 @@ enum AviationMapSymbology {
                 minute: minute,
                 fraction: fraction,
                 coordinate: AviationMapGeometry.interpolate(from: from, to: to, fraction: fraction),
-                showsLabel: minute.isMultiple(of: minuteLabelCadence)
+                level: minute.isMultiple(of: minuteLabelCadence) ? .even : .odd
             )
         }
     }

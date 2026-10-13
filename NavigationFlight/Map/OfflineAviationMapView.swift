@@ -40,6 +40,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let legState: FlightSession.LegState
     let focusRequest: AviationMapFocusRequest
     let resources: any AviationMapResourceProviding
+    let visualStyle: AviationMapVisualStyle
+    @Binding var etaCalloutOffset: AviationMapCalloutOffset
     @Binding var preservedCamera: AviationMapCameraState?
     @Binding var isCameraUserControlled: Bool
 
@@ -48,6 +50,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
         legState: FlightSession.LegState,
         focusRequest: AviationMapFocusRequest,
         resources: any AviationMapResourceProviding = BundledAviationMapResourceProvider(),
+        visualStyle: AviationMapVisualStyle = .default,
+        etaCalloutOffset: Binding<AviationMapCalloutOffset>,
         preservedCamera: Binding<AviationMapCameraState?>,
         isCameraUserControlled: Binding<Bool>
     ) {
@@ -55,6 +59,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.legState = legState
         self.focusRequest = focusRequest
         self.resources = resources
+        self.visualStyle = visualStyle
+        _etaCalloutOffset = etaCalloutOffset
         _preservedCamera = preservedCamera
         _isCameraUserControlled = isCameraUserControlled
     }
@@ -65,6 +71,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             legState: legState,
             focusRequest: focusRequest,
             chartURL: resources.chartURL(),
+            visualStyle: visualStyle,
+            etaCalloutOffset: $etaCalloutOffset,
             initialCamera: preservedCamera,
             preservedCamera: $preservedCamera,
             isCameraUserControlled: $isCameraUserControlled
@@ -110,17 +118,22 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var legState: FlightSession.LegState
         private var lastFocusRequest: AviationMapFocusRequest
         private let chartURL: URL?
+        private let visualStyle: AviationMapVisualStyle
+        private let etaCalloutOffset: Binding<AviationMapCalloutOffset>
         private let initialCamera: AviationMapCameraState?
         private let preservedCamera: Binding<AviationMapCameraState?>
         private let isCameraUserControlled: Binding<Bool>
         private var styleIsReady = false
         private var endpointAnnotations: [MLNPointAnnotation] = []
+        private weak var etaCalloutView: DestinationCalloutAnnotationView?
 
         init(
             presentation: AviationMapPresentation,
             legState: FlightSession.LegState,
             focusRequest: AviationMapFocusRequest,
             chartURL: URL?,
+            visualStyle: AviationMapVisualStyle,
+            etaCalloutOffset: Binding<AviationMapCalloutOffset>,
             initialCamera: AviationMapCameraState?,
             preservedCamera: Binding<AviationMapCameraState?>,
             isCameraUserControlled: Binding<Bool>
@@ -129,6 +142,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.legState = legState
             self.lastFocusRequest = focusRequest
             self.chartURL = chartURL
+            self.visualStyle = visualStyle
+            self.etaCalloutOffset = etaCalloutOffset
             self.initialCamera = initialCamera
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
@@ -167,15 +182,38 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 zoomLevel: mapView.zoomLevel,
                 direction: mapView.direction
             )
+            constrainEtaCallout(on: mapView)
         }
 
         func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
             if let annotation = annotation as? EndpointAnnotation {
                 let identifier = "endpoint-\(annotation.identifier.uuidString)"
-                return EndpointAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                return EndpointAnnotationView(
+                    annotation: annotation,
+                    reuseIdentifier: identifier,
+                    visualStyle: visualStyle
+                )
+            }
+            if let annotation = annotation as? DestinationCalloutAnnotation {
+                let callout = DestinationCalloutAnnotationView(
+                    annotation: annotation,
+                    visualStyle: visualStyle,
+                    offset: etaCalloutOffset.wrappedValue
+                ) { [weak self, weak mapView] proposedOffset, size in
+                    guard let self, let mapView else { return proposedOffset }
+                    let constrained = self.constrainedEtaCalloutOffset(
+                        proposedOffset,
+                        calloutSize: size,
+                        on: mapView
+                    )
+                    self.etaCalloutOffset.wrappedValue = constrained
+                    return constrained
+                }
+                etaCalloutView = callout
+                return callout
             }
             if let annotation = annotation as? MinuteLabelAnnotation {
-                return MinuteLabelAnnotationView(annotation: annotation)
+                return MinuteLabelAnnotationView(annotation: annotation, visualStyle: visualStyle)
             }
             return nil
         }
@@ -250,8 +288,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
             let active = MLNLineStyleLayer(identifier: Identifier.activeLayer, source: source)
             active.predicate = NSPredicate(format: "legIndex == %d", presentation.activeLegIndex)
-            active.lineColor = NSExpression(forConstantValue: UIColor.systemCyan)
-            active.lineWidth = NSExpression(forConstantValue: 6)
+            active.lineColor = NSExpression(forConstantValue: visualStyle.activeLegColor)
+            active.lineWidth = NSExpression(forConstantValue: visualStyle.activeLegWidth)
             active.lineJoin = NSExpression(forConstantValue: "round")
             active.lineCap = NSExpression(forConstantValue: "round")
             style.addLayer(active)
@@ -295,14 +333,18 @@ struct OfflineAviationMapView: UIViewRepresentable {
             style.addSource(source)
 
             let casing = MLNLineStyleLayer(identifier: Identifier.minuteMarkCasingLayer, source: source)
-            casing.lineColor = NSExpression(forConstantValue: UIColor.white.withAlphaComponent(0.9))
-            casing.lineWidth = NSExpression(forConstantValue: 5)
+            casing.lineColor = NSExpression(
+                forConstantValue: visualStyle.minuteTickCasingColor.withAlphaComponent(
+                    visualStyle.minuteTickCasingOpacity
+                )
+            )
+            casing.lineWidth = NSExpression(forConstantValue: visualStyle.minuteTickCasingWidth)
             casing.lineCap = NSExpression(forConstantValue: "round")
             style.addLayer(casing)
 
             let marks = MLNLineStyleLayer(identifier: Identifier.minuteMarkLayer, source: source)
-            marks.lineColor = NSExpression(forConstantValue: UIColor.systemCyan)
-            marks.lineWidth = NSExpression(forConstantValue: 2.5)
+            marks.lineColor = NSExpression(forConstantValue: visualStyle.minuteTickColor)
+            marks.lineWidth = NSExpression(forConstantValue: visualStyle.minuteTickWidth)
             marks.lineCap = NSExpression(forConstantValue: "round")
             style.addLayer(marks)
         }
@@ -345,7 +387,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 return MLNShapeCollectionFeature(shapes: [])
             }
             return MLNShapeCollectionFeature(shapes: presentation.minuteMarkers.map { marker in
-                let end = minuteMarkEnd(from: marker.coordinate, on: leg, emphasized: marker.showsLabel)
+                let end = minuteMarkEnd(from: marker.coordinate, on: leg, level: marker.level)
                 return lineFeature(from: marker.coordinate, to: end, attributes: [:])
             })
         }
@@ -353,14 +395,14 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private func minuteMarkEnd(
             from coordinate: AviationMapCoordinate,
             on leg: AviationMapLeg,
-            emphasized: Bool
+            level: AviationMapMinuteMarkLevel
         ) -> AviationMapCoordinate {
             let latitudeRadians = coordinate.latitude * .pi / 180
             let longitudeScale = max(cos(latitudeRadians), 0.2)
             let east = (leg.to.longitude - leg.from.longitude) * longitudeScale
             let north = leg.to.latitude - leg.from.latitude
             let magnitude = max(hypot(east, north), .leastNonzeroMagnitude)
-            let length = magnitude * (emphasized ? 0.025 : 0.018)
+            let length = magnitude * visualStyle.minuteTickLengthFraction(for: level)
             return AviationMapCoordinate(
                 latitude: coordinate.latitude - (east / magnitude) * length,
                 longitude: coordinate.longitude + (north / magnitude) * length / longitudeScale
@@ -499,14 +541,56 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 return EndpointAnnotation(
                     waypoint: waypoint,
                     reference: reference,
-                    plannedDurationText: waypoint.role == .to ? presentation.plannedDurationText : nil,
                     isActive: legState == .active
+                )
+            }
+            if let destination = presentation.waypoints.first(where: { $0.role == .to }) {
+                let reference = presentation.endpointReferences.first { $0.waypointID == destination.id }
+                endpointAnnotations.append(
+                    DestinationCalloutAnnotation(
+                        waypoint: destination,
+                        reference: reference,
+                        plannedDurationText: presentation.plannedDurationText
+                    )
                 )
             }
             endpointAnnotations.append(contentsOf: presentation.minuteMarkers.compactMap { marker in
                 marker.showsLabel ? MinuteLabelAnnotation(marker: marker) : nil
             })
             mapView.addAnnotations(endpointAnnotations)
+        }
+
+        private func constrainEtaCallout(on mapView: MLNMapView) {
+            guard let etaCalloutView else { return }
+            let constrained = constrainedEtaCalloutOffset(
+                etaCalloutOffset.wrappedValue,
+                calloutSize: etaCalloutView.bounds.size,
+                on: mapView
+            )
+            etaCalloutOffset.wrappedValue = constrained
+            etaCalloutView.apply(offset: constrained)
+        }
+
+        private func constrainedEtaCalloutOffset(
+            _ proposed: AviationMapCalloutOffset,
+            calloutSize: CGSize,
+            on mapView: MLNMapView
+        ) -> AviationMapCalloutOffset {
+            guard let destination = presentation.activeFocusTarget else { return proposed }
+            let anchor = mapView.convert(coordinate(destination), toPointTo: mapView)
+            let halfWidth = calloutSize.width / 2
+            let halfHeight = calloutSize.height / 2
+            let usableBounds = mapView.bounds.inset(
+                by: UIEdgeInsets(top: 125, left: 12, bottom: 12, right: 82)
+            )
+            let minimumX = usableBounds.minX + halfWidth - anchor.x
+            let maximumX = usableBounds.maxX - halfWidth - anchor.x
+            let minimumY = usableBounds.minY + halfHeight - anchor.y
+            let maximumY = usableBounds.maxY - halfHeight - anchor.y
+            return AviationMapCalloutOffset(
+                x: min(max(proposed.x, minimumX), maximumX),
+                y: min(max(proposed.y, minimumY), maximumY)
+            )
         }
 
         private func restore(_ camera: AviationMapCameraState, on mapView: MLNMapView) {
@@ -539,20 +623,17 @@ private final class EndpointAnnotation: MLNPointAnnotation {
     let identifier: UUID
     let role: AviationMapWaypoint.Role
     let waypointName: String
-    let plannedDurationText: String?
     let referenceText: String?
     let isActive: Bool
 
     init(
         waypoint: AviationMapWaypoint,
         reference: AviationMapVORDMEReference?,
-        plannedDurationText: String?,
         isActive: Bool
     ) {
         identifier = waypoint.id
         role = waypoint.role
         waypointName = waypoint.name
-        self.plannedDurationText = plannedDurationText
         self.isActive = isActive
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
@@ -573,10 +654,14 @@ private final class EndpointAnnotation: MLNPointAnnotation {
 }
 
 private final class EndpointAnnotationView: MLNAnnotationView {
-    init(annotation: EndpointAnnotation, reuseIdentifier: String) {
+    init(
+        annotation: EndpointAnnotation,
+        reuseIdentifier: String,
+        visualStyle: AviationMapVisualStyle
+    ) {
         super.init(reuseIdentifier: reuseIdentifier)
         if annotation.role == .to {
-            configureDestination(annotation)
+            configureDestination(annotation, visualStyle: visualStyle)
         } else {
             configureDeparture(annotation)
         }
@@ -605,31 +690,15 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         centerOffset = CGVector(dx: bounds.midX - 13, dy: 0)
     }
 
-    private func configureDestination(_ annotation: EndpointAnnotation) {
-        let calloutWidth: CGFloat = 146
-        let calloutHeight: CGFloat = annotation.referenceText == nil ? 55 : 70
-        let size = CGSize(width: 188, height: calloutHeight + 42)
-        frame = CGRect(origin: .zero, size: size)
-
-        let callout = DestinationCalloutView(annotation: annotation)
-        callout.frame = CGRect(x: 0, y: 0, width: calloutWidth, height: calloutHeight)
-        addSubview(callout)
-
-        let circleCenter = CGPoint(x: 168, y: calloutHeight + 20)
-        let leader = CAShapeLayer()
-        let path = UIBezierPath()
-        path.move(to: CGPoint(x: calloutWidth - 1, y: calloutHeight * 0.55))
-        path.addLine(to: CGPoint(x: circleCenter.x - 19, y: circleCenter.y - 8))
-        leader.path = path.cgPath
-        leader.strokeColor = UIColor.label.withAlphaComponent(0.85).cgColor
-        leader.lineWidth = 1.5
-        leader.fillColor = UIColor.clear.cgColor
-        layer.addSublayer(leader)
-
-        let symbol = WaypointSymbolView(destination: true)
-        symbol.frame = CGRect(x: circleCenter.x - 19, y: circleCenter.y - 19, width: 38, height: 38)
+    private func configureDestination(
+        _ annotation: EndpointAnnotation,
+        visualStyle: AviationMapVisualStyle
+    ) {
+        let diameter = (visualStyle.destinationWaypointRadius + 2) * 2
+        frame = CGRect(origin: .zero, size: CGSize(width: diameter, height: diameter))
+        let symbol = WaypointSymbolView(destination: true, visualStyle: visualStyle)
+        symbol.frame = bounds
         addSubview(symbol)
-        centerOffset = CGVector(dx: bounds.midX - circleCenter.x, dy: bounds.midY - circleCenter.y)
         alpha = annotation.isActive ? 1 : 0.78
     }
 
@@ -640,9 +709,11 @@ private final class EndpointAnnotationView: MLNAnnotationView {
 
 private final class WaypointSymbolView: UIView {
     private let destination: Bool
+    private let visualStyle: AviationMapVisualStyle
 
-    init(destination: Bool) {
+    init(destination: Bool, visualStyle: AviationMapVisualStyle = .default) {
         self.destination = destination
+        self.visualStyle = visualStyle
         super.init(frame: .zero)
         backgroundColor = .clear
         isOpaque = false
@@ -652,14 +723,19 @@ private final class WaypointSymbolView: UIView {
         let context = UIGraphicsGetCurrentContext()
         let inset: CGFloat = destination ? 2 : 3
         let circle = bounds.insetBy(dx: inset, dy: inset)
-        UIColor.systemBackground.withAlphaComponent(0.88).setFill()
+        let fillOpacity = destination ? visualStyle.destinationWaypointFillOpacity : 0.88
+        let fillColor = destination ? visualStyle.destinationWaypointFillColor : UIColor.systemBackground
+        fillColor.withAlphaComponent(fillOpacity).setFill()
         context?.fillEllipse(in: circle)
-        UIColor.label.setStroke()
-        context?.setLineWidth(destination ? 3 : 2)
+        let strokeColor = destination ? visualStyle.destinationWaypointStrokeColor : UIColor.label
+        let strokeOpacity = destination ? visualStyle.destinationWaypointStrokeOpacity : 1
+        strokeColor.withAlphaComponent(strokeOpacity).setStroke()
+        context?.setLineWidth(destination ? visualStyle.destinationWaypointStrokeWidth : 2)
         context?.strokeEllipse(in: circle)
 
+        guard !destination else { return }
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        let radius: CGFloat = destination ? 6 : 3.5
+        let radius: CGFloat = 3.5
         let triangle = UIBezierPath()
         triangle.move(to: CGPoint(x: center.x, y: center.y - radius))
         triangle.addLine(to: CGPoint(x: center.x + radius, y: center.y + radius * 0.8))
@@ -674,25 +750,151 @@ private final class WaypointSymbolView: UIView {
     }
 }
 
+private final class DestinationCalloutAnnotation: MLNPointAnnotation {
+    let waypointName: String
+    let plannedDurationText: String
+    let referenceText: String?
+
+    init(
+        waypoint: AviationMapWaypoint,
+        reference: AviationMapVORDMEReference?,
+        plannedDurationText: String
+    ) {
+        waypointName = waypoint.name
+        self.plannedDurationText = plannedDurationText
+        if let reference {
+            let radial = Int(reference.magneticRadialFromDegrees.rounded())
+            referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+        } else {
+            referenceText = nil
+        }
+        super.init()
+        coordinate = CLLocationCoordinate2D(
+            latitude: waypoint.coordinate.latitude,
+            longitude: waypoint.coordinate.longitude
+        )
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
+private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestureRecognizerDelegate {
+    typealias OffsetHandler = (AviationMapCalloutOffset, CGSize) -> AviationMapCalloutOffset
+
+    private var offset: AviationMapCalloutOffset
+    private let offsetHandler: OffsetHandler
+    private let leader = CAShapeLayer()
+
+    init(
+        annotation: DestinationCalloutAnnotation,
+        visualStyle: AviationMapVisualStyle,
+        offset: AviationMapCalloutOffset,
+        offsetHandler: @escaping OffsetHandler
+    ) {
+        self.offset = offset
+        self.offsetHandler = offsetHandler
+        super.init(reuseIdentifier: "destination-eta-callout")
+
+        let size = CGSize(width: 146, height: annotation.referenceText == nil ? 55 : 70)
+        frame = CGRect(origin: .zero, size: size)
+        clipsToBounds = false
+        layer.masksToBounds = false
+
+        leader.strokeColor = visualStyle.etaCalloutBorderColor
+            .withAlphaComponent(visualStyle.etaCalloutBorderOpacity).cgColor
+        leader.lineWidth = visualStyle.etaCalloutBorderWidth
+        leader.fillColor = UIColor.clear.cgColor
+        layer.insertSublayer(leader, at: 0)
+
+        let content = DestinationCalloutView(annotation: annotation, visualStyle: visualStyle)
+        content.frame = bounds
+        addSubview(content)
+
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        pan.delegate = self
+        addGestureRecognizer(pan)
+        isEnabled = true
+        apply(offset: offset)
+    }
+
+    func apply(offset: AviationMapCalloutOffset) {
+        let previous = self.offset
+        self.offset = offset
+        centerOffset = CGVector(dx: offset.x, dy: offset.y)
+        if superview != nil {
+            center = CGPoint(
+                x: center.x + offset.x - previous.x,
+                y: center.y + offset.y - previous.y
+            )
+        }
+        updateLeader()
+    }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let host = superview else { return }
+        let translation = gesture.translation(in: host)
+        let proposed = offset.translated(x: translation.x, y: translation.y)
+        apply(offset: offsetHandler(proposed, bounds.size))
+        gesture.setTranslation(.zero, in: host)
+    }
+
+    private func updateLeader() {
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        let anchor = CGPoint(x: center.x - offset.x, y: center.y - offset.y)
+        let delta = CGPoint(x: anchor.x - center.x, y: anchor.y - center.y)
+        let horizontalScale = delta.x == 0 ? .greatestFiniteMagnitude : bounds.width / 2 / abs(delta.x)
+        let verticalScale = delta.y == 0 ? .greatestFiniteMagnitude : bounds.height / 2 / abs(delta.y)
+        let scale = min(horizontalScale, verticalScale)
+        let edge = CGPoint(x: center.x + delta.x * scale, y: center.y + delta.y * scale)
+        let path = UIBezierPath()
+        path.move(to: edge)
+        path.addLine(to: anchor)
+        leader.path = path.cgPath
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        false
+    }
+
+    required init?(coder: NSCoder) {
+        return nil
+    }
+}
+
 private final class DestinationCalloutView: UIView {
-    init(annotation: EndpointAnnotation) {
+    init(annotation: DestinationCalloutAnnotation, visualStyle: AviationMapVisualStyle) {
         super.init(frame: .zero)
-        backgroundColor = UIColor.systemBackground.withAlphaComponent(0.92)
-        layer.borderColor = UIColor.label.withAlphaComponent(0.8).cgColor
-        layer.borderWidth = 1.5
+        backgroundColor = visualStyle.etaCalloutBackgroundColor.withAlphaComponent(
+            visualStyle.etaCalloutBackgroundOpacity
+        )
+        layer.borderColor = visualStyle.etaCalloutBorderColor.withAlphaComponent(
+            visualStyle.etaCalloutBorderOpacity
+        ).cgColor
+        layer.borderWidth = visualStyle.etaCalloutBorderWidth
         layer.cornerRadius = 3
 
         let name = UILabel()
         name.text = annotation.waypointName
         name.textAlignment = .center
-        name.font = .preferredFont(forTextStyle: .caption2)
-        name.textColor = .secondaryLabel
+        name.font = .systemFont(
+            ofSize: visualStyle.etaCalloutNameFontSize,
+            weight: visualStyle.etaCalloutNameFontWeight
+        )
+        name.textColor = UIColor.secondaryLabel.withAlphaComponent(visualStyle.etaCalloutTextOpacity)
 
         let duration = UILabel()
         duration.text = annotation.plannedDurationText
         duration.textAlignment = .center
-        duration.font = .monospacedDigitSystemFont(ofSize: 20, weight: .bold)
-        duration.textColor = .label
+        duration.font = .monospacedDigitSystemFont(
+            ofSize: visualStyle.etaCalloutDurationFontSize,
+            weight: visualStyle.etaCalloutDurationFontWeight
+        )
+        duration.textColor = UIColor.label.withAlphaComponent(visualStyle.etaCalloutTextOpacity)
 
         let reference = UILabel()
         reference.text = annotation.referenceText
@@ -744,17 +946,20 @@ private final class MinuteLabelAnnotation: MLNPointAnnotation {
 }
 
 private final class MinuteLabelAnnotationView: MLNAnnotationView {
-    init(annotation: MinuteLabelAnnotation) {
+    init(annotation: MinuteLabelAnnotation, visualStyle: AviationMapVisualStyle) {
         super.init(reuseIdentifier: "minute-\(annotation.minute)")
         let label = UILabel()
         label.text = String(annotation.minute)
         label.textAlignment = .center
-        label.font = .monospacedDigitSystemFont(ofSize: 11, weight: .semibold)
+        label.font = .monospacedDigitSystemFont(
+            ofSize: visualStyle.minuteLabelFontSize,
+            weight: visualStyle.minuteLabelFontWeight
+        )
         label.textColor = .label
         label.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.82)
-        label.layer.cornerRadius = 7
+        label.layer.cornerRadius = 9
         label.layer.masksToBounds = true
-        frame = CGRect(x: 0, y: 0, width: 18, height: 16)
+        frame = CGRect(x: 0, y: 0, width: 22, height: 20)
         label.frame = bounds
         addSubview(label)
         centerOffset = annotation.isNearDestination

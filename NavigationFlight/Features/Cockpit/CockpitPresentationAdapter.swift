@@ -109,40 +109,115 @@ struct PreviousLegSummary: Equatable, Sendable {
     let vorDme: VORDME?
 }
 
-struct StartOfLegChecklistPresentation: Equatable, Sendable {
+struct LegStartChecklistTemplate: Equatable, Sendable {
+    struct Section: Identifiable, Equatable, Sendable {
+        let id: String
+        let title: String?
+        let items: [Item]
+    }
+
+    struct Item: Identifiable, Equatable, Sendable {
+        enum Kind: String, Equatable, Sendable {
+            case timer
+            case direction
+            case altitude
+            case speedAndEngine
+            case reporting
+        }
+
+        var id: String { kind.rawValue }
+        let kind: Kind
+        let title: String
+        let instruction: String?
+        let staticLines: [String]
+    }
+
+    let id: String
+    let featureTitle: String
+    let displayName: String
+    let collapsedTitle: String
+    let sections: [Section]
+
+    static let tzeKivun = LegStartChecklistTemplate(
+        id: "tze-kivun-gamad",
+        featureTitle: "LEG START CHECKLIST",
+        displayName: "צא כיוון",
+        collapsedTitle: "צא כיוון · גמ״ד",
+        sections: [
+            Section(
+                id: "leg-start",
+                title: nil,
+                items: [
+                    Item(kind: .timer, title: "TIMER", instruction: nil, staticLines: []),
+                    Item(
+                        kind: .direction,
+                        title: "HEADING",
+                        instruction: "Check magnetic compass",
+                        staticLines: []
+                    )
+                ]
+            ),
+            Section(
+                id: "gamad",
+                title: "גמ״ד",
+                items: [
+                    Item(kind: .altitude, title: "גובה", instruction: nil, staticLines: []),
+                    Item(
+                        kind: .speedAndEngine,
+                        title: "מהירות ומנוע",
+                        instruction: nil,
+                        staticLines: [
+                            "Oil pressure",
+                            "Oil temperature",
+                            "Amperage · Suction · Fuel"
+                        ]
+                    ),
+                    Item(
+                        kind: .reporting,
+                        title: "דיווח",
+                        instruction: "מה הדיווח הבא?",
+                        staticLines: []
+                    )
+                ]
+            )
+        ]
+    )
+
+    func item(_ kind: Item.Kind) -> Item? {
+        sections.lazy.flatMap(\.items).first { $0.kind == kind }
+    }
+
+    var gamadSection: Section? {
+        sections.first { $0.id == "gamad" }
+    }
+}
+
+struct LegStartChecklistPresentation: Equatable, Sendable {
     enum Direction: Equatable, Sendable {
         case heading(Double)
         case course(Double)
     }
 
     let legID: UUID
+    let template: LegStartChecklistTemplate
     let direction: Direction
     let plannedAltitudeFeetMsl: Double
     /// The current v7 contract does not identify any saved value as planned IAS.
     let plannedIndicatedAirspeedKnots: Double?
-    let engineChecks: [String]
 }
 
 struct CockpitPresentationAdapter: Sendable {
-    static let defaultEngineChecks = [
-        "Oil pressure",
-        "Oil temperature",
-        "Amperage",
-        "Suction",
-        "Fuel"
-    ]
-
-    func makeStartOfLegChecklist(
+    func makeLegStartChecklist(
         flight: NavigationFlight,
         session: FlightSession
-    ) throws -> StartOfLegChecklistPresentation? {
+    ) throws -> LegStartChecklistPresentation? {
         guard session.legState == .active,
               flight.legs.indices.contains(session.activeLegIndex),
               case .eligible(let execution) = flight.execution,
               execution.legs.indices.contains(session.activeLegIndex) else { return nil }
 
         let resolvedLeg = execution.legs[session.activeLegIndex]
-        let direction: StartOfLegChecklistPresentation.Direction
+        let direction: LegStartChecklistPresentation.Direction
         switch session.executionMode {
         case .wind:
             guard let wind = resolvedLeg.withWind else {
@@ -153,12 +228,12 @@ struct CockpitPresentationAdapter: Sendable {
             direction = .course(resolvedLeg.magneticCourse.value)
         }
 
-        return StartOfLegChecklistPresentation(
+        return LegStartChecklistPresentation(
             legID: flight.legs[session.activeLegIndex].id,
+            template: .tzeKivun,
             direction: direction,
             plannedAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
-            plannedIndicatedAirspeedKnots: nil,
-            engineChecks: Self.defaultEngineChecks
+            plannedIndicatedAirspeedKnots: nil
         )
     }
 

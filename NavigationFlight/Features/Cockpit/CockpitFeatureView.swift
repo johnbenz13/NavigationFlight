@@ -75,7 +75,7 @@ struct CockpitFeatureView: View {
                         flight: flight,
                         session: session
                     )
-                    let startOfLegChecklist = try? adapter.makeStartOfLegChecklist(
+                    let legStartChecklist = try? adapter.makeLegStartChecklist(
                         flight: flight,
                         session: session
                     )
@@ -84,15 +84,15 @@ struct CockpitFeatureView: View {
                         mapPresentation: mapPresentation,
                         nextLegPreparation: nextLegPreparation,
                         previousLegSummary: previousLegSummary,
-                        startOfLegChecklist: startOfLegChecklist,
-                        checklistState: state.activeStartOfLegChecklist,
+                        legStartChecklist: legStartChecklist,
+                        checklistState: state.activeLegStartChecklist,
                         session: session,
                         onStartLeg: { try? state.startLeg(at: .now) },
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
-                        onCollapseChecklist: { state.collapseStartOfLegChecklist() },
-                        onReopenChecklist: { state.reopenStartOfLegChecklist() },
-                        onNoteChecklist: { state.noteStartOfLegChecklist() },
+                        onCollapseChecklist: { state.collapseLegStartChecklist() },
+                        onReopenChecklist: { state.reopenLegStartChecklist() },
+                        onNoteChecklist: { state.noteLegStartChecklist() },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
                 }

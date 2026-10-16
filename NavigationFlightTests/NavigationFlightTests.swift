@@ -669,13 +669,90 @@ struct NavigationFlightTests {
 
         try state.startLeg(at: startedAt)
 
-        let checklist = try #require(state.activeStartOfLegChecklist)
+        let checklist = try #require(state.activeLegStartChecklist)
         #expect(checklist.legID == flight.legs[0].id)
         #expect(checklist.reviewState == .pending)
         #expect(checklist.presentationState == .expanded)
+        #expect(checklist.phaseState == .available)
         #expect(state.session?.legStartedAt == startedAt)
         #expect(state.session?.elapsedTime(at: startedAt.addingTimeInterval(17)) == 17)
         #expect(state.flight == originalFlight)
+    }
+
+    @Test func builtInLegStartTemplateDefinesTzeKivunAndGamadWithoutFlightValues() throws {
+        let template = LegStartChecklistTemplate.tzeKivun
+        let gamad = try #require(template.gamadSection)
+        let allTemplateText = ([template.featureTitle, template.displayName, template.collapsedTitle] +
+            template.sections.flatMap { section in
+                [section.title].compactMap { $0 } + section.items.flatMap {
+                    [$0.title, $0.instruction].compactMap { $0 } + $0.staticLines
+                }
+            }).joined(separator: " ")
+
+        #expect(template.id == "tze-kivun-gamad")
+        #expect(template.displayName == "צא כיוון")
+        #expect(gamad.title == "גמ״ד")
+        #expect(gamad.items.map(\.kind) == [.altitude, .speedAndEngine, .reporting])
+        #expect(template.item(.direction)?.instruction == "Check magnetic compass")
+        #expect(template.item(.speedAndEngine)?.staticLines == [
+            "Oil pressure", "Oil temperature", "Amperage · Suction · Fuel"
+        ])
+        #expect(!allTemplateText.contains("002°"))
+        #expect(!allTemplateText.contains("3,000"))
+        #expect(!allTemplateText.contains("KIAS"))
+    }
+
+    @Test(arguments: [false, true])
+    func waypointIdentificationHidesChecklistWithoutChangingReviewOrTiming(wasNoted: Bool) throws {
+        let flight = try twoLegFlight()
+        let originalFlight = flight
+        let start = Date(timeIntervalSince1970: 100)
+        let identified = Date(timeIntervalSince1970: 125)
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        try state.startLeg(at: start)
+        if wasNoted {
+            state.noteLegStartChecklist()
+        }
+
+        try state.identifyDestination(at: identified)
+
+        let checklist = try #require(state.activeLegStartChecklist)
+        #expect(checklist.phaseState == .hiddenForPhase)
+        #expect(checklist.reviewState == (wasNoted ? .noted : .pending))
+        #expect(state.session?.destinationIdentifiedAt == identified)
+        #expect(state.session?.legStartedAt == start)
+        #expect(state.session?.elapsedTime(at: Date(timeIntervalSince1970: 140)) == 40)
+        #expect(state.flight == originalFlight)
+        state.reopenLegStartChecklist()
+        #expect(state.activeLegStartChecklist?.phaseState == .hiddenForPhase)
+    }
+
+    @Test func reachedNowHidesPendingChecklistWithoutFabricatingNoted() throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
+        try state.accept(flight)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+
+        try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
+
+        let firstLegChecklist = try #require(state.legStartChecklists[flight.legs[0].id])
+        #expect(firstLegChecklist.phaseState == .hiddenForPhase)
+        #expect(firstLegChecklist.reviewState == .pending)
+        #expect(state.activeLegStartChecklist == nil)
+    }
+
+    @Test func previousDrawerCollapseDoesNotAcknowledgeChecklist() throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+
+        state.collapseLegStartChecklist()
+
+        #expect(state.activeLegStartChecklist?.presentationState == .collapsed)
+        #expect(state.activeLegStartChecklist?.reviewState == .pending)
+        #expect(state.activeLegStartChecklist?.phaseState == .available)
     }
 
     @Test func automaticProgressionCreatesFreshPendingChecklistForNewLeg() throws {
@@ -683,15 +760,16 @@ struct NavigationFlightTests {
         var state = CockpitFeatureState()
         try state.accept(flight)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
-        state.noteStartOfLegChecklist()
+        state.noteLegStartChecklist()
 
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
 
-        let checklist = try #require(state.activeStartOfLegChecklist)
+        let checklist = try #require(state.activeLegStartChecklist)
         #expect(checklist.legID == flight.legs[1].id)
         #expect(checklist.reviewState == .pending)
         #expect(checklist.presentationState == .expanded)
-        #expect(state.startOfLegChecklists[flight.legs[0].id]?.reviewState == .noted)
+        #expect(state.legStartChecklists[flight.legs[0].id]?.reviewState == .noted)
+        #expect(state.legStartChecklists[flight.legs[0].id]?.phaseState == .hiddenForPhase)
         #expect(state.session?.legStartedAt == Date(timeIntervalSince1970: 140))
     }
 
@@ -700,16 +778,16 @@ struct NavigationFlightTests {
         var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
         try state.accept(flight)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
-        state.noteStartOfLegChecklist()
+        state.noteLegStartChecklist()
 
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
         #expect(state.session?.legState == .ready)
-        #expect(state.activeStartOfLegChecklist == nil)
-        #expect(state.startOfLegChecklists[flight.legs[1].id] == nil)
+        #expect(state.activeLegStartChecklist == nil)
+        #expect(state.legStartChecklists[flight.legs[1].id] == nil)
 
         try state.startLeg(at: Date(timeIntervalSince1970: 150))
-        #expect(state.activeStartOfLegChecklist?.legID == flight.legs[1].id)
-        #expect(state.activeStartOfLegChecklist?.reviewState == .pending)
+        #expect(state.activeLegStartChecklist?.legID == flight.legs[1].id)
+        #expect(state.activeLegStartChecklist?.reviewState == .pending)
         #expect(state.session?.legStartedAt == Date(timeIntervalSince1970: 150))
     }
 
@@ -719,17 +797,17 @@ struct NavigationFlightTests {
         try state.accept(flight)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
 
-        state.collapseStartOfLegChecklist()
-        #expect(state.activeStartOfLegChecklist?.reviewState == .pending)
-        #expect(state.activeStartOfLegChecklist?.presentationState == .collapsed)
-        state.reopenStartOfLegChecklist()
-        #expect(state.activeStartOfLegChecklist?.presentationState == .expanded)
-        state.noteStartOfLegChecklist()
-        #expect(state.activeStartOfLegChecklist?.reviewState == .noted)
-        #expect(state.activeStartOfLegChecklist?.presentationState == .collapsed)
-        state.reopenStartOfLegChecklist()
-        #expect(state.activeStartOfLegChecklist?.reviewState == .noted)
-        #expect(state.activeStartOfLegChecklist?.presentationState == .expanded)
+        state.collapseLegStartChecklist()
+        #expect(state.activeLegStartChecklist?.reviewState == .pending)
+        #expect(state.activeLegStartChecklist?.presentationState == .collapsed)
+        state.reopenLegStartChecklist()
+        #expect(state.activeLegStartChecklist?.presentationState == .expanded)
+        state.noteLegStartChecklist()
+        #expect(state.activeLegStartChecklist?.reviewState == .noted)
+        #expect(state.activeLegStartChecklist?.presentationState == .collapsed)
+        state.reopenLegStartChecklist()
+        #expect(state.activeLegStartChecklist?.reviewState == .noted)
+        #expect(state.activeLegStartChecklist?.presentationState == .expanded)
     }
 
     @Test func checklistInteractionsDoNotChangeTimerOrResolvedNavigationValues() throws {
@@ -740,9 +818,9 @@ struct NavigationFlightTests {
         try state.accept(flight)
         try state.startLeg(at: start)
 
-        state.collapseStartOfLegChecklist()
-        state.reopenStartOfLegChecklist()
-        state.noteStartOfLegChecklist()
+        state.collapseLegStartChecklist()
+        state.reopenLegStartChecklist()
+        state.noteLegStartChecklist()
 
         #expect(state.session?.legStartedAt == start)
         #expect(state.session?.elapsedTime(at: start.addingTimeInterval(42)) == 42)
@@ -760,7 +838,7 @@ struct NavigationFlightTests {
         try noWindSession.startLeg(at: Date(timeIntervalSince1970: 100))
 
         let noWind = try #require(
-            try CockpitPresentationAdapter().makeStartOfLegChecklist(
+            try CockpitPresentationAdapter().makeLegStartChecklist(
                 flight: flight,
                 session: noWindSession
             )
@@ -768,7 +846,7 @@ struct NavigationFlightTests {
         #expect(noWind.direction == .course(355))
         #expect(noWind.plannedAltitudeFeetMsl == 2000)
         #expect(noWind.plannedIndicatedAirspeedKnots == nil)
-        #expect(noWind.engineChecks == CockpitPresentationAdapter.defaultEngineChecks)
+        #expect(noWind.template == .tzeKivun)
 
         var windSession = FlightSession(
             flightID: flight.id,
@@ -778,7 +856,7 @@ struct NavigationFlightTests {
         )
         try windSession.startLeg(at: Date(timeIntervalSince1970: 100))
         let wind = try #require(
-            try CockpitPresentationAdapter().makeStartOfLegChecklist(
+            try CockpitPresentationAdapter().makeLegStartChecklist(
                 flight: flight,
                 session: windSession
             )

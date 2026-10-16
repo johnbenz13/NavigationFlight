@@ -75,19 +75,19 @@ private extension AviationMapPresentation {
 }
 
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, startOfLegChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, startOfLegChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, startOfLegChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, startOfLegChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
@@ -97,8 +97,8 @@ struct CockpitView: View {
     let mapPresentation: AviationMapPresentation
     let nextLegPreparation: NextLegPreparation?
     let previousLegSummary: PreviousLegSummary?
-    let startOfLegChecklist: StartOfLegChecklistPresentation?
-    let checklistState: CockpitFeatureState.StartOfLegChecklistState?
+    let legStartChecklist: LegStartChecklistPresentation?
+    let checklistState: CockpitFeatureState.LegStartChecklistState?
     let session: FlightSession
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
@@ -119,14 +119,14 @@ struct CockpitView: View {
         GeometryReader { geometry in
             if geometry.size.width > geometry.size.height {
                 HStack(spacing: 0) {
-                    mapSurface(isLandscape: true)
+                    mapSurface(isLandscape: true, mapWidth: geometry.size.width * 0.74)
                         .frame(width: geometry.size.width * 0.74)
                     landscapeControlPanel
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } else {
                 VStack(spacing: 0) {
-                    mapSurface(isLandscape: false)
+                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
                         .frame(height: geometry.size.height * 0.74)
                     portraitControlPanel
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -149,7 +149,7 @@ struct CockpitView: View {
         }
     }
 
-    private func mapSurface(isLandscape: Bool) -> some View {
+    private func mapSurface(isLandscape: Bool, mapWidth: CGFloat) -> some View {
         ZStack {
             OfflineAviationMapView(
                 presentation: mapPresentation,
@@ -162,20 +162,30 @@ struct CockpitView: View {
             mapControls
             legHeader
             NextLegPreparationOverlay(
-                preparation: session.legState == .active ? nextLegPreparation : nil,
+                preparation: session.destinationIdentifiedAt == nil ? nil : nextLegPreparation,
                 isPresented: $isNextPreparationPresented
             )
             PreviousLegDrawer(
                 summary: previousLegSummary,
-                isPresented: $isPreviousDrawerPresented
+                isPresented: $isPreviousDrawerPresented,
+                onOpen: {
+                    if mapWidth < 900, checklistState?.presentationState == .expanded {
+                        onCollapseChecklist()
+                    }
+                }
             )
-            StartOfLegChecklistOverlay(
-                checklist: startOfLegChecklist,
+            LegStartChecklistOverlay(
+                checklist: legStartChecklist,
                 state: checklistState,
                 legStartedAt: session.legStartedAt,
                 isLandscape: isLandscape,
                 onCollapse: onCollapseChecklist,
-                onReopen: onReopenChecklist,
+                onReopen: {
+                    if mapWidth < 900 {
+                        isPreviousDrawerPresented = false
+                    }
+                    onReopenChecklist()
+                },
                 onNoted: onNoteChecklist
             )
         }
@@ -374,8 +384,8 @@ struct CockpitView: View {
             if session.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {
                     Button {
-                        isNextPreparationPresented = true
                         onIdentifyDestination()
+                        isNextPreparationPresented = true
                     } label: {
                         Label("Waypoint Identified", systemImage: "eye.fill")
                             .font(.headline).frame(maxWidth: .infinity, minHeight: 46)
@@ -385,6 +395,7 @@ struct CockpitView: View {
                     .accessibilityIdentifier("waypoint-identified")
                     Button("Reached now") {
                         etaCalloutOffset = AviationMapVisualStyle.default.defaultEtaCalloutOffset
+                        isNextPreparationPresented = false
                         onWaypointReached()
                     }
                     .font(.caption.weight(.semibold))
@@ -421,9 +432,9 @@ struct CockpitView: View {
     }
 }
 
-private struct StartOfLegChecklistOverlay: View {
-    let checklist: StartOfLegChecklistPresentation?
-    let state: CockpitFeatureState.StartOfLegChecklistState?
+private struct LegStartChecklistOverlay: View {
+    let checklist: LegStartChecklistPresentation?
+    let state: CockpitFeatureState.LegStartChecklistState?
     let legStartedAt: Date?
     let isLandscape: Bool
     let onCollapse: () -> Void
@@ -431,10 +442,14 @@ private struct StartOfLegChecklistOverlay: View {
     let onNoted: () -> Void
 
     var body: some View {
-        if let checklist, let state, checklist.legID == state.legID, let legStartedAt {
+        if let checklist,
+           let state,
+           state.phaseState == .available,
+           checklist.legID == state.legID,
+           let legStartedAt {
             Group {
                 if state.presentationState == .expanded {
-                    StartOfLegChecklistCard(
+                    LegStartChecklistCard(
                         checklist: checklist,
                         reviewState: state.reviewState,
                         legStartedAt: legStartedAt,
@@ -447,7 +462,7 @@ private struct StartOfLegChecklistOverlay: View {
                             if state.reviewState == .noted {
                                 Image(systemName: "checkmark.circle.fill")
                             }
-                            Text("צא כיוון · גמ״ד")
+                            Text(checklist.template.collapsedTitle)
                                 .font(.subheadline.weight(.bold))
                         }
                         .padding(.horizontal, 14)
@@ -459,39 +474,35 @@ private struct StartOfLegChecklistOverlay: View {
                     .accessibilityLabel(state.reviewState == .noted
                         ? "Review noted start of leg checklist"
                         : "Open start of leg checklist")
-                    .accessibilityIdentifier("start-leg-checklist-chip")
+                    .accessibilityIdentifier("leg-start-checklist-chip")
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .padding(.horizontal, isLandscape ? 88 : 64)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .padding(.trailing, isLandscape ? 20 : 24)
             .padding(.bottom, 16)
         }
     }
 }
 
-private struct StartOfLegChecklistCard: View {
-    let checklist: StartOfLegChecklistPresentation
-    let reviewState: CockpitFeatureState.StartOfLegChecklistState.ReviewState
+private struct LegStartChecklistCard: View {
+    let checklist: LegStartChecklistPresentation
+    let reviewState: CockpitFeatureState.LegStartChecklistState.ReviewState
     let legStartedAt: Date
     let onCollapse: () -> Void
     let onNoted: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text("צא כיוון · גמ״ד")
-                    .font(.headline.weight(.bold))
-                Spacer()
-                Button(action: onNoted) {
-                    Label("Noted", systemImage: reviewState == .noted ? "checkmark.circle.fill" : "checkmark")
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 44)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(checklist.template.featureTitle)
+                        .font(.caption2.weight(.bold))
+                        .tracking(0.7)
+                        .foregroundStyle(.secondary)
+                    Text(checklist.template.displayName)
+                        .font(.headline.weight(.bold))
                 }
-                .buttonStyle(.borderedProminent)
-                .accessibilityLabel("Mark start of leg checklist noted")
-                .accessibilityHint("Records that the checklist review is finished")
-                .accessibilityIdentifier("start-leg-checklist-noted")
+                Spacer(minLength: 4)
                 Button(action: onCollapse) {
                     Image(systemName: "chevron.down")
                         .frame(width: 44, height: 44)
@@ -503,49 +514,69 @@ private struct StartOfLegChecklistCard: View {
                 .accessibilityLabel("Collapse start of leg checklist")
             }
 
-            HStack(alignment: .top, spacing: 16) {
-                StartOfLegFlightCheckSection(
-                    checklist: checklist,
-                    legStartedAt: legStartedAt
-                )
-                Rectangle()
-                    .fill(.separator)
-                    .frame(width: 1, height: 72)
-                StartOfLegGamadSection(checklist: checklist)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 9) {
+                    LegStartFlightCheckSection(
+                        checklist: checklist,
+                        legStartedAt: legStartedAt
+                    )
+                    Divider()
+                    LegStartGamadSection(checklist: checklist)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .scrollIndicators(.hidden)
+            .frame(maxHeight: 285)
+
+            Button(action: onNoted) {
+                Label("Noted", systemImage: reviewState == .noted ? "checkmark.circle.fill" : "checkmark")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityLabel("Mark leg start checklist noted")
+            .accessibilityHint("Records that the checklist review is finished")
+            .accessibilityIdentifier("leg-start-checklist-noted")
         }
         .padding(12)
-        .frame(maxWidth: 660)
+        .frame(width: 280)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay { RoundedRectangle(cornerRadius: 14).stroke(.primary.opacity(0.18), lineWidth: 1) }
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("start-leg-checklist")
+        .accessibilityIdentifier("leg-start-checklist")
     }
 }
 
-private struct StartOfLegFlightCheckSection: View {
-    let checklist: StartOfLegChecklistPresentation
+private struct LegStartFlightCheckSection: View {
+    let checklist: LegStartChecklistPresentation
     let legStartedAt: Date
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("TIMER").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    Text("Started · \(duration(from: legStartedAt, to: context.date))")
-                        .font(.subheadline.weight(.semibold)).monospacedDigit()
+        VStack(alignment: .leading, spacing: 9) {
+            if let timerItem = checklist.template.item(.timer) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(timerItem.title).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                    TimelineView(.periodic(from: .now, by: 1)) { context in
+                        Text("Started · \(duration(from: legStartedAt, to: context.date))")
+                            .font(.subheadline.weight(.semibold)).monospacedDigit()
+                    }
                 }
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(directionLabel).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text(directionValue).font(.title3.weight(.bold)).monospacedDigit()
-                Text("Check magnetic compass").font(.caption).foregroundStyle(.secondary)
+            if let directionItem = checklist.template.item(.direction) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(directionLabel(templateTitle: directionItem.title))
+                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                    Text(directionValue).font(.title3.weight(.bold)).monospacedDigit()
+                    if let instruction = directionItem.instruction {
+                        Text(instruction).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
         }
     }
 
-    private var directionLabel: String {
-        switch checklist.direction { case .heading: "HEADING"; case .course: "COURSE" }
+    private func directionLabel(templateTitle: String) -> String {
+        switch checklist.direction { case .heading: templateTitle; case .course: "COURSE" }
     }
 
     private var directionValue: String {
@@ -561,34 +592,39 @@ private struct StartOfLegFlightCheckSection: View {
     }
 }
 
-private struct StartOfLegGamadSection: View {
-    let checklist: StartOfLegChecklistPresentation
+private struct LegStartGamadSection: View {
+    let checklist: LegStartChecklistPresentation
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("גמ״ד").font(.caption.weight(.bold)).foregroundStyle(.secondary)
-            HStack(alignment: .top, spacing: 14) {
-                checklistItem(title: "גובה", value: "\(feet(checklist.plannedAltitudeFeetMsl)) ft")
-                checklistItem(
-                    title: "מהירות ומנוע",
-                    value: checklist.plannedIndicatedAirspeedKnots.map { "\(knots($0)) KIAS" } ?? "Planned IAS unavailable"
-                )
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(checklist.engineChecks.prefix(2).joined(separator: " · "))
-                        .font(.caption).foregroundStyle(.secondary)
-                    Text(checklist.engineChecks.dropFirst(2).joined(separator: " · "))
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(3)
+        if let section = checklist.template.gamadSection {
+            VStack(alignment: .leading, spacing: 8) {
+                if let title = section.title {
+                    Text(title).font(.caption.weight(.bold)).foregroundStyle(.secondary)
                 }
-                checklistItem(title: "דיווח", value: "מה הדיווח הבא?")
+                if let altitudeItem = checklist.template.item(.altitude) {
+                    LegStartStaticItem(
+                        title: altitudeItem.title,
+                        lines: ["\(feet(checklist.plannedAltitudeFeetMsl)) ft"]
+                    )
+                }
+                if let speedItem = checklist.template.item(.speedAndEngine) {
+                    LegStartStaticItem(
+                        title: speedItem.title,
+                        lines: [speedText] + speedItem.staticLines
+                    )
+                }
+                if let reportingItem = checklist.template.item(.reporting) {
+                    LegStartStaticItem(
+                        title: reportingItem.title,
+                        lines: reportingItem.instruction.map { [$0] } ?? []
+                    )
+                }
             }
         }
     }
 
-    private func checklistItem(title: LocalizedStringKey, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption.weight(.bold))
-            Text(value).font(.caption).fixedSize(horizontal: false, vertical: true)
-        }
+    private var speedText: String {
+        checklist.plannedIndicatedAirspeedKnots.map { "\(knots($0)) KIAS" } ?? "Planned IAS unavailable"
     }
 
     private func feet(_ value: Double) -> String {
@@ -597,6 +633,20 @@ private struct StartOfLegGamadSection: View {
 
     private func knots(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0)))
+    }
+}
+
+private struct LegStartStaticItem: View {
+    let title: String
+    let lines: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title).font(.caption.weight(.bold))
+            Text(lines.joined(separator: "\n"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
@@ -708,6 +758,7 @@ private struct NextLegPreparationCard: View {
 private struct PreviousLegDrawer: View {
     let summary: PreviousLegSummary?
     @Binding var isPresented: Bool
+    let onOpen: () -> Void
 
     var body: some View {
         if let summary {
@@ -719,6 +770,7 @@ private struct PreviousLegDrawer: View {
                     .gesture(closeGesture)
                 } else {
                     Button {
+                        onOpen()
                         withAnimation(.easeOut(duration: 0.2)) { isPresented = true }
                     } label: {
                         VStack(spacing: 3) {
@@ -742,6 +794,7 @@ private struct PreviousLegDrawer: View {
         DragGesture(minimumDistance: 32).onEnded { value in
             guard value.translation.width > 44,
                   abs(value.translation.width) > abs(value.translation.height) else { return }
+            onOpen()
             withAnimation(.easeOut(duration: 0.2)) { isPresented = true }
         }
     }

@@ -75,15 +75,24 @@ struct CockpitFeatureView: View {
                         flight: flight,
                         session: session
                     )
+                    let startOfLegChecklist = try? adapter.makeStartOfLegChecklist(
+                        flight: flight,
+                        session: session
+                    )
                     CockpitView(
                         data: presentation,
                         mapPresentation: mapPresentation,
                         nextLegPreparation: nextLegPreparation,
                         previousLegSummary: previousLegSummary,
+                        startOfLegChecklist: startOfLegChecklist,
+                        checklistState: state.activeStartOfLegChecklist,
                         session: session,
                         onStartLeg: { try? state.startLeg(at: .now) },
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
+                        onCollapseChecklist: { state.collapseStartOfLegChecklist() },
+                        onReopenChecklist: { state.reopenStartOfLegChecklist() },
+                        onNoteChecklist: { state.noteStartOfLegChecklist() },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
                 }

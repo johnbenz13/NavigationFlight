@@ -24,11 +24,28 @@ enum CockpitPlanError: Error, Equatable, Sendable, LocalizedError {
 }
 
 struct CockpitFeatureState: Equatable, Sendable {
+    struct StartOfLegChecklistState: Equatable, Sendable {
+        enum ReviewState: Equatable, Sendable {
+            case pending
+            case noted
+        }
+
+        enum PresentationState: Equatable, Sendable {
+            case expanded
+            case collapsed
+        }
+
+        let legID: UUID
+        var reviewState: ReviewState
+        var presentationState: PresentationState
+    }
+
     let progressionPolicy: FlightSession.ProgressionPolicy
     private(set) var flight: NavigationFlight?
     private(set) var selectedLegIndex = 0
     private(set) var mode = NavigationMode.noWind
     private(set) var session: FlightSession?
+    private(set) var startOfLegChecklists: [UUID: StartOfLegChecklistState] = [:]
 
     init(progressionPolicy: FlightSession.ProgressionPolicy = .automaticNextLeg) {
         self.progressionPolicy = progressionPolicy
@@ -42,6 +59,11 @@ struct CockpitFeatureState: Equatable, Sendable {
               session?.legTimings.isEmpty == true,
               case .eligible(let execution)? = flight?.execution else { return false }
         return selectedLegIndex + 1 < execution.legs.count
+    }
+
+    var activeStartOfLegChecklist: StartOfLegChecklistState? {
+        guard let session, session.legState == .active else { return nil }
+        return startOfLegChecklists[session.legIDs[session.activeLegIndex]]
     }
 
     mutating func accept(_ candidate: NavigationFlight) throws {
@@ -62,6 +84,7 @@ struct CockpitFeatureState: Equatable, Sendable {
                 executionMode: mode,
                 progressionPolicy: progressionPolicy
             )
+            startOfLegChecklists = [:]
         }
     }
 
@@ -89,12 +112,16 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func startLeg(at timestamp: Date = .now) throws {
         try session?.startLeg(at: timestamp)
+        createPendingChecklistForActiveLeg()
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date = .now) throws {
         try session?.reachCurrentWaypoint(at: timestamp)
         if let activeLegIndex = session?.activeLegIndex {
             selectedLegIndex = activeLegIndex
+        }
+        if session?.legState == .active {
+            createPendingChecklistForActiveLeg()
         }
     }
 
@@ -104,6 +131,42 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func cancelImport() {
         // Intentionally preserve the loaded plan, selected leg, and calculation mode.
+    }
+
+    mutating func collapseStartOfLegChecklist() {
+        updateActiveChecklist { $0.presentationState = .collapsed }
+    }
+
+    mutating func reopenStartOfLegChecklist() {
+        updateActiveChecklist { $0.presentationState = .expanded }
+    }
+
+    mutating func noteStartOfLegChecklist() {
+        updateActiveChecklist {
+            $0.reviewState = .noted
+            $0.presentationState = .collapsed
+        }
+    }
+
+    private mutating func createPendingChecklistForActiveLeg() {
+        guard let session, session.legState == .active else { return }
+        let legID = session.legIDs[session.activeLegIndex]
+        guard startOfLegChecklists[legID] == nil else { return }
+        startOfLegChecklists[legID] = StartOfLegChecklistState(
+            legID: legID,
+            reviewState: .pending,
+            presentationState: .expanded
+        )
+    }
+
+    private mutating func updateActiveChecklist(
+        _ update: (inout StartOfLegChecklistState) -> Void
+    ) {
+        guard let session, session.legState == .active else { return }
+        let legID = session.legIDs[session.activeLegIndex]
+        guard var checklist = startOfLegChecklists[legID] else { return }
+        update(&checklist)
+        startOfLegChecklists[legID] = checklist
     }
 }
 

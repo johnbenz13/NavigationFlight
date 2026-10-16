@@ -109,7 +109,59 @@ struct PreviousLegSummary: Equatable, Sendable {
     let vorDme: VORDME?
 }
 
+struct StartOfLegChecklistPresentation: Equatable, Sendable {
+    enum Direction: Equatable, Sendable {
+        case heading(Double)
+        case course(Double)
+    }
+
+    let legID: UUID
+    let direction: Direction
+    let plannedAltitudeFeetMsl: Double
+    /// The current v7 contract does not identify any saved value as planned IAS.
+    let plannedIndicatedAirspeedKnots: Double?
+    let engineChecks: [String]
+}
+
 struct CockpitPresentationAdapter: Sendable {
+    static let defaultEngineChecks = [
+        "Oil pressure",
+        "Oil temperature",
+        "Amperage",
+        "Suction",
+        "Fuel"
+    ]
+
+    func makeStartOfLegChecklist(
+        flight: NavigationFlight,
+        session: FlightSession
+    ) throws -> StartOfLegChecklistPresentation? {
+        guard session.legState == .active,
+              flight.legs.indices.contains(session.activeLegIndex),
+              case .eligible(let execution) = flight.execution,
+              execution.legs.indices.contains(session.activeLegIndex) else { return nil }
+
+        let resolvedLeg = execution.legs[session.activeLegIndex]
+        let direction: StartOfLegChecklistPresentation.Direction
+        switch session.executionMode {
+        case .wind:
+            guard let wind = resolvedLeg.withWind else {
+                throw CockpitPresentationError.unavailableWindMode
+            }
+            direction = .heading(wind.magneticHeading.value)
+        case .noWind:
+            direction = .course(resolvedLeg.magneticCourse.value)
+        }
+
+        return StartOfLegChecklistPresentation(
+            legID: flight.legs[session.activeLegIndex].id,
+            direction: direction,
+            plannedAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
+            plannedIndicatedAirspeedKnots: nil,
+            engineChecks: Self.defaultEngineChecks
+        )
+    }
+
     func makeNextLegPreparation(
         flight: NavigationFlight,
         session: FlightSession

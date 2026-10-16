@@ -93,6 +93,7 @@ private extension AviationMapPresentation {
 #endif
 
 struct CockpitView: View {
+    private let visualStyle = AviationMapVisualStyle.default
     let data: CockpitPresentationData
     let mapPresentation: AviationMapPresentation
     let nextLegPreparation: NextLegPreparation?
@@ -413,6 +414,8 @@ struct CockpitView: View {
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor))
+                .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
                 .accessibilityIdentifier("waypoint-reached")
             }

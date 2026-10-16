@@ -20,6 +20,14 @@ struct AviationMapVisualStyle {
     let currentLegAccentColor = UIColor.systemCyan
     let nextLegAccentColor = UIColor.systemOrange
     let previousLegAccentColor = UIColor.systemGray
+    /// Semantic completion/progression action colors, kept here for future visual preferences.
+    let cockpitProgressionActionBackgroundColor = UIColor(
+        red: 8 / 255,
+        green: 122 / 255,
+        blue: 56 / 255,
+        alpha: 1
+    )
+    let cockpitProgressionActionForegroundColor = UIColor.white
     var activeLegColor: UIColor { currentLegAccentColor }
     let activeLegWidth: CGFloat = 6
 

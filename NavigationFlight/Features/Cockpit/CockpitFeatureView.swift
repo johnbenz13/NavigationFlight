@@ -67,11 +67,22 @@ struct CockpitFeatureView: View {
                     flight: flight,
                     session: session
                 ) {
+                    let nextLegPreparation = try? adapter.makeNextLegPreparation(
+                        flight: flight,
+                        session: session
+                    )
+                    let previousLegSummary = try? adapter.makePreviousLegSummary(
+                        flight: flight,
+                        session: session
+                    )
                     CockpitView(
                         data: presentation,
                         mapPresentation: mapPresentation,
+                        nextLegPreparation: nextLegPreparation,
+                        previousLegSummary: previousLegSummary,
                         session: session,
                         onStartLeg: { try? state.startLeg(at: .now) },
+                        onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )

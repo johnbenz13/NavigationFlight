@@ -67,14 +67,19 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(startLeg.isEnabled)
         startLeg.tap()
 
-        let waypointReached = app.buttons["waypoint-reached"]
-        XCTAssertTrue(waypointReached.waitForExistence(timeout: 2))
-        XCTAssertTrue(waypointReached.isEnabled)
+        let waypointIdentified = app.buttons["waypoint-identified"]
+        XCTAssertTrue(waypointIdentified.waitForExistence(timeout: 2))
+        XCTAssertTrue(waypointIdentified.isEnabled)
+        XCTAssertTrue(app.buttons["reached-now"].isEnabled)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("ELAPSED"))
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:16"))
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
         XCTAssertTrue(cockpitHeading.label.contains("COURSE 035°"))
 
+        waypointIdentified.tap()
+        let waypointReached = app.buttons["waypoint-reached"]
+        XCTAssertTrue(waypointReached.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("ELAPSED"))
         waypointReached.tap()
         XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
 

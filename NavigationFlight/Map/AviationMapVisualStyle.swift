@@ -17,7 +17,10 @@ struct AviationMapCalloutOffset: Equatable, Sendable {
 struct AviationMapVisualStyle {
     static let `default` = AviationMapVisualStyle()
 
-    let activeLegColor = UIColor.systemCyan
+    let currentLegAccentColor = UIColor.systemCyan
+    let nextLegAccentColor = UIColor.systemOrange
+    let previousLegAccentColor = UIColor.systemGray
+    var activeLegColor: UIColor { currentLegAccentColor }
     let activeLegWidth: CGFloat = 6
 
     let destinationWaypointRadius: CGFloat = 17
@@ -39,7 +42,7 @@ struct AviationMapVisualStyle {
 
     let etaCalloutBackgroundColor = UIColor.systemBackground
     let etaCalloutBackgroundOpacity: CGFloat = 0.20
-    let etaCalloutBorderColor = UIColor.label
+    var etaCalloutBorderColor: UIColor { currentLegAccentColor }
     let etaCalloutBorderOpacity: CGFloat = 1
     let etaCalloutBorderWidth: CGFloat = 1.5
     let etaCalloutNameFontSize: CGFloat = 11
@@ -48,7 +51,7 @@ struct AviationMapVisualStyle {
     let etaCalloutDurationFontWeight = UIFont.Weight.bold
     let etaCalloutTextOpacity: CGFloat = 1
 
-    let defaultEtaCalloutOffset = AviationMapCalloutOffset(x: -95, y: -52)
+    let defaultEtaCalloutOffset = AviationMapCalloutOffset(x: -180, y: -72)
 
     func minuteTickLengthFraction(for level: AviationMapMinuteMarkLevel) -> Double {
         switch level {

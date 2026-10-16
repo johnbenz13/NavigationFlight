@@ -415,6 +415,48 @@ struct NavigationFlightTests {
         #expect(session.legStartedAt == reachedAt)
     }
 
+    @Test func destinationIdentificationRecordsOnceWithoutChangingActiveTiming() throws {
+        let startedAt = Date(timeIntervalSince1970: 100)
+        let identifiedAt = Date(timeIntervalSince1970: 140)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID(), UUID()],
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        try session.startLeg(at: startedAt)
+
+        try session.identifyDestination(at: identifiedAt)
+
+        #expect(session.destinationIdentifiedAt == identifiedAt)
+        #expect(session.legTimings[0].destinationIdentifiedAt == identifiedAt)
+        #expect(session.legStartedAt == startedAt)
+        #expect(session.elapsedTime(at: Date(timeIntervalSince1970: 175)) == 75)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legState == .active)
+        #expect(throws: FlightSession.TransitionError.destinationAlreadyIdentified(0)) {
+            try session.identifyDestination(at: Date(timeIntervalSince1970: 160))
+        }
+        #expect(session.destinationIdentifiedAt == identifiedAt)
+    }
+
+    @Test func reachingWithoutIdentificationDoesNotFabricateIdentification() throws {
+        let reachedAt = Date(timeIntervalSince1970: 200)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID(), UUID()],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+
+        try session.reachCurrentWaypoint(at: reachedAt)
+
+        #expect(session.legTimings[0].destinationIdentifiedAt == nil)
+        #expect(session.legTimings[0].reachedAt == reachedAt)
+        #expect(session.legTimings[1].startedAt == reachedAt)
+    }
+
     @Test func manualWaypointProgressionWaitsForASecondStartTimestamp() throws {
         let reachedAt = Date(timeIntervalSince1970: 36_314)
         let secondStart = Date(timeIntervalSince1970: 36_400)
@@ -515,6 +557,107 @@ struct NavigationFlightTests {
         #expect(map.activeLeg?.id == flight.legs[1].id)
         #expect(map.nextLegPreview == nil)
         #expect(map.readyFocusTarget == map.activeLeg?.from)
+    }
+
+    @Test func nextLegPreparationUsesSavedResolvedValuesAndIsAbsentOnFinalLeg() throws {
+        let flight = try twoLegFlight()
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let adapter = CockpitPresentationAdapter()
+
+        let next = try #require(try adapter.makeNextLegPreparation(flight: flight, session: session))
+        #expect(next.legIndex == 1)
+        #expect(next.direction == .heading(355))
+        #expect(next.initialAltitudeFeetMsl == 2000)
+        #expect(next.immediateAltitudeFeetMsl == nil)
+        #expect(next.immediateFrequencyChange == nil)
+
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
+        #expect(try adapter.makeNextLegPreparation(flight: flight, session: session) == nil)
+    }
+
+    @Test func nextLegPreparationLabelsSavedCourseWhenNoHeadingExists() throws {
+        let flight = try twoLegFlight()
+        let session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        let next = try #require(
+            try CockpitPresentationAdapter().makeNextLegPreparation(flight: flight, session: session)
+        )
+        #expect(next.direction == .course(355))
+    }
+
+    @Test func nextLegPreparationUsesExplicitSavedStartChanges() throws {
+        let flight = try twoLegFlight(withImmediateChanges: true)
+        let session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+
+        let next = try #require(
+            try CockpitPresentationAdapter().makeNextLegPreparation(flight: flight, session: session)
+        )
+        #expect(next.immediateAltitudeFeetMsl == 1500)
+        #expect(next.immediateFrequencyChange == .init(service: "Next Control", frequencyMHz: 120.6))
+    }
+
+    @Test func previousLegSummaryUsesSavedValuesAndSessionTiming() throws {
+        let flight = try summaryFlight()
+        let originalFlight = flight
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let adapter = CockpitPresentationAdapter()
+        #expect(try adapter.makePreviousLegSummary(flight: flight, session: session) == nil)
+
+        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_375))
+        let summary = try #require(try adapter.makePreviousLegSummary(flight: flight, session: session))
+
+        #expect(summary.plannedDurationSeconds == 382)
+        #expect(summary.actualDurationSeconds == 375)
+        #expect(summary.deltaSeconds == -7)
+        #expect(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds) == "-00:07")
+        #expect(summary.magneticHeadingDegrees == 355)
+        #expect(summary.magneticCourseDegrees == 355)
+        #expect(summary.vorDme?.station == "SYN")
+        #expect(summary.vorDme?.magneticRadialFromDegrees == 270)
+        #expect(summary.vorDme?.slantRangeNauticalMiles == 12.4)
+        #expect(flight == originalFlight)
+    }
+
+    @Test func previousLegSummaryOnlyExposesMostRecentlyCompletedLeg() throws {
+        let flight = try twoLegFlight()
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 180))
+
+        let summary = try #require(
+            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+        )
+        #expect(summary.legIndex == 1)
+        #expect(summary.origin == flight.legs[1].departure.name)
+        #expect(summary.destination == flight.legs[1].arrival.name)
     }
 
     @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
@@ -635,6 +778,23 @@ struct NavigationFlightTests {
         #expect(presentation.activeFocusTarget?.longitude == flight.legs[0].arrival.position.longitudeDegrees)
     }
 
+    @Test func destinationIdentificationDoesNotChangeMapPresentation() throws {
+        let flight = try twoLegFlight()
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        let before = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+
+        try session.identifyDestination(at: Date(timeIntervalSince1970: 120))
+        let after = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+
+        #expect(after == before)
+    }
+
     @Test(arguments: [
         (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: 1, longitude: 0), 0.0),
         (AviationMapCoordinate(latitude: 0, longitude: 0), AviationMapCoordinate(latitude: 0, longitude: 1), 90.0),
@@ -683,6 +843,9 @@ struct NavigationFlightTests {
         #expect(abs(style.etaCalloutBackgroundOpacity - 0.20) < 0.001)
         #expect(style.etaCalloutBorderOpacity == 1)
         #expect(style.etaCalloutTextOpacity == 1)
+        #expect(style.currentLegAccentColor != style.nextLegAccentColor)
+        #expect(style.activeLegColor == style.currentLegAccentColor)
+        #expect(style.defaultEtaCalloutOffset.x <= -160)
     }
 
     @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrResolvedExecution() throws {
@@ -789,7 +952,7 @@ struct NavigationFlightTests {
         return try decode(object)
     }
 
-    private func twoLegFlight() throws -> NavigationFlight {
+    private func twoLegFlight(withImmediateChanges: Bool = false) throws -> NavigationFlight {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
         var navigation = try #require(object["navigation"] as? [String: Any])
         var route = try #require(navigation["route"] as? [String: Any])
@@ -807,11 +970,80 @@ struct NavigationFlightTests {
         let secondID = "00000000-0000-4000-8000-000000000021"
         second["id"] = secondID; second["departureWaypointId"] = secondWaypointID; second["arrivalWaypointId"] = thirdID
         sourceLegs.append(second); route["legs"] = sourceLegs
-        navigation["route"] = route; object["navigation"] = navigation
+        navigation["route"] = route
         var execution = try #require(object["execution"] as? [String: Any])
         var legs = try #require(execution["legs"] as? [[String: Any]])
         var resolved = legs[0]; resolved["legId"] = secondID
-        legs.append(resolved); execution["legs"] = legs; object["execution"] = execution
+        legs.append(resolved); execution["legs"] = legs
+        if withImmediateChanges {
+            let altitudeID = "00000000-0000-4000-8000-000000000022"
+            let frequencyID = "00000000-0000-4000-8000-000000000023"
+            var altitudeChanges = try #require(navigation["altitudeChanges"] as? [[String: Any]])
+            var altitude = altitudeChanges[0]
+            altitude["id"] = altitudeID
+            altitude["legId"] = secondID
+            altitude["anchor"] = ["kind": "leg-progress", "legProgress": 0]
+            altitude["targetAltitudeFeet"] = 1500
+            altitudeChanges.append(altitude)
+            navigation["altitudeChanges"] = altitudeChanges
+
+            var frequencyChanges = try #require(navigation["radioFrequencyChanges"] as? [[String: Any]])
+            var frequency = frequencyChanges[0]
+            frequency["id"] = frequencyID
+            frequency["legId"] = secondID
+            frequency["legProgress"] = 0
+            frequency["service"] = ["name": "Next Control"]
+            frequency["frequencyMhz"] = 120.6
+            frequencyChanges.append(frequency)
+            navigation["radioFrequencyChanges"] = frequencyChanges
+
+            let departurePosition = try #require(waypoints[1]["position"] as? [String: Any])
+            var annotations = try #require(execution["annotations"] as? [[String: Any]])
+            var altitudeExecution = annotations[1]
+            altitudeExecution["entityId"] = altitudeID
+            altitudeExecution["legId"] = secondID
+            altitudeExecution["position"] = departurePosition
+            altitudeExecution["noWindTimeFromLegStartSeconds"] = 0
+            altitudeExecution["withWindTimeFromLegStartSeconds"] = 0
+            annotations.append(altitudeExecution)
+            var frequencyExecution = annotations[4]
+            frequencyExecution["entityId"] = frequencyID
+            frequencyExecution["legId"] = secondID
+            frequencyExecution["position"] = departurePosition
+            frequencyExecution["noWindTimeFromLegStartSeconds"] = 0
+            frequencyExecution["withWindTimeFromLegStartSeconds"] = 0
+            annotations.append(frequencyExecution)
+            execution["annotations"] = annotations
+            var frequenciesByPhase = try #require(execution["frequenciesByPhase"] as? [String: Any])
+            var enRoute = try #require(frequenciesByPhase["en-route"] as? [[String: Any]])
+            enRoute.append([
+                "id": "route:\(frequencyID)",
+                "name": "Next Control",
+                "frequencyMhz": 120.6,
+                "source": "route"
+            ])
+            frequenciesByPhase["en-route"] = enRoute
+            execution["frequenciesByPhase"] = frequenciesByPhase
+        }
+        object["navigation"] = navigation
+        object["execution"] = execution
+        return try decode(object)
+    }
+
+    private func summaryFlight() throws -> NavigationFlight {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var execution = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(execution["legs"] as? [[String: Any]])
+        var leg = legs[0]
+        var noWind = try #require(leg["noWind"] as? [String: Any])
+        noWind["plannedDurationSeconds"] = 382
+        leg["noWind"] = noWind
+        var withWind = try #require(leg["withWind"] as? [String: Any])
+        withWind["plannedDurationSeconds"] = 382
+        leg["withWind"] = withWind
+        legs[0] = leg
+        execution["legs"] = legs
+        object["execution"] = execution
         return try decode(object)
     }
 }

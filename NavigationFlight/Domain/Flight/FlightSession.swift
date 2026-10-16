@@ -17,6 +17,7 @@ struct FlightSession: Equatable, Sendable {
         case legNotReady
         case legNotActive
         case legAlreadyStarted(Int)
+        case destinationAlreadyIdentified(Int)
         case waypointAlreadyReached(Int)
         case timestampPrecedesStart
         case finalLegCompleted
@@ -26,6 +27,7 @@ struct FlightSession: Equatable, Sendable {
         let legID: UUID
         let legIndex: Int
         let startedAt: Date
+        let destinationIdentifiedAt: Date?
         let reachedAt: Date?
 
         var actualElapsedDuration: TimeInterval? {
@@ -43,6 +45,10 @@ struct FlightSession: Equatable, Sendable {
 
     var legStartedAt: Date? {
         legTimings.first { $0.legIndex == activeLegIndex }?.startedAt
+    }
+
+    var destinationIdentifiedAt: Date? {
+        legTimings.first { $0.legIndex == activeLegIndex }?.destinationIdentifiedAt
     }
 
     init(
@@ -85,10 +91,30 @@ struct FlightSession: Equatable, Sendable {
                 legID: legIDs[activeLegIndex],
                 legIndex: activeLegIndex,
                 startedAt: timestamp,
+                destinationIdentifiedAt: nil,
                 reachedAt: nil
             )
         )
         legState = .active
+    }
+
+    mutating func identifyDestination(at timestamp: Date) throws {
+        guard legState == .active,
+              let timingIndex = legTimings.firstIndex(where: { $0.legIndex == activeLegIndex }) else {
+            throw TransitionError.legNotActive
+        }
+        let current = legTimings[timingIndex]
+        guard current.destinationIdentifiedAt == nil else {
+            throw TransitionError.destinationAlreadyIdentified(activeLegIndex)
+        }
+        guard timestamp >= current.startedAt else { throw TransitionError.timestampPrecedesStart }
+        legTimings[timingIndex] = LegTiming(
+            legID: current.legID,
+            legIndex: current.legIndex,
+            startedAt: current.startedAt,
+            destinationIdentifiedAt: timestamp,
+            reachedAt: current.reachedAt
+        )
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date) throws {
@@ -111,6 +137,7 @@ struct FlightSession: Equatable, Sendable {
             legID: current.legID,
             legIndex: current.legIndex,
             startedAt: current.startedAt,
+            destinationIdentifiedAt: current.destinationIdentifiedAt,
             reachedAt: timestamp
         )
 
@@ -127,6 +154,7 @@ struct FlightSession: Equatable, Sendable {
                     legID: legIDs[activeLegIndex],
                     legIndex: activeLegIndex,
                     startedAt: timestamp,
+                    destinationIdentifiedAt: nil,
                     reachedAt: nil
                 )
             )

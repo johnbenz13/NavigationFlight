@@ -98,6 +98,10 @@ struct CockpitFeatureState: Equatable, Sendable {
         }
     }
 
+    mutating func identifyDestination(at timestamp: Date = .now) throws {
+        try session?.identifyDestination(at: timestamp)
+    }
+
     mutating func cancelImport() {
         // Intentionally preserve the loaded plan, selected leg, and calculation mode.
     }

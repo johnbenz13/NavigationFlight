@@ -73,7 +73,149 @@ enum CockpitPresentationError: Error, Equatable, Sendable {
     case missingSourceLeg(UUID)
 }
 
+struct NextLegPreparation: Equatable, Sendable {
+    enum Direction: Equatable, Sendable {
+        case heading(Double)
+        case course(Double)
+    }
+
+    struct FrequencyChange: Equatable, Sendable {
+        let service: String
+        let frequencyMHz: Double
+    }
+
+    let legIndex: Int
+    let direction: Direction
+    let initialAltitudeFeetMsl: Double
+    let immediateAltitudeFeetMsl: Double?
+    let immediateFrequencyChange: FrequencyChange?
+}
+
+struct PreviousLegSummary: Equatable, Sendable {
+    struct VORDME: Equatable, Sendable {
+        let station: String
+        let magneticRadialFromDegrees: Double
+        let slantRangeNauticalMiles: Double
+    }
+
+    let legIndex: Int
+    let origin: String
+    let destination: String
+    let plannedDurationSeconds: Int
+    let actualDurationSeconds: Int
+    let deltaSeconds: Int
+    let magneticHeadingDegrees: Double?
+    let magneticCourseDegrees: Double
+    let vorDme: VORDME?
+}
+
 struct CockpitPresentationAdapter: Sendable {
+    func makeNextLegPreparation(
+        flight: NavigationFlight,
+        session: FlightSession
+    ) throws -> NextLegPreparation? {
+        let nextIndex = session.activeLegIndex + 1
+        guard flight.legs.indices.contains(nextIndex) else { return nil }
+        guard case .eligible(let execution) = flight.execution,
+              execution.legs.indices.contains(nextIndex) else {
+            throw CockpitPresentationError.unavailableExecution
+        }
+
+        let sourceLeg = flight.legs[nextIndex]
+        let resolvedLeg = execution.legs[nextIndex]
+        let direction: NextLegPreparation.Direction
+        switch session.executionMode {
+        case .wind:
+            guard let wind = resolvedLeg.withWind else {
+                throw CockpitPresentationError.unavailableWindMode
+            }
+            direction = .heading(wind.magneticHeading.value)
+        case .noWind:
+            direction = .course(resolvedLeg.magneticCourse.value)
+        }
+
+        let immediateAltitude = flight.altitudeChanges.first { change in
+            guard change.legID == sourceLeg.id else { return false }
+            return switch change.anchor {
+            case .waypoint(let waypointID): waypointID == sourceLeg.departure.id
+            case .legProgress(let progress): progress.fraction == 0
+            case .identificationPoint: false
+            }
+        }?.targetAltitude.value
+        let immediateFrequency = flight.frequencyChanges.first {
+            $0.legID == sourceLeg.id && $0.progress.fraction == 0
+        }.map {
+            NextLegPreparation.FrequencyChange(
+                service: $0.service.name,
+                frequencyMHz: $0.frequency.value
+            )
+        }
+
+        return NextLegPreparation(
+            legIndex: nextIndex,
+            direction: direction,
+            initialAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
+            immediateAltitudeFeetMsl: immediateAltitude,
+            immediateFrequencyChange: immediateFrequency
+        )
+    }
+
+    func makePreviousLegSummary(
+        flight: NavigationFlight,
+        session: FlightSession
+    ) throws -> PreviousLegSummary? {
+        guard let timing = session.legTimings.last(where: { $0.reachedAt != nil }),
+              let reachedAt = timing.reachedAt,
+              flight.legs.indices.contains(timing.legIndex),
+              case .eligible(let execution) = flight.execution,
+              execution.legs.indices.contains(timing.legIndex) else {
+            return nil
+        }
+        let sourceLeg = flight.legs[timing.legIndex]
+        let resolvedLeg = execution.legs[timing.legIndex]
+        let plannedDuration: Int
+        let heading: Double?
+        switch session.executionMode {
+        case .noWind:
+            plannedDuration = resolvedLeg.noWind.durationSeconds
+            heading = nil
+        case .wind:
+            guard let wind = resolvedLeg.withWind else {
+                throw CockpitPresentationError.unavailableWindMode
+            }
+            plannedDuration = wind.timing.durationSeconds
+            heading = wind.magneticHeading.value
+        }
+        let actualDuration = max(0, Int(reachedAt.timeIntervalSince(timing.startedAt).rounded()))
+
+        let acceptedReferences = Dictionary(
+            uniqueKeysWithValues: execution.vorDmeReferences.map { ($0.referenceID, $0) }
+        )
+        let sourceReference = flight.vorDmeReferences.first {
+            $0.waypointID == sourceLeg.arrival.id && acceptedReferences[$0.id] != nil
+        }
+        let vorDme = sourceReference.flatMap { source -> PreviousLegSummary.VORDME? in
+            guard let accepted = acceptedReferences[source.id] else { return nil }
+            return PreviousLegSummary.VORDME(
+                station: source.navigationAid.identifier,
+                magneticRadialFromDegrees: accepted.magneticRadialFrom.value,
+                slantRangeNauticalMiles: accepted.slantRange.value
+            )
+        }
+
+        return PreviousLegSummary(
+            legIndex: timing.legIndex,
+            origin: sourceLeg.departure.name,
+            destination: sourceLeg.arrival.name,
+            plannedDurationSeconds: plannedDuration,
+            actualDurationSeconds: actualDuration,
+            deltaSeconds: actualDuration - plannedDuration,
+            magneticHeadingDegrees: heading,
+            magneticCourseDegrees: resolvedLeg.magneticCourse.value,
+            vorDme: vorDme
+        )
+    }
+
     func makePresentation(
         flight: NavigationFlight,
         legIndex: Int,
@@ -317,5 +459,11 @@ enum CockpitPresentationFormatter {
         let roundedDegrees = Int(value.rounded())
         let normalizedDegrees = ((roundedDegrees % 360) + 360) % 360
         return String(format: "%03d°", normalizedDegrees)
+    }
+
+    static func signedDuration(_ seconds: Int) -> String {
+        let sign = seconds >= 0 ? "+" : "-"
+        let absolute = abs(seconds)
+        return String(format: "%@%02d:%02d", sign, absolute / 60, absolute % 60)
     }
 }

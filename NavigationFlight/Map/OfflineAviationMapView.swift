@@ -308,7 +308,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             )
             style.addSource(previewSource)
             let preview = MLNLineStyleLayer(identifier: Identifier.previewLayer, source: previewSource)
-            preview.lineColor = NSExpression(forConstantValue: UIColor.systemOrange)
+            preview.lineColor = NSExpression(forConstantValue: visualStyle.nextLegAccentColor)
             preview.lineWidth = NSExpression(forConstantValue: 4)
             preview.lineOpacity = NSExpression(forConstantValue: 0.9)
             preview.lineDashPattern = NSExpression(forConstantValue: [1.5, 1.5])

@@ -1562,7 +1562,8 @@ private struct IdentificationPointCalloutContent: View {
     }
 
     private func expanded(_ context: AviationMapIdentificationContext) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
+        let operationalState = point.operationalState
+        return VStack(alignment: .leading, spacing: 9) {
             Button(action: onCollapseOrExpand) {
                 HStack {
                     Text("IDENTIFICATION POINT").font(.caption.weight(.bold)).tracking(0.7)
@@ -1573,20 +1574,38 @@ private struct IdentificationPointCalloutContent: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            Text(point.isReached ? "\(point.name) · Reached" : point.name).font(.headline)
-            timingRow("PLAN", point.plannedElapsedSeconds, strong: false)
+            Text(operationalState.isReached ? "\(point.name) · Reached" : point.name).font(.headline)
+            if !operationalState.isReached, let committed = operationalState.committedETASeconds {
+                timingRow("ETA", committed, strong: true)
+                timingRow("PLAN", operationalState.plannedElapsedSeconds, strong: false)
+            } else {
+                timingRow(operationalState.isReached ? "PLAN" : "PLAN ETA", operationalState.plannedElapsedSeconds, strong: false)
+            }
 
-            if point.isReached, let actual = context.actualElapsedSeconds {
+            if operationalState.isReached, let actual = context.actualElapsedSeconds {
                 timingRow("ACTUAL", actual, strong: false)
                 signedTimingRow("Δ", actual - point.plannedElapsedSeconds)
             }
 
-            if !point.isReached {
+            if operationalState.canMarkReached {
                 Button("Point Reached", systemImage: "checkmark", action: onReach)
                     .font(.headline)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("identification-point-reached")
+                Button("Edit ETA") {
+                    let targetKey = NavigationTimingTargetKey(
+                        legID: point.id.legID,
+                        kind: .identificationPoint,
+                        targetID: point.id.identificationPointID
+                    )
+                    if operationalState.committedETASeconds != nil { onEdit(targetKey) }
+                    onRevise(targetKey)
+                }
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("edit-identification-point-eta")
             } else if let target = context.nextTarget,
                       true {
                 Divider()

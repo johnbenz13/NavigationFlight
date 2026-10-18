@@ -1385,6 +1385,128 @@ struct NavigationFlightTests {
         #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
     }
 
+    @Test func unreachedIdentificationPointWithoutAmendmentKeepsReachPrimaryAndETASecondary() {
+        let point = AviationMapIdentificationPoint(
+            id: .init(legID: UUID(), identificationPointID: UUID()),
+            name: "Identification Point 1",
+            coordinate: .init(latitude: 0, longitude: 0),
+            plannedElapsedSeconds: 94,
+            isReached: false,
+            committedETASeconds: nil
+        )
+
+        #expect(point.operationalState.isReached == false)
+        #expect(point.operationalState.canMarkReached)
+        #expect(point.operationalState.canEditETA)
+        #expect(point.operationalState.operationalETASeconds == 94)
+    }
+
+    @Test func unreachedIdentificationPointWithRevisedETAKeepsReachPrimary() {
+        let point = AviationMapIdentificationPoint(
+            id: .init(legID: UUID(), identificationPointID: UUID()),
+            name: "Identification Point 1",
+            coordinate: .init(latitude: 0, longitude: 0),
+            plannedElapsedSeconds: 94,
+            isReached: false,
+            committedETASeconds: 95
+        )
+
+        #expect(point.operationalState.isReached == false)
+        #expect(point.operationalState.canMarkReached)
+        #expect(point.operationalState.canEditETA)
+        #expect(point.operationalState.operationalETASeconds == 95)
+        #expect(point.operationalState.plannedElapsedSeconds == 94)
+    }
+
+    @Test func settingIdentificationPointETADoesNotReachOrProgressTheLeg() throws {
+        let legID = UUID()
+        let pointID = UUID()
+        let targetKey = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .identificationPoint,
+            targetID: pointID
+        )
+        let startedAt = Date(timeIntervalSince1970: 12_000)
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID, UUID()], activeLegIndex: 0, executionMode: .noWind
+        )
+        try session.startLeg(at: startedAt)
+
+        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 94)
+        session.adjustPilotETA(targetKey: targetKey, by: 5)
+        session.commitPilotETA(targetKey: targetKey)
+
+        #expect(session.committedPilotETA(targetKey: targetKey) == 100)
+        #expect(session.identificationPointTiming(for: .init(legID: legID, identificationPointID: pointID)) == nil)
+        #expect(session.legStartedAt == startedAt)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legState == .active)
+    }
+
+    @Test func reachingIdentificationPointAfterETARevisionRecordsReachAndPreservesRevision() throws {
+        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let startedAt = Date(timeIntervalSince1970: 13_000)
+        let reachedAt = startedAt.addingTimeInterval(17)
+        try session.startLeg(at: startedAt)
+        let before = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let point = try #require(before.identificationPoints.first)
+        let targetKey = NavigationTimingTargetKey(
+            legID: point.id.legID,
+            kind: .identificationPoint,
+            targetID: point.id.identificationPointID
+        )
+        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: point.plannedElapsedSeconds)
+        session.adjustPilotETA(targetKey: targetKey, by: 5)
+        session.commitPilotETA(targetKey: targetKey)
+        let revised = try #require(session.committedPilotETA(targetKey: targetKey))
+
+        try session.reachIdentificationPoint(key: point.id, at: reachedAt)
+
+        #expect(session.identificationPointTiming(for: point.id)?.reachedAt == reachedAt)
+        #expect(session.committedPilotETA(targetKey: targetKey) == revised)
+        let after = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let reachedPoint = try #require(after.identificationPoints.first)
+        #expect(reachedPoint.isReached)
+        #expect(reachedPoint.operationalState.canMarkReached == false)
+    }
+
+    @Test func legTwoIdentificationPointRevisionDoesNotImplyReachAndRemainsLegScoped() throws {
+        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let startedAt = Date(timeIntervalSince1970: 14_000)
+        try session.startLeg(at: startedAt)
+        try session.reachCurrentWaypoint(at: startedAt.addingTimeInterval(40))
+        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let point = try #require(presentation.identificationPoints.first)
+        let key = NavigationTimingTargetKey(
+            legID: point.id.legID,
+            kind: .identificationPoint,
+            targetID: point.id.identificationPointID
+        )
+        session.initializePilotETA(targetKey: key, plannedElapsedSeconds: point.plannedElapsedSeconds)
+        session.adjustPilotETA(targetKey: key, by: 5)
+        session.commitPilotETA(targetKey: key)
+
+        let revisedPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let revisedPoint = try #require(revisedPresentation.identificationPoints.first)
+        #expect(revisedPoint.id.legID == flight.legs[1].id)
+        #expect(revisedPoint.isReached == false)
+        #expect(revisedPoint.operationalState.canMarkReached)
+        #expect(revisedPoint.committedETASeconds == session.committedPilotETA(targetKey: key))
+        #expect(session.identificationPointTiming(for: revisedPoint.id) == nil)
+    }
+
     @Test func nextTargetShortcutAndDirectLookupResolveTheSameCanonicalKey() {
         let legID = UUID()
         let first = IdentificationPointKey(legID: legID, identificationPointID: UUID())

@@ -185,7 +185,7 @@ struct CockpitView: View {
                 onSelectTimingTarget: selectTimingTarget,
                 onReachIdentificationPoint: reachSelectedIdentificationPoint,
                 onAdjustPilotETA: onAdjustPilotETA,
-                onCommitPilotETA: onCommitPilotETA,
+                onCommitPilotETA: commitPilotETA,
                 onEditPilotETA: onEditPilotETA,
                 onShowPilotETACheck: onShowPilotETACheck,
                 onHidePilotETACheck: onHidePilotETACheck
@@ -484,15 +484,7 @@ struct CockpitView: View {
     }
 
     private func selectIdentificationPoint(_ id: IdentificationPointKey) {
-        let targetKey = NavigationTimingTargetKey(
-            legID: id.legID,
-            kind: .identificationPoint,
-            targetID: id.identificationPointID
-        )
-        if let point = mapPresentation.identificationPoints.first(where: { $0.id == id }), !point.isReached {
-            selectTimingTarget(targetKey)
-            return
-        }
+        selectedTimingTargetKey = nil
         if selectedIdentificationPointID == id {
             selectedIdentificationPointID = nil
             return
@@ -500,6 +492,16 @@ struct CockpitView: View {
         selectedIdentificationPointID = id
         isNextPreparationPresented = false
         onCollapseChecklist()
+    }
+
+    private func commitPilotETA(_ key: NavigationTimingTargetKey) {
+        onCommitPilotETA(key)
+        guard key.kind == .identificationPoint else { return }
+        selectedTimingTargetKey = nil
+        selectedIdentificationPointID = IdentificationPointKey(
+            legID: key.legID,
+            identificationPointID: key.targetID
+        )
     }
 
     private func selectTimingTarget(_ key: NavigationTimingTargetKey) {

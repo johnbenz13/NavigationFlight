@@ -57,6 +57,24 @@ struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
     let plannedElapsedSeconds: Int
     let isReached: Bool
     let committedETASeconds: Int?
+
+    var operationalState: AviationMapIdentificationPointOperationalState {
+        AviationMapIdentificationPointOperationalState(
+            isReached: isReached,
+            plannedElapsedSeconds: plannedElapsedSeconds,
+            committedETASeconds: committedETASeconds
+        )
+    }
+}
+
+struct AviationMapIdentificationPointOperationalState: Equatable, Sendable {
+    let isReached: Bool
+    let plannedElapsedSeconds: Int
+    let committedETASeconds: Int?
+
+    var canMarkReached: Bool { !isReached }
+    var canEditETA: Bool { !isReached }
+    var operationalETASeconds: Int { committedETASeconds ?? plannedElapsedSeconds }
 }
 
 struct AviationMapETATarget: Identifiable, Equatable, Sendable {

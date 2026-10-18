@@ -42,8 +42,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let resources: any AviationMapResourceProviding
     let visualStyle: AviationMapVisualStyle
     @Binding var etaCalloutOffset: AviationMapCalloutOffset
+    @Binding var identificationPointCalloutOffsets: [UUID: AviationMapCalloutOffset]
     @Binding var preservedCamera: AviationMapCameraState?
     @Binding var isCameraUserControlled: Bool
+    let onSelectIdentificationPoint: (UUID) -> Void
 
     init(
         presentation: AviationMapPresentation,
@@ -52,8 +54,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
         resources: any AviationMapResourceProviding = BundledAviationMapResourceProvider(),
         visualStyle: AviationMapVisualStyle = .default,
         etaCalloutOffset: Binding<AviationMapCalloutOffset>,
+        identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>,
         preservedCamera: Binding<AviationMapCameraState?>,
-        isCameraUserControlled: Binding<Bool>
+        isCameraUserControlled: Binding<Bool>,
+        onSelectIdentificationPoint: @escaping (UUID) -> Void
     ) {
         self.presentation = presentation
         self.legState = legState
@@ -61,8 +65,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.resources = resources
         self.visualStyle = visualStyle
         _etaCalloutOffset = etaCalloutOffset
+        _identificationPointCalloutOffsets = identificationPointCalloutOffsets
         _preservedCamera = preservedCamera
         _isCameraUserControlled = isCameraUserControlled
+        self.onSelectIdentificationPoint = onSelectIdentificationPoint
     }
 
     func makeCoordinator() -> Coordinator {
@@ -73,9 +79,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             chartURL: resources.chartURL(),
             visualStyle: visualStyle,
             etaCalloutOffset: $etaCalloutOffset,
+            identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
             initialCamera: preservedCamera,
             preservedCamera: $preservedCamera,
-            isCameraUserControlled: $isCameraUserControlled
+            isCameraUserControlled: $isCameraUserControlled,
+            onSelectIdentificationPoint: onSelectIdentificationPoint
         )
     }
 
@@ -120,12 +128,14 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private let chartURL: URL?
         private let visualStyle: AviationMapVisualStyle
         private let etaCalloutOffset: Binding<AviationMapCalloutOffset>
+        private let identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>
         private let initialCamera: AviationMapCameraState?
         private let preservedCamera: Binding<AviationMapCameraState?>
         private let isCameraUserControlled: Binding<Bool>
         private var styleIsReady = false
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
+        private let onSelectIdentificationPoint: (UUID) -> Void
 
         init(
             presentation: AviationMapPresentation,
@@ -134,9 +144,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             chartURL: URL?,
             visualStyle: AviationMapVisualStyle,
             etaCalloutOffset: Binding<AviationMapCalloutOffset>,
+            identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>,
             initialCamera: AviationMapCameraState?,
             preservedCamera: Binding<AviationMapCameraState?>,
-            isCameraUserControlled: Binding<Bool>
+            isCameraUserControlled: Binding<Bool>,
+            onSelectIdentificationPoint: @escaping (UUID) -> Void
         ) {
             self.presentation = presentation
             self.legState = legState
@@ -144,9 +156,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.chartURL = chartURL
             self.visualStyle = visualStyle
             self.etaCalloutOffset = etaCalloutOffset
+            self.identificationPointCalloutOffsets = identificationPointCalloutOffsets
             self.initialCamera = initialCamera
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
+            self.onSelectIdentificationPoint = onSelectIdentificationPoint
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
@@ -214,6 +228,25 @@ struct OfflineAviationMapView: UIViewRepresentable {
             }
             if let annotation = annotation as? MinuteLabelAnnotation {
                 return MinuteLabelAnnotationView(annotation: annotation, visualStyle: visualStyle)
+            }
+            if let annotation = annotation as? IdentificationPointSymbolAnnotation {
+                return IdentificationPointSymbolAnnotationView(
+                    annotation: annotation,
+                    visualStyle: visualStyle,
+                    onSelect: onSelectIdentificationPoint
+                )
+            }
+            if let annotation = annotation as? IdentificationPointLabelAnnotation {
+                let savedOffset = identificationPointCalloutOffsets.wrappedValue[annotation.point.id]
+                    ?? visualStyle.defaultIdentificationPointCalloutOffset
+                return IdentificationPointLabelAnnotationView(
+                    annotation: annotation,
+                    visualStyle: visualStyle,
+                    offset: savedOffset,
+                    onSelect: onSelectIdentificationPoint
+                ) { [weak self] offset in
+                    self?.identificationPointCalloutOffsets.wrappedValue[annotation.point.id] = offset
+                }
             }
             return nil
         }
@@ -578,6 +611,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
             endpointAnnotations.append(contentsOf: presentation.minuteMarkers.compactMap { marker in
                 marker.showsLabel ? MinuteLabelAnnotation(marker: marker) : nil
             })
+            for point in presentation.identificationPoints {
+                endpointAnnotations.append(IdentificationPointSymbolAnnotation(point: point))
+                endpointAnnotations.append(IdentificationPointLabelAnnotation(point: point))
+            }
             mapView.addAnnotations(endpointAnnotations)
         }
 
@@ -945,6 +982,170 @@ private final class DestinationCalloutView: UIView {
     required init?(coder: NSCoder) {
         return nil
     }
+}
+
+private final class IdentificationPointSymbolAnnotation: MLNPointAnnotation {
+    let point: AviationMapIdentificationPoint
+
+    init(point: AviationMapIdentificationPoint) {
+        self.point = point
+        super.init()
+        coordinate = CLLocationCoordinate2D(
+            latitude: point.coordinate.latitude,
+            longitude: point.coordinate.longitude
+        )
+    }
+
+    required init?(coder: NSCoder) { nil }
+}
+
+private final class IdentificationPointLabelAnnotation: MLNPointAnnotation {
+    let point: AviationMapIdentificationPoint
+
+    init(point: AviationMapIdentificationPoint) {
+        self.point = point
+        super.init()
+        coordinate = CLLocationCoordinate2D(
+            latitude: point.coordinate.latitude,
+            longitude: point.coordinate.longitude
+        )
+    }
+
+    required init?(coder: NSCoder) { nil }
+}
+
+private final class IdentificationPointSymbolAnnotationView: MLNAnnotationView {
+    private let pointID: UUID
+    private let onSelect: (UUID) -> Void
+
+    init(
+        annotation: IdentificationPointSymbolAnnotation,
+        visualStyle: AviationMapVisualStyle,
+        onSelect: @escaping (UUID) -> Void
+    ) {
+        pointID = annotation.point.id
+        self.onSelect = onSelect
+        super.init(reuseIdentifier: "identification-symbol-\(annotation.point.id)")
+        let size = max(visualStyle.identificationPointSymbolSize, 44)
+        frame = CGRect(origin: .zero, size: CGSize(width: size, height: size))
+        let symbol = UIImageView(image: UIImage(
+            systemName: annotation.point.isReached ? "checkmark.diamond" : "diamond"
+        ))
+        symbol.tintColor = annotation.point.isReached
+            ? visualStyle.identificationPointReachedColor
+            : visualStyle.identificationPointColor
+        symbol.contentMode = .scaleAspectFit
+        symbol.frame = bounds.insetBy(dx: 11, dy: 11)
+        addSubview(symbol)
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
+        isEnabled = true
+        accessibilityLabel = "\(annotation.point.name), \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
+        accessibilityTraits = .button
+    }
+
+    @objc private func selectPoint() { onSelect(pointID) }
+    required init?(coder: NSCoder) { nil }
+}
+
+private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, UIGestureRecognizerDelegate {
+    private var offset: AviationMapCalloutOffset
+    private let pointID: UUID
+    private let onSelect: (UUID) -> Void
+    private let onOffsetChange: (AviationMapCalloutOffset) -> Void
+    private let leader = CAShapeLayer()
+
+    init(
+        annotation: IdentificationPointLabelAnnotation,
+        visualStyle: AviationMapVisualStyle,
+        offset: AviationMapCalloutOffset,
+        onSelect: @escaping (UUID) -> Void,
+        onOffsetChange: @escaping (AviationMapCalloutOffset) -> Void
+    ) {
+        self.offset = offset
+        pointID = annotation.point.id
+        self.onSelect = onSelect
+        self.onOffsetChange = onOffsetChange
+        super.init(reuseIdentifier: "identification-label-\(annotation.point.id)")
+        frame = CGRect(x: 0, y: 0, width: 132, height: 48)
+        clipsToBounds = false
+        layer.masksToBounds = false
+
+        leader.strokeColor = visualStyle.identificationPointCalloutBorderColor
+            .withAlphaComponent(visualStyle.identificationPointCalloutBorderOpacity).cgColor
+        leader.lineWidth = visualStyle.identificationPointCalloutBorderWidth
+        leader.fillColor = UIColor.clear.cgColor
+        layer.insertSublayer(leader, at: 0)
+
+        let content = UIView(frame: bounds)
+        content.backgroundColor = visualStyle.identificationPointCalloutBackgroundColor.withAlphaComponent(
+            visualStyle.identificationPointCalloutBackgroundOpacity
+        )
+        content.layer.borderColor = visualStyle.identificationPointCalloutBorderColor.withAlphaComponent(
+            visualStyle.identificationPointCalloutBorderOpacity
+        ).cgColor
+        content.layer.borderWidth = visualStyle.identificationPointCalloutBorderWidth
+        content.layer.cornerRadius = 4
+
+        let name = UILabel()
+        name.text = annotation.point.name
+        name.textAlignment = .center
+        name.font = .systemFont(ofSize: visualStyle.identificationPointCalloutNameFontSize, weight: .semibold)
+        name.textColor = UIColor.label.withAlphaComponent(visualStyle.identificationPointCalloutTextOpacity)
+        let time = UILabel()
+        time.text = AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds)
+        time.textAlignment = .center
+        time.font = .monospacedDigitSystemFont(ofSize: visualStyle.identificationPointCalloutTimeFontSize, weight: .bold)
+        time.textColor = UIColor.label.withAlphaComponent(visualStyle.identificationPointCalloutTextOpacity)
+        let stack = UIStackView(arrangedSubviews: [name, time])
+        stack.axis = .vertical
+        stack.spacing = -2
+        stack.frame = content.bounds.insetBy(dx: 5, dy: 3)
+        content.addSubview(stack)
+        addSubview(content)
+
+        let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        pan.delegate = self
+        addGestureRecognizer(pan)
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
+        isEnabled = true
+        centerOffset = CGVector(dx: offset.x, dy: offset.y)
+        updateLeader()
+        accessibilityLabel = "\(annotation.point.name), planned time \(time.text ?? "")"
+        accessibilityTraits = .button
+    }
+
+    @objc private func selectPoint() { onSelect(pointID) }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let host = superview else { return }
+        let translation = gesture.translation(in: host)
+        offset = offset.translated(x: translation.x, y: translation.y)
+        centerOffset = CGVector(dx: offset.x, dy: offset.y)
+        center = CGPoint(x: center.x + translation.x, y: center.y + translation.y)
+        updateLeader()
+        onOffsetChange(offset)
+        gesture.setTranslation(.zero, in: host)
+    }
+
+    private func updateLeader() {
+        let center = CGPoint(x: bounds.midX, y: bounds.midY)
+        let anchor = CGPoint(x: center.x - offset.x, y: center.y - offset.y)
+        let delta = CGPoint(x: anchor.x - center.x, y: anchor.y - center.y)
+        let horizontalScale = delta.x == 0 ? .greatestFiniteMagnitude : bounds.width / 2 / abs(delta.x)
+        let verticalScale = delta.y == 0 ? .greatestFiniteMagnitude : bounds.height / 2 / abs(delta.y)
+        let scale = min(horizontalScale, verticalScale)
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: center.x + delta.x * scale, y: center.y + delta.y * scale))
+        path.addLine(to: anchor)
+        leader.path = path.cgPath
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool { false }
+
+    required init?(coder: NSCoder) { nil }
 }
 
 private final class MinuteLabelAnnotation: MLNPointAnnotation {

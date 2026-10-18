@@ -140,6 +140,24 @@ struct CockpitFeatureState: Equatable, Sendable {
         hideActiveLegStartChecklistForPhase()
     }
 
+    mutating func reachIdentificationPoint(
+        id: UUID,
+        nextTarget: AviationMapETATarget?,
+        at timestamp: Date = .now
+    ) throws {
+        try session?.reachIdentificationPoint(id: id, at: timestamp)
+        if let nextTarget {
+            session?.initializePilotETA(
+                targetID: nextTarget.id,
+                plannedElapsedSeconds: nextTarget.plannedElapsedSeconds
+            )
+        }
+    }
+
+    mutating func adjustPilotETA(targetID: UUID, by deltaSeconds: Int) {
+        session?.adjustPilotETA(targetID: targetID, by: deltaSeconds)
+    }
+
     mutating func cancelImport() {
         // Intentionally preserve the loaded plan, selected leg, and calculation mode.
     }

@@ -61,6 +61,22 @@ struct AviationMapVisualStyle {
 
     let defaultEtaCalloutOffset = AviationMapCalloutOffset(x: -180, y: -72)
 
+    let identificationPointSymbolSize: CGFloat = 19
+    var identificationPointColor: UIColor { currentLegAccentColor }
+    let identificationPointReachedColor = UIColor.systemGreen
+    let identificationPointSymbolLineWidth: CGFloat = 2
+    let identificationPointCalloutBackgroundColor = UIColor.systemBackground
+    let identificationPointCalloutBackgroundOpacity: CGFloat = 0.40
+    var identificationPointCalloutBorderColor: UIColor { currentLegAccentColor }
+    let identificationPointCalloutBorderOpacity: CGFloat = 0.95
+    let identificationPointCalloutBorderWidth: CGFloat = 1.5
+    let identificationPointCalloutTextOpacity: CGFloat = 1
+    let identificationPointCalloutNameFontSize: CGFloat = 12
+    let identificationPointCalloutTimeFontSize: CGFloat = 16
+    let identificationPointPanelWidth: CGFloat = 300
+    let etaAdjustmentStepSeconds = 5
+    let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: 0, y: -56)
+
     func minuteTickLengthFraction(for level: AviationMapMinuteMarkLevel) -> Double {
         switch level {
         case .odd: oddMinuteTickLengthFraction

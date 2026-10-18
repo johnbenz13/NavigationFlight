@@ -19,6 +19,7 @@ struct FlightSession: Equatable, Sendable {
         case legAlreadyStarted(Int)
         case destinationAlreadyIdentified(Int)
         case waypointAlreadyReached(Int)
+        case identificationPointAlreadyReached(UUID)
         case timestampPrecedesStart
         case finalLegCompleted
     }
@@ -35,6 +36,17 @@ struct FlightSession: Equatable, Sendable {
         }
     }
 
+    struct IdentificationPointTiming: Equatable, Sendable {
+        let identificationPointID: UUID
+        let legID: UUID
+        let legIndex: Int
+        let reachedAt: Date
+
+        func actualLegElapsedDuration(startedAt: Date) -> TimeInterval {
+            reachedAt.timeIntervalSince(startedAt)
+        }
+    }
+
     let flightID: UUID
     let legIDs: [UUID]
     let progressionPolicy: ProgressionPolicy
@@ -42,6 +54,8 @@ struct FlightSession: Equatable, Sendable {
     private(set) var executionMode: NavigationMode
     private(set) var legState: LegState
     private(set) var legTimings: [LegTiming]
+    private(set) var identificationPointTimings: [IdentificationPointTiming]
+    private(set) var pilotETAsByTargetID: [UUID: Int]
 
     var legStartedAt: Date? {
         legTimings.first { $0.legIndex == activeLegIndex }?.startedAt
@@ -66,6 +80,8 @@ struct FlightSession: Equatable, Sendable {
         self.progressionPolicy = progressionPolicy
         self.legState = .ready
         self.legTimings = []
+        self.identificationPointTimings = []
+        self.pilotETAsByTargetID = [:]
     }
 
     mutating func selectReadyLeg(index: Int, mode: NavigationMode) throws {
@@ -115,6 +131,50 @@ struct FlightSession: Equatable, Sendable {
             destinationIdentifiedAt: timestamp,
             reachedAt: current.reachedAt
         )
+    }
+
+    mutating func reachIdentificationPoint(id: UUID, at timestamp: Date) throws {
+        guard legState == .active, let startedAt = legStartedAt else {
+            throw TransitionError.legNotActive
+        }
+        guard identificationPointTimings.allSatisfy({ $0.identificationPointID != id }) else {
+            throw TransitionError.identificationPointAlreadyReached(id)
+        }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        identificationPointTimings.append(
+            IdentificationPointTiming(
+                identificationPointID: id,
+                legID: legIDs[activeLegIndex],
+                legIndex: activeLegIndex,
+                reachedAt: timestamp
+            )
+        )
+    }
+
+    func identificationPointTiming(for id: UUID) -> IdentificationPointTiming? {
+        identificationPointTimings.first { $0.identificationPointID == id }
+    }
+
+    func actualLegElapsedDuration(atIdentificationPoint id: UUID) -> TimeInterval? {
+        guard let record = identificationPointTiming(for: id),
+              let legTiming = legTimings.first(where: { $0.legID == record.legID }) else { return nil }
+        return record.actualLegElapsedDuration(startedAt: legTiming.startedAt)
+    }
+
+    mutating func initializePilotETA(targetID: UUID, plannedElapsedSeconds: Int) {
+        guard plannedElapsedSeconds >= 0, pilotETAsByTargetID[targetID] == nil else { return }
+        pilotETAsByTargetID[targetID] = IdentificationPointTimingCalculator.roundToNearestFiveSeconds(
+            plannedElapsedSeconds
+        )
+    }
+
+    mutating func adjustPilotETA(targetID: UUID, by deltaSeconds: Int) {
+        guard let current = pilotETAsByTargetID[targetID] else { return }
+        pilotETAsByTargetID[targetID] = max(0, current + deltaSeconds)
+    }
+
+    func pilotETA(targetID: UUID) -> Int? {
+        pilotETAsByTargetID[targetID]
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date) throws {

@@ -50,6 +50,26 @@ struct AviationMapMinuteMarker: Equatable, Sendable {
     var showsLabel: Bool { level == .even }
 }
 
+struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let name: String
+    let coordinate: AviationMapCoordinate
+    let plannedElapsedSeconds: Int
+    let isReached: Bool
+}
+
+struct AviationMapETATarget: Identifiable, Equatable, Sendable {
+    enum Kind: Equatable, Sendable {
+        case identificationPoint
+        case destination
+    }
+
+    let id: UUID
+    let name: String
+    let plannedElapsedSeconds: Int
+    let kind: Kind
+}
+
 struct AviationMapPresentation: Equatable, Sendable {
     let waypoints: [AviationMapWaypoint]
     let legs: [AviationMapLeg]
@@ -58,6 +78,8 @@ struct AviationMapPresentation: Equatable, Sendable {
     let endpointReferences: [AviationMapVORDMEReference]
     let plannedDurationSeconds: Int
     let minuteMarkers: [AviationMapMinuteMarker]
+    let identificationPoints: [AviationMapIdentificationPoint]
+    let destinationTarget: AviationMapETATarget
 
     var activeLeg: AviationMapLeg? {
         legs.first { $0.index == activeLegIndex }
@@ -73,6 +95,21 @@ struct AviationMapPresentation: Equatable, Sendable {
 
     var plannedDurationText: String {
         AviationMapSymbology.formatDuration(plannedDurationSeconds)
+    }
+
+    func nextETATarget(after identificationPointID: UUID) -> AviationMapETATarget? {
+        guard let reachedIndex = identificationPoints.firstIndex(where: { $0.id == identificationPointID }) else {
+            return nil
+        }
+        if let next = identificationPoints[(reachedIndex + 1)...].first(where: { !$0.isReached }) {
+            return AviationMapETATarget(
+                id: next.id,
+                name: next.name,
+                plannedElapsedSeconds: next.plannedElapsedSeconds,
+                kind: .identificationPoint
+            )
+        }
+        return destinationTarget
     }
 }
 
@@ -128,6 +165,34 @@ struct AviationMapPresentationFactory {
                 to: coordinate(leg.arrival.position)
             )
         }
+        let annotationsByID = Dictionary(uniqueKeysWithValues: execution.annotations.map { ($0.entityID, $0) })
+        let activeIdentificationPoints = try flight.identificationPoints
+            .filter { $0.legID == activeSourceLeg.id }
+            .enumerated()
+            .map { offset, sourcePoint in
+                guard let resolved = annotationsByID[sourcePoint.id],
+                      resolved.kind == .identificationPoint,
+                      resolved.legID == activeSourceLeg.id else {
+                    throw AviationMapPresentationError.missingExecutionReference(sourcePoint.id)
+                }
+                let plannedElapsed: Int
+                switch session.executionMode {
+                case .noWind:
+                    plannedElapsed = resolved.noWindTimeFromLegStartSeconds
+                case .wind:
+                    guard let withWind = resolved.withWindTimeFromLegStartSeconds else {
+                        throw AviationMapPresentationError.unavailableWindMode
+                    }
+                    plannedElapsed = withWind
+                }
+                return AviationMapIdentificationPoint(
+                    id: sourcePoint.id,
+                    name: "Identification Point \(offset + 1)",
+                    coordinate: coordinate(resolved.position),
+                    plannedElapsedSeconds: plannedElapsed,
+                    isReached: session.identificationPointTiming(for: sourcePoint.id) != nil
+                )
+            }
 
         let executionReferences = Dictionary(
             uniqueKeysWithValues: (flight.execution.execution?.vorDmeReferences ?? []).map {
@@ -166,6 +231,13 @@ struct AviationMapPresentationFactory {
                 from: coordinate(activeSourceLeg.departure.position),
                 to: coordinate(activeSourceLeg.arrival.position),
                 plannedDurationSeconds: plannedDurationSeconds
+            ),
+            identificationPoints: activeIdentificationPoints,
+            destinationTarget: AviationMapETATarget(
+                id: activeSourceLeg.arrival.id,
+                name: activeSourceLeg.arrival.name,
+                plannedElapsedSeconds: plannedDurationSeconds,
+                kind: .destination
             )
         )
     }

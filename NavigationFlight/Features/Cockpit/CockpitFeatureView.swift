@@ -90,6 +90,12 @@ struct CockpitFeatureView: View {
                         onStartLeg: { try? state.startLeg(at: .now) },
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
+                        onIdentificationPointReached: { pointID, target in
+                            try? state.reachIdentificationPoint(id: pointID, nextTarget: target, at: .now)
+                        },
+                        onAdjustPilotETA: { targetID, delta in
+                            state.adjustPilotETA(targetID: targetID, by: delta)
+                        },
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },

@@ -1103,6 +1103,134 @@ struct NavigationFlightTests {
         #expect(savedDuration == 382)
     }
 
+    @Test func importedIdentificationPointOrderingAndResolvedLegETAArePreserved() throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let pointID = try #require(flight.identificationPoints.first?.id)
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+
+        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+
+        #expect(presentation.identificationPoints.map(\.id) == flight.identificationPoints.map(\.id))
+        #expect(presentation.identificationPoints.first?.id == pointID)
+        #expect(presentation.identificationPoints.first?.coordinate.latitude == 32.179463389700274)
+        #expect(presentation.identificationPoints.first?.plannedElapsedSeconds == 222)
+    }
+
+    @Test func identificationPointReachRecordsOnceWithoutChangingLeg() throws {
+        let pointA = UUID()
+        let pointB = UUID()
+        let legIDs = [UUID(), UUID()]
+        let startedAt = Date(timeIntervalSince1970: 36_000)
+        let reachedA = startedAt.addingTimeInterval(173)
+        let reachedB = startedAt.addingTimeInterval(240)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: legIDs,
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: startedAt)
+
+        try session.reachIdentificationPoint(id: pointA, at: reachedA)
+        try session.reachIdentificationPoint(id: pointB, at: reachedB)
+
+        #expect(session.identificationPointTiming(for: pointA)?.reachedAt == reachedA)
+        #expect(session.actualLegElapsedDuration(atIdentificationPoint: pointA) == 173)
+        #expect(session.identificationPointTiming(for: pointB)?.reachedAt == reachedB)
+        #expect(session.identificationPointTimings.count == 2)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legState == .active)
+        #expect(session.legStartedAt == startedAt)
+        #expect(session.elapsedTime(at: startedAt.addingTimeInterval(300)) == 300)
+        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(pointA)) {
+            try session.reachIdentificationPoint(id: pointA, at: startedAt.addingTimeInterval(400))
+        }
+        #expect(session.identificationPointTiming(for: pointA)?.reachedAt == reachedA)
+    }
+
+    @Test func identificationPointTimingDeltaAndTargetProgressionAreDeterministic() throws {
+        let pointA = UUID()
+        let pointB = UUID()
+        let destination = UUID()
+        let points = [
+            AviationMapIdentificationPoint(id: pointA, name: "A", coordinate: .init(latitude: 1, longitude: 1), plannedElapsedSeconds: 160, isReached: true),
+            AviationMapIdentificationPoint(id: pointB, name: "B", coordinate: .init(latitude: 2, longitude: 2), plannedElapsedSeconds: 256, isReached: false)
+        ]
+        let presentation = AviationMapPresentation(
+            waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
+            endpointReferences: [], plannedDurationSeconds: 338, minuteMarkers: [],
+            identificationPoints: points,
+            destinationTarget: .init(id: destination, name: "Destination", plannedElapsedSeconds: 338, kind: .destination)
+        )
+
+        #expect(presentation.nextETATarget(after: pointA)?.id == pointB)
+        let completedPoints = points.map {
+            AviationMapIdentificationPoint(id: $0.id, name: $0.name, coordinate: $0.coordinate, plannedElapsedSeconds: $0.plannedElapsedSeconds, isReached: true)
+        }
+        let completedPresentation = AviationMapPresentation(
+            waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
+            endpointReferences: [], plannedDurationSeconds: 338, minuteMarkers: [],
+            identificationPoints: completedPoints,
+            destinationTarget: presentation.destinationTarget
+        )
+        #expect(completedPresentation.nextETATarget(after: pointA)?.id == destination)
+        #expect(completedPresentation.nextETATarget(after: pointB)?.id == destination)
+
+        let actual = 173
+        #expect(actual - points[0].plannedElapsedSeconds == 13)
+    }
+
+    @Test func pilotETARoundsAndAdjustsWithoutMutatingPlan() {
+        let targetID = UUID()
+        let plan = 338
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [UUID()], activeLegIndex: 0, executionMode: .noWind
+        )
+
+        session.initializePilotETA(targetID: targetID, plannedElapsedSeconds: plan)
+        #expect(session.pilotETA(targetID: targetID) == 340)
+        session.adjustPilotETA(targetID: targetID, by: 5)
+        #expect(session.pilotETA(targetID: targetID) == 345)
+
+        var earlierSession = FlightSession(
+            flightID: UUID(), legIDs: [UUID()], activeLegIndex: 0, executionMode: .noWind
+        )
+        earlierSession.initializePilotETA(targetID: targetID, plannedElapsedSeconds: plan)
+        earlierSession.adjustPilotETA(targetID: targetID, by: -5)
+        #expect(earlierSession.pilotETA(targetID: targetID) == 335)
+        #expect(plan == 338)
+    }
+
+    @Test func proportionalReferenceAndInvalidCases() throws {
+        let reference = try #require(IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: 160,
+            actualReachedElapsed: 173,
+            plannedTargetElapsed: 256
+        ))
+        #expect(abs(reference - 276.8) < 0.000_001)
+        let displayed = IdentificationPointTimingCalculator.displaySeconds(reference)
+        #expect(displayed == 277)
+        #expect(280 - displayed == 3)
+        #expect(IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: 0, actualReachedElapsed: 173, plannedTargetElapsed: 256
+        ) == nil)
+        #expect(IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: nil, actualReachedElapsed: 173, plannedTargetElapsed: 256
+        ) == nil)
+        #expect(IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: 160, actualReachedElapsed: nil, plannedTargetElapsed: 256
+        ) == nil)
+        #expect(IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: 160, actualReachedElapsed: 173, plannedTargetElapsed: nil
+        ) == nil)
+    }
+
     private func representativeData() throws -> Data {
         let bundle = Bundle(for: FixtureLocator.self)
         let nestedURL = bundle.url(

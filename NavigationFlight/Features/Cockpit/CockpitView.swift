@@ -71,25 +71,25 @@ private extension AviationMapPresentation {
                 plannedDurationSeconds: 382
             ),
             identificationPoints: [],
-            destinationTarget: .init(id: toID, name: "Destination", plannedElapsedSeconds: 382, kind: .destination)
+            destinationTarget: .init(id: toID, name: "Destination", plannedElapsedSeconds: 382, kind: .destination, committedETASeconds: nil)
         )
     }()
 }
 
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
@@ -108,6 +108,10 @@ struct CockpitView: View {
     let onWaypointReached: () -> Void
     let onIdentificationPointReached: (UUID, AviationMapETATarget?) -> Void
     let onAdjustPilotETA: (UUID, Int) -> Void
+    let onCommitPilotETA: (UUID) -> Void
+    let onEditPilotETA: (UUID) -> Void
+    let onShowPilotETACheck: (UUID) -> Void
+    let onHidePilotETACheck: (UUID) -> Void
     let onCollapseChecklist: () -> Void
     let onReopenChecklist: () -> Void
     let onNoteChecklist: () -> Void
@@ -120,7 +124,6 @@ struct CockpitView: View {
     @State private var isNextPreparationPresented = false
     @State private var isPreviousDrawerPresented = false
     @State private var selectedIdentificationPointID: UUID?
-    @State private var checkedIdentificationPointIDs: Set<UUID> = []
     @State private var identificationPointCalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
 
     var body: some View {
@@ -152,7 +155,6 @@ struct CockpitView: View {
             isNextPreparationPresented = false
             isPreviousDrawerPresented = false
             selectedIdentificationPointID = nil
-            checkedIdentificationPointIDs = []
             identificationPointCalloutOffsets = [:]
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
@@ -168,9 +170,16 @@ struct CockpitView: View {
                 focusRequest: mapFocusRequest,
                 etaCalloutOffset: $etaCalloutOffset,
                 identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
+                identificationContext: identificationContext,
                 preservedCamera: $preservedMapCamera,
                 isCameraUserControlled: $isMapCameraUserControlled,
-                onSelectIdentificationPoint: selectIdentificationPoint
+                onSelectIdentificationPoint: selectIdentificationPoint,
+                onReachIdentificationPoint: reachSelectedIdentificationPoint,
+                onAdjustPilotETA: onAdjustPilotETA,
+                onCommitPilotETA: onCommitPilotETA,
+                onEditPilotETA: onEditPilotETA,
+                onShowPilotETACheck: onShowPilotETACheck,
+                onHidePilotETACheck: onHidePilotETACheck
             )
             mapControls
             legHeader
@@ -180,19 +189,6 @@ struct CockpitView: View {
                     get: { isNextPreparationPresented && selectedIdentificationPointID == nil },
                     set: { isNextPreparationPresented = $0 }
                 )
-            )
-            IdentificationPointContextOverlay(
-                point: selectedIdentificationPoint,
-                session: session,
-                nextTarget: selectedIdentificationPoint.flatMap {
-                    mapPresentation.nextETATarget(after: $0.id)
-                },
-                isChecked: selectedIdentificationPointID.map(checkedIdentificationPointIDs.contains) ?? false,
-                visualStyle: visualStyle,
-                onDismiss: { selectedIdentificationPointID = nil },
-                onReached: reachSelectedIdentificationPoint,
-                onAdjust: onAdjustPilotETA,
-                onCheck: checkSelectedIdentificationPoint
             )
             PreviousLegDrawer(
                 summary: previousLegSummary,
@@ -336,7 +332,10 @@ struct CockpitView: View {
 
     private var timeMetric: some View {
         CockpitTimeMetric(
-            plannedDurationSeconds: data.legDurationSeconds,
+            plannedDurationSeconds: mapPresentation.currentETATarget.committedETASeconds == nil
+                ? data.legDurationSeconds
+                : mapPresentation.currentETATarget.plannedElapsedSeconds,
+            operationalETASeconds: mapPresentation.currentETATarget.committedETASeconds,
             legStartedAt: session.legState == .active ? session.legStartedAt : nil
         )
     }
@@ -469,6 +468,10 @@ struct CockpitView: View {
     }
 
     private func selectIdentificationPoint(_ id: UUID) {
+        if selectedIdentificationPointID == id {
+            selectedIdentificationPointID = nil
+            return
+        }
         selectedIdentificationPointID = id
         isNextPreparationPresented = false
         onCollapseChecklist()
@@ -479,9 +482,25 @@ struct CockpitView: View {
         onIdentificationPointReached(point.id, mapPresentation.nextETATarget(after: point.id))
     }
 
-    private func checkSelectedIdentificationPoint() {
-        guard let selectedIdentificationPointID else { return }
-        checkedIdentificationPointIDs.insert(selectedIdentificationPointID)
+    private var identificationContext: AviationMapIdentificationContext? {
+        guard let point = selectedIdentificationPoint else { return nil }
+        let nextTarget = mapPresentation.nextETATarget(after: point.id)
+        let state = nextTarget.flatMap { session.pilotETAState(targetID: $0.id) }
+        let actual = session.actualLegElapsedDuration(atIdentificationPoint: point.id).map {
+            IdentificationPointTimingCalculator.displaySeconds($0)
+        }
+        let reference = IdentificationPointTimingCalculator.referenceTargetElapsed(
+            plannedReachedElapsed: TimeInterval(point.plannedElapsedSeconds),
+            actualReachedElapsed: actual.map(TimeInterval.init),
+            plannedTargetElapsed: nextTarget.map { TimeInterval($0.plannedElapsedSeconds) }
+        ).map(IdentificationPointTimingCalculator.displaySeconds)
+        return AviationMapIdentificationContext(
+            pointID: point.id,
+            actualElapsedSeconds: actual,
+            nextTarget: nextTarget,
+            pilotETAState: state,
+            timingReferenceSeconds: reference
+        )
     }
 }
 
@@ -532,7 +551,7 @@ private struct IdentificationPointContextOverlay: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
                     timingRow(title: "PLAN", seconds: nextTarget.plannedElapsedSeconds)
-                    if let pilotETA = session.pilotETA(targetID: nextTarget.id) {
+                    if let pilotETA = session.pilotETAState(targetID: nextTarget.id)?.draftSeconds {
                         timingRow(title: "PILOT", seconds: pilotETA)
                         HStack(spacing: 12) {
                             adjustmentButton(label: "−5s", delta: -visualStyle.etaAdjustmentStepSeconds, targetID: nextTarget.id)
@@ -1061,16 +1080,13 @@ private struct PreviousLegSummaryCard: View {
 
 private struct CockpitTimeMetric: View {
     let plannedDurationSeconds: Int
+    let operationalETASeconds: Int?
     let legStartedAt: Date?
 
     var body: some View {
         if let legStartedAt {
             TimelineView(.periodic(from: .now, by: 1)) { context in
-                metric(
-                    primaryValue: duration(elapsedSeconds(from: legStartedAt, to: context.date)),
-                    primaryLabel: "ELAPSED",
-                    secondaryValue: "PLAN \(duration(plannedDurationSeconds))"
-                )
+                activeMetric(elapsed: elapsedSeconds(from: legStartedAt, to: context.date))
             }
         } else {
             metric(
@@ -1079,6 +1095,27 @@ private struct CockpitTimeMetric: View {
                 secondaryValue: "Elapsed  --:--"
             )
         }
+    }
+
+    private func activeMetric(elapsed: Int) -> some View {
+        VStack(spacing: 2) {
+            Text("TIME").font(.caption.weight(.semibold)).tracking(1).foregroundStyle(.secondary)
+            Text(duration(elapsed))
+                .font(.system(size: 32, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
+            Text("ELAPSED").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            if let operationalETASeconds {
+                Text("ETA \(duration(operationalETASeconds))")
+                    .font(.subheadline.weight(.bold)).monospacedDigit()
+                Text("PLAN \(duration(plannedDurationSeconds))")
+                    .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+            } else {
+                Text("PLAN \(duration(plannedDurationSeconds))")
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("cockpit-time")
     }
 
     private func metric(

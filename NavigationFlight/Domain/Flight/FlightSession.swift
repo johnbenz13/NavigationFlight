@@ -47,6 +47,13 @@ struct FlightSession: Equatable, Sendable {
         }
     }
 
+    struct PilotETAState: Equatable, Sendable {
+        var draftSeconds: Int
+        var committedSeconds: Int?
+        var isEditing: Bool
+        var isCheckResultVisible: Bool
+    }
+
     let flightID: UUID
     let legIDs: [UUID]
     let progressionPolicy: ProgressionPolicy
@@ -55,7 +62,7 @@ struct FlightSession: Equatable, Sendable {
     private(set) var legState: LegState
     private(set) var legTimings: [LegTiming]
     private(set) var identificationPointTimings: [IdentificationPointTiming]
-    private(set) var pilotETAsByTargetID: [UUID: Int]
+    private(set) var pilotETAStatesByTargetID: [UUID: PilotETAState]
 
     var legStartedAt: Date? {
         legTimings.first { $0.legIndex == activeLegIndex }?.startedAt
@@ -81,7 +88,7 @@ struct FlightSession: Equatable, Sendable {
         self.legState = .ready
         self.legTimings = []
         self.identificationPointTimings = []
-        self.pilotETAsByTargetID = [:]
+        self.pilotETAStatesByTargetID = [:]
     }
 
     mutating func selectReadyLeg(index: Int, mode: NavigationMode) throws {
@@ -162,19 +169,56 @@ struct FlightSession: Equatable, Sendable {
     }
 
     mutating func initializePilotETA(targetID: UUID, plannedElapsedSeconds: Int) {
-        guard plannedElapsedSeconds >= 0, pilotETAsByTargetID[targetID] == nil else { return }
-        pilotETAsByTargetID[targetID] = IdentificationPointTimingCalculator.roundToNearestFiveSeconds(
-            plannedElapsedSeconds
+        guard plannedElapsedSeconds >= 0, pilotETAStatesByTargetID[targetID] == nil else { return }
+        pilotETAStatesByTargetID[targetID] = PilotETAState(
+            draftSeconds: IdentificationPointTimingCalculator.roundToNearestFiveSeconds(plannedElapsedSeconds),
+            committedSeconds: nil,
+            isEditing: true,
+            isCheckResultVisible: false
         )
     }
 
     mutating func adjustPilotETA(targetID: UUID, by deltaSeconds: Int) {
-        guard let current = pilotETAsByTargetID[targetID] else { return }
-        pilotETAsByTargetID[targetID] = max(0, current + deltaSeconds)
+        guard var state = pilotETAStatesByTargetID[targetID], state.isEditing else { return }
+        state.draftSeconds = max(0, state.draftSeconds + deltaSeconds)
+        pilotETAStatesByTargetID[targetID] = state
     }
 
-    func pilotETA(targetID: UUID) -> Int? {
-        pilotETAsByTargetID[targetID]
+    mutating func commitPilotETA(targetID: UUID) {
+        guard var state = pilotETAStatesByTargetID[targetID] else { return }
+        state.committedSeconds = state.draftSeconds
+        state.isEditing = false
+        state.isCheckResultVisible = false
+        pilotETAStatesByTargetID[targetID] = state
+    }
+
+    mutating func beginEditingPilotETA(targetID: UUID) {
+        guard var state = pilotETAStatesByTargetID[targetID],
+              let committed = state.committedSeconds else { return }
+        state.draftSeconds = committed
+        state.isEditing = true
+        state.isCheckResultVisible = false
+        pilotETAStatesByTargetID[targetID] = state
+    }
+
+    mutating func showPilotETACheck(targetID: UUID) {
+        guard var state = pilotETAStatesByTargetID[targetID], state.committedSeconds != nil else { return }
+        state.isCheckResultVisible = true
+        pilotETAStatesByTargetID[targetID] = state
+    }
+
+    mutating func hidePilotETACheck(targetID: UUID) {
+        guard var state = pilotETAStatesByTargetID[targetID] else { return }
+        state.isCheckResultVisible = false
+        pilotETAStatesByTargetID[targetID] = state
+    }
+
+    func pilotETAState(targetID: UUID) -> PilotETAState? {
+        pilotETAStatesByTargetID[targetID]
+    }
+
+    func committedPilotETA(targetID: UUID) -> Int? {
+        pilotETAStatesByTargetID[targetID]?.committedSeconds
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date) throws {

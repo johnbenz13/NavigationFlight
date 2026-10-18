@@ -43,9 +43,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let visualStyle: AviationMapVisualStyle
     @Binding var etaCalloutOffset: AviationMapCalloutOffset
     @Binding var identificationPointCalloutOffsets: [UUID: AviationMapCalloutOffset]
+    let identificationContext: AviationMapIdentificationContext?
     @Binding var preservedCamera: AviationMapCameraState?
     @Binding var isCameraUserControlled: Bool
     let onSelectIdentificationPoint: (UUID) -> Void
+    let onReachIdentificationPoint: () -> Void
+    let onAdjustPilotETA: (UUID, Int) -> Void
+    let onCommitPilotETA: (UUID) -> Void
+    let onEditPilotETA: (UUID) -> Void
+    let onShowPilotETACheck: (UUID) -> Void
+    let onHidePilotETACheck: (UUID) -> Void
 
     init(
         presentation: AviationMapPresentation,
@@ -55,9 +62,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
         visualStyle: AviationMapVisualStyle = .default,
         etaCalloutOffset: Binding<AviationMapCalloutOffset>,
         identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>,
+        identificationContext: AviationMapIdentificationContext?,
         preservedCamera: Binding<AviationMapCameraState?>,
         isCameraUserControlled: Binding<Bool>,
-        onSelectIdentificationPoint: @escaping (UUID) -> Void
+        onSelectIdentificationPoint: @escaping (UUID) -> Void,
+        onReachIdentificationPoint: @escaping () -> Void,
+        onAdjustPilotETA: @escaping (UUID, Int) -> Void,
+        onCommitPilotETA: @escaping (UUID) -> Void,
+        onEditPilotETA: @escaping (UUID) -> Void,
+        onShowPilotETACheck: @escaping (UUID) -> Void,
+        onHidePilotETACheck: @escaping (UUID) -> Void
     ) {
         self.presentation = presentation
         self.legState = legState
@@ -66,9 +80,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.visualStyle = visualStyle
         _etaCalloutOffset = etaCalloutOffset
         _identificationPointCalloutOffsets = identificationPointCalloutOffsets
+        self.identificationContext = identificationContext
         _preservedCamera = preservedCamera
         _isCameraUserControlled = isCameraUserControlled
         self.onSelectIdentificationPoint = onSelectIdentificationPoint
+        self.onReachIdentificationPoint = onReachIdentificationPoint
+        self.onAdjustPilotETA = onAdjustPilotETA
+        self.onCommitPilotETA = onCommitPilotETA
+        self.onEditPilotETA = onEditPilotETA
+        self.onShowPilotETACheck = onShowPilotETACheck
+        self.onHidePilotETACheck = onHidePilotETACheck
     }
 
     func makeCoordinator() -> Coordinator {
@@ -80,10 +101,17 @@ struct OfflineAviationMapView: UIViewRepresentable {
             visualStyle: visualStyle,
             etaCalloutOffset: $etaCalloutOffset,
             identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
+            identificationContext: identificationContext,
             initialCamera: preservedCamera,
             preservedCamera: $preservedCamera,
             isCameraUserControlled: $isCameraUserControlled,
-            onSelectIdentificationPoint: onSelectIdentificationPoint
+            onSelectIdentificationPoint: onSelectIdentificationPoint,
+            onReachIdentificationPoint: onReachIdentificationPoint,
+            onAdjustPilotETA: onAdjustPilotETA,
+            onCommitPilotETA: onCommitPilotETA,
+            onEditPilotETA: onEditPilotETA,
+            onShowPilotETACheck: onShowPilotETACheck,
+            onHidePilotETACheck: onHidePilotETACheck
         )
     }
 
@@ -101,6 +129,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         context.coordinator.update(
             presentation: presentation,
             legState: legState,
+            identificationContext: identificationContext,
             focusRequest: focusRequest,
             mapView: mapView
         )
@@ -124,11 +153,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         private var presentation: AviationMapPresentation
         private var legState: FlightSession.LegState
+        private var identificationContext: AviationMapIdentificationContext?
         private var lastFocusRequest: AviationMapFocusRequest
         private let chartURL: URL?
         private let visualStyle: AviationMapVisualStyle
         private let etaCalloutOffset: Binding<AviationMapCalloutOffset>
         private let identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>
+        private var cachedIdentificationPointCalloutOffsets: [UUID: AviationMapCalloutOffset]
         private let initialCamera: AviationMapCameraState?
         private let preservedCamera: Binding<AviationMapCameraState?>
         private let isCameraUserControlled: Binding<Bool>
@@ -136,6 +167,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
         private let onSelectIdentificationPoint: (UUID) -> Void
+        private let onReachIdentificationPoint: () -> Void
+        private let onAdjustPilotETA: (UUID, Int) -> Void
+        private let onCommitPilotETA: (UUID) -> Void
+        private let onEditPilotETA: (UUID) -> Void
+        private let onShowPilotETACheck: (UUID) -> Void
+        private let onHidePilotETACheck: (UUID) -> Void
 
         init(
             presentation: AviationMapPresentation,
@@ -145,22 +182,37 @@ struct OfflineAviationMapView: UIViewRepresentable {
             visualStyle: AviationMapVisualStyle,
             etaCalloutOffset: Binding<AviationMapCalloutOffset>,
             identificationPointCalloutOffsets: Binding<[UUID: AviationMapCalloutOffset]>,
+            identificationContext: AviationMapIdentificationContext?,
             initialCamera: AviationMapCameraState?,
             preservedCamera: Binding<AviationMapCameraState?>,
             isCameraUserControlled: Binding<Bool>,
-            onSelectIdentificationPoint: @escaping (UUID) -> Void
+            onSelectIdentificationPoint: @escaping (UUID) -> Void,
+            onReachIdentificationPoint: @escaping () -> Void,
+            onAdjustPilotETA: @escaping (UUID, Int) -> Void,
+            onCommitPilotETA: @escaping (UUID) -> Void,
+            onEditPilotETA: @escaping (UUID) -> Void,
+            onShowPilotETACheck: @escaping (UUID) -> Void,
+            onHidePilotETACheck: @escaping (UUID) -> Void
         ) {
             self.presentation = presentation
             self.legState = legState
+            self.identificationContext = identificationContext
             self.lastFocusRequest = focusRequest
             self.chartURL = chartURL
             self.visualStyle = visualStyle
             self.etaCalloutOffset = etaCalloutOffset
             self.identificationPointCalloutOffsets = identificationPointCalloutOffsets
+            cachedIdentificationPointCalloutOffsets = identificationPointCalloutOffsets.wrappedValue
             self.initialCamera = initialCamera
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
             self.onSelectIdentificationPoint = onSelectIdentificationPoint
+            self.onReachIdentificationPoint = onReachIdentificationPoint
+            self.onAdjustPilotETA = onAdjustPilotETA
+            self.onCommitPilotETA = onCommitPilotETA
+            self.onEditPilotETA = onEditPilotETA
+            self.onShowPilotETACheck = onShowPilotETACheck
+            self.onHidePilotETACheck = onHidePilotETACheck
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
@@ -237,15 +289,32 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 )
             }
             if let annotation = annotation as? IdentificationPointLabelAnnotation {
-                let savedOffset = identificationPointCalloutOffsets.wrappedValue[annotation.point.id]
+                let savedOffset = cachedIdentificationPointCalloutOffsets[annotation.point.id]
+                    ?? identificationPointCalloutOffsets.wrappedValue[annotation.point.id]
                     ?? visualStyle.defaultIdentificationPointCalloutOffset
                 return IdentificationPointLabelAnnotationView(
                     annotation: annotation,
                     visualStyle: visualStyle,
                     offset: savedOffset,
-                    onSelect: onSelectIdentificationPoint
-                ) { [weak self] offset in
-                    self?.identificationPointCalloutOffsets.wrappedValue[annotation.point.id] = offset
+                    context: identificationContext?.pointID == annotation.point.id ? identificationContext : nil,
+                    onSelect: onSelectIdentificationPoint,
+                    onReach: onReachIdentificationPoint,
+                    onAdjust: onAdjustPilotETA,
+                    onCommit: onCommitPilotETA,
+                    onEdit: onEditPilotETA,
+                    onShowCheck: onShowPilotETACheck,
+                    onHideCheck: onHidePilotETACheck
+                ) { [weak self, weak mapView] proposed, size in
+                    guard let self, let mapView else { return proposed }
+                    let constrained = self.constrainedIdentificationPointOffset(
+                        proposed,
+                        calloutSize: size,
+                        point: annotation.point,
+                        on: mapView
+                    )
+                    self.cachedIdentificationPointCalloutOffsets[annotation.point.id] = constrained
+                    self.identificationPointCalloutOffsets.wrappedValue[annotation.point.id] = constrained
+                    return constrained
                 }
             }
             return nil
@@ -254,6 +323,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         func update(
             presentation: AviationMapPresentation,
             legState: FlightSession.LegState,
+            identificationContext: AviationMapIdentificationContext?,
             focusRequest: AviationMapFocusRequest,
             mapView: MLNMapView
         ) {
@@ -261,8 +331,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
+            let identificationContextChanged = self.identificationContext != identificationContext
             self.presentation = presentation
             self.legState = legState
+            self.identificationContext = identificationContext
+            if activeLegChanged {
+                cachedIdentificationPointCalloutOffsets = identificationPointCalloutOffsets.wrappedValue
+            }
 
             guard styleIsReady else {
                 lastFocusRequest = focusRequest
@@ -272,7 +347,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             if presentationChanged, let style = mapView.style {
                 updateShapes(in: style)
             }
-            if presentationChanged || legStateChanged {
+            if presentationChanged || legStateChanged || identificationContextChanged {
                 updateEndpointAnnotations(on: mapView)
             }
 
@@ -604,7 +679,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     DestinationCalloutAnnotation(
                         waypoint: destination,
                         reference: reference,
-                        plannedDurationText: presentation.plannedDurationText
+                        plannedDurationText: presentation.plannedDurationText,
+                        committedETASeconds: presentation.destinationTarget.committedETASeconds
                     )
                 )
             }
@@ -649,6 +725,53 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 x: min(max(proposed.x, minimumX), maximumX),
                 y: min(max(proposed.y, minimumY), maximumY)
             )
+        }
+
+        private func constrainedIdentificationPointOffset(
+            _ proposed: AviationMapCalloutOffset,
+            calloutSize: CGSize,
+            point: AviationMapIdentificationPoint,
+            on mapView: MLNMapView
+        ) -> AviationMapCalloutOffset {
+            let anchor = mapView.convert(coordinate(point.coordinate), toPointTo: mapView)
+            let usableBounds = mapView.bounds.inset(
+                by: UIEdgeInsets(top: 126, left: 12, bottom: 12, right: 82)
+            )
+            let halfWidth = calloutSize.width / 2
+            let halfHeight = calloutSize.height / 2
+            var constrained = AviationMapCalloutOffset(
+                x: min(max(proposed.x, usableBounds.minX + halfWidth - anchor.x), usableBounds.maxX - halfWidth - anchor.x),
+                y: min(max(proposed.y, usableBounds.minY + halfHeight - anchor.y), usableBounds.maxY - halfHeight - anchor.y)
+            )
+            guard identificationContext?.pointID == point.id,
+                  let destinationFrame = etaCalloutView?.frame.insetBy(dx: -10, dy: -10) else {
+                return constrained
+            }
+            var candidate = CGRect(
+                x: anchor.x + constrained.x - halfWidth,
+                y: anchor.y + constrained.y - halfHeight,
+                width: calloutSize.width,
+                height: calloutSize.height
+            )
+            guard candidate.intersects(destinationFrame) else { return constrained }
+
+            let leftX = destinationFrame.minX - 12 - calloutSize.width
+            let rightX = destinationFrame.maxX + 12
+            if leftX >= usableBounds.minX {
+                candidate.origin.x = leftX
+            } else if rightX + calloutSize.width <= usableBounds.maxX {
+                candidate.origin.x = rightX
+            } else {
+                let aboveY = destinationFrame.minY - 12 - calloutSize.height
+                candidate.origin.y = aboveY >= usableBounds.minY
+                    ? aboveY
+                    : min(destinationFrame.maxY + 12, usableBounds.maxY - calloutSize.height)
+            }
+            constrained = AviationMapCalloutOffset(
+                x: candidate.midX - anchor.x,
+                y: candidate.midY - anchor.y
+            )
+            return constrained
         }
 
         private func restore(_ camera: AviationMapCameraState, on mapView: MLNMapView) {
@@ -811,15 +934,18 @@ private final class WaypointSymbolView: UIView {
 private final class DestinationCalloutAnnotation: MLNPointAnnotation {
     let waypointName: String
     let plannedDurationText: String
+    let committedETAText: String?
     let referenceText: String?
 
     init(
         waypoint: AviationMapWaypoint,
         reference: AviationMapVORDMEReference?,
-        plannedDurationText: String
+        plannedDurationText: String,
+        committedETASeconds: Int?
     ) {
         waypointName = waypoint.name
         self.plannedDurationText = plannedDurationText
+        committedETAText = committedETASeconds.map(AviationMapSymbology.formatDuration)
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
             referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
@@ -855,7 +981,8 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
         self.offsetHandler = offsetHandler
         super.init(reuseIdentifier: "destination-eta-callout")
 
-        let size = CGSize(width: 146, height: annotation.referenceText == nil ? 55 : 70)
+        let baseHeight: CGFloat = annotation.committedETAText == nil ? 55 : 72
+        let size = CGSize(width: 146, height: annotation.referenceText == nil ? baseHeight : baseHeight + 15)
         frame = CGRect(origin: .zero, size: size)
         clipsToBounds = false
         layer.masksToBounds = false
@@ -946,7 +1073,7 @@ private final class DestinationCalloutView: UIView {
         name.textColor = UIColor.secondaryLabel.withAlphaComponent(visualStyle.etaCalloutTextOpacity)
 
         let duration = UILabel()
-        duration.text = annotation.plannedDurationText
+        duration.text = annotation.committedETAText ?? annotation.plannedDurationText
         duration.textAlignment = .center
         duration.font = .monospacedDigitSystemFont(
             ofSize: visualStyle.etaCalloutDurationFontSize,
@@ -962,21 +1089,32 @@ private final class DestinationCalloutView: UIView {
         reference.adjustsFontSizeToFitWidth = true
         reference.minimumScaleFactor = 0.75
 
-        [name, duration, reference].forEach(addSubview)
+        let plan = UILabel()
+        plan.text = annotation.committedETAText == nil ? nil : "ETA\nPLAN \(annotation.plannedDurationText)"
+        plan.numberOfLines = 2
+        plan.textAlignment = .center
+        plan.font = .systemFont(ofSize: 9, weight: .semibold)
+        plan.textColor = .secondaryLabel
+
+        [name, duration, plan, reference].forEach(addSubview)
         name.translatesAutoresizingMaskIntoConstraints = false
         duration.translatesAutoresizingMaskIntoConstraints = false
         reference.translatesAutoresizingMaskIntoConstraints = false
+        plan.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             name.topAnchor.constraint(equalTo: topAnchor, constant: 5),
             name.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
             name.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
             duration.topAnchor.constraint(equalTo: name.bottomAnchor, constant: -1),
             duration.centerXAnchor.constraint(equalTo: centerXAnchor),
-            reference.topAnchor.constraint(equalTo: duration.bottomAnchor, constant: 1),
+            plan.topAnchor.constraint(equalTo: duration.bottomAnchor, constant: -1),
+            plan.centerXAnchor.constraint(equalTo: centerXAnchor),
+            reference.topAnchor.constraint(equalTo: plan.bottomAnchor, constant: 1),
             reference.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
             reference.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5)
         ])
         reference.isHidden = annotation.referenceText == nil
+        plan.isHidden = annotation.committedETAText == nil
     }
 
     required init?(coder: NSCoder) {
@@ -1026,16 +1164,13 @@ private final class IdentificationPointSymbolAnnotationView: MLNAnnotationView {
         pointID = annotation.point.id
         self.onSelect = onSelect
         super.init(reuseIdentifier: "identification-symbol-\(annotation.point.id)")
-        let size = max(visualStyle.identificationPointSymbolSize, 44)
+        let size: CGFloat = 44
         frame = CGRect(origin: .zero, size: CGSize(width: size, height: size))
-        let symbol = UIImageView(image: UIImage(
-            systemName: annotation.point.isReached ? "checkmark.diamond" : "diamond"
-        ))
-        symbol.tintColor = annotation.point.isReached
-            ? visualStyle.identificationPointReachedColor
-            : visualStyle.identificationPointColor
-        symbol.contentMode = .scaleAspectFit
-        symbol.frame = bounds.insetBy(dx: 11, dy: 11)
+        let symbol = IdentificationPointEllipseView(
+            isReached: annotation.point.isReached,
+            visualStyle: visualStyle
+        )
+        symbol.frame = bounds
         addSubview(symbol)
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
         isEnabled = true
@@ -1047,26 +1182,81 @@ private final class IdentificationPointSymbolAnnotationView: MLNAnnotationView {
     required init?(coder: NSCoder) { nil }
 }
 
+private final class IdentificationPointEllipseView: UIView {
+    private let isReached: Bool
+    private let visualStyle: AviationMapVisualStyle
+
+    init(isReached: Bool, visualStyle: AviationMapVisualStyle) {
+        self.isReached = isReached
+        self.visualStyle = visualStyle
+        super.init(frame: .zero)
+        backgroundColor = .clear
+        isOpaque = false
+    }
+
+    override func draw(_ rect: CGRect) {
+        let ellipse = CGRect(
+            x: bounds.midX - visualStyle.identificationPointEllipseWidth / 2,
+            y: bounds.midY - visualStyle.identificationPointEllipseHeight / 2,
+            width: visualStyle.identificationPointEllipseWidth,
+            height: visualStyle.identificationPointEllipseHeight
+        )
+        let color = isReached
+            ? visualStyle.identificationPointReachedColor
+            : visualStyle.identificationPointColor
+        color.withAlphaComponent(visualStyle.identificationPointEllipseFillOpacity).setFill()
+        UIBezierPath(ovalIn: ellipse).fill()
+        color.withAlphaComponent(
+            isReached
+                ? visualStyle.identificationPointEllipseReachedOutlineOpacity
+                : visualStyle.identificationPointEllipseOutlineOpacity
+        ).setStroke()
+        let outline = UIBezierPath(ovalIn: ellipse)
+        outline.lineWidth = visualStyle.identificationPointSymbolLineWidth
+        outline.stroke()
+        guard isReached else { return }
+        let check = UIBezierPath()
+        check.move(to: CGPoint(x: bounds.midX - 6, y: bounds.midY))
+        check.addLine(to: CGPoint(x: bounds.midX - 1, y: bounds.midY + 5))
+        check.addLine(to: CGPoint(x: bounds.midX + 7, y: bounds.midY - 5))
+        check.lineWidth = 2
+        check.lineCapStyle = .round
+        check.lineJoinStyle = .round
+        check.stroke()
+    }
+
+    required init?(coder: NSCoder) { nil }
+}
+
 private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, UIGestureRecognizerDelegate {
     private var offset: AviationMapCalloutOffset
     private let pointID: UUID
     private let onSelect: (UUID) -> Void
-    private let onOffsetChange: (AviationMapCalloutOffset) -> Void
+    private let onOffsetChange: (AviationMapCalloutOffset, CGSize) -> AviationMapCalloutOffset
     private let leader = CAShapeLayer()
+    private let isExpanded: Bool
+    private var hostingController: UIHostingController<IdentificationPointCalloutContent>?
 
     init(
         annotation: IdentificationPointLabelAnnotation,
         visualStyle: AviationMapVisualStyle,
         offset: AviationMapCalloutOffset,
+        context: AviationMapIdentificationContext?,
         onSelect: @escaping (UUID) -> Void,
-        onOffsetChange: @escaping (AviationMapCalloutOffset) -> Void
+        onReach: @escaping () -> Void,
+        onAdjust: @escaping (UUID, Int) -> Void,
+        onCommit: @escaping (UUID) -> Void,
+        onEdit: @escaping (UUID) -> Void,
+        onShowCheck: @escaping (UUID) -> Void,
+        onHideCheck: @escaping (UUID) -> Void,
+        onOffsetChange: @escaping (AviationMapCalloutOffset, CGSize) -> AviationMapCalloutOffset
     ) {
         self.offset = offset
         pointID = annotation.point.id
         self.onSelect = onSelect
         self.onOffsetChange = onOffsetChange
+        isExpanded = context != nil
         super.init(reuseIdentifier: "identification-label-\(annotation.point.id)")
-        frame = CGRect(x: 0, y: 0, width: 132, height: 48)
         clipsToBounds = false
         layer.masksToBounds = false
 
@@ -1076,41 +1266,37 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         leader.fillColor = UIColor.clear.cgColor
         layer.insertSublayer(leader, at: 0)
 
-        let content = UIView(frame: bounds)
-        content.backgroundColor = visualStyle.identificationPointCalloutBackgroundColor.withAlphaComponent(
-            visualStyle.identificationPointCalloutBackgroundOpacity
+        let content = IdentificationPointCalloutContent(
+            point: annotation.point,
+            context: context,
+            visualStyle: visualStyle,
+            onCollapseOrExpand: { onSelect(annotation.point.id) },
+            onReach: onReach,
+            onAdjust: onAdjust,
+            onCommit: onCommit,
+            onEdit: onEdit,
+            onShowCheck: onShowCheck,
+            onHideCheck: onHideCheck
         )
-        content.layer.borderColor = visualStyle.identificationPointCalloutBorderColor.withAlphaComponent(
-            visualStyle.identificationPointCalloutBorderOpacity
-        ).cgColor
-        content.layer.borderWidth = visualStyle.identificationPointCalloutBorderWidth
-        content.layer.cornerRadius = 4
-
-        let name = UILabel()
-        name.text = annotation.point.name
-        name.textAlignment = .center
-        name.font = .systemFont(ofSize: visualStyle.identificationPointCalloutNameFontSize, weight: .semibold)
-        name.textColor = UIColor.label.withAlphaComponent(visualStyle.identificationPointCalloutTextOpacity)
-        let time = UILabel()
-        time.text = AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds)
-        time.textAlignment = .center
-        time.font = .monospacedDigitSystemFont(ofSize: visualStyle.identificationPointCalloutTimeFontSize, weight: .bold)
-        time.textColor = UIColor.label.withAlphaComponent(visualStyle.identificationPointCalloutTextOpacity)
-        let stack = UIStackView(arrangedSubviews: [name, time])
-        stack.axis = .vertical
-        stack.spacing = -2
-        stack.frame = content.bounds.insetBy(dx: 5, dy: 3)
-        content.addSubview(stack)
-        addSubview(content)
+        let host = UIHostingController(rootView: content)
+        hostingController = host
+        host.view.backgroundColor = .clear
+        let fittingSize = host.sizeThatFits(in: CGSize(width: 300, height: 560))
+        frame = CGRect(origin: .zero, size: fittingSize)
+        host.view.frame = bounds
+        addSubview(host.view)
+        self.offset = onOffsetChange(offset, bounds.size)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
         addGestureRecognizer(pan)
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
+        if !isExpanded {
+            addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
+        }
         isEnabled = true
-        centerOffset = CGVector(dx: offset.x, dy: offset.y)
+        centerOffset = CGVector(dx: self.offset.x, dy: self.offset.y)
         updateLeader()
-        accessibilityLabel = "\(annotation.point.name), planned time \(time.text ?? "")"
+        accessibilityLabel = "\(annotation.point.name), planned time \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
         accessibilityTraits = .button
     }
 
@@ -1119,11 +1305,13 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let host = superview else { return }
         let translation = gesture.translation(in: host)
-        offset = offset.translated(x: translation.x, y: translation.y)
+        offset = onOffsetChange(
+            offset.translated(x: translation.x, y: translation.y),
+            bounds.size
+        )
         centerOffset = CGVector(dx: offset.x, dy: offset.y)
         center = CGPoint(x: center.x + translation.x, y: center.y + translation.y)
         updateLeader()
-        onOffsetChange(offset)
         gesture.setTranslation(.zero, in: host)
     }
 
@@ -1145,7 +1333,181 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool { false }
 
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard gestureRecognizer is UIPanGestureRecognizer else { return true }
+        if touch.view is UIControl { return false }
+        return !isExpanded || touch.location(in: self).y <= 58
+    }
+
     required init?(coder: NSCoder) { nil }
+}
+
+private struct IdentificationPointCalloutContent: View {
+    let point: AviationMapIdentificationPoint
+    let context: AviationMapIdentificationContext?
+    let visualStyle: AviationMapVisualStyle
+    let onCollapseOrExpand: () -> Void
+    let onReach: () -> Void
+    let onAdjust: (UUID, Int) -> Void
+    let onCommit: (UUID) -> Void
+    let onEdit: (UUID) -> Void
+    let onShowCheck: (UUID) -> Void
+    let onHideCheck: (UUID) -> Void
+
+    var body: some View {
+        Group {
+            if let context {
+                expanded(context)
+            } else {
+                collapsed
+            }
+        }
+        .padding(context == nil ? 6 : 12)
+        .frame(width: context == nil ? 154 : 286)
+        .background(
+            Color(uiColor: visualStyle.identificationPointCalloutBackgroundColor)
+                .opacity(visualStyle.identificationPointCalloutBackgroundOpacity),
+            in: RoundedRectangle(cornerRadius: 7)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 7)
+                .stroke(
+                    Color(uiColor: visualStyle.identificationPointCalloutBorderColor)
+                        .opacity(visualStyle.identificationPointCalloutBorderOpacity),
+                    lineWidth: visualStyle.identificationPointCalloutBorderWidth
+                )
+        }
+    }
+
+    private var collapsed: some View {
+        VStack(spacing: 0) {
+            Text(point.name).font(.caption.weight(.semibold)).lineLimit(1)
+            Text(AviationMapSymbology.formatDuration(point.committedETASeconds ?? point.plannedElapsedSeconds))
+                .font(.headline.monospacedDigit()).bold()
+            if point.committedETASeconds != nil {
+                Text("ETA · PLAN \(AviationMapSymbology.formatDuration(point.plannedElapsedSeconds))")
+                    .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private func expanded(_ context: AviationMapIdentificationContext) -> some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Button(action: onCollapseOrExpand) {
+                HStack {
+                    Text("IDENTIFICATION POINT").font(.caption.weight(.bold)).tracking(0.7)
+                    Spacer()
+                    Image(systemName: "chevron.up")
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Text(point.isReached ? "\(point.name) · Reached" : point.name).font(.headline)
+            timingRow("PLAN", point.plannedElapsedSeconds, strong: false)
+
+            if point.isReached, let actual = context.actualElapsedSeconds {
+                timingRow("ACTUAL", actual, strong: false)
+                signedTimingRow("Δ", actual - point.plannedElapsedSeconds)
+            }
+
+            if !point.isReached {
+                Button("Point Reached", systemImage: "checkmark", action: onReach)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("identification-point-reached")
+            } else if let target = context.nextTarget,
+                      let etaState = context.pilotETAState {
+                Divider()
+                Text("NEXT ETA · \(target.name)")
+                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                if etaState.isEditing {
+                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
+                    timingRow("NEW ETA", etaState.draftSeconds, strong: true)
+                    HStack(spacing: 10) {
+                        adjustmentButton("−5s", target.id, -visualStyle.etaAdjustmentStepSeconds)
+                        adjustmentButton("+5s", target.id, visualStyle.etaAdjustmentStepSeconds)
+                    }
+                    Button(etaState.committedSeconds == nil ? "Set new ETA" : "Update ETA") {
+                        onCommit(target.id)
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .buttonStyle(.borderedProminent)
+                } else if let committed = etaState.committedSeconds {
+                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
+                    HStack {
+                        Text("ETA").foregroundStyle(.secondary)
+                        Spacer()
+                        Text(AviationMapSymbology.formatDuration(committed)).monospacedDigit().bold()
+                        Label("Set", systemImage: "checkmark").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .font(.subheadline)
+                    Button("Edit ETA") { onEdit(target.id) }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .buttonStyle(.bordered)
+                    if etaState.isCheckResultVisible {
+                        checkResult(committed: committed, context: context)
+                        Button("Hide check") { onHideCheck(target.id) }
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .buttonStyle(.plain)
+                    } else if context.timingReferenceSeconds != nil {
+                        Button("Cross-check calculation") { onShowCheck(target.id) }
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .buttonStyle(.bordered)
+                    } else {
+                        Text("Check unavailable").font(.subheadline).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private func timingRow(_ title: String, _ seconds: Int, strong: Bool) -> some View {
+        HStack {
+            Text(title).foregroundStyle(.secondary)
+            Spacer()
+            Text(AviationMapSymbology.formatDuration(seconds))
+                .monospacedDigit()
+                .fontWeight(strong ? .bold : .semibold)
+        }
+        .font(.subheadline)
+    }
+
+    private func signedTimingRow(_ title: String, _ seconds: Int) -> some View {
+        HStack {
+            Text(title).foregroundStyle(.secondary)
+            Spacer()
+            Text(signedDuration(seconds)).monospacedDigit().bold()
+        }
+        .font(.subheadline)
+    }
+
+    private func adjustmentButton(_ title: String, _ targetID: UUID, _ delta: Int) -> some View {
+        Button(title) { onAdjust(targetID, delta) }
+            .font(.headline.monospacedDigit())
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .buttonStyle(.bordered)
+            .buttonRepeatBehavior(.enabled)
+    }
+
+    private func checkResult(committed: Int, context: AviationMapIdentificationContext) -> some View {
+        VStack(spacing: 5) {
+            timingRow("YOUR ETA", committed, strong: true)
+            if let reference = context.timingReferenceSeconds {
+                timingRow("TIMING REFERENCE", reference, strong: false)
+                signedTimingRow("DIFFERENCE", committed - reference)
+                Text("If the observed pace continues")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func signedDuration(_ seconds: Int) -> String {
+        (seconds >= 0 ? "+" : "−") + AviationMapSymbology.formatDuration(abs(seconds))
+    }
 }
 
 private final class MinuteLabelAnnotation: MLNPointAnnotation {

@@ -66,7 +66,7 @@ struct AviationMapVisualStyle {
     let identificationPointReachedColor = UIColor.systemGreen
     let identificationPointSymbolLineWidth: CGFloat = 2
     let identificationPointCalloutBackgroundColor = UIColor.systemBackground
-    let identificationPointCalloutBackgroundOpacity: CGFloat = 0.40
+    let identificationPointCalloutBackgroundOpacity: CGFloat = 0.48
     var identificationPointCalloutBorderColor: UIColor { currentLegAccentColor }
     let identificationPointCalloutBorderOpacity: CGFloat = 0.95
     let identificationPointCalloutBorderWidth: CGFloat = 1.5
@@ -75,7 +75,12 @@ struct AviationMapVisualStyle {
     let identificationPointCalloutTimeFontSize: CGFloat = 16
     let identificationPointPanelWidth: CGFloat = 300
     let etaAdjustmentStepSeconds = 5
-    let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: 0, y: -56)
+    let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: -112, y: -38)
+    let identificationPointEllipseWidth: CGFloat = 34
+    let identificationPointEllipseHeight: CGFloat = 20
+    let identificationPointEllipseFillOpacity: CGFloat = 0.08
+    let identificationPointEllipseOutlineOpacity: CGFloat = 0.95
+    let identificationPointEllipseReachedOutlineOpacity: CGFloat = 0.80
 
     func minuteTickLengthFraction(for level: AviationMapMinuteMarkLevel) -> Double {
         switch level {

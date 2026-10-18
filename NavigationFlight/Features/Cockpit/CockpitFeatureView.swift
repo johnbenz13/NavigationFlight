@@ -96,6 +96,10 @@ struct CockpitFeatureView: View {
                         onAdjustPilotETA: { targetID, delta in
                             state.adjustPilotETA(targetID: targetID, by: delta)
                         },
+                        onCommitPilotETA: { state.commitPilotETA(targetID: $0) },
+                        onEditPilotETA: { state.beginEditingPilotETA(targetID: $0) },
+                        onShowPilotETACheck: { state.showPilotETACheck(targetID: $0) },
+                        onHidePilotETACheck: { state.hidePilotETACheck(targetID: $0) },
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },

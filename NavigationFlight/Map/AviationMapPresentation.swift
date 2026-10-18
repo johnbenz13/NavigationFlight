@@ -56,6 +56,7 @@ struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
     let coordinate: AviationMapCoordinate
     let plannedElapsedSeconds: Int
     let isReached: Bool
+    let committedETASeconds: Int?
 }
 
 struct AviationMapETATarget: Identifiable, Equatable, Sendable {
@@ -68,6 +69,15 @@ struct AviationMapETATarget: Identifiable, Equatable, Sendable {
     let name: String
     let plannedElapsedSeconds: Int
     let kind: Kind
+    let committedETASeconds: Int?
+}
+
+struct AviationMapIdentificationContext: Equatable, Sendable {
+    let pointID: UUID
+    let actualElapsedSeconds: Int?
+    let nextTarget: AviationMapETATarget?
+    let pilotETAState: FlightSession.PilotETAState?
+    let timingReferenceSeconds: Int?
 }
 
 struct AviationMapPresentation: Equatable, Sendable {
@@ -106,7 +116,21 @@ struct AviationMapPresentation: Equatable, Sendable {
                 id: next.id,
                 name: next.name,
                 plannedElapsedSeconds: next.plannedElapsedSeconds,
-                kind: .identificationPoint
+                kind: .identificationPoint,
+                committedETASeconds: next.committedETASeconds
+            )
+        }
+        return destinationTarget
+    }
+
+    var currentETATarget: AviationMapETATarget {
+        if let next = identificationPoints.first(where: { !$0.isReached }) {
+            return AviationMapETATarget(
+                id: next.id,
+                name: next.name,
+                plannedElapsedSeconds: next.plannedElapsedSeconds,
+                kind: .identificationPoint,
+                committedETASeconds: next.committedETASeconds
             )
         }
         return destinationTarget
@@ -190,7 +214,8 @@ struct AviationMapPresentationFactory {
                     name: "Identification Point \(offset + 1)",
                     coordinate: coordinate(resolved.position),
                     plannedElapsedSeconds: plannedElapsed,
-                    isReached: session.identificationPointTiming(for: sourcePoint.id) != nil
+                    isReached: session.identificationPointTiming(for: sourcePoint.id) != nil,
+                    committedETASeconds: session.committedPilotETA(targetID: sourcePoint.id)
                 )
             }
 
@@ -237,7 +262,8 @@ struct AviationMapPresentationFactory {
                 id: activeSourceLeg.arrival.id,
                 name: activeSourceLeg.arrival.name,
                 plannedElapsedSeconds: plannedDurationSeconds,
-                kind: .destination
+                kind: .destination,
+                committedETASeconds: session.committedPilotETA(targetID: activeSourceLeg.arrival.id)
             )
         )
     }
@@ -281,7 +307,7 @@ enum AviationMapSymbology {
         }
     }
 
-    static func formatDuration(_ seconds: Int) -> String {
+    nonisolated static func formatDuration(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }

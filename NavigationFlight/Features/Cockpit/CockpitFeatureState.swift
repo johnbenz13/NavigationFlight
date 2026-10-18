@@ -158,6 +158,22 @@ struct CockpitFeatureState: Equatable, Sendable {
         session?.adjustPilotETA(targetID: targetID, by: deltaSeconds)
     }
 
+    mutating func commitPilotETA(targetID: UUID) {
+        session?.commitPilotETA(targetID: targetID)
+    }
+
+    mutating func beginEditingPilotETA(targetID: UUID) {
+        session?.beginEditingPilotETA(targetID: targetID)
+    }
+
+    mutating func showPilotETACheck(targetID: UUID) {
+        session?.showPilotETACheck(targetID: targetID)
+    }
+
+    mutating func hidePilotETACheck(targetID: UUID) {
+        session?.hidePilotETACheck(targetID: targetID)
+    }
+
     mutating func cancelImport() {
         // Intentionally preserve the loaded plan, selected leg, and calculation mode.
     }

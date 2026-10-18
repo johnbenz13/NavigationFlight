@@ -1050,6 +1050,59 @@ struct NavigationFlightTests {
         #expect(style.currentLegAccentColor != style.nextLegAccentColor)
         #expect(style.activeLegColor == style.currentLegAccentColor)
         #expect(style.defaultEtaCalloutOffset.x <= -160)
+        #expect(abs(style.identificationPointCalloutBackgroundOpacity - 0.48) < 0.001)
+        #expect(abs(style.defaultIdentificationPointCalloutOffset.x) >= 80)
+        #expect(style.defaultIdentificationPointCalloutOffset.y != 0)
+        #expect(style.identificationPointEllipseFillOpacity < 0.15)
+        #expect(style.identificationPointEllipseOutlineOpacity >= 0.9)
+    }
+
+    @Test func movingIdentificationLabelKeepsResolvedEllipseAnchorAndPlanUnchanged() throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let originalFlight = flight
+        let session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let point = try #require(presentation.identificationPoints.first)
+        let initial = AviationMapVisualStyle.default.defaultIdentificationPointCalloutOffset
+        let moved = initial.translated(x: 85, y: 35)
+
+        #expect(initial.x != 0)
+        #expect(moved != initial)
+        #expect(point.coordinate == presentation.identificationPoints.first?.coordinate)
+        #expect(point.plannedElapsedSeconds == presentation.identificationPoints.first?.plannedElapsedSeconds)
+        #expect(flight == originalFlight)
+    }
+
+    @Test func committedETAPropagatesToMapPresentationWithoutMutatingFlight() throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let originalFlight = flight
+        let destinationID = try #require(flight.legs.first?.arrival.id)
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        session.initializePilotETA(targetID: destinationID, plannedElapsedSeconds: 556)
+        session.adjustPilotETA(targetID: destinationID, by: 25)
+
+        let beforeCommit = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        #expect(beforeCommit.destinationTarget.committedETASeconds == nil)
+        #expect(beforeCommit.destinationTarget.plannedElapsedSeconds == 556)
+
+        session.commitPilotETA(targetID: destinationID)
+        let afterCommit = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        #expect(afterCommit.destinationTarget.committedETASeconds == 580)
+        #expect(afterCommit.destinationTarget.plannedElapsedSeconds == 556)
+        #expect(flight == originalFlight)
+        #expect(session.legTimings.isEmpty)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legState == .ready)
     }
 
     @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrResolvedExecution() throws {
@@ -1159,19 +1212,19 @@ struct NavigationFlightTests {
         let pointB = UUID()
         let destination = UUID()
         let points = [
-            AviationMapIdentificationPoint(id: pointA, name: "A", coordinate: .init(latitude: 1, longitude: 1), plannedElapsedSeconds: 160, isReached: true),
-            AviationMapIdentificationPoint(id: pointB, name: "B", coordinate: .init(latitude: 2, longitude: 2), plannedElapsedSeconds: 256, isReached: false)
+            AviationMapIdentificationPoint(id: pointA, name: "A", coordinate: .init(latitude: 1, longitude: 1), plannedElapsedSeconds: 160, isReached: true, committedETASeconds: nil),
+            AviationMapIdentificationPoint(id: pointB, name: "B", coordinate: .init(latitude: 2, longitude: 2), plannedElapsedSeconds: 256, isReached: false, committedETASeconds: nil)
         ]
         let presentation = AviationMapPresentation(
             waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
             endpointReferences: [], plannedDurationSeconds: 338, minuteMarkers: [],
             identificationPoints: points,
-            destinationTarget: .init(id: destination, name: "Destination", plannedElapsedSeconds: 338, kind: .destination)
+            destinationTarget: .init(id: destination, name: "Destination", plannedElapsedSeconds: 338, kind: .destination, committedETASeconds: nil)
         )
 
         #expect(presentation.nextETATarget(after: pointA)?.id == pointB)
         let completedPoints = points.map {
-            AviationMapIdentificationPoint(id: $0.id, name: $0.name, coordinate: $0.coordinate, plannedElapsedSeconds: $0.plannedElapsedSeconds, isReached: true)
+            AviationMapIdentificationPoint(id: $0.id, name: $0.name, coordinate: $0.coordinate, plannedElapsedSeconds: $0.plannedElapsedSeconds, isReached: true, committedETASeconds: nil)
         }
         let completedPresentation = AviationMapPresentation(
             waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
@@ -1194,16 +1247,32 @@ struct NavigationFlightTests {
         )
 
         session.initializePilotETA(targetID: targetID, plannedElapsedSeconds: plan)
-        #expect(session.pilotETA(targetID: targetID) == 340)
+        #expect(session.pilotETAState(targetID: targetID)?.draftSeconds == 340)
+        #expect(session.committedPilotETA(targetID: targetID) == nil)
         session.adjustPilotETA(targetID: targetID, by: 5)
-        #expect(session.pilotETA(targetID: targetID) == 345)
+        #expect(session.pilotETAState(targetID: targetID)?.draftSeconds == 345)
+        #expect(session.committedPilotETA(targetID: targetID) == nil)
+        session.commitPilotETA(targetID: targetID)
+        #expect(session.committedPilotETA(targetID: targetID) == 345)
+        #expect(session.pilotETAState(targetID: targetID)?.isEditing == false)
+        session.showPilotETACheck(targetID: targetID)
+        #expect(session.pilotETAState(targetID: targetID)?.isCheckResultVisible == true)
+        session.beginEditingPilotETA(targetID: targetID)
+        #expect(session.pilotETAState(targetID: targetID)?.draftSeconds == 345)
+        #expect(session.pilotETAState(targetID: targetID)?.isCheckResultVisible == false)
+        session.adjustPilotETA(targetID: targetID, by: 5)
+        #expect(session.committedPilotETA(targetID: targetID) == 345)
+        #expect(session.pilotETAState(targetID: targetID)?.draftSeconds == 350)
+        session.commitPilotETA(targetID: targetID)
+        #expect(session.committedPilotETA(targetID: targetID) == 350)
 
         var earlierSession = FlightSession(
             flightID: UUID(), legIDs: [UUID()], activeLegIndex: 0, executionMode: .noWind
         )
         earlierSession.initializePilotETA(targetID: targetID, plannedElapsedSeconds: plan)
         earlierSession.adjustPilotETA(targetID: targetID, by: -5)
-        #expect(earlierSession.pilotETA(targetID: targetID) == 335)
+        #expect(earlierSession.pilotETAState(targetID: targetID)?.draftSeconds == 335)
+        #expect(earlierSession.committedPilotETA(targetID: targetID) == nil)
         #expect(plan == 338)
     }
 

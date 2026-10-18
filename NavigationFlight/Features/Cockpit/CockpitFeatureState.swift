@@ -141,37 +141,37 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func reachIdentificationPoint(
-        id: UUID,
+        key: IdentificationPointKey,
         nextTarget: AviationMapETATarget?,
         at timestamp: Date = .now
     ) throws {
-        try session?.reachIdentificationPoint(id: id, at: timestamp)
+        try session?.reachIdentificationPoint(key: key, at: timestamp)
         if let nextTarget {
             session?.initializePilotETA(
-                targetID: nextTarget.id,
+                targetKey: nextTarget.id,
                 plannedElapsedSeconds: nextTarget.plannedElapsedSeconds
             )
         }
     }
 
-    mutating func adjustPilotETA(targetID: UUID, by deltaSeconds: Int) {
-        session?.adjustPilotETA(targetID: targetID, by: deltaSeconds)
+    mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {
+        session?.adjustPilotETA(targetKey: targetKey, by: deltaSeconds)
     }
 
-    mutating func commitPilotETA(targetID: UUID) {
-        session?.commitPilotETA(targetID: targetID)
+    mutating func commitPilotETA(targetKey: NavigationTimingTargetKey) {
+        session?.commitPilotETA(targetKey: targetKey)
     }
 
-    mutating func beginEditingPilotETA(targetID: UUID) {
-        session?.beginEditingPilotETA(targetID: targetID)
+    mutating func beginEditingPilotETA(targetKey: NavigationTimingTargetKey) {
+        session?.beginEditingPilotETA(targetKey: targetKey)
     }
 
-    mutating func showPilotETACheck(targetID: UUID) {
-        session?.showPilotETACheck(targetID: targetID)
+    mutating func showPilotETACheck(targetKey: NavigationTimingTargetKey) {
+        session?.showPilotETACheck(targetKey: targetKey)
     }
 
-    mutating func hidePilotETACheck(targetID: UUID) {
-        session?.hidePilotETACheck(targetID: targetID)
+    mutating func hidePilotETACheck(targetKey: NavigationTimingTargetKey) {
+        session?.hidePilotETACheck(targetKey: targetKey)
     }
 
     mutating func cancelImport() {

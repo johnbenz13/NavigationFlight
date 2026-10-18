@@ -91,15 +91,15 @@ struct CockpitFeatureView: View {
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
                         onIdentificationPointReached: { pointID, target in
-                            try? state.reachIdentificationPoint(id: pointID, nextTarget: target, at: .now)
+                            try? state.reachIdentificationPoint(key: pointID, nextTarget: target, at: .now)
                         },
                         onAdjustPilotETA: { targetID, delta in
-                            state.adjustPilotETA(targetID: targetID, by: delta)
+                            state.adjustPilotETA(targetKey: targetID, by: delta)
                         },
-                        onCommitPilotETA: { state.commitPilotETA(targetID: $0) },
-                        onEditPilotETA: { state.beginEditingPilotETA(targetID: $0) },
-                        onShowPilotETACheck: { state.showPilotETACheck(targetID: $0) },
-                        onHidePilotETACheck: { state.hidePilotETACheck(targetID: $0) },
+                        onCommitPilotETA: { state.commitPilotETA(targetKey: $0) },
+                        onEditPilotETA: { state.beginEditingPilotETA(targetKey: $0) },
+                        onShowPilotETACheck: { state.showPilotETACheck(targetKey: $0) },
+                        onHidePilotETACheck: { state.hidePilotETACheck(targetKey: $0) },
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },

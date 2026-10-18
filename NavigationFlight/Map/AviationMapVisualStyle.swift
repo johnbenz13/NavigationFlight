@@ -62,12 +62,13 @@ struct AviationMapVisualStyle {
     let defaultEtaCalloutOffset = AviationMapCalloutOffset(x: -180, y: -72)
 
     let identificationPointSymbolSize: CGFloat = 19
-    var identificationPointColor: UIColor { currentLegAccentColor }
+    let identificationPointColor = UIColor.systemIndigo
     let identificationPointReachedColor = UIColor.systemGreen
     let identificationPointSymbolLineWidth: CGFloat = 2
     let identificationPointCalloutBackgroundColor = UIColor.systemBackground
-    let identificationPointCalloutBackgroundOpacity: CGFloat = 0.48
-    var identificationPointCalloutBorderColor: UIColor { currentLegAccentColor }
+    let identificationPointCollapsedCalloutBackgroundOpacity: CGFloat = 0.72
+    let identificationPointExpandedCalloutBackgroundOpacity: CGFloat = 0.90
+    var identificationPointCalloutBorderColor: UIColor { identificationPointColor }
     let identificationPointCalloutBorderOpacity: CGFloat = 0.95
     let identificationPointCalloutBorderWidth: CGFloat = 1.5
     let identificationPointCalloutTextOpacity: CGFloat = 1
@@ -78,9 +79,12 @@ struct AviationMapVisualStyle {
     let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: -112, y: -38)
     let identificationPointEllipseWidth: CGFloat = 34
     let identificationPointEllipseHeight: CGFloat = 20
-    let identificationPointEllipseFillOpacity: CGFloat = 0.08
+    let identificationPointEllipseFillOpacity: CGFloat = 0.12
     let identificationPointEllipseOutlineOpacity: CGFloat = 0.95
-    let identificationPointEllipseReachedOutlineOpacity: CGFloat = 0.80
+    let identificationPointEllipseHaloColor = UIColor.white
+    let identificationPointEllipseHaloOpacity: CGFloat = 0.90
+    let identificationPointEllipseHaloWidth: CGFloat = 4
+    let identificationPointReachedBadgeDiameter: CGFloat = 13
 
     func minuteTickLengthFraction(for level: AviationMapMinuteMarkLevel) -> Double {
         switch level {

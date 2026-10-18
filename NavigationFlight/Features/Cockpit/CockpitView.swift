@@ -55,12 +55,13 @@ private extension AviationMapPresentation {
         let to = AviationMapCoordinate(latitude: 32.60, longitude: 35.03)
         let fromID = UUID()
         let toID = UUID()
+        let legID = UUID()
         return AviationMapPresentation(
             waypoints: [
                 .init(id: fromID, name: "Departure", coordinate: from, role: .from),
                 .init(id: toID, name: "Destination", coordinate: to, role: .to)
             ],
-            legs: [.init(id: UUID(), index: 0, from: from, to: to)],
+            legs: [.init(id: legID, index: 0, from: from, to: to)],
             activeLegIndex: 0,
             nextLegPreview: nil,
             endpointReferences: [],
@@ -71,7 +72,12 @@ private extension AviationMapPresentation {
                 plannedDurationSeconds: 382
             ),
             identificationPoints: [],
-            destinationTarget: .init(id: toID, name: "Destination", plannedElapsedSeconds: 382, kind: .destination, committedETASeconds: nil)
+            destinationTarget: .init(
+                id: NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: toID),
+                name: "Destination",
+                plannedElapsedSeconds: 382,
+                committedETASeconds: nil
+            )
         )
     }()
 }
@@ -106,12 +112,12 @@ struct CockpitView: View {
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: () -> Void
-    let onIdentificationPointReached: (UUID, AviationMapETATarget?) -> Void
-    let onAdjustPilotETA: (UUID, Int) -> Void
-    let onCommitPilotETA: (UUID) -> Void
-    let onEditPilotETA: (UUID) -> Void
-    let onShowPilotETACheck: (UUID) -> Void
-    let onHidePilotETACheck: (UUID) -> Void
+    let onIdentificationPointReached: (IdentificationPointKey, AviationMapETATarget?) -> Void
+    let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
+    let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
+    let onEditPilotETA: (NavigationTimingTargetKey) -> Void
+    let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
+    let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
     let onCollapseChecklist: () -> Void
     let onReopenChecklist: () -> Void
     let onNoteChecklist: () -> Void
@@ -123,8 +129,8 @@ struct CockpitView: View {
     @State private var etaCalloutOffset = AviationMapVisualStyle.default.defaultEtaCalloutOffset
     @State private var isNextPreparationPresented = false
     @State private var isPreviousDrawerPresented = false
-    @State private var selectedIdentificationPointID: UUID?
-    @State private var identificationPointCalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
+    @State private var selectedIdentificationPointID: IdentificationPointKey?
+    @State private var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset] = [:]
 
     var body: some View {
         GeometryReader { geometry in
@@ -155,7 +161,6 @@ struct CockpitView: View {
             isNextPreparationPresented = false
             isPreviousDrawerPresented = false
             selectedIdentificationPointID = nil
-            identificationPointCalloutOffsets = [:]
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -194,6 +199,7 @@ struct CockpitView: View {
                 summary: previousLegSummary,
                 isPresented: $isPreviousDrawerPresented,
                 onOpen: {
+                    selectedIdentificationPointID = nil
                     if mapWidth < 900, checklistState?.presentationState == .expanded {
                         onCollapseChecklist()
                     }
@@ -467,7 +473,7 @@ struct CockpitView: View {
         return mapPresentation.identificationPoints.first { $0.id == selectedIdentificationPointID }
     }
 
-    private func selectIdentificationPoint(_ id: UUID) {
+    private func selectIdentificationPoint(_ id: IdentificationPointKey) {
         if selectedIdentificationPointID == id {
             selectedIdentificationPointID = nil
             return
@@ -485,7 +491,7 @@ struct CockpitView: View {
     private var identificationContext: AviationMapIdentificationContext? {
         guard let point = selectedIdentificationPoint else { return nil }
         let nextTarget = mapPresentation.nextETATarget(after: point.id)
-        let state = nextTarget.flatMap { session.pilotETAState(targetID: $0.id) }
+        let state = nextTarget.flatMap { session.pilotETAState(targetKey: $0.id) }
         let actual = session.actualLegElapsedDuration(atIdentificationPoint: point.id).map {
             IdentificationPointTimingCalculator.displaySeconds($0)
         }
@@ -512,7 +518,7 @@ private struct IdentificationPointContextOverlay: View {
     let visualStyle: AviationMapVisualStyle
     let onDismiss: () -> Void
     let onReached: () -> Void
-    let onAdjust: (UUID, Int) -> Void
+    let onAdjust: (NavigationTimingTargetKey, Int) -> Void
     let onCheck: () -> Void
 
     var body: some View {
@@ -551,7 +557,7 @@ private struct IdentificationPointContextOverlay: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
                     timingRow(title: "PLAN", seconds: nextTarget.plannedElapsedSeconds)
-                    if let pilotETA = session.pilotETAState(targetID: nextTarget.id)?.draftSeconds {
+                    if let pilotETA = session.pilotETAState(targetKey: nextTarget.id)?.draftSeconds {
                         timingRow(title: "PILOT", seconds: pilotETA)
                         HStack(spacing: 12) {
                             adjustmentButton(label: "−5s", delta: -visualStyle.etaAdjustmentStepSeconds, targetID: nextTarget.id)
@@ -603,7 +609,11 @@ private struct IdentificationPointContextOverlay: View {
         .font(.subheadline)
     }
 
-    private func adjustmentButton(label: String, delta: Int, targetID: UUID) -> some View {
+    private func adjustmentButton(
+        label: String,
+        delta: Int,
+        targetID: NavigationTimingTargetKey
+    ) -> some View {
         Button(label) { onAdjust(targetID, delta) }
             .font(.headline.monospacedDigit())
             .frame(maxWidth: .infinity, minHeight: 44)

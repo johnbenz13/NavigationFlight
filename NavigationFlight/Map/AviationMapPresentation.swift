@@ -51,7 +51,7 @@ struct AviationMapMinuteMarker: Equatable, Sendable {
 }
 
 struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
-    let id: UUID
+    let id: IdentificationPointKey
     let name: String
     let coordinate: AviationMapCoordinate
     let plannedElapsedSeconds: Int
@@ -60,20 +60,15 @@ struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
 }
 
 struct AviationMapETATarget: Identifiable, Equatable, Sendable {
-    enum Kind: Equatable, Sendable {
-        case identificationPoint
-        case destination
-    }
-
-    let id: UUID
+    let id: NavigationTimingTargetKey
     let name: String
     let plannedElapsedSeconds: Int
-    let kind: Kind
+    var kind: NavigationTimingTargetKey.Kind { id.kind }
     let committedETASeconds: Int?
 }
 
 struct AviationMapIdentificationContext: Equatable, Sendable {
-    let pointID: UUID
+    let pointID: IdentificationPointKey
     let actualElapsedSeconds: Int?
     let nextTarget: AviationMapETATarget?
     let pilotETAState: FlightSession.PilotETAState?
@@ -107,16 +102,19 @@ struct AviationMapPresentation: Equatable, Sendable {
         AviationMapSymbology.formatDuration(plannedDurationSeconds)
     }
 
-    func nextETATarget(after identificationPointID: UUID) -> AviationMapETATarget? {
+    func nextETATarget(after identificationPointID: IdentificationPointKey) -> AviationMapETATarget? {
         guard let reachedIndex = identificationPoints.firstIndex(where: { $0.id == identificationPointID }) else {
             return nil
         }
         if let next = identificationPoints[(reachedIndex + 1)...].first(where: { !$0.isReached }) {
             return AviationMapETATarget(
-                id: next.id,
+                id: NavigationTimingTargetKey(
+                    legID: next.id.legID,
+                    kind: .identificationPoint,
+                    targetID: next.id.identificationPointID
+                ),
                 name: next.name,
                 plannedElapsedSeconds: next.plannedElapsedSeconds,
-                kind: .identificationPoint,
                 committedETASeconds: next.committedETASeconds
             )
         }
@@ -126,10 +124,13 @@ struct AviationMapPresentation: Equatable, Sendable {
     var currentETATarget: AviationMapETATarget {
         if let next = identificationPoints.first(where: { !$0.isReached }) {
             return AviationMapETATarget(
-                id: next.id,
+                id: NavigationTimingTargetKey(
+                    legID: next.id.legID,
+                    kind: .identificationPoint,
+                    targetID: next.id.identificationPointID
+                ),
                 name: next.name,
                 plannedElapsedSeconds: next.plannedElapsedSeconds,
-                kind: .identificationPoint,
                 committedETASeconds: next.committedETASeconds
             )
         }
@@ -209,13 +210,22 @@ struct AviationMapPresentationFactory {
                     }
                     plannedElapsed = withWind
                 }
+                let pointKey = IdentificationPointKey(
+                    legID: activeSourceLeg.id,
+                    identificationPointID: sourcePoint.id
+                )
+                let targetKey = NavigationTimingTargetKey(
+                    legID: activeSourceLeg.id,
+                    kind: .identificationPoint,
+                    targetID: sourcePoint.id
+                )
                 return AviationMapIdentificationPoint(
-                    id: sourcePoint.id,
+                    id: pointKey,
                     name: "Identification Point \(offset + 1)",
                     coordinate: coordinate(resolved.position),
                     plannedElapsedSeconds: plannedElapsed,
-                    isReached: session.identificationPointTiming(for: sourcePoint.id) != nil,
-                    committedETASeconds: session.committedPilotETA(targetID: sourcePoint.id)
+                    isReached: session.identificationPointTiming(for: pointKey) != nil,
+                    committedETASeconds: session.committedPilotETA(targetKey: targetKey)
                 )
             }
 
@@ -259,11 +269,18 @@ struct AviationMapPresentationFactory {
             ),
             identificationPoints: activeIdentificationPoints,
             destinationTarget: AviationMapETATarget(
-                id: activeSourceLeg.arrival.id,
+                id: NavigationTimingTargetKey(
+                    legID: activeSourceLeg.id,
+                    kind: .destination,
+                    targetID: activeSourceLeg.arrival.id
+                ),
                 name: activeSourceLeg.arrival.name,
                 plannedElapsedSeconds: plannedDurationSeconds,
-                kind: .destination,
-                committedETASeconds: session.committedPilotETA(targetID: activeSourceLeg.arrival.id)
+                committedETASeconds: session.committedPilotETA(targetKey: NavigationTimingTargetKey(
+                    legID: activeSourceLeg.id,
+                    kind: .destination,
+                    targetID: activeSourceLeg.arrival.id
+                ))
             )
         )
     }

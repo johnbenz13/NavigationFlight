@@ -44,9 +44,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
     @Binding var etaCalloutOffset: AviationMapCalloutOffset
     @Binding var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset]
     let identificationContext: AviationMapIdentificationContext?
+    let timingTargetContext: AviationMapTimingTargetContext?
     @Binding var preservedCamera: AviationMapCameraState?
     @Binding var isCameraUserControlled: Bool
     let onSelectIdentificationPoint: (IdentificationPointKey) -> Void
+    let onSelectTimingTarget: (NavigationTimingTargetKey) -> Void
     let onReachIdentificationPoint: () -> Void
     let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
     let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
@@ -63,9 +65,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
         etaCalloutOffset: Binding<AviationMapCalloutOffset>,
         identificationPointCalloutOffsets: Binding<[IdentificationPointKey: AviationMapCalloutOffset]>,
         identificationContext: AviationMapIdentificationContext?,
+        timingTargetContext: AviationMapTimingTargetContext?,
         preservedCamera: Binding<AviationMapCameraState?>,
         isCameraUserControlled: Binding<Bool>,
         onSelectIdentificationPoint: @escaping (IdentificationPointKey) -> Void,
+        onSelectTimingTarget: @escaping (NavigationTimingTargetKey) -> Void,
         onReachIdentificationPoint: @escaping () -> Void,
         onAdjustPilotETA: @escaping (NavigationTimingTargetKey, Int) -> Void,
         onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
@@ -81,9 +85,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
         _etaCalloutOffset = etaCalloutOffset
         _identificationPointCalloutOffsets = identificationPointCalloutOffsets
         self.identificationContext = identificationContext
+        self.timingTargetContext = timingTargetContext
         _preservedCamera = preservedCamera
         _isCameraUserControlled = isCameraUserControlled
         self.onSelectIdentificationPoint = onSelectIdentificationPoint
+        self.onSelectTimingTarget = onSelectTimingTarget
         self.onReachIdentificationPoint = onReachIdentificationPoint
         self.onAdjustPilotETA = onAdjustPilotETA
         self.onCommitPilotETA = onCommitPilotETA
@@ -102,10 +108,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
             etaCalloutOffset: $etaCalloutOffset,
             identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
             identificationContext: identificationContext,
+            timingTargetContext: timingTargetContext,
             initialCamera: preservedCamera,
             preservedCamera: $preservedCamera,
             isCameraUserControlled: $isCameraUserControlled,
             onSelectIdentificationPoint: onSelectIdentificationPoint,
+            onSelectTimingTarget: onSelectTimingTarget,
             onReachIdentificationPoint: onReachIdentificationPoint,
             onAdjustPilotETA: onAdjustPilotETA,
             onCommitPilotETA: onCommitPilotETA,
@@ -130,6 +138,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             presentation: presentation,
             legState: legState,
             identificationContext: identificationContext,
+            timingTargetContext: timingTargetContext,
             focusRequest: focusRequest,
             mapView: mapView
         )
@@ -154,6 +163,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var presentation: AviationMapPresentation
         private var legState: FlightSession.LegState
         private var identificationContext: AviationMapIdentificationContext?
+        private var timingTargetContext: AviationMapTimingTargetContext?
         private var lastFocusRequest: AviationMapFocusRequest
         private let chartURL: URL?
         private let visualStyle: AviationMapVisualStyle
@@ -167,6 +177,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
         private let onSelectIdentificationPoint: (IdentificationPointKey) -> Void
+        private let onSelectTimingTarget: (NavigationTimingTargetKey) -> Void
         private let onReachIdentificationPoint: () -> Void
         private let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
         private let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
@@ -183,10 +194,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
             etaCalloutOffset: Binding<AviationMapCalloutOffset>,
             identificationPointCalloutOffsets: Binding<[IdentificationPointKey: AviationMapCalloutOffset]>,
             identificationContext: AviationMapIdentificationContext?,
+            timingTargetContext: AviationMapTimingTargetContext?,
             initialCamera: AviationMapCameraState?,
             preservedCamera: Binding<AviationMapCameraState?>,
             isCameraUserControlled: Binding<Bool>,
             onSelectIdentificationPoint: @escaping (IdentificationPointKey) -> Void,
+            onSelectTimingTarget: @escaping (NavigationTimingTargetKey) -> Void,
             onReachIdentificationPoint: @escaping () -> Void,
             onAdjustPilotETA: @escaping (NavigationTimingTargetKey, Int) -> Void,
             onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
@@ -197,6 +210,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.presentation = presentation
             self.legState = legState
             self.identificationContext = identificationContext
+            self.timingTargetContext = timingTargetContext
             self.lastFocusRequest = focusRequest
             self.chartURL = chartURL
             self.visualStyle = visualStyle
@@ -207,6 +221,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
             self.onSelectIdentificationPoint = onSelectIdentificationPoint
+            self.onSelectTimingTarget = onSelectTimingTarget
             self.onReachIdentificationPoint = onReachIdentificationPoint
             self.onAdjustPilotETA = onAdjustPilotETA
             self.onCommitPilotETA = onCommitPilotETA
@@ -264,7 +279,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 let callout = DestinationCalloutAnnotationView(
                     annotation: annotation,
                     visualStyle: visualStyle,
-                    offset: etaCalloutOffset.wrappedValue
+                    offset: etaCalloutOffset.wrappedValue,
+                    context: timingTargetContext?.target.id == presentation.destinationTarget.id
+                        ? timingTargetContext : nil,
+                    onSelect: onSelectTimingTarget,
+                    onAdjust: onAdjustPilotETA,
+                    onCommit: onCommitPilotETA,
+                    onEdit: onEditPilotETA,
+                    onShowCheck: onShowPilotETACheck,
+                    onHideCheck: onHidePilotETACheck
                 ) { [weak self, weak mapView] proposedOffset, size in
                     guard let self, let mapView else { return proposedOffset }
                     let constrained = self.constrainedEtaCalloutOffset(
@@ -297,11 +320,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     visualStyle: visualStyle,
                     offset: savedOffset,
                     context: identificationContext?.pointID == annotation.point.id ? identificationContext : nil,
+                    targetContext: timingTargetContext?.target.id.targetID == annotation.point.id.identificationPointID
+                        && timingTargetContext?.target.id.legID == annotation.point.id.legID
+                        ? timingTargetContext : nil,
                     onSelect: onSelectIdentificationPoint,
                     onReach: onReachIdentificationPoint,
                     onAdjust: onAdjustPilotETA,
                     onCommit: onCommitPilotETA,
                     onEdit: onEditPilotETA,
+                    onRevise: onSelectTimingTarget,
                     onShowCheck: onShowPilotETACheck,
                     onHideCheck: onHidePilotETACheck
                 ) { [weak self, weak mapView] proposed, size in
@@ -324,6 +351,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             presentation: AviationMapPresentation,
             legState: FlightSession.LegState,
             identificationContext: AviationMapIdentificationContext?,
+            timingTargetContext: AviationMapTimingTargetContext?,
             focusRequest: AviationMapFocusRequest,
             mapView: MLNMapView
         ) {
@@ -332,9 +360,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
             let identificationContextChanged = self.identificationContext != identificationContext
+            let timingTargetContextChanged = self.timingTargetContext != timingTargetContext
             self.presentation = presentation
             self.legState = legState
             self.identificationContext = identificationContext
+            self.timingTargetContext = timingTargetContext
             if activeLegChanged {
                 cachedIdentificationPointCalloutOffsets = identificationPointCalloutOffsets.wrappedValue
             }
@@ -347,7 +377,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             if presentationChanged, let style = mapView.style {
                 updateShapes(in: style)
             }
-            if presentationChanged || legStateChanged || identificationContextChanged {
+            if presentationChanged || legStateChanged || identificationContextChanged || timingTargetContextChanged {
                 updateEndpointAnnotations(on: mapView)
             }
 
@@ -673,15 +703,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     isActive: legState == .active
                 )
             }
+            var destinationCallout: DestinationCalloutAnnotation?
             if let destination = presentation.waypoints.first(where: { $0.role == .to }) {
                 let reference = presentation.endpointReferences.first { $0.waypointID == destination.id }
-                endpointAnnotations.append(
-                    DestinationCalloutAnnotation(
-                        waypoint: destination,
-                        reference: reference,
-                        plannedDurationText: presentation.plannedDurationText,
-                        committedETASeconds: presentation.destinationTarget.committedETASeconds
-                    )
+                destinationCallout = DestinationCalloutAnnotation(
+                    waypoint: destination,
+                    reference: reference,
+                    targetID: presentation.destinationTarget.id,
+                    plannedElapsedSeconds: presentation.destinationTarget.plannedElapsedSeconds,
+                    plannedDurationText: presentation.plannedDurationText,
+                    committedETASeconds: presentation.destinationTarget.committedETASeconds
                 )
             }
             endpointAnnotations.append(contentsOf: presentation.minuteMarkers.compactMap { marker in
@@ -690,6 +721,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
             for point in presentation.identificationPoints {
                 endpointAnnotations.append(IdentificationPointSymbolAnnotation(point: point))
                 endpointAnnotations.append(IdentificationPointLabelAnnotation(point: point))
+            }
+            if let destinationCallout {
+                endpointAnnotations.append(destinationCallout)
             }
             mapView.addAnnotations(endpointAnnotations)
         }
@@ -932,19 +966,27 @@ private final class WaypointSymbolView: UIView {
 }
 
 private final class DestinationCalloutAnnotation: MLNPointAnnotation {
+    let targetID: NavigationTimingTargetKey
+    let plannedElapsedSeconds: Int
     let waypointName: String
     let plannedDurationText: String
     let committedETAText: String?
+    let committedETASeconds: Int?
     let referenceText: String?
 
     init(
         waypoint: AviationMapWaypoint,
         reference: AviationMapVORDMEReference?,
+        targetID: NavigationTimingTargetKey,
+        plannedElapsedSeconds: Int,
         plannedDurationText: String,
         committedETASeconds: Int?
     ) {
         waypointName = waypoint.name
+        self.targetID = targetID
+        self.plannedElapsedSeconds = plannedElapsedSeconds
         self.plannedDurationText = plannedDurationText
+        self.committedETASeconds = committedETASeconds
         committedETAText = committedETASeconds.map(AviationMapSymbology.formatDuration)
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
@@ -970,20 +1012,30 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
     private var offset: AviationMapCalloutOffset
     private let offsetHandler: OffsetHandler
     private let leader = CAShapeLayer()
+    private let onSelect: (NavigationTimingTargetKey) -> Void
+    private let targetID: NavigationTimingTargetKey
+    private let isExpanded: Bool
 
     init(
         annotation: DestinationCalloutAnnotation,
         visualStyle: AviationMapVisualStyle,
         offset: AviationMapCalloutOffset,
+        context: AviationMapTimingTargetContext?,
+        onSelect: @escaping (NavigationTimingTargetKey) -> Void,
+        onAdjust: @escaping (NavigationTimingTargetKey, Int) -> Void,
+        onCommit: @escaping (NavigationTimingTargetKey) -> Void,
+        onEdit: @escaping (NavigationTimingTargetKey) -> Void,
+        onShowCheck: @escaping (NavigationTimingTargetKey) -> Void,
+        onHideCheck: @escaping (NavigationTimingTargetKey) -> Void,
         offsetHandler: @escaping OffsetHandler
     ) {
         self.offset = offset
         self.offsetHandler = offsetHandler
+        self.onSelect = onSelect
+        targetID = annotation.targetID
+        isExpanded = context != nil
         super.init(reuseIdentifier: "destination-eta-callout")
 
-        let baseHeight: CGFloat = annotation.committedETAText == nil ? 55 : 72
-        let size = CGSize(width: 146, height: annotation.referenceText == nil ? baseHeight : baseHeight + 15)
-        frame = CGRect(origin: .zero, size: size)
         clipsToBounds = false
         layer.masksToBounds = false
 
@@ -993,16 +1045,43 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
         leader.fillColor = UIColor.clear.cgColor
         layer.insertSublayer(leader, at: 0)
 
-        let content = DestinationCalloutView(annotation: annotation, visualStyle: visualStyle)
-        content.frame = bounds
-        addSubview(content)
+        let target = AviationMapETATarget(
+            id: annotation.targetID,
+            name: annotation.waypointName,
+            plannedElapsedSeconds: annotation.plannedElapsedSeconds,
+            committedETASeconds: annotation.committedETASeconds
+        )
+        let content = TimingTargetCalloutContent(
+            target: context?.target ?? target,
+            context: context,
+            visualStyle: visualStyle,
+            accentColor: visualStyle.etaCalloutBorderColor,
+            collapsedReferenceText: annotation.referenceText,
+            onCollapseOrExpand: { onSelect(annotation.targetID) },
+            onAdjust: onAdjust,
+            onCommit: onCommit,
+            onEdit: onEdit,
+            onShowCheck: onShowCheck,
+            onHideCheck: onHideCheck
+        )
+        let host = UIHostingController(rootView: content)
+        host.view.backgroundColor = .clear
+        let fittingSize = host.sizeThatFits(in: CGSize(width: 300, height: 560))
+        frame = CGRect(origin: .zero, size: fittingSize)
+        host.view.frame = bounds
+        addSubview(host.view)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
         addGestureRecognizer(pan)
+        if !isExpanded {
+            addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectTarget)))
+        }
         isEnabled = true
         apply(offset: offset)
     }
+
+    @objc private func selectTarget() { onSelect(targetID) }
 
     func apply(offset: AviationMapCalloutOffset) {
         let previous = self.offset
@@ -1054,75 +1133,10 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
         false
     }
 
-    required init?(coder: NSCoder) {
-        return nil
-    }
-}
-
-private final class DestinationCalloutView: UIView {
-    init(annotation: DestinationCalloutAnnotation, visualStyle: AviationMapVisualStyle) {
-        super.init(frame: .zero)
-        backgroundColor = visualStyle.etaCalloutBackgroundColor.withAlphaComponent(
-            visualStyle.etaCalloutBackgroundOpacity
-        )
-        layer.borderColor = visualStyle.etaCalloutBorderColor.withAlphaComponent(
-            visualStyle.etaCalloutBorderOpacity
-        ).cgColor
-        layer.borderWidth = visualStyle.etaCalloutBorderWidth
-        layer.cornerRadius = 3
-
-        let name = UILabel()
-        name.text = annotation.waypointName
-        name.textAlignment = .center
-        name.font = .systemFont(
-            ofSize: visualStyle.etaCalloutNameFontSize,
-            weight: visualStyle.etaCalloutNameFontWeight
-        )
-        name.textColor = UIColor.secondaryLabel.withAlphaComponent(visualStyle.etaCalloutTextOpacity)
-
-        let duration = UILabel()
-        duration.text = annotation.committedETAText ?? annotation.plannedDurationText
-        duration.textAlignment = .center
-        duration.font = .monospacedDigitSystemFont(
-            ofSize: visualStyle.etaCalloutDurationFontSize,
-            weight: visualStyle.etaCalloutDurationFontWeight
-        )
-        duration.textColor = UIColor.label.withAlphaComponent(visualStyle.etaCalloutTextOpacity)
-
-        let reference = UILabel()
-        reference.text = annotation.referenceText
-        reference.textAlignment = .center
-        reference.font = .systemFont(ofSize: 9, weight: .medium)
-        reference.textColor = .secondaryLabel
-        reference.adjustsFontSizeToFitWidth = true
-        reference.minimumScaleFactor = 0.75
-
-        let plan = UILabel()
-        plan.text = annotation.committedETAText == nil ? nil : "ETA\nPLAN \(annotation.plannedDurationText)"
-        plan.numberOfLines = 2
-        plan.textAlignment = .center
-        plan.font = .systemFont(ofSize: 9, weight: .semibold)
-        plan.textColor = .secondaryLabel
-
-        [name, duration, plan, reference].forEach(addSubview)
-        name.translatesAutoresizingMaskIntoConstraints = false
-        duration.translatesAutoresizingMaskIntoConstraints = false
-        reference.translatesAutoresizingMaskIntoConstraints = false
-        plan.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            name.topAnchor.constraint(equalTo: topAnchor, constant: 5),
-            name.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
-            name.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -6),
-            duration.topAnchor.constraint(equalTo: name.bottomAnchor, constant: -1),
-            duration.centerXAnchor.constraint(equalTo: centerXAnchor),
-            plan.topAnchor.constraint(equalTo: duration.bottomAnchor, constant: -1),
-            plan.centerXAnchor.constraint(equalTo: centerXAnchor),
-            reference.topAnchor.constraint(equalTo: plan.bottomAnchor, constant: 1),
-            reference.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5),
-            reference.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5)
-        ])
-        reference.isHidden = annotation.referenceText == nil
-        plan.isHidden = annotation.committedETAText == nil
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard gestureRecognizer is UIPanGestureRecognizer else { return true }
+        if touch.view is UIControl { return false }
+        return !isExpanded || touch.location(in: self).y <= 58
     }
 
     required init?(coder: NSCoder) {
@@ -1258,11 +1272,13 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         visualStyle: AviationMapVisualStyle,
         offset: AviationMapCalloutOffset,
         context: AviationMapIdentificationContext?,
+        targetContext: AviationMapTimingTargetContext?,
         onSelect: @escaping (IdentificationPointKey) -> Void,
         onReach: @escaping () -> Void,
         onAdjust: @escaping (NavigationTimingTargetKey, Int) -> Void,
         onCommit: @escaping (NavigationTimingTargetKey) -> Void,
         onEdit: @escaping (NavigationTimingTargetKey) -> Void,
+        onRevise: @escaping (NavigationTimingTargetKey) -> Void,
         onShowCheck: @escaping (NavigationTimingTargetKey) -> Void,
         onHideCheck: @escaping (NavigationTimingTargetKey) -> Void,
         onOffsetChange: @escaping (AviationMapCalloutOffset, CGSize) -> AviationMapCalloutOffset
@@ -1271,7 +1287,7 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         pointID = annotation.point.id
         self.onSelect = onSelect
         self.onOffsetChange = onOffsetChange
-        isExpanded = context != nil
+        isExpanded = context != nil || targetContext != nil
         super.init(reuseIdentifier: "identification-label-\(annotation.point.id)")
         clipsToBounds = false
         layer.masksToBounds = false
@@ -1285,12 +1301,14 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         let content = IdentificationPointCalloutContent(
             point: annotation.point,
             context: context,
+            targetContext: targetContext,
             visualStyle: visualStyle,
             onCollapseOrExpand: { onSelect(annotation.point.id) },
             onReach: onReach,
             onAdjust: onAdjust,
             onCommit: onCommit,
             onEdit: onEdit,
+            onRevise: onRevise,
             onShowCheck: onShowCheck,
             onHideCheck: onHideCheck
         )
@@ -1366,12 +1384,13 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
     required init?(coder: NSCoder) { nil }
 }
 
-private struct IdentificationPointCalloutContent: View {
-    let point: AviationMapIdentificationPoint
-    let context: AviationMapIdentificationContext?
+private struct TimingTargetCalloutContent: View {
+    let target: AviationMapETATarget
+    let context: AviationMapTimingTargetContext?
     let visualStyle: AviationMapVisualStyle
+    let accentColor: UIColor
+    let collapsedReferenceText: String?
     let onCollapseOrExpand: () -> Void
-    let onReach: () -> Void
     let onAdjust: (NavigationTimingTargetKey, Int) -> Void
     let onCommit: (NavigationTimingTargetKey) -> Void
     let onEdit: (NavigationTimingTargetKey) -> Void
@@ -1379,12 +1398,136 @@ private struct IdentificationPointCalloutContent: View {
     let onHideCheck: (NavigationTimingTargetKey) -> Void
 
     var body: some View {
-        Group {
+        VStack(alignment: context == nil ? .center : .leading, spacing: context == nil ? 1 : 9) {
             if let context {
-                expanded(context)
+                Button(action: onCollapseOrExpand) {
+                    HStack {
+                        Text(target.name).font(.headline).lineLimit(1)
+                        Spacer()
+                        Image(systemName: "chevron.up")
+                    }
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if context.pilotETAState.isEditing {
+                    timingRow("PLAN ETA", target.plannedElapsedSeconds, strong: false)
+                    timingRow("NEW ETA", context.pilotETAState.draftSeconds, strong: true)
+                    HStack(spacing: 10) {
+                        adjustmentButton("−5s", -visualStyle.etaAdjustmentStepSeconds)
+                        adjustmentButton("+5s", visualStyle.etaAdjustmentStepSeconds)
+                    }
+                    Button(context.pilotETAState.committedSeconds == nil ? "Set new ETA" : "Update ETA") {
+                        onCommit(target.id)
+                    }
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .buttonStyle(.borderedProminent)
+                } else if let committed = context.pilotETAState.committedSeconds {
+                    timingRow("ETA", committed, strong: true)
+                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
+                    Label("Set", systemImage: "checkmark").font(.caption).foregroundStyle(.secondary)
+                    Button("Edit ETA") { onEdit(target.id) }
+                        .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.bordered)
+                    if context.pilotETAState.isCheckResultVisible, let reference = context.timingReferenceSeconds {
+                        timingRow("YOUR ETA", committed, strong: true)
+                        timingRow("TIMING REFERENCE", reference, strong: false)
+                        signedTimingRow("DIFFERENCE", committed - reference)
+                        Text("If the observed pace continues").font(.caption).foregroundStyle(.secondary)
+                        Button("Hide check") { onHideCheck(target.id) }
+                            .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.plain)
+                    } else if context.timingReferenceSeconds != nil {
+                        Button("Cross-check calculation") { onShowCheck(target.id) }
+                            .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.bordered)
+                    }
+                }
             } else {
-                collapsed
+                Text(target.name).font(.caption.weight(.semibold)).lineLimit(1)
+                Text(AviationMapSymbology.formatDuration(target.committedETASeconds ?? target.plannedElapsedSeconds))
+                    .font(.headline.monospacedDigit()).bold()
+                if target.committedETASeconds != nil {
+                    Text("ETA").font(.caption.weight(.bold))
+                    Text("PLAN \(AviationMapSymbology.formatDuration(target.plannedElapsedSeconds))")
+                        .font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+                }
+                if let collapsedReferenceText {
+                    Text(collapsedReferenceText).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
             }
+        }
+        .padding(context == nil ? 6 : 12)
+        .frame(width: context == nil ? 154 : 286)
+        .background(
+            Color(uiColor: visualStyle.etaCalloutBackgroundColor)
+                .opacity(context == nil ? visualStyle.etaCalloutBackgroundOpacity : visualStyle.etaExpandedCalloutBackgroundOpacity),
+            in: RoundedRectangle(cornerRadius: 7)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 7).stroke(
+                Color(uiColor: accentColor).opacity(visualStyle.etaCalloutBorderOpacity),
+                lineWidth: visualStyle.etaCalloutBorderWidth
+            )
+        }
+        .accessibilityIdentifier("timing-target-\(target.id.targetID.uuidString)")
+    }
+
+    private func adjustmentButton(_ title: String, _ delta: Int) -> some View {
+        Button(title) { onAdjust(target.id, delta) }
+            .font(.headline.monospacedDigit())
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .buttonStyle(.bordered)
+            .buttonRepeatBehavior(.enabled)
+    }
+
+    private func timingRow(_ title: String, _ seconds: Int, strong: Bool) -> some View {
+        HStack { Text(title).foregroundStyle(.secondary); Spacer(); Text(AviationMapSymbology.formatDuration(seconds)).monospacedDigit().fontWeight(strong ? .bold : .semibold) }
+            .font(.subheadline)
+    }
+
+    private func signedTimingRow(_ title: String, _ seconds: Int) -> some View {
+        HStack { Text(title).foregroundStyle(.secondary); Spacer(); Text((seconds >= 0 ? "+" : "−") + AviationMapSymbology.formatDuration(abs(seconds))).monospacedDigit().bold() }
+            .font(.subheadline)
+    }
+}
+
+private struct IdentificationPointCalloutContent: View {
+    let point: AviationMapIdentificationPoint
+    let context: AviationMapIdentificationContext?
+    let targetContext: AviationMapTimingTargetContext?
+    let visualStyle: AviationMapVisualStyle
+    let onCollapseOrExpand: () -> Void
+    let onReach: () -> Void
+    let onAdjust: (NavigationTimingTargetKey, Int) -> Void
+    let onCommit: (NavigationTimingTargetKey) -> Void
+    let onEdit: (NavigationTimingTargetKey) -> Void
+    let onRevise: (NavigationTimingTargetKey) -> Void
+    let onShowCheck: (NavigationTimingTargetKey) -> Void
+    let onHideCheck: (NavigationTimingTargetKey) -> Void
+
+    @ViewBuilder
+    var body: some View {
+        if let targetContext {
+            TimingTargetCalloutContent(
+                target: targetContext.target,
+                context: targetContext,
+                visualStyle: visualStyle,
+                accentColor: visualStyle.identificationPointCalloutBorderColor,
+                collapsedReferenceText: nil,
+                onCollapseOrExpand: onCollapseOrExpand,
+                onAdjust: onAdjust,
+                onCommit: onCommit,
+                onEdit: onEdit,
+                onShowCheck: onShowCheck,
+                onHideCheck: onHideCheck
+            )
+        } else {
+            observationCallout
+        }
+    }
+
+    private var observationCallout: some View {
+        Group {
+            if let context { expanded(context) } else { collapsed }
         }
         .padding(context == nil ? 6 : 12)
         .frame(width: context == nil ? 154 : 286)
@@ -1445,48 +1588,22 @@ private struct IdentificationPointCalloutContent: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("identification-point-reached")
             } else if let target = context.nextTarget,
-                      let etaState = context.pilotETAState {
+                      true {
                 Divider()
-                Text("NEXT ETA · \(target.name)")
+                Text("NEXT TARGET · \(target.name)")
                     .font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                if etaState.isEditing {
+                if let committed = target.committedETASeconds {
+                    timingRow("ETA", committed, strong: true)
                     timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
-                    timingRow("NEW ETA", etaState.draftSeconds, strong: true)
-                    HStack(spacing: 10) {
-                        adjustmentButton("−5s", target.id, -visualStyle.etaAdjustmentStepSeconds)
-                        adjustmentButton("+5s", target.id, visualStyle.etaAdjustmentStepSeconds)
-                    }
-                    Button(etaState.committedSeconds == nil ? "Set new ETA" : "Update ETA") {
-                        onCommit(target.id)
-                    }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .buttonStyle(.borderedProminent)
-                } else if let committed = etaState.committedSeconds {
-                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
-                    HStack {
-                        Text("ETA").foregroundStyle(.secondary)
-                        Spacer()
-                        Text(AviationMapSymbology.formatDuration(committed)).monospacedDigit().bold()
-                        Label("Set", systemImage: "checkmark").font(.caption).foregroundStyle(.secondary)
-                    }
-                    .font(.subheadline)
-                    Button("Edit ETA") { onEdit(target.id) }
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .buttonStyle(.bordered)
-                    if etaState.isCheckResultVisible {
-                        checkResult(committed: committed, context: context)
-                        Button("Hide check") { onHideCheck(target.id) }
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .buttonStyle(.plain)
-                    } else if context.timingReferenceSeconds != nil {
-                        Button("Cross-check calculation") { onShowCheck(target.id) }
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .buttonStyle(.bordered)
-                    } else {
-                        Text("Check unavailable").font(.subheadline).foregroundStyle(.secondary)
-                    }
+                } else {
+                    timingRow("PLAN ETA", target.plannedElapsedSeconds, strong: false)
                 }
+                Button(target.committedETASeconds == nil ? "Revise next ETA" : "Edit next ETA") {
+                    if target.committedETASeconds != nil { onEdit(target.id) }
+                    onRevise(target.id)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -1509,30 +1626,6 @@ private struct IdentificationPointCalloutContent: View {
             Text(signedDuration(seconds)).monospacedDigit().bold()
         }
         .font(.subheadline)
-    }
-
-    private func adjustmentButton(
-        _ title: String,
-        _ targetID: NavigationTimingTargetKey,
-        _ delta: Int
-    ) -> some View {
-        Button(title) { onAdjust(targetID, delta) }
-            .font(.headline.monospacedDigit())
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .buttonStyle(.bordered)
-            .buttonRepeatBehavior(.enabled)
-    }
-
-    private func checkResult(committed: Int, context: AviationMapIdentificationContext) -> some View {
-        VStack(spacing: 5) {
-            timingRow("YOUR ETA", committed, strong: true)
-            if let reference = context.timingReferenceSeconds {
-                timingRow("TIMING REFERENCE", reference, strong: false)
-                signedTimingRow("DIFFERENCE", committed - reference)
-                Text("If the observed pace continues")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-        }
     }
 
     private func signedDuration(_ seconds: Int) -> String {

@@ -93,6 +93,7 @@ struct CockpitFeatureView: View {
                         onIdentificationPointReached: { pointID, target in
                             try? state.reachIdentificationPoint(key: pointID, nextTarget: target, at: .now)
                         },
+                        onOpenPilotETA: { state.openPilotETAEditor(target: $0) },
                         onAdjustPilotETA: { targetID, delta in
                             state.adjustPilotETA(targetKey: targetID, by: delta)
                         },

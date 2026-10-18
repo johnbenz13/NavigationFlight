@@ -149,9 +149,17 @@ struct CockpitFeatureState: Equatable, Sendable {
         if let nextTarget {
             session?.initializePilotETA(
                 targetKey: nextTarget.id,
-                plannedElapsedSeconds: nextTarget.plannedElapsedSeconds
+                plannedElapsedSeconds: nextTarget.plannedElapsedSeconds,
+                timingObservationKey: key
             )
         }
+    }
+
+    mutating func openPilotETAEditor(target: AviationMapETATarget) {
+        session?.initializePilotETA(
+            targetKey: target.id,
+            plannedElapsedSeconds: target.plannedElapsedSeconds
+        )
     }
 
     mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {

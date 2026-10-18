@@ -629,6 +629,7 @@ struct NavigationFlightTests {
         let summary = try #require(try adapter.makePreviousLegSummary(flight: flight, session: session))
 
         #expect(summary.plannedDurationSeconds == 382)
+        #expect(summary.revisedETASeconds == nil)
         #expect(summary.actualDurationSeconds == 375)
         #expect(summary.deltaSeconds == -7)
         #expect(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds) == "-00:07")
@@ -637,6 +638,37 @@ struct NavigationFlightTests {
         #expect(summary.vorDme?.station == "SYN")
         #expect(summary.vorDme?.magneticRadialFromDegrees == 270)
         #expect(summary.vorDme?.slantRangeNauticalMiles == 12.4)
+        #expect(flight == originalFlight)
+    }
+
+    @Test func previousLegSummaryUsesCompletedLegRevisedDestinationETAAsComparisonBasis() throws {
+        let flight = try summaryFlight()
+        let originalFlight = flight
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let target = NavigationTimingTargetKey(
+            legID: flight.legs[0].id,
+            kind: .destination,
+            targetID: flight.legs[0].arrival.id
+        )
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 382)
+        for _ in 0..<4 { session.adjustPilotETA(targetKey: target, by: 5) }
+        session.commitPilotETA(targetKey: target)
+        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_407))
+
+        let summary = try #require(
+            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+        )
+        #expect(summary.plannedDurationSeconds == 382)
+        #expect(summary.revisedETASeconds == 400)
+        #expect(summary.actualDurationSeconds == 407)
+        #expect(summary.deltaSeconds == 7)
+        #expect(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds) == "+00:07")
         #expect(flight == originalFlight)
     }
 
@@ -658,6 +690,35 @@ struct NavigationFlightTests {
         #expect(summary.legIndex == 1)
         #expect(summary.origin == flight.legs[1].departure.name)
         #expect(summary.destination == flight.legs[1].arrival.name)
+    }
+
+    @Test func advancingToSecondLegPreservesFirstLegRevisedETAHistoricalComparison() throws {
+        let flight = try twoLegFlight()
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let map = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let planned = map.destinationTarget.plannedElapsedSeconds
+        session.initializePilotETA(targetKey: map.destinationTarget.id, plannedElapsedSeconds: planned)
+        session.adjustPilotETA(targetKey: map.destinationTarget.id, by: 10)
+        session.commitPilotETA(targetKey: map.destinationTarget.id)
+        let revised = try #require(session.committedPilotETA(targetKey: map.destinationTarget.id))
+        let start = Date(timeIntervalSince1970: 2_000)
+        try session.startLeg(at: start)
+        try session.reachCurrentWaypoint(at: start.addingTimeInterval(TimeInterval(revised + 2)))
+
+        #expect(session.activeLegIndex == 1)
+        let summary = try #require(
+            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+        )
+        #expect(summary.legIndex == 0)
+        #expect(summary.plannedDurationSeconds == planned)
+        #expect(summary.revisedETASeconds == revised)
+        #expect(summary.actualDurationSeconds == revised + 2)
+        #expect(summary.deltaSeconds == 2)
     }
 
     @Test func startingFirstLegCreatesPendingChecklistWithoutChangingTimingOrExecution() throws {
@@ -1044,7 +1105,8 @@ struct NavigationFlightTests {
 
         #expect(abs(style.destinationWaypointFillOpacity - 0.20) < 0.001)
         #expect(style.destinationWaypointStrokeOpacity == 1)
-        #expect(abs(style.etaCalloutBackgroundOpacity - 0.20) < 0.001)
+        #expect(abs(style.etaCalloutBackgroundOpacity - 0.72) < 0.001)
+        #expect(abs(style.etaExpandedCalloutBackgroundOpacity - 0.90) < 0.001)
         #expect(style.etaCalloutBorderOpacity == 1)
         #expect(style.etaCalloutTextOpacity == 1)
         #expect(style.currentLegAccentColor != style.nextLegAccentColor)
@@ -1287,6 +1349,90 @@ struct NavigationFlightTests {
         #expect(earlierSession.pilotETAState(targetKey: targetID)?.draftSeconds == 335)
         #expect(earlierSession.committedPilotETA(targetKey: targetID) == nil)
         #expect(plan == 338)
+    }
+
+    @Test func destinationAndIdentificationTargetsUseTheSameCanonicalETAStateMachine() throws {
+        let legID = UUID()
+        let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let destination = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        let identification = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .identificationPoint,
+            targetID: UUID()
+        )
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+
+        session.initializePilotETA(
+            targetKey: destination,
+            plannedElapsedSeconds: 256,
+            timingObservationKey: observation
+        )
+        session.initializePilotETA(targetKey: identification, plannedElapsedSeconds: 190)
+        session.adjustPilotETA(targetKey: destination, by: 5)
+        session.commitPilotETA(targetKey: destination)
+
+        #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
+        #expect(session.pilotETAState(targetKey: destination)?.committedSeconds == 260)
+        #expect(session.pilotETAState(targetKey: destination)?.timingObservationKey == observation)
+        #expect(session.pilotETAState(targetKey: identification)?.draftSeconds == 190)
+        #expect(session.pilotETAState(targetKey: identification)?.committedSeconds == nil)
+        session.showPilotETACheck(targetKey: destination)
+        #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == true)
+        session.beginEditingPilotETA(targetKey: destination)
+        #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == false)
+        #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
+    }
+
+    @Test func nextTargetShortcutAndDirectLookupResolveTheSameCanonicalKey() {
+        let legID = UUID()
+        let first = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let second = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let expected = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .identificationPoint,
+            targetID: second.identificationPointID
+        )
+        let presentation = AviationMapPresentation(
+            waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
+            endpointReferences: [], plannedDurationSeconds: 256, minuteMarkers: [],
+            identificationPoints: [
+                .init(id: first, name: "Identification Point 1", coordinate: .init(latitude: 0, longitude: 0), plannedElapsedSeconds: 90, isReached: true, committedETASeconds: nil),
+                .init(id: second, name: "Identification Point 2", coordinate: .init(latitude: 1, longitude: 1), plannedElapsedSeconds: 180, isReached: false, committedETASeconds: nil)
+            ],
+            destinationTarget: .init(
+                id: .init(legID: legID, kind: .destination, targetID: UUID()),
+                name: "Destination", plannedElapsedSeconds: 256, committedETASeconds: nil
+            )
+        )
+
+        #expect(presentation.nextETATarget(after: first)?.id == expected)
+        #expect(presentation.timingTarget(for: expected)?.id == expected)
+    }
+
+    @Test func directTargetEditorReusesShortcutStateAndKeepsItsObservationSource() throws {
+        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        try state.startLeg(at: Date(timeIntervalSince1970: 10_000))
+        let session = try #require(state.session)
+        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let point = try #require(presentation.identificationPoints.first)
+        let target = try #require(presentation.nextETATarget(after: point.id))
+        try state.reachIdentificationPoint(
+            key: point.id,
+            nextTarget: target,
+            at: Date(timeIntervalSince1970: 10_015)
+        )
+        state.adjustPilotETA(targetKey: target.id, by: 5)
+        state.commitPilotETA(targetKey: target.id)
+        state.openPilotETAEditor(target: target)
+
+        let etaState = try #require(state.session?.pilotETAState(targetKey: target.id))
+        #expect(etaState.timingObservationKey == point.id)
+        #expect(etaState.isEditing == false)
+        #expect(etaState.draftSeconds == etaState.committedSeconds)
     }
 
     @Test func consecutiveLegIdentificationPointStateIsIsolated() throws {

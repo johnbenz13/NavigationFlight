@@ -70,6 +70,7 @@ struct FlightSession: Equatable, Sendable {
         var committedSeconds: Int?
         var isEditing: Bool
         var isCheckResultVisible: Bool
+        let timingObservationKey: IdentificationPointKey?
     }
 
     let flightID: UUID
@@ -186,13 +187,18 @@ struct FlightSession: Equatable, Sendable {
         return record.actualLegElapsedDuration(startedAt: legTiming.startedAt)
     }
 
-    mutating func initializePilotETA(targetKey: NavigationTimingTargetKey, plannedElapsedSeconds: Int) {
+    mutating func initializePilotETA(
+        targetKey: NavigationTimingTargetKey,
+        plannedElapsedSeconds: Int,
+        timingObservationKey: IdentificationPointKey? = nil
+    ) {
         guard plannedElapsedSeconds >= 0, pilotETAStatesByTargetKey[targetKey] == nil else { return }
         pilotETAStatesByTargetKey[targetKey] = PilotETAState(
             draftSeconds: IdentificationPointTimingCalculator.roundToNearestFiveSeconds(plannedElapsedSeconds),
             committedSeconds: nil,
             isEditing: true,
-            isCheckResultVisible: false
+            isCheckResultVisible: false,
+            timingObservationKey: timingObservationKey
         )
     }
 

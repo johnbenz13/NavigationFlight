@@ -71,7 +71,11 @@ struct AviationMapIdentificationContext: Equatable, Sendable {
     let pointID: IdentificationPointKey
     let actualElapsedSeconds: Int?
     let nextTarget: AviationMapETATarget?
-    let pilotETAState: FlightSession.PilotETAState?
+}
+
+struct AviationMapTimingTargetContext: Equatable, Sendable {
+    let target: AviationMapETATarget
+    let pilotETAState: FlightSession.PilotETAState
     let timingReferenceSeconds: Int?
 }
 
@@ -135,6 +139,20 @@ struct AviationMapPresentation: Equatable, Sendable {
             )
         }
         return destinationTarget
+    }
+
+    func timingTarget(for key: NavigationTimingTargetKey) -> AviationMapETATarget? {
+        if destinationTarget.id == key { return destinationTarget }
+        guard key.kind == .identificationPoint,
+              let point = identificationPoints.first(where: {
+                  $0.id.legID == key.legID && $0.id.identificationPointID == key.targetID
+              }) else { return nil }
+        return AviationMapETATarget(
+            id: key,
+            name: point.name,
+            plannedElapsedSeconds: point.plannedElapsedSeconds,
+            committedETASeconds: point.committedETASeconds
+        )
     }
 }
 

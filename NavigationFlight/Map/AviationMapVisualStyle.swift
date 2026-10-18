@@ -49,7 +49,8 @@ struct AviationMapVisualStyle {
     let minuteLabelFontWeight = UIFont.Weight.bold
 
     let etaCalloutBackgroundColor = UIColor.systemBackground
-    let etaCalloutBackgroundOpacity: CGFloat = 0.20
+    let etaCalloutBackgroundOpacity: CGFloat = 0.72
+    let etaExpandedCalloutBackgroundOpacity: CGFloat = 0.90
     var etaCalloutBorderColor: UIColor { currentLegAccentColor }
     let etaCalloutBorderOpacity: CGFloat = 1
     let etaCalloutBorderWidth: CGFloat = 1.5

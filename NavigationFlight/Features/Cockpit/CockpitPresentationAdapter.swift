@@ -102,6 +102,7 @@ struct PreviousLegSummary: Equatable, Sendable {
     let origin: String
     let destination: String
     let plannedDurationSeconds: Int
+    let revisedETASeconds: Int?
     let actualDurationSeconds: Int
     let deltaSeconds: Int
     let magneticHeadingDegrees: Double?
@@ -314,6 +315,12 @@ struct CockpitPresentationAdapter: Sendable {
             heading = wind.magneticHeading.value
         }
         let actualDuration = max(0, Int(reachedAt.timeIntervalSince(timing.startedAt).rounded()))
+        let destinationTargetKey = NavigationTimingTargetKey(
+            legID: timing.legID,
+            kind: .destination,
+            targetID: sourceLeg.arrival.id
+        )
+        let revisedETA = session.committedPilotETA(targetKey: destinationTargetKey)
 
         let acceptedReferences = Dictionary(
             uniqueKeysWithValues: execution.vorDmeReferences.map { ($0.referenceID, $0) }
@@ -335,8 +342,9 @@ struct CockpitPresentationAdapter: Sendable {
             origin: sourceLeg.departure.name,
             destination: sourceLeg.arrival.name,
             plannedDurationSeconds: plannedDuration,
+            revisedETASeconds: revisedETA,
             actualDurationSeconds: actualDuration,
-            deltaSeconds: actualDuration - plannedDuration,
+            deltaSeconds: actualDuration - (revisedETA ?? plannedDuration),
             magneticHeadingDegrees: heading,
             magneticCourseDegrees: resolvedLeg.magneticCourse.value,
             vorDme: vorDme

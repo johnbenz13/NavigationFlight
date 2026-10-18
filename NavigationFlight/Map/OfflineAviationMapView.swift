@@ -7,6 +7,7 @@ enum AviationMapFocusMode: Equatable, Sendable {
     case leg
     case waypoint
     case overview
+    case timingTarget(AviationMapCoordinate)
 }
 
 struct AviationMapFocusRequest: Equatable, Sendable {
@@ -134,6 +135,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
     }
 
     func updateUIView(_ mapView: MLNMapView, context: Context) {
+        context.coordinator.updateHandlers(
+            onSelectIdentificationPoint: onSelectIdentificationPoint,
+            onSelectTimingTarget: onSelectTimingTarget,
+            onReachIdentificationPoint: onReachIdentificationPoint,
+            onAdjustPilotETA: onAdjustPilotETA,
+            onCommitPilotETA: onCommitPilotETA,
+            onEditPilotETA: onEditPilotETA,
+            onShowPilotETACheck: onShowPilotETACheck,
+            onHidePilotETACheck: onHidePilotETACheck
+        )
         context.coordinator.update(
             presentation: presentation,
             legState: legState,
@@ -176,14 +187,14 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var styleIsReady = false
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
-        private let onSelectIdentificationPoint: (IdentificationPointKey) -> Void
-        private let onSelectTimingTarget: (NavigationTimingTargetKey) -> Void
-        private let onReachIdentificationPoint: () -> Void
-        private let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
-        private let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
-        private let onEditPilotETA: (NavigationTimingTargetKey) -> Void
-        private let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
-        private let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
+        private var onSelectIdentificationPoint: (IdentificationPointKey) -> Void
+        private var onSelectTimingTarget: (NavigationTimingTargetKey) -> Void
+        private var onReachIdentificationPoint: () -> Void
+        private var onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
+        private var onCommitPilotETA: (NavigationTimingTargetKey) -> Void
+        private var onEditPilotETA: (NavigationTimingTargetKey) -> Void
+        private var onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
+        private var onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
 
         init(
             presentation: AviationMapPresentation,
@@ -220,6 +231,26 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.initialCamera = initialCamera
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
+            self.onSelectIdentificationPoint = onSelectIdentificationPoint
+            self.onSelectTimingTarget = onSelectTimingTarget
+            self.onReachIdentificationPoint = onReachIdentificationPoint
+            self.onAdjustPilotETA = onAdjustPilotETA
+            self.onCommitPilotETA = onCommitPilotETA
+            self.onEditPilotETA = onEditPilotETA
+            self.onShowPilotETACheck = onShowPilotETACheck
+            self.onHidePilotETACheck = onHidePilotETACheck
+        }
+
+        func updateHandlers(
+            onSelectIdentificationPoint: @escaping (IdentificationPointKey) -> Void,
+            onSelectTimingTarget: @escaping (NavigationTimingTargetKey) -> Void,
+            onReachIdentificationPoint: @escaping () -> Void,
+            onAdjustPilotETA: @escaping (NavigationTimingTargetKey, Int) -> Void,
+            onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
+            onEditPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
+            onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
+            onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void
+        ) {
             self.onSelectIdentificationPoint = onSelectIdentificationPoint
             self.onSelectTimingTarget = onSelectTimingTarget
             self.onReachIdentificationPoint = onReachIdentificationPoint
@@ -397,6 +428,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     focusWaypoint(on: mapView)
                 case .overview:
                     focusOverview(on: mapView)
+                case .timingTarget(let coordinate):
+                    focusTimingTarget(coordinate, on: mapView)
                 }
             }
             lastFocusRequest = focusRequest
@@ -627,6 +660,16 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 animated: true
             )
             mapView.setDirection(0, animated: true)
+        }
+
+        private func focusTimingTarget(_ target: AviationMapCoordinate, on mapView: MLNMapView) {
+            isCameraUserControlled.wrappedValue = false
+            mapView.setCenter(
+                coordinate(target),
+                zoomLevel: mapView.zoomLevel,
+                direction: mapView.direction,
+                animated: !UIAccessibility.isReduceMotionEnabled
+            )
         }
 
         private func fit(
@@ -1476,7 +1519,6 @@ private struct TimingTargetCalloutContent: View {
             .font(.headline.monospacedDigit())
             .frame(maxWidth: .infinity, minHeight: 44)
             .buttonStyle(.bordered)
-            .buttonRepeatBehavior(.enabled)
     }
 
     private func timingRow(_ title: String, _ seconds: Int, strong: Bool) -> some View {

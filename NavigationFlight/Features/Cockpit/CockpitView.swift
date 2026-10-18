@@ -512,6 +512,7 @@ struct CockpitView: View {
             isNextPreparationPresented = false
             onCollapseChecklist()
             onOpenPilotETA(target)
+            focusMap(on: target)
         }
     }
 
@@ -519,6 +520,22 @@ struct CockpitView: View {
         selectedIdentificationPointID = nil
         selectedTimingTargetKey = target.id
         onOpenPilotETA(target)
+        focusMap(on: target)
+    }
+
+    private func focusMap(on target: AviationMapETATarget) {
+        let coordinate: AviationMapCoordinate?
+        switch target.kind {
+        case .destination:
+            coordinate = mapPresentation.activeLeg?.to
+        case .identificationPoint:
+            coordinate = mapPresentation.identificationPoints.first {
+                $0.id.legID == target.id.legID && $0.id.identificationPointID == target.id.targetID
+            }?.coordinate
+        }
+        if let coordinate {
+            mapFocusRequest = AviationMapFocusRequest(mode: .timingTarget(coordinate))
+        }
     }
 
     private func reachSelectedIdentificationPoint() {

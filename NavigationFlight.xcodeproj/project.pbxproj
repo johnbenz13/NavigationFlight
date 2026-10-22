@@ -31,9 +31,16 @@
 		5269A1DF307A4CC2009CD5A1 /* NavigationFlight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NavigationFlight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5269A1EC307A4CC3009CD5A1 /* NavigationFlightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavigationFlightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5269A1F6307A4CC3009CD5A1 /* NavigationFlightUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavigationFlightUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		52B0614D30874A4700B840D6 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		52B0615030874A4700B840D6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		52324C62308A1E5B0009C1AA /* docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = docs;
+			sourceTree = "<group>";
+		};
 		5269A1E1307A4CC2009CD5A1 /* NavigationFlight */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NavigationFlight;
@@ -74,11 +81,14 @@
 		5269A1D6307A4CC2009CD5A1 = {
 			isa = PBXGroup;
 			children = (
+				52B0614D30874A4700B840D6 /* AGENTS.md */,
+				52B0615030874A4700B840D6 /* README.md */,
 				5269A1E1307A4CC2009CD5A1 /* NavigationFlight */,
 				5269A1EF307A4CC3009CD5A1 /* NavigationFlightTests */,
 				5269A1F9307A4CC3009CD5A1 /* NavigationFlightUITests */,
 				52D6EA6E307D6F4200C34E8E /* Frameworks */,
 				5269A1E0307A4CC2009CD5A1 /* Products */,
+				52324C62308A1E5B0009C1AA /* docs */,
 			);
 			sourceTree = "<group>";
 		};

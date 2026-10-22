@@ -69,12 +69,19 @@ Use progressive verification during implementation.
 
 Before completing a checkpoint:
 
-- Build the application.
-- Run the full relevant test suite.
 - Run `git diff --check`.
-- Verify affected user interactions in the simulator when UI,
-  gestures, navigation, map rendering, or layout behavior changes.
-- Validate relevant orientations when applicable.
+
+Choose validation based on the files and behavior changed:
+
+| Change | Required validation |
+| --- | --- |
+| Documentation only (`.md` files or files under `docs/`) | Review the changed documentation for accuracy, verify local links and referenced paths, and run `git diff --check`. Do not build the application or run tests. |
+| Swift implementation | Run the relevant tests and build the application. |
+| SwiftUI behavior | Build the application, run the relevant tests, and verify affected interactions in the simulator. Validate relevant orientations when applicable. |
+| Project configuration or resources | Run the relevant configuration checks and build verification. Run affected tests when applicable. |
+
+Treat a change as documentation-only only when it does not alter source code,
+project configuration, generated inputs, resources consumed at runtime, or tests.
 
 If a validation step fails, fix the issue and repeat the necessary checks.
 

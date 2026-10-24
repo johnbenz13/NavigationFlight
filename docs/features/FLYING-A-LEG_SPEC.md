@@ -1,6 +1,6 @@
 # Flying a Leg — Product Specification
 
-Status: proposed product behavior for the first complete manual-navigation flight flow.
+Status: changes requested after lifecycle review; revised paired product/design baseline awaiting approval.
 
 ## Summary
 
@@ -71,11 +71,18 @@ The first release does not:
 - Design coverage: [Iteration 03 coverage plan](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=24-4)
 - Iteration 03 flow: [Ready to Start — iPad portrait](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=31-3)
 - Iteration 03 flow: [Active Leg — start checklist expanded](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=41-2)
+- Iteration 03 flow: [Active Leg — checklist noted and collapsed](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=60-2)
+- Iteration 03 flow: [Destination Identified](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=63-2)
+- Iteration 03 flow: [Arrival Reached — automatic successor start](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=63-90)
+- Iteration 03 flow: [Arrival Reached — manual successor handoff](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=63-191)
+- Iteration 03 flow: [Final Leg — navigation complete](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=63-275)
+- Iteration 03 flow: [Previous Leg — expanded history](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=74-158)
+- Iteration 03 flow: [Successor active — Previous Leg and checklist noted](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=78-6)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `approved` by John — 2026-10-24
-- Design status: `direction approved · coverage in progress`
+- Product-spec status: `changes requested` after lifecycle review — 2026-10-24
+- Design status: `changes requested · Iteration 03 lifecycle revision ready for review`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
@@ -407,6 +414,26 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 116. Bundled templates are validated application data. A bundled template must not silently display an unresolved variable as operational checklist content.
 
+### Arrival transition, history, and map aids
+
+117. Reporting an arrival waypoint reached transitions the map to the successor leg's canonical track-up presentation under both automatic and manual progression. Automatic progression starts the successor timer at the arrival timestamp; manual progression leaves the successor ready and untimed until the pilot chooses **Start Leg**.
+
+118. The transition to the successor track-up presentation visibly rotates the map in the shortest angular direction from the departing leg's orientation to the successor leg's planned heading. The animation communicates the turn to the next leg without implying a live aircraft heading or position.
+
+119. Undoing an arrival-reach transition restores the departing leg, its timer, target state, checklist state, map focus, and pre-transition map orientation atomically. The successor leg and its rotated map presentation are removed together.
+
+120. After a leg completes, the cockpit presents a compact **Previous Leg** chip by default. The chip identifies the completed leg without covering the active navigation instruments and opens a detailed history panel on explicit pilot request. It is independent from the current leg's checklist: after that checklist is noted, its folded checklist chip and the **Previous Leg** chip remain simultaneously visible and independently actionable. When bounded undo is also visible, the two chips occupy a separate row above the undo banner rather than replacing or covering one another.
+
+121. The expanded Previous Leg panel is review-only. It presents the completed route, planned and actual completion timing, target-by-target outcomes, and applicable heading history; opening, closing, or collapsing it does not change the current leg, timer, map orientation, target state, or progression policy.
+
+122. Previous Leg remains available after final-leg completion. When no leg has yet completed in the current flight, the cockpit omits the chip rather than showing an empty or disabled history panel.
+
+123. The compact VOR/DME radial-and-distance label beside an arrival waypoint is draggable. Dragging changes only that label's presentation offset so the pilot can uncover chart content; it does not change the waypoint, planned radial, planned distance, frequency, or map focus.
+
+124. A visible map control toggles drift-line overlays. Drift lines are visible by default for each newly opened flight, the control indicates whether they are currently visible, and using it does not alter the planned track, target state, or any timing value.
+
+125. Arrival-state badges and their corresponding actions use the same semantic color while retaining explicit text labels: **Identified** and its waypoint-identification action are blue; **Complete** and **Navigation Complete** are green. The badge shape, spacing, and contrast distinguish status from ordinary map labels, and color is not the sole carrier of state.
+
 ## Complete desired leg flow
 
 The intended happy path is:
@@ -487,6 +514,14 @@ Given an active no-wind leg, opening heading revision begins from magnetic cours
 ### Arrival undo under automatic progression
 
 Given an active leg using automatic progression, when the pilot reports arrival reached, the leg completes and the successor starts. If the pilot chooses undo within 20 seconds before any later flight-state action, the successor timing and checklist are removed, the departing leg is restored, and its timer remains continuous from its original start.
+
+### Successor map transition
+
+Given two legs with different planned headings, when the pilot reports the first leg's arrival reached, the map animates through the shortest angular turn and ends with the successor leg track-up. In automatic mode the successor timer is running from the arrival timestamp; in manual mode the same track-up map is shown while the successor timer remains stopped until **Start Leg**.
+
+### Previous-leg review
+
+Given a completed leg and a current successor leg, the cockpit shows a compact **Previous Leg** chip. Opening it reveals the completed leg's timing, target outcomes, and heading history; collapsing it returns to the unobstructed map without changing the successor leg or its timer.
 
 ### Undo expiration
 

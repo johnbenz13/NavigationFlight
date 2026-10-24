@@ -36,7 +36,8 @@ Each designed feature has:
 3. A `## Figma` section in the product spec containing:
    - the stable Figma file URL;
    - deep links to the currently approved flow, state set, and shared components;
-   - design status: `not started`, `in review`, `approved`, or `changes requested`;
+   - design status: `not started`, `direction review`, `direction approved`,
+     `in review`, `approved`, or `changes requested`;
    - the approved iteration name or identifier; and
    - the date and identity of the human approver.
 4. A Figma cover or index page containing:
@@ -61,10 +62,49 @@ not resolve product decisions through visual invention.
 Complete this step when every design-relevant behavior can be traced to a product
 spec section or is listed as an open question.
 
-### 2. Build Design Coverage
+### 2. Select the Main-Screen Slice
 
-Before drawing screens, derive a design coverage checklist from the spec. At
-minimum cover:
+Choose one representative main screen before designing the complete feature. It
+should show the feature in its most important normal-use state and expose the
+decisions most likely to invalidate the overall direction: information hierarchy,
+primary actions, navigation model, terminology, density, and platform treatment.
+
+Read enough of the complete spec to avoid contradicting later requirements, but
+keep this slice narrow. List the deferred flows and states without designing them.
+For a feature with multiple plausible main screens, ask the developer which one to
+use before drawing.
+
+Complete this step when the developer and agent can name the single main screen,
+the product behaviors visible on it, the design questions it will answer, and the
+use cases intentionally deferred until after direction approval.
+
+### 3. Design and Review the Main Screen
+
+Create the main screen as the first named iteration in the stable Figma file.
+Start with structure and interaction hierarchy, using only enough visual detail to
+make the direction understandable. Existing UI snapshots are contextual input
+unless explicitly approved as a pixel contract.
+
+Set the design status to `direction review`, then show the resulting Figma node or
+a faithful preview to the developer. Ask for feedback on the basic decisions
+before expanding the design. Iterate on this main screen in small, bounded passes
+until the developer either rejects the direction, requests another pass, or
+explicitly approves it. Record the decisions and the reason for material changes
+with the iteration.
+
+This is the **main-screen direction gate**. The agent must stop and wait for
+explicit human approval. Approval must be unambiguous, such as “main-screen
+direction approved”; silence, checklist completion, or a Figma write succeeding
+does not count. Set the design status to `direction approved` when granted.
+
+Complete this step only when the developer has seen the main screen, the recorded
+basic decisions reflect the feedback, and the developer has explicitly approved
+the direction. Full use-case design begins only after this criterion is met.
+
+### 4. Build Design Coverage
+
+After main-screen direction approval, derive a design coverage checklist from the
+entire spec. At minimum cover:
 
 - entry, happy path, completion, and exit;
 - every user-visible state and transition;
@@ -83,27 +123,29 @@ history, and automatic versus manual leg handoff.
 Complete this step when each checklist item cites the governing spec section and
 has a planned Figma flow or state. Open product questions remain visibly blocked.
 
-### 3. Create an Iteration in the Stable Figma File
+### 5. Expand the Approved Direction
 
-Create each proposal as a named iteration inside the feature's stable Figma file,
-not as an unrelated file. Preserve previously reviewed iterations. An iteration
-contains:
+Create subsequent named iterations inside the same stable Figma file and preserve
+previously reviewed iterations. Extend the approved main-screen direction across
+the design coverage checklist. Each iteration contains:
 
 - a short intent and list of questions being tested;
 - the spec revision used as input;
+- the approved main-screen direction it extends;
 - an end-to-end flow;
 - a state matrix for important components and screens;
 - annotations that cite the relevant product-spec headings or invariant numbers;
 - reusable components and variables where repetition justifies them; and
 - a change summary from the previous iteration.
 
-Start with structure and interaction flow, then refine visual treatment. Existing
-UI snapshots are contextual input unless explicitly approved as a pixel contract.
+If a later use case exposes a problem with an approved basic decision, return to
+the main-screen direction gate and obtain renewed human approval before propagating
+the new direction.
 
 Complete this step when the design coverage checklist is represented in the
 iteration and the stable file plus candidate-node links are ready for review.
 
-### 4. Review the Iteration
+### 6. Review the Complete Iteration
 
 Review product correctness and design quality together. Compare the proposal to
 the spec and current app; do not review only screenshots. Check:
@@ -128,7 +170,7 @@ Classify every finding as one of:
 Complete this step when findings are resolved or explicitly assigned to the next
 iteration, with no unresolved conflict hidden in comments.
 
-### 5. Approve the Paired Baseline
+### 7. Approve the Paired Baseline
 
 Approval is an explicit human action. Checklist completion by an agent does not
 approve an iteration. The approver confirms the product-spec revision and the
@@ -141,7 +183,7 @@ and date. Set the design status to `approved`.
 Complete this step only when both artifacts point to each other, all approved node
 links resolve, and the human approval metadata matches on both sides.
 
-### 6. Hand Off to Implementation
+### 8. Hand Off to Implementation
 
 Implementation begins from the approved pair. The implementer must read the full
 product behavior and inspect the approved nodes, including annotations and state
@@ -157,7 +199,7 @@ Complete this step when the implementation and relevant tests satisfy the produc
 spec, the affected interactions have been compared with approved Figma in the
 simulator, and deviations are resolved or approved and documented.
 
-### 7. Iterate After Approval
+### 9. Iterate After Approval
 
 Any change to approved behavior or design starts a new named iteration. Update the
 owning artifact first, mark the paired baseline `changes requested`, and review the
@@ -182,9 +224,11 @@ When an agent is asked to use this workflow:
 4. Load the relevant skills before acting; follow their current instructions.
 5. Report uncovered spec gaps and cross-artifact conflicts instead of inventing a
    resolution.
-6. Treat approval as human-owned and stop at the approval gate when it has not
-   been granted.
-7. Verify every link and changed artifact before completing the phase.
+6. Present the main screen and stop at the main-screen direction gate before
+   designing the full state and use-case set.
+7. Treat both direction and paired-baseline approval as human-owned and stop at
+   either approval gate when it has not been granted.
+8. Verify every link and changed artifact before completing the phase.
 
 ## Skill Routing
 
@@ -210,6 +254,8 @@ read their complete instructions at the start of the relevant phase.
 Use these prompts to keep iterations bounded:
 
 - Which product invariants does this iteration test?
+- Has the developer seen and explicitly approved the main-screen direction?
+- Which basic decisions were made before expanding into all use cases?
 - Which user-visible states remain uncovered?
 - What changed since the previous iteration, and why?
 - Does any Figma interaction imply behavior the product spec does not define?

@@ -68,12 +68,13 @@ The first release does not:
 - Current main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
 - Main-screen frame: [iPad Pro 11-inch portrait — IP2 reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-3)
 - Direction notes: [Iteration 02 review decisions](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-96)
+- Design coverage: [Iteration 03 coverage plan](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=24-4)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Design status: `direction review`
-- Approved iteration: none
-- Human approver: none
+- Design status: `direction approved`
+- Approved iteration: Iteration 02 — iPad portrait main-screen direction
+- Human approver: John — 2026-10-24
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 

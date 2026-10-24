@@ -37,6 +37,10 @@ Read complete files whenever necessary for safe implementation.
 
 Use available skills when relevant to the task.
 
+For work that creates, reviews, links, or implements a product spec and its
+Figma proposal, follow
+[`docs/workflows/PRODUCT-SPEC-FIGMA-WORKFLOW.md`](docs/workflows/PRODUCT-SPEC-FIGMA-WORKFLOW.md).
+
 Follow progressive disclosure:
 
 1. Read the selected skill's SKILL.md.
@@ -91,6 +95,7 @@ Do not claim verification succeeded unless it actually ran.
 
 - Preserve unrelated working-tree changes.
 - Keep each checkpoint focused on the requested scope.
+- Name feature branches `feature/<kebab-case-feature-name>` using the agreed product feature name (for example, `feature/in-flight-eta-and-heading-revision`).
 - Commit completed checkpoints when explicitly requested.
 - Do not push changes unless explicitly requested.
 

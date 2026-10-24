@@ -70,6 +70,7 @@ The first release does not:
 - Direction notes: [Iteration 02 review decisions](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-96)
 - Design coverage: [Iteration 03 coverage plan](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=24-4)
 - Iteration 03 flow: [Ready to Start — iPad portrait](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=31-3)
+- Iteration 03 flow: [Active Leg — start checklist expanded](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=41-2)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
@@ -382,6 +383,24 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 107. VOR/DME values are planned waypoint-confirmation information, not live avionics measurements. The presentation must not imply that the app receives, tunes, or verifies the station signal or current aircraft distance.
 
 108. When an arrival waypoint has no imported VOR/DME reference, the map, waypoint callout, and Planned Frequencies row omit the corresponding VOR/DME presentation without showing an error or placeholder.
+
+### Active-leg map orientation and checklist templates
+
+109. Starting a leg focuses the active leg in a canonical track-up presentation: the departure waypoint is at the bottom, the arrival waypoint is at the top, and the planned track is vertical from bottom to top.
+
+110. A pilot may subsequently pan or rotate the map. Those manual changes persist until the pilot chooses **Focus Leg**, which restores the canonical track-up presentation for the active leg.
+
+111. Track-up presentation aligns the imported planned leg for visual navigation. It does not claim a live aircraft heading, position, or ground track.
+
+112. The pilot selects a start-checklist template in Settings. The first release provides two or three bundled templates; template selection is not performed from the cockpit checklist.
+
+113. The expanded cockpit checklist displays the selected template's title and rendered ordered content. Its title, sections, and items are not hard-coded into the cockpit view.
+
+114. A template may contain static instructional text and dynamic variables resolved from current leg or session state, including values such as the running timer, planned or operational heading, and planned altitude. The rendered checklist does not visually distinguish static content from resolved variables.
+
+115. The first-release implementation does not require a user-facing template editor, persistence format for user-authored templates, or a complete public variable language. It must nevertheless separate template definition, dynamic-value resolution, and checklist rendering so future user-authored templates can reuse the cockpit presentation without restructuring cockpit state or view code.
+
+116. Bundled templates are validated application data. A bundled template must not silently display an unresolved variable as operational checklist content.
 
 ## Complete desired leg flow
 

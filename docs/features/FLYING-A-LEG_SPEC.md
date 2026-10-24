@@ -92,11 +92,20 @@ The first release does not:
 - Iteration 05 flow: [Heading editor — reopened with earlier commits](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-446)
 - Iteration 05 flow: [Identification point reached — Revised Heading continues](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-566)
 - Iteration 05 flow: [Heading editor — 360-degree normalization](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-678)
+- Iteration 06 flow: [Undo expired — action removed](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-3)
+- Iteration 06 flow: [Undo invalidated — later state action](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-111)
+- Iteration 06 flow: [Duplicate reach — rejected without mutation](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-215)
+- Iteration 06 flow: [ETA draft discarded — target reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-324)
+- Iteration 06 flow: [ETA Check — unavailable](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-438)
+- Iteration 06 flow: [Arrival without VOR/DME — optional data omitted](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-548)
+- Iteration 06 flow: [First leg — no Previous Leg history](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-652)
+- Iteration 06 flow: [Drift lines hidden — current-flight preference](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-756)
+- Iteration 06 flow: [Returned from background — timers continued](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-860)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
 - Product-spec status: `approved through Iteration 05` by John — 2026-10-24
-- Design status: `direction approved · Iteration 05 Revised Heading lifecycle approved`
+- Design status: `in review · Iteration 06 exceptions and empty states ready for review`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and

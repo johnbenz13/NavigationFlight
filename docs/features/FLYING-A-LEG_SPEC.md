@@ -85,16 +85,25 @@ The first release does not:
 - Iteration 04 flow: [Revise Next ETA — IP2 focused editor](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-462)
 - Iteration 04 flow: [IP2 ETA Check — Reference ETA revealed](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-583)
 - Iteration 04 flow: [Later IP reached — earlier IP passed without report](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-703)
+- Iteration 05 flow: [Heading instrument — imported baseline](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-3)
+- Iteration 05 flow: [Heading editor — opened from baseline](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-107)
+- Iteration 05 flow: [Heading editor — uncommitted 087-degree draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-224)
+- Iteration 05 flow: [Revised Heading — committed and operational](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-343)
+- Iteration 05 flow: [Heading editor — reopened with earlier commits](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-446)
+- Iteration 05 flow: [Identification point reached — Revised Heading continues](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-566)
+- Iteration 05 flow: [Heading editor — 360-degree normalization](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=87-678)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `changes requested` after lifecycle review — 2026-10-24
-- Design status: `in review · Iteration 04 target and ETA lifecycle ready for review`
+- Product-spec status: `approved through Iteration 05` by John — 2026-10-24
+- Design status: `direction approved · Iteration 05 Revised Heading lifecycle approved`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
     - Iteration 03 — Active Leg with selected start-checklist template expanded;
-    - Iteration 03 — arrival progression, previous-leg history, checklist coexistence, and final completion.
+    - Iteration 03 — arrival progression, previous-leg history, checklist coexistence, and final completion; and
+    - Iteration 04 — identification-point progression, ETA revision, Reference ETA disclosure, passed-without-report, and bounded undo; and
+    - Iteration 05 — Revised Heading lifecycle, including IP continuity and arrival-only reset.
 - Human approver: John — 2026-10-24
 - Final paired-baseline status: pending completion and review of the remaining design-coverage states and a stable product-spec permalink.
 
@@ -270,7 +279,7 @@ The imported V7 execution snapshot remains the source of planned course, distanc
     - the imported planned magnetic heading in planned-wind mode; or
     - the imported magnetic course in no-wind mode.
 
-58. After a Revised Heading has been committed for the current segment, reopening the editor begins from that committed value.
+58. After a Revised Heading has been committed for the active leg, reopening the editor begins from that committed value.
 
 59. Operational headings are magnetic whole degrees, adjusted in one-degree steps and normalized for display from `001°` through `360°`.
 
@@ -280,13 +289,13 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 62. The heading editor continues to make the imported planned heading or no-wind magnetic-course baseline available for comparison.
 
-63. A later heading commit on the same segment replaces the currently applicable Revised Heading while preserving earlier commits in segment history.
+63. A later heading commit on the same active leg replaces the currently applicable Revised Heading while preserving earlier commits in that leg's heading history.
 
-64. When the next target is reported reached, the current segment closes. Any uncommitted heading draft is discarded.
+64. Reporting an identification point reached does not end or reset the active leg's heading state. The current Revised Heading remains operational and any open, uncommitted heading draft remains available after the reach report.
 
-65. The new segment begins from its imported planned magnetic heading, or magnetic course in no-wind mode, until the pilot commits another Revised Heading.
+65. Reporting the arrival waypoint reached ends the completed leg's heading history. Any uncommitted heading draft for that completed leg is discarded.
 
-66. A Revised Heading must not silently carry across a pilot-reported position fix.
+66. A Revised Heading must not carry from a completed leg into its successor. The successor leg begins from its own imported planned magnetic heading, or magnetic course in no-wind mode, until the pilot commits a Revised Heading for that leg.
 
 67. The first release provides no heading **Check**, Reference Heading, correctness result, suggested heading, or app-computed heading formula.
 
@@ -305,12 +314,12 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 71. For every identification point passed without report, the panel shows that status and does not fabricate Actual ETA or timing differences.
 
-72. Heading history is grouped by the segment on which each heading applied.
+72. Heading history is grouped by completed leg. Identification-point reports remain timing and position observations inside that leg and do not split its heading history into new operational segments.
 
-73. For each completed segment, heading history displays:
+73. For each completed leg, heading history displays:
     - its imported planned magnetic heading or no-wind magnetic-course baseline;
     - every committed Revised Heading in order; and
-    - the final heading applicable when the segment's target was reached.
+    - the final heading applicable when the arrival waypoint was reached.
 
 74. ETA Reference results appear in history only when the pilot explicitly requested that check during the active leg.
 
@@ -459,7 +468,7 @@ The intended happy path is:
 11. The pilot identifies and later reports the arrival waypoint reached.
 12. The leg is completed, its detailed history becomes available, and the established progression policy governs the successor leg.
 
-The pilot may deviate from this happy path by revising any future target ETA or the active-segment heading at any time. The app must preserve the same authorship, commitment, history, and cross-check rules.
+The pilot may deviate from this happy path by revising any future target ETA or the active-leg heading at any time. The app must preserve the same authorship, commitment, history, and cross-check rules.
 
 ## Progression-policy integration
 
@@ -519,6 +528,10 @@ Given two ordered identification points, when the pilot reports the second reach
 
 Given an active no-wind leg, opening heading revision begins from magnetic course. After the pilot commits a new magnetic whole-degree heading, the cockpit displays it as Revised Heading. The app provides no heading check or recommendation.
 
+### Heading continuity through an identification point
+
+Given an active leg with a committed Revised Heading and an open heading draft, when the pilot reports an identification point reached, the committed Revised Heading remains operational and the draft remains open and unchanged. When the pilot later reports the arrival waypoint reached, the completed leg's heading history closes, its remaining draft is discarded, and any successor leg begins from its own imported baseline.
+
 ### Arrival undo under automatic progression
 
 Given an active leg using automatic progression, when the pilot reports arrival reached, the leg completes and the successor starts. If the pilot chooses undo within 20 seconds before any later flight-state action, the successor timing and checklist are removed, the departing leg is restored, and its timer remains continuous from its original start.
@@ -537,7 +550,7 @@ Given a successful reach report, when 20 real seconds pass—even while the app 
 
 ### Completed history
 
-Given a completed leg with reached, revised, checked, and passed-without-report targets plus several committed headings, the previous-leg panel shows the full target and segment history. It does not fabricate Actual ETA for missed points or reveal reference results that the pilot never requested.
+Given a completed leg with reached, revised, checked, and passed-without-report targets plus several committed headings, the previous-leg panel shows the full target and leg-wide heading history. It does not fabricate Actual ETA for missed points or reveal reference results that the pilot never requested.
 
 ## As-is gaps and delivery phases
 
@@ -551,7 +564,7 @@ Given a completed leg with reached, revised, checked, and passed-without-report 
 | Heading revision | Imported planned-wind heading can be displayed; pilot corrections are absent. | Pilot-authored magnetic Revised Heading is editable, operational, and historical. |
 | Heading cross-check | Not implemented. | Explicitly deferred; no first-release Reference Heading or check action. |
 | Drift lines | Not present in the flight map. | Imported-angle reference arms are visible by default and toggleable per open flight. |
-| Previous-leg panel | Primarily summarizes destination timing. | Shows target-by-target timing and segment-by-segment heading history. |
+| Previous-leg panel | Primarily summarizes destination timing. | Shows target-by-target timing and leg-wide heading history. |
 | Undo | Reach reports and progression are final. | Most recent reach is atomically reversible for up to 20 seconds. |
 | GPS | No normal-flight GPS position behavior is specified. | Remains out of scope; future safety constraints are documented. |
 | Persistence | Flight session is held in memory. | Remains in memory for the first release and is disclosed as a limitation. |
@@ -561,6 +574,6 @@ Recommended delivery sequence:
 1. Complete target ordering, passed-without-report state, and target-specific ETA interaction.
 2. Complete Reference ETA selection using the latest eligible observation and expand completed timing history.
 3. Add drift lines and their per-flight visibility toggle.
-4. Add pilot-authored Revised Heading and segment history without automated checking.
+4. Add pilot-authored Revised Heading and leg-wide heading history without automated checking.
 5. Add atomic 20-second undo across identification-point reach and waypoint progression.
 6. Validate the complete flow in flight before specifying Reference Heading or GPS safety behavior.

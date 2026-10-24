@@ -1,6 +1,6 @@
 # Flying a Leg — Product Specification
 
-Status: approved through Iteration 07; complete paired product/design baseline awaiting final approval.
+Status: complete paired product/design baseline approved.
 
 ## Summary
 
@@ -65,6 +65,7 @@ The first release does not:
 ## Figma
 
 - Stable proposal: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I)
+- Approved product-spec revision: [`6033067`](https://github.com/johnbenz13/NavigationFlight/blob/60330670950c53cabf7645b7984c72c998c80237/docs/features/FLYING-A-LEG_SPEC.md)
 - Current main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
 - Main-screen frame: [iPad Pro 11-inch portrait — IP2 reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-3)
 - Direction notes: [Iteration 02 review decisions](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-96)
@@ -110,7 +111,7 @@ The first release does not:
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
 - Product-spec status: `approved through Iteration 07` by John — 2026-10-25
-- Design status: `approved · Iteration 07 adaptive layout and accessibility`
+- Design status: `approved · complete paired baseline through Iteration 07`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
@@ -122,7 +123,7 @@ The first release does not:
     - Iteration 07 — iPad landscape, iPhone portrait, Larger Text, and accessibility interaction order.
 - Human approver: John — 2026-10-25
 - Coverage-audit result: all 125 behavioral invariants and the workflow's device and accessibility requirements are traced to approved design evidence; no unresolved product/design conflicts remain.
-- Final paired-baseline status: ready for explicit approval after the stable product-spec permalink is recorded on the Figma cover.
+- Final paired-baseline status: `approved` by John — 2026-10-25, pairing product-spec revision `6033067` with the approved Figma nodes linked above.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 

@@ -74,9 +74,14 @@ The first release does not:
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Design status: `direction approved`
-- Approved iteration: Iteration 02 — iPad portrait main-screen direction
+- Product-spec status: `approved` by John — 2026-10-24
+- Design status: `direction approved · coverage in progress`
+- Approved design checkpoints:
+    - Iteration 02 — iPad portrait main-screen direction;
+    - Iteration 03 — Ready to Start; and
+    - Iteration 03 — Active Leg with selected start-checklist template expanded.
 - Human approver: John — 2026-10-24
+- Final paired-baseline status: pending completion and review of the remaining design-coverage states and a stable product-spec permalink.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 

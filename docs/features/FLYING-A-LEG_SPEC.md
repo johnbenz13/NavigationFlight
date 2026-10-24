@@ -64,7 +64,18 @@ The first release does not:
 
 ## Figma
 
-Figma: none provided. The Navigation Editor screenshot supplied during product discovery is a contextual example of drift-line intent, not a pixel-accurate UI contract.
+- Stable proposal: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I)
+- Current main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
+- Main-screen frame: [iPad Pro 11-inch portrait — IP2 reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-3)
+- Direction notes: [Iteration 02 review decisions](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-96)
+- Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
+- Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
+- Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
+- Design status: `direction review`
+- Approved iteration: none
+- Human approver: none
+
+The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 
 ## Terminology
 
@@ -333,6 +344,42 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 93. Focus movement caused by **Revise Next ETA** must expose the destination target and its expanded editor without committing a value or hiding the user's ability to return to the current position context.
 
 94. A rejected or unavailable action must not partially modify timing, revision, target, progression, checklist, focus, or history state.
+
+### Cockpit map and instrument presentation
+
+95. The cockpit map presents the application's aviation chart as its geographic base. Planned-track, drift-line, navigation-target, VOR/DME, and callout graphics remain distinct overlays on that chart rather than replacing it with an abstract map illustration.
+
+96. The active leg's planned-track line connects the resolved departure and arrival waypoint positions exactly. Identification points and timing targets appear at their resolved positions without changing the planned track's endpoints.
+
+97. Target callouts are closed by default. Tapping an identification point or waypoint opens that target's callout, opening another target replaces the current callout, and tapping unobstructed map space or beginning a map pan closes the callout.
+
+98. At most one target callout is open at a time. Opening or dismissing a callout changes presentation only and does not identify, reach, revise, or otherwise modify a navigation target.
+
+99. An identification point's **Reached** action is available only from that identification point's open callout. The lower cockpit console does not provide an identification-point reach action.
+
+100. The map provides distinct controls for focusing the active leg, focusing the applicable waypoint, showing the route overview, and opening plan inspection. It does not present a current-aircraft-position control while the product has no live aircraft-position source.
+
+101. Magnetic reference is communicated as part of the label for each applicable heading, course, or radial value. The cockpit does not present a standalone **Magnetic** control or status chip.
+
+102. The portrait lower console is organized into three rows:
+    - **Active Leg Instruments**, containing operational heading, leg timer, next ETA, and altitude;
+    - **Planned Frequencies**, containing imported communication and applicable navigation-aid frequencies; and
+    - an arrival-waypoint call-to-action row.
+
+103. The leg timer is visually distinguishable from the adjacent Next ETA value without suggesting a warning or abnormal condition. Its distinction does not rely on color alone.
+
+104. Planned frequencies do not claim that a frequency is tuned, active, or inactive unless a future feature introduces an explicit trustworthy source for that state. The cockpit does not display **Not tuned** based only on imported plan data.
+
+105. Before the arrival waypoint is identified, the lower-console arrival action presents **Waypoint Identified** and a subordinate **Reached now** action. After identification, it presents **Waypoint Reached**. These actions apply only to the arrival waypoint and preserve the separate identification and reach observations defined above.
+
+106. When the arrival waypoint has an imported VOR/DME reference, the cockpit displays:
+    - the station identifier, service, and frequency in **Planned Frequencies**;
+    - a compact station, magnetic radial, and DME-distance label beside the arrival waypoint on the map; and
+    - the complete station, frequency, magnetic radial, and DME distance in the arrival waypoint's callout.
+
+107. VOR/DME values are planned waypoint-confirmation information, not live avionics measurements. The presentation must not imply that the app receives, tunes, or verifies the station signal or current aircraft distance.
+
+108. When an arrival waypoint has no imported VOR/DME reference, the map, waypoint callout, and Planned Frequencies row omit the corresponding VOR/DME presentation without showing an error or placeholder.
 
 ## Complete desired leg flow
 

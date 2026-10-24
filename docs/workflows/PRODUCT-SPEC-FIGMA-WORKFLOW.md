@@ -32,7 +32,10 @@ not an acceptable shared Figma link.
 Each designed feature has:
 
 1. One product spec under `docs/features/` describing observable product behavior.
-2. One stable Figma file for the feature's proposal and iterations.
+2. One stable Figma file for the feature's proposal and iterations. NavigationFlight
+   design files must be created in the
+   [`Navigation Flight` Figma project](https://www.figma.com/files/folder/676737789)
+   rather than in Drafts or another team project.
 3. A `## Figma` section in the product spec containing:
    - the stable Figma file URL;
    - deep links to the currently approved flow, state set, and shared components;
@@ -59,8 +62,29 @@ current application flow, and any existing UI reference. Separate current
 behavior, proposed behavior, and non-goals. Record ambiguities as questions; do
 not resolve product decisions through visual invention.
 
+Establish the feature's device and orientation baseline before selecting a main
+screen. Name the primary design target, every secondary reference device, the
+supported orientations for each device class, and any intentionally unsupported
+orientation. Treat these as product and platform constraints rather than leaving
+them to be inferred from whichever frame is designed first.
+
+For NavigationFlight, use this application baseline:
+
+| Priority | Device class | Orientation | Purpose |
+| --- | --- | --- | --- |
+| Primary | iPad Pro 11-inch | Portrait | Main design, review, and implementation target. |
+| Secondary reference | iPad Pro 11-inch | Landscape | Canonical wide-layout adaptation. |
+| Secondary reference | iPhone 16 Pro | Portrait | Canonical compact-width adaptation. |
+| Secondary coverage | Other supported iPhones in the iPhone 16 generation or later | Portrait only | Confirm the compact layout adapts across supported iPhone sizes. |
+
+iPhone landscape is intentionally outside the supported design baseline. Do not
+create or imply an iPhone-landscape experience unless a later product decision
+changes this constraint. Both portrait and landscape are supported on iPad, with
+portrait remaining the source of the main-screen design direction.
+
 Complete this step when every design-relevant behavior can be traced to a product
-spec section or is listed as an open question.
+spec section or is listed as an open question, and the primary and secondary
+device-orientation targets are recorded.
 
 ### 2. Select the Main-Screen Slice
 
@@ -68,6 +92,9 @@ Choose one representative main screen before designing the complete feature. It
 should show the feature in its most important normal-use state and expose the
 decisions most likely to invalidate the overall direction: information hierarchy,
 primary actions, navigation model, terminology, density, and platform treatment.
+Create this first direction on the primary device and orientation established in
+the behavioral baseline. A secondary-device frame does not substitute for the
+primary direction gate.
 
 Read enough of the complete spec to avoid contradicting later requirements, but
 keep this slice narrow. List the deferred flows and states without designing them.
@@ -110,7 +137,8 @@ entire spec. At minimum cover:
 - every user-visible state and transition;
 - drafts, committed values, history, undo, cancellation, errors, and empty states;
 - concurrent or time-sensitive states;
-- accessibility, Dynamic Type, orientation, and relevant device-size behavior;
+- accessibility, Dynamic Type, the primary device and orientation, and every
+  secondary device-orientation target established in the baseline;
 - safety-sensitive distinctions and actions requiring explicit user intent; and
 - interactions with adjacent features named by the spec.
 
@@ -155,7 +183,10 @@ the spec and current app; do not review only screenshots. Check:
 - irreversible, timing, and safety-sensitive actions are explicit;
 - labels use canonical domain terminology;
 - the proposal does not introduce behavior absent from the spec;
-- platform conventions and accessibility remain viable in SwiftUI; and
+- platform conventions and accessibility remain viable in SwiftUI;
+- the reviewed nodes identify their device and orientation, the primary target
+  remains the source of the design direction, and secondary layouts are faithful
+  adaptations rather than independent interaction models; and
 - node links resolve to the exact content under review.
 
 Classify every finding as one of:
@@ -222,13 +253,16 @@ When an agent is asked to use this workflow:
 3. Ask focused questions for decisions that change scope, authority, approval, or
    user-visible behavior.
 4. Load the relevant skills before acting; follow their current instructions.
-5. Report uncovered spec gaps and cross-artifact conflicts instead of inventing a
+5. When creating a NavigationFlight Figma file, use project ID `676737789` so the
+   file is created directly in the `Navigation Flight` Figma project. Verify the
+   returned file location before adding its link to a product spec.
+6. Report uncovered spec gaps and cross-artifact conflicts instead of inventing a
    resolution.
-6. Present the main screen and stop at the main-screen direction gate before
+7. Present the main screen and stop at the main-screen direction gate before
    designing the full state and use-case set.
-7. Treat both direction and paired-baseline approval as human-owned and stop at
+8. Treat both direction and paired-baseline approval as human-owned and stop at
    either approval gate when it has not been granted.
-8. Verify every link and changed artifact before completing the phase.
+9. Verify every link and changed artifact before completing the phase.
 
 ## Skill Routing
 

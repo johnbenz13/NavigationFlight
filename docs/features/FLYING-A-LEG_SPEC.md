@@ -1,6 +1,6 @@
 # Flying a Leg — Product Specification
 
-Status: changes requested after lifecycle review; revised paired product/design baseline awaiting approval.
+Status: approved through Iteration 06; adaptive-layout and accessibility coverage awaiting review.
 
 ## Summary
 
@@ -101,19 +101,24 @@ The first release does not:
 - Iteration 06 flow: [First leg — no Previous Leg history](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-652)
 - Iteration 06 flow: [Drift lines hidden — current-flight preference](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-756)
 - Iteration 06 flow: [Returned from background — timers continued](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=95-860)
+- Iteration 07 adaptation: [iPad Pro 11-inch — landscape active leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-5)
+- Iteration 07 adaptation: [iPhone 16 Pro — portrait active leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-71)
+- Iteration 07 accessibility: [iPhone portrait — Larger Text active leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-119)
+- Iteration 07 notes: [Adaptive-layout and accessibility rules](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-156)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `approved through Iteration 05` by John — 2026-10-24
-- Design status: `in review · Iteration 06 exceptions and empty states ready for review`
+- Product-spec status: `approved through Iteration 06` by John — 2026-10-25
+- Design status: `in review · Iteration 07 adaptive layout and accessibility ready for review`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
     - Iteration 03 — Active Leg with selected start-checklist template expanded;
     - Iteration 03 — arrival progression, previous-leg history, checklist coexistence, and final completion; and
     - Iteration 04 — identification-point progression, ETA revision, Reference ETA disclosure, passed-without-report, and bounded undo; and
-    - Iteration 05 — Revised Heading lifecycle, including IP continuity and arrival-only reset.
-- Human approver: John — 2026-10-24
+    - Iteration 05 — Revised Heading lifecycle, including IP continuity and arrival-only reset; and
+    - Iteration 06 — exceptions, unavailable actions, empty states, preference visibility, and background return.
+- Human approver: John — 2026-10-25
 - Final paired-baseline status: pending completion and review of the remaining design-coverage states and a stable product-spec permalink.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.

@@ -78,15 +78,23 @@ The first release does not:
 - Iteration 03 flow: [Final Leg — navigation complete](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=63-275)
 - Iteration 03 flow: [Previous Leg — expanded history](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=74-158)
 - Iteration 03 flow: [Successor active — Previous Leg and checklist noted](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=78-6)
+- Iteration 04 flow: [IP2 callout — future target](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-3)
+- Iteration 04 flow: [IP2 ETA revision — draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-114)
+- Iteration 04 flow: [IP2 ETA revision — committed, Check unavailable](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-231)
+- Iteration 04 flow: [IP1 reached — timing result and undo](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-345)
+- Iteration 04 flow: [Revise Next ETA — IP2 focused editor](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-462)
+- Iteration 04 flow: [IP2 ETA Check — Reference ETA revealed](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-583)
+- Iteration 04 flow: [Later IP reached — earlier IP passed without report](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=81-703)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
 - Product-spec status: `changes requested` after lifecycle review — 2026-10-24
-- Design status: `changes requested · Iteration 03 lifecycle revision ready for review`
+- Design status: `in review · Iteration 04 target and ETA lifecycle ready for review`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
-    - Iteration 03 — Active Leg with selected start-checklist template expanded.
+    - Iteration 03 — Active Leg with selected start-checklist template expanded;
+    - Iteration 03 — arrival progression, previous-leg history, checklist coexistence, and final completion.
 - Human approver: John — 2026-10-24
 - Final paired-baseline status: pending completion and review of the remaining design-coverage states and a stable product-spec permalink.
 

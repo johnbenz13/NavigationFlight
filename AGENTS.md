@@ -108,13 +108,36 @@ If a validation step fails, fix the issue and repeat the necessary checks.
 
 Do not claim verification succeeded unless it actually ran.
 
+## Acceptance and Delivery
+
+Before declaring an issue complete, audit every acceptance criterion and post a
+GitHub comment mapping each criterion to concrete test, build, simulator, or
+review evidence.
+
+- Agents may check objective criteria after the cited evidence passes.
+- Criteria requiring product, visual, or design judgment remain unchecked until
+  the human owner explicitly approves them.
+- Mixed criteria require both agent-produced evidence and explicit human
+  approval before they are checked.
+- An unchecked criterion blocks completion unless the issue records an explicit
+  deferral approved by the human owner.
+- Treat implementation approval, acceptance approval, PR approval, and issue
+  closure as separate decisions.
+- Close an implementation issue after its PR merges, unless the human owner
+  explicitly chooses another closure point.
+
 ## Git and Checkpoints
 
 - Preserve unrelated working-tree changes.
 - Keep each checkpoint focused on the requested scope.
+- Create the feature branch before editing source files. If the environment
+  cannot write Git metadata, report the exact failure and ask whether to continue
+  in the current working tree.
 - Name feature branches `feature/<kebab-case-feature-name>` using the agreed product feature name (for example, `feature/in-flight-eta-and-heading-revision`).
 - Commit completed checkpoints when explicitly requested.
 - Do not push changes unless explicitly requested.
+- Create a pull request only when explicitly requested. Include the acceptance
+  evidence and identify any criterion still awaiting human approval.
 
 ## Final Report
 

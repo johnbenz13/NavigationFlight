@@ -1499,7 +1499,7 @@ private struct TimingTargetCalloutContent: View {
             }
         }
         .padding(context == nil ? 6 : 12)
-        .frame(width: context == nil ? 154 : 286)
+        .frame(width: context == nil ? (collapsedReferenceText == nil ? 154 : 236) : 286)
         .background(
             Color(uiColor: visualStyle.etaCalloutBackgroundColor)
                 .opacity(context == nil ? visualStyle.etaCalloutBackgroundOpacity : visualStyle.etaExpandedCalloutBackgroundOpacity),

@@ -146,7 +146,7 @@ struct CockpitView: View {
             } else {
                 VStack(spacing: 0) {
                     mapSurface(isLandscape: false, mapWidth: geometry.size.width)
-                        .frame(height: geometry.size.height * 0.74)
+                        .frame(height: geometry.size.height * (session.legState == .ready ? 0.66 : 0.74))
                     portraitControlPanel
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -230,6 +230,11 @@ struct CockpitView: View {
     private var legHeader: some View {
         HStack(spacing: 16) {
             HStack(spacing: 12) {
+                if session.legState == .ready {
+                    Text("READY")
+                        .font(.subheadline.weight(.bold))
+                    Text("·").foregroundStyle(.secondary)
+                }
                 Text(data.legPosition.uppercased()).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
                 Text("·").foregroundStyle(.secondary)
                 HStack(spacing: 8) {
@@ -295,16 +300,205 @@ struct CockpitView: View {
     }
 
     private var portraitControlPanel: some View {
-        VStack(spacing: 9) {
-            HStack(alignment: .top, spacing: 0) {
-                headingMetric
-                timeMetric
-                altitudeMetric
+        Group {
+            if session.legState == .ready {
+                readyPortraitControlPanel
+            } else {
+                VStack(spacing: 9) {
+                    HStack(alignment: .top, spacing: 0) {
+                        headingMetric
+                        timeMetric
+                        altitudeMetric
+                    }
+                    frequencyRow
+                    waypointReachedButton
+                }
+                .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 10)
             }
-            frequencyRow
-            waypointReachedButton
         }
-        .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 10)
+    }
+
+    private var readyPortraitControlPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("ACTIVE LEG INSTRUMENTS")
+                .font(.caption2.weight(.bold))
+                .tracking(0.7)
+                .foregroundStyle(.secondary)
+
+            HStack(alignment: .top, spacing: 12) {
+                readyHeadingMetric
+                readyTimerMetric
+                readyETAMetric
+                readyAltitudeMetric
+            }
+
+            Divider()
+            readyFrequencyRow
+            Divider()
+            readyStartRow
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .background(Color(.systemBackground))
+    }
+
+    private var readyHeadingMetric: some View {
+        readyInstrumentCard(
+            title: data.magneticHeadingDegrees == nil ? "PLANNED COURSE" : "PLANNED HEADING",
+            value: CockpitPresentationFormatter.aviationDegrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees),
+            detail: data.magneticHeadingDegrees == nil ? "No-wind course · magnetic" : "Planned-wind heading · magnetic",
+            valueColor: .accentColor,
+            accessibilityIdentifier: "cockpit-heading"
+        )
+    }
+
+    private var readyTimerMetric: some View {
+        readyInstrumentCard(
+            title: "LEG TIMER",
+            value: "–:––",
+            detail: "Starts when Start Leg is pressed",
+            valueColor: Color(.systemTeal),
+            accessibilityIdentifier: "cockpit-time",
+            highlighted: true
+        )
+    }
+
+    private var readyETAMetric: some View {
+        readyInstrumentCard(
+            title: "NEXT ETA · \(data.destination.uppercased())",
+            value: Self.duration(data.legDurationSeconds),
+            detail: "Planned · elapsed from leg start",
+            valueColor: .primary,
+            accessibilityIdentifier: "cockpit-eta"
+        )
+    }
+
+    private var readyAltitudeMetric: some View {
+        readyInstrumentCard(
+            title: "ALTITUDE",
+            value: "\(Self.feet(data.initialAltitudeFeetMsl)) ft",
+            detail: "Initial planned · MSL",
+            valueColor: .primary,
+            accessibilityIdentifier: "cockpit-altitude"
+        )
+    }
+
+    private func readyInstrumentCard(
+        title: String,
+        value: String,
+        detail: String,
+        valueColor: Color,
+        accessibilityIdentifier: String,
+        highlighted: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(value)
+                .font(.title2.weight(.bold))
+                .fontDesign(.rounded)
+                .monospacedDigit()
+                .foregroundStyle(valueColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            Text(detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .padding(10)
+        .background(
+            highlighted ? Color(.systemTeal).opacity(0.12) : Color(.secondarySystemBackground),
+            in: RoundedRectangle(cornerRadius: 14)
+        )
+        .overlay {
+            if highlighted {
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color(.systemTeal).opacity(0.75), lineWidth: 2)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(accessibilityIdentifier)
+    }
+
+    private var readyFrequencyRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("PLANNED FREQUENCIES")
+                .font(.caption2.weight(.bold))
+                .tracking(0.7)
+                .foregroundStyle(.secondary)
+
+            ScrollView(.horizontal) {
+                HStack(spacing: 10) {
+                    ForEach(orderedFrequencies) { readyFrequencyCard($0) }
+                    if orderedFrequencies.isEmpty {
+                        Text("No planned frequencies")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 12)
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+        }
+        .accessibilityIdentifier("planned-frequencies")
+    }
+
+    private func readyFrequencyCard(_ frequency: CockpitPresentationData.DisplayFrequency) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(frequency.service) · \(frequency.serviceType)")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text("\(Self.frequency(frequency.frequencyMHz)) MHz")
+                .font(.subheadline.weight(.bold))
+                .monospacedDigit()
+            Text(frequency.phases.map(Self.phaseAbbreviation).joined(separator: " → "))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 11))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(frequency.service) · \(frequency.serviceType), "
+                + "\(Self.frequency(frequency.frequencyMHz)) MHz, "
+                + frequency.phases.map(Self.phaseAbbreviation).joined(separator: " to ")
+        )
+    }
+
+    private var readyStartRow: some View {
+        HStack(spacing: 24) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("LEG START · \(data.origin) → \(data.destination)")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text("Confirm planned values before beginning.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("Timing starts only after this action.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(action: onStartLeg) {
+                Label("Start Leg", systemImage: "play.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(.borderedProminent)
+            .frame(maxWidth: 350)
+            .accessibilityHint("Starts timing the current navigation leg")
+            .accessibilityIdentifier("start-leg")
+        }
     }
 
     private var landscapeControlPanel: some View {
@@ -466,6 +660,7 @@ struct CockpitView: View {
 
     private static func feet(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0))) }
     private static func frequency(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(2...3))) }
+    private static func duration(_ seconds: Int) -> String { String(format: "%02d:%02d", seconds / 60, seconds % 60) }
     nonisolated private static func phaseAbbreviation(_ phase: FlightPhase) -> String {
         switch phase { case .departure: "DEP"; case .enRoute: "ENR"; case .arrival: "ARR" }
     }

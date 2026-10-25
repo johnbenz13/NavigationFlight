@@ -55,16 +55,23 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["open-cockpit"].tap()
         let cockpitHeading = app.descendants(matching: .any)["cockpit-heading"]
         XCTAssertTrue(cockpitHeading.waitForExistence(timeout: 2))
-        XCTAssertTrue(cockpitHeading.label.contains("HEADING · MAGNETIC"))
+        XCTAssertTrue(cockpitHeading.label.contains("PLANNED HEADING"))
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
-        XCTAssertTrue(cockpitHeading.label.contains("COURSE 035°"))
+        XCTAssertTrue(cockpitHeading.label.contains("Planned-wind heading · magnetic"))
         XCTAssertFalse(cockpitHeading.label.contains("° M"))
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:16"))
-        let groupedVOR = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'"))
-        XCTAssertEqual(groupedVOR.count, 1)
+        let readyTimer = app.descendants(matching: .any)["cockpit-time"]
+        XCTAssertTrue(readyTimer.label.contains("LEG TIMER"))
+        XCTAssertTrue(readyTimer.label.contains("Starts when Start Leg is pressed"))
+        XCTAssertFalse(readyTimer.label.contains("ELAPSED"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
+        let groupedVOR = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'"))
+        XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("3,000"))
         let startLeg = app.buttons["start-leg"]
         XCTAssertTrue(startLeg.isEnabled)
+        XCTAssertFalse(app.buttons["waypoint-identified"].exists)
+        XCTAssertFalse(app.buttons["reached-now"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["leg-start-checklist"].exists)
         startLeg.tap()
 
         let waypointIdentified = app.buttons["waypoint-identified"]

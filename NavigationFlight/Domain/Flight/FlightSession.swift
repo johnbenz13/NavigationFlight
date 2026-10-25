@@ -28,7 +28,7 @@ struct FlightSession: Equatable, Sendable {
         case completed
     }
 
-    enum TransitionError: Error, Equatable, Sendable {
+    enum TransitionError: Error, Equatable, Sendable, LocalizedError {
         case invalidLegIndex(Int)
         case legNotReady
         case legNotActive
@@ -38,6 +38,29 @@ struct FlightSession: Equatable, Sendable {
         case identificationPointAlreadyReached(UUID)
         case timestampPrecedesStart
         case finalLegCompleted
+
+        var errorDescription: String? {
+            switch self {
+            case .invalidLegIndex:
+                "The selected leg is not part of this flight."
+            case .legNotReady:
+                "This leg is not ready to start."
+            case .legNotActive:
+                "This leg is not active."
+            case .legAlreadyStarted:
+                "This leg has already been started."
+            case .destinationAlreadyIdentified:
+                "This waypoint has already been identified."
+            case .waypointAlreadyReached:
+                "This waypoint has already been reached."
+            case .identificationPointAlreadyReached:
+                "This identification point has already been reached."
+            case .timestampPrecedesStart:
+                "The reported time cannot be earlier than the leg start."
+            case .finalLegCompleted:
+                "Navigation has already been completed."
+            }
+        }
     }
 
     struct LegTiming: Equatable, Sendable {

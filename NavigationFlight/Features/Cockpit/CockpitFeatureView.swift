@@ -9,7 +9,7 @@ struct CockpitFeatureView: View {
     @State private var state = CockpitFeatureState()
     @State private var isImporterPresented = false
     @State private var isCockpitPresented = false
-    @State private var presentedError: PresentedPlanError?
+    @State private var presentedError: PresentedError?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
 
@@ -46,7 +46,7 @@ struct CockpitFeatureView: View {
             }
             .alert(item: $presentedError) { error in
                 Alert(
-                    title: Text("Couldn’t Open Plan"),
+                    title: Text(error.title),
                     message: Text(error.message),
                     dismissButton: .default(Text("OK"))
                 )
@@ -87,7 +87,7 @@ struct CockpitFeatureView: View {
                         legStartChecklist: legStartChecklist,
                         checklistState: state.activeLegStartChecklist,
                         session: session,
-                        onStartLeg: { try? state.startLeg(at: .now) },
+                        onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
                         onIdentificationPointReached: { pointID, target in
@@ -144,14 +144,26 @@ struct CockpitFeatureView: View {
             try state.accept(candidate)
             isCockpitPresented = false
         } catch let error as CockpitPlanError {
-            presentedError = .init(message: error.localizedDescription)
+            presentedError = .init(title: "Couldn’t Open Plan", message: error.localizedDescription)
         } catch {
-            presentedError = .init(message: "The selected file couldn’t be opened. \(error.localizedDescription)")
+            presentedError = .init(
+                title: "Couldn’t Open Plan",
+                message: "The selected file couldn’t be opened. \(error.localizedDescription)"
+            )
+        }
+    }
+
+    private func startLeg() {
+        do {
+            try state.startLeg(at: .now)
+        } catch {
+            presentedError = .init(title: "Couldn’t Start Leg", message: error.localizedDescription)
         }
     }
 }
 
-private struct PresentedPlanError: Identifiable {
+private struct PresentedError: Identifiable {
     let id = UUID()
+    let title: String
     let message: String
 }

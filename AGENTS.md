@@ -59,6 +59,14 @@ Do not skip required skill instructions or mandatory verification.
 Track work as GitHub issues in `johnbenz13/NavigationFlight`. See
 `docs/agents/issue-tracker.md`.
 
+### Ticket implementation
+
+When implementing a GitHub issue, follow
+[`docs/agents/ticket-workflow.md`](docs/agents/ticket-workflow.md). For every
+UI-affecting ticket, inspect the exact Figma nodes in the issue's **Design
+evidence** section before editing and implement that visual state in the same
+ticket as its behavior.
+
 ### Triage labels
 
 Use the default Matt Pocock engineering-skill label vocabulary. See

@@ -390,6 +390,40 @@ struct NavigationFlightTests {
         #expect(session.executionMode == originalExecution.defaultMode)
     }
 
+    @Test func featureStartIsAtomicAndPreservesOriginalStartAfterDuplicateCommand() throws {
+        let flight = try twoLegFlight()
+        let originalStart = Date(timeIntervalSince1970: 1_000)
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+
+        try state.startLeg(at: originalStart)
+        let startedState = state
+
+        #expect(throws: FlightSession.TransitionError.legAlreadyStarted(0)) {
+            try state.startLeg(at: originalStart.addingTimeInterval(20))
+        }
+        #expect(state == startedState)
+        #expect(state.session?.legTimings.count == 1)
+        #expect(state.session?.legStartedAt == originalStart)
+        #expect(state.activeLegStartChecklist?.legID == flight.legs[0].id)
+    }
+
+    @Test func elapsedTimeIncludesIntervalsWithoutUITimerUpdates() throws {
+        let startedAt = Date(timeIntervalSince1970: 10_000)
+        let returnedToForegroundAt = startedAt.addingTimeInterval(187)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID()],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        try session.startLeg(at: startedAt)
+
+        #expect(session.elapsedTime(at: returnedToForegroundAt) == 187)
+        #expect(session.legStartedAt == startedAt)
+    }
+
     @Test func automaticWaypointProgressionUsesOneAtomicTimestamp() throws {
         let legIDs = [UUID(), UUID()]
         let startedAt = Date(timeIntervalSince1970: 36_000)

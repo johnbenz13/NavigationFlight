@@ -114,8 +114,8 @@ The first release does not:
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `in review · ETA timer-floor revision after Iteration 07` — 2026-10-25
-- Design status: `in review · Iteration 08 ETA timer-floor states`
+- Product-spec status: `approved` by John — 2026-10-25
+- Design status: `approved · Iteration 08 ETA timer-floor states` by John — 2026-10-25
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
@@ -128,7 +128,8 @@ The first release does not:
     - Iteration 08 — exact-increment, rounded-up, and stale-draft ETA timer-floor states.
 - Human approver: John — 2026-10-25
 - Coverage-audit result: all 125 behavioral invariants and the workflow's device and accessibility requirements are traced to approved design evidence; no unresolved product/design conflicts remain.
-- Previous paired-baseline status: `approved` by John — 2026-10-25, pairing product-spec revision `6033067` with Iterations 02–07. The ETA timer-floor revision and Iteration 08 are a new paired baseline awaiting renewed approval.
+- Current paired-baseline status: `approved` by John — 2026-10-25, pairing this product-spec revision with Iterations 02–08. The documentation checkpoint commit will supply the immutable product-spec revision identifier.
+- Previous paired baseline: product-spec revision `6033067` paired with Iterations 02–07.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 

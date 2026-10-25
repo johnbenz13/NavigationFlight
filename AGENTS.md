@@ -52,6 +52,23 @@ Avoid automatically loading every reference document in a skill.
 
 Do not skip required skill instructions or mandatory verification.
 
+## Agent skills
+
+### Issue tracker
+
+Track work as GitHub issues in `johnbenz13/NavigationFlight`. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default Matt Pocock engineering-skill label vocabulary. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the repository's single-context domain-documentation layout. See
+`docs/agents/domain.md`.
+
 ## Implementation
 
 - Follow existing Swift and SwiftUI patterns.

@@ -117,7 +117,11 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func startLeg(at timestamp: Date = .now) throws {
-        try session?.startLeg(at: timestamp)
+        guard var nextSession = session else {
+            throw FlightSession.TransitionError.legNotReady
+        }
+        try nextSession.startLeg(at: timestamp)
+        session = nextSession
         createPendingLegStartChecklistForActiveLeg()
     }
 

@@ -78,15 +78,24 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(waypointIdentified.waitForExistence(timeout: 2))
         XCTAssertTrue(waypointIdentified.isEnabled)
         XCTAssertTrue(app.buttons["reached-now"].isEnabled)
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("ELAPSED"))
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("09:16"))
+        let activeTimer = app.descendants(matching: .any)["cockpit-time"]
+        XCTAssertTrue(activeTimer.label.contains("LEG TIMER"))
+        XCTAssertTrue(activeTimer.label.contains("Running from pilot start"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
+        XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].exists)
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
-        XCTAssertTrue(cockpitHeading.label.contains("COURSE 035°"))
+        XCTAssertTrue(cockpitHeading.label.contains("Planned-wind heading · magnetic"))
+
+        let checklist = app.descendants(matching: .any)["leg-start-checklist"]
+        XCTAssertTrue(checklist.waitForExistence(timeout: 2))
+        app.buttons["leg-start-checklist-noted"].tap()
+        XCTAssertTrue(app.buttons["leg-start-checklist-chip"].waitForExistence(timeout: 2))
+        XCTAssertFalse(checklist.exists)
 
         waypointIdentified.tap()
         let waypointReached = app.buttons["waypoint-reached"]
         XCTAssertTrue(waypointReached.waitForExistence(timeout: 2))
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("ELAPSED"))
+        XCTAssertTrue(activeTimer.label.contains("Running from pilot start"))
         waypointReached.tap()
         XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
 

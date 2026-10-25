@@ -146,7 +146,7 @@ struct CockpitView: View {
             } else {
                 VStack(spacing: 0) {
                     mapSurface(isLandscape: false, mapWidth: geometry.size.width)
-                        .frame(height: geometry.size.height * (session.legState == .ready ? 0.66 : 0.74))
+                        .frame(height: geometry.size.height * 0.66)
                     portraitControlPanel
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -230,8 +230,8 @@ struct CockpitView: View {
     private var legHeader: some View {
         HStack(spacing: 16) {
             HStack(spacing: 12) {
-                if session.legState == .ready {
-                    Text("READY")
+                if session.legState != .completed {
+                    Text(session.legState == .ready ? "READY" : "ACTIVE")
                         .font(.subheadline.weight(.bold))
                     Text("·").foregroundStyle(.secondary)
                 }
@@ -300,25 +300,6 @@ struct CockpitView: View {
     }
 
     private var portraitControlPanel: some View {
-        Group {
-            if session.legState == .ready {
-                readyPortraitControlPanel
-            } else {
-                VStack(spacing: 9) {
-                    HStack(alignment: .top, spacing: 0) {
-                        headingMetric
-                        timeMetric
-                        altitudeMetric
-                    }
-                    frequencyRow
-                    waypointReachedButton
-                }
-                .padding(.horizontal, 24).padding(.top, 6).padding(.bottom, 10)
-            }
-        }
-    }
-
-    private var readyPortraitControlPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("ACTIVE LEG INSTRUMENTS")
                 .font(.caption2.weight(.bold))
@@ -327,7 +308,7 @@ struct CockpitView: View {
 
             HStack(alignment: .top, spacing: 12) {
                 readyHeadingMetric
-                readyTimerMetric
+                portraitTimerMetric
                 readyETAMetric
                 readyAltitudeMetric
             }
@@ -335,12 +316,30 @@ struct CockpitView: View {
             Divider()
             readyFrequencyRow
             Divider()
-            readyStartRow
+            portraitActionRow
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
         .padding(.bottom, 12)
         .background(Color(.systemBackground))
+    }
+
+    @ViewBuilder
+    private var portraitTimerMetric: some View {
+        if session.legState == .active, let legStartedAt = session.legStartedAt {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                readyInstrumentCard(
+                    title: "LEG TIMER",
+                    value: Self.duration(max(0, Int(context.date.timeIntervalSince(legStartedAt)))),
+                    detail: "Running from pilot start",
+                    valueColor: Color(.systemTeal),
+                    accessibilityIdentifier: "cockpit-time",
+                    highlighted: true
+                )
+            }
+        } else {
+            readyTimerMetric
+        }
     }
 
     private var readyHeadingMetric: some View {
@@ -498,6 +497,34 @@ struct CockpitView: View {
             .frame(maxWidth: 350)
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
+        }
+    }
+
+    @ViewBuilder
+    private var portraitActionRow: some View {
+        switch session.legState {
+        case .ready:
+            readyStartRow
+        case .active:
+            HStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("ARRIVAL · \(data.destination.uppercased())")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    Text("Identify the waypoint when it is positively recognized.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("The active leg continues until you record reaching it.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                waypointReachedButton
+                    .frame(maxWidth: 350)
+            }
+        case .completed:
+            waypointReachedButton
         }
     }
 

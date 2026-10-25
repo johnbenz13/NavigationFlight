@@ -106,12 +106,16 @@ The first release does not:
 - Iteration 07 adaptation: [iPhone 16 Pro — portrait active leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-71)
 - Iteration 07 accessibility: [iPhone portrait — Larger Text active leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-119)
 - Iteration 07 notes: [Adaptive-layout and accessibility rules](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=102-156)
+- Iteration 08 ETA floor: [Exact 5-second increment — timer 02:50, minimum 02:50](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-7)
+- Iteration 08 ETA floor: [Rounded up — timer 02:52, minimum 02:55](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-117)
+- Iteration 08 ETA floor: [Timer advanced — stale draft cannot commit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-227)
+- Iteration 08 notes: [ETA timer-floor behavior contract](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-337)
 - Final review: [Design coverage audit — 125 invariants covered](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=106-3)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `approved through Iteration 07` by John — 2026-10-25
-- Design status: `approved · complete paired baseline through Iteration 07`
+- Product-spec status: `in review · ETA timer-floor revision after Iteration 07` — 2026-10-25
+- Design status: `in review · Iteration 08 ETA timer-floor states`
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
@@ -120,10 +124,11 @@ The first release does not:
     - Iteration 04 — identification-point progression, ETA revision, Reference ETA disclosure, passed-without-report, and bounded undo; and
     - Iteration 05 — Revised Heading lifecycle, including IP continuity and arrival-only reset; and
     - Iteration 06 — exceptions, unavailable actions, empty states, preference visibility, and background return; and
-    - Iteration 07 — iPad landscape, iPhone portrait, Larger Text, and accessibility interaction order.
+    - Iteration 07 — iPad landscape, iPhone portrait, Larger Text, and accessibility interaction order; and
+    - Iteration 08 — exact-increment, rounded-up, and stale-draft ETA timer-floor states.
 - Human approver: John — 2026-10-25
 - Coverage-audit result: all 125 behavioral invariants and the workflow's device and accessibility requirements are traced to approved design evidence; no unresolved product/design conflicts remain.
-- Final paired-baseline status: `approved` by John — 2026-10-25, pairing product-spec revision `6033067` with the approved Figma nodes linked above.
+- Previous paired-baseline status: `approved` by John — 2026-10-25, pairing product-spec revision `6033067` with Iterations 02–07. The ETA timer-floor revision and Iteration 08 are a new paired baseline awaiting renewed approval.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 
@@ -206,11 +211,14 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 20. A target's ETA may be revised directly from that target's own callout at any time while the target remains in the future. Reaching an identification point is not a prerequisite for ETA revision.
 
-21. Opening ETA revision for a target with no committed Revised ETA initializes the editable value from that target's Planned ETA.
+21. Opening ETA revision for a target with no committed Revised ETA initializes the editable value from that target's Planned ETA. If Planned ETA is earlier than the current leg timer, the editor instead initializes at the first five-second value that is not earlier than the current elapsed time.
 
-22. Opening ETA revision for a target with an existing committed Revised ETA initializes the editable value from the committed value.
+22. Opening ETA revision for a target with an existing committed Revised ETA initializes the editable value from the committed value. If that committed value has become earlier than the current leg timer, the historical commit remains unchanged while the new draft initializes at the first five-second value that is not earlier than the current elapsed time.
 
 23. The pilot adjusts Revised ETA in five-second increments and must explicitly commit it before it becomes operational.
+    - The draft cannot be decremented below the first five-second value that is not earlier than the running leg timer. For example, a timer at exactly `2:50` permits `2:50`, while a timer at `2:52` has a minimum selectable draft of `2:55`.
+    - Because the timer continues while the editor is open, commitment rechecks the current elapsed time. A draft that has fallen behind cannot be committed; the editor remains open, identifies the new minimum, and requires another explicit pilot commit.
+    - The app must not silently replace the pilot's selected draft with a later value and commit that substituted value.
 
 24. A draft ETA is not a Revised ETA. Closing, abandoning, or losing eligibility for an uncommitted draft must not present that draft as a committed operational or historical value.
 
@@ -533,6 +541,10 @@ Given an active leg with an identification point planned at `2:33` and a later t
 ### Early ETA revision
 
 Given an active leg with no reached identification point, the pilot can revise any future target's ETA. The app commits the pilot's value but does not offer **Check** until an eligible identification point has been reported reached.
+
+### Revised ETA timer floor
+
+Given an active leg whose timer shows exactly `2:50`, the ETA editor does not allow a draft below `2:50`. Given a timer between selectable increments, such as `2:52`, the minimum selectable draft is the next five-second value, `2:55`. If the timer advances beyond an open draft before the pilot commits, the app does not commit that stale value or silently substitute another value; it keeps the editor open, shows the new minimum, and waits for an explicit pilot commit.
 
 ### Latest observation wins
 

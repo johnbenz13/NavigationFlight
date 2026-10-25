@@ -37,6 +37,10 @@ Read complete files whenever necessary for safe implementation.
 
 Use available skills when relevant to the task.
 
+For work that creates, reviews, links, or implements a product spec and its
+Figma proposal, follow
+[`docs/workflows/PRODUCT-SPEC-FIGMA-WORKFLOW.md`](docs/workflows/PRODUCT-SPEC-FIGMA-WORKFLOW.md).
+
 Follow progressive disclosure:
 
 1. Read the selected skill's SKILL.md.
@@ -47,6 +51,23 @@ Follow progressive disclosure:
 Avoid automatically loading every reference document in a skill.
 
 Do not skip required skill instructions or mandatory verification.
+
+## Agent skills
+
+### Issue tracker
+
+Track work as GitHub issues in `johnbenz13/NavigationFlight`. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default Matt Pocock engineering-skill label vocabulary. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the repository's single-context domain-documentation layout. See
+`docs/agents/domain.md`.
 
 ## Implementation
 
@@ -91,6 +112,7 @@ Do not claim verification succeeded unless it actually ran.
 
 - Preserve unrelated working-tree changes.
 - Keep each checkpoint focused on the requested scope.
+- Name feature branches `feature/<kebab-case-feature-name>` using the agreed product feature name (for example, `feature/in-flight-eta-and-heading-revision`).
 - Commit completed checkpoints when explicitly requested.
 - Do not push changes unless explicitly requested.
 

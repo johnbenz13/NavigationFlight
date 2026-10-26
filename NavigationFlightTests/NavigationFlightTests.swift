@@ -492,6 +492,29 @@ struct NavigationFlightTests {
         #expect(session.legTimings[1].startedAt == reachedAt)
     }
 
+    @Test func identifyThenReachPreservesDistinctObservationsAndActualETA() throws {
+        let startedAt = Date(timeIntervalSince1970: 100)
+        let identifiedAt = Date(timeIntervalSince1970: 140)
+        let reachedAt = Date(timeIntervalSince1970: 175)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [UUID()],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: startedAt)
+
+        try session.identifyDestination(at: identifiedAt)
+        try session.reachCurrentWaypoint(at: reachedAt)
+
+        let timing = try #require(session.legTimings.first)
+        #expect(timing.destinationIdentifiedAt == identifiedAt)
+        #expect(timing.reachedAt == reachedAt)
+        #expect(timing.actualElapsedDuration == 75)
+        #expect(session.legState == .completed)
+        #expect(session.legStartedAt == startedAt)
+    }
+
     @Test func manualWaypointProgressionWaitsForASecondStartTimestamp() throws {
         let reachedAt = Date(timeIntervalSince1970: 36_314)
         let secondStart = Date(timeIntervalSince1970: 36_400)

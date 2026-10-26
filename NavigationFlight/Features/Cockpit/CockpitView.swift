@@ -100,6 +100,11 @@ private extension AviationMapPresentation {
 }
 #endif
 
+enum SelectedMapCallout: Equatable {
+    case identificationPoint(IdentificationPointKey)
+    case timingTarget(NavigationTimingTargetKey)
+}
+
 struct CockpitView: View {
     private let visualStyle = AviationMapVisualStyle.default
     let data: CockpitPresentationData
@@ -130,9 +135,9 @@ struct CockpitView: View {
     @State private var timingTargetCalloutOffsets: [NavigationTimingTargetKey: AviationMapCalloutOffset] = [:]
     @State private var isNextPreparationPresented = false
     @State private var isPreviousDrawerPresented = false
-    @State private var selectedIdentificationPointID: IdentificationPointKey?
-    @State private var selectedTimingTargetKey: NavigationTimingTargetKey?
+    @State private var selectedMapCallout: SelectedMapCallout?
     @State private var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset] = [:]
+    @State private var vorDMECalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
 
     var body: some View {
         GeometryReader { geometry in
@@ -161,8 +166,7 @@ struct CockpitView: View {
         .onChange(of: session.activeLegIndex) { _, _ in
             isNextPreparationPresented = false
             isPreviousDrawerPresented = false
-            selectedIdentificationPointID = nil
-            selectedTimingTargetKey = nil
+            selectedMapCallout = nil
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -176,6 +180,7 @@ struct CockpitView: View {
                 legState: session.legState,
                 focusRequest: mapFocusRequest,
                 etaCalloutOffset: destinationCalloutOffset,
+                vorDMECalloutOffset: destinationVORDMECalloutOffset,
                 identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
                 identificationContext: identificationContext,
                 timingTargetContext: timingTargetContext,
@@ -183,6 +188,7 @@ struct CockpitView: View {
                 isCameraUserControlled: $isMapCameraUserControlled,
                 onSelectIdentificationPoint: selectIdentificationPoint,
                 onSelectTimingTarget: selectTimingTarget,
+                onDismissCallout: { selectedMapCallout = nil },
                 onReachIdentificationPoint: reachSelectedIdentificationPoint,
                 onAdjustPilotETA: onAdjustPilotETA,
                 onCommitPilotETA: commitPilotETA,
@@ -190,6 +196,7 @@ struct CockpitView: View {
                 onShowPilotETACheck: onShowPilotETACheck,
                 onHidePilotETACheck: onHidePilotETACheck
             )
+            .accessibilityIdentifier("aviation-map")
             mapControls
             legHeader
             NextLegPreparationOverlay(
@@ -203,7 +210,7 @@ struct CockpitView: View {
                 summary: previousLegSummary,
                 isPresented: $isPreviousDrawerPresented,
                 onOpen: {
-                    selectedIdentificationPointID = nil
+                    selectedMapCallout = nil
                     if mapWidth < 900, checklistState?.presentationState == .expanded {
                         onCollapseChecklist()
                     }
@@ -261,16 +268,17 @@ struct CockpitView: View {
 
     private var mapControls: some View {
         VStack(spacing: 8) {
-            mapFocusButton(icon: "location.north.line.fill", label: "Focus Leg", mode: .leg)
-            mapFocusButton(icon: "scope", label: "Focus Waypoint", mode: .waypoint)
-            mapFocusButton(icon: "map", label: "Route Overview", mode: .overview)
+            mapFocusButton(icon: "⌖", label: "Focus Leg", mode: .leg)
+            mapFocusButton(icon: "◎", label: "Focus Waypoint", mode: .waypoint)
+            mapFocusButton(icon: "▱", label: "Route Overview", mode: .overview)
             Button(action: onShowPlanInspection) {
-                Image(systemName: "list.bullet.clipboard").font(.headline).frame(width: 44, height: 44)
-                    .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
+                mapControlIcon("≣")
             }
             .buttonStyle(.plain).accessibilityLabel("Plan Inspection").accessibilityIdentifier("show-plan-inspection")
         }
-        .padding(8).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(6)
+        .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 17))
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         .padding(.top, 96).padding(.trailing, 20)
     }
@@ -284,11 +292,28 @@ struct CockpitView: View {
             isMapCameraUserControlled = false
             mapFocusRequest = AviationMapFocusRequest(mode: mode)
         } label: {
-            Image(systemName: icon).font(.headline).frame(width: 44, height: 44)
-                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
+            mapControlIcon(icon)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
+        .accessibilityIdentifier(mapControlIdentifier(for: mode))
+    }
+
+    private func mapControlIcon(_ icon: String) -> some View {
+        Text(icon)
+            .font(.system(size: 20, weight: .medium))
+            .foregroundStyle(.black)
+            .frame(width: 44, height: 44)
+            .background(Color(red: 246 / 255, green: 247 / 255, blue: 250 / 255), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func mapControlIdentifier(for mode: AviationMapFocusMode) -> String {
+        switch mode {
+        case .leg: "focus-leg"
+        case .waypoint: "focus-waypoint"
+        case .overview: "route-overview"
+        case .timingTarget: "focus-timing-target"
+        }
     }
 
     private func disabledMapControl(icon: String, label: String) -> some View {
@@ -347,7 +372,7 @@ struct CockpitView: View {
             title: data.magneticHeadingDegrees == nil ? "PLANNED COURSE" : "PLANNED HEADING",
             value: CockpitPresentationFormatter.aviationDegrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees),
             detail: data.magneticHeadingDegrees == nil ? "No-wind course · magnetic" : "Planned-wind heading · magnetic",
-            valueColor: .accentColor,
+            valueColor: Color(uiColor: visualStyle.currentLegAccentColor),
             accessibilityIdentifier: "cockpit-heading"
         )
     }
@@ -494,6 +519,7 @@ struct CockpitView: View {
                     .frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.borderedProminent)
+            .tint(Color(uiColor: visualStyle.primaryActionColor))
             .frame(maxWidth: 350)
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
@@ -637,20 +663,25 @@ struct CockpitView: View {
                     .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
             }
             .buttonStyle(.borderedProminent)
+            .tint(Color(uiColor: visualStyle.primaryActionColor))
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
         case .active:
             if session.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {
                     Button {
-                        selectedIdentificationPointID = nil
+                        selectedMapCallout = nil
                         onIdentifyDestination()
                         isNextPreparationPresented = true
                     } label: {
-                        Label("Waypoint Identified", systemImage: "eye.fill")
-                            .font(.headline).frame(maxWidth: .infinity, minHeight: 46)
+                        HStack(spacing: 8) {
+                            Text("◉")
+                            Text("Waypoint Identified")
+                        }
+                        .font(.headline).frame(maxWidth: .infinity, minHeight: 46)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(Color(uiColor: visualStyle.primaryActionColor))
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
                     Button("Reached now") {
@@ -697,6 +728,16 @@ struct CockpitView: View {
         return mapPresentation.identificationPoints.first { $0.id == selectedIdentificationPointID }
     }
 
+    private var selectedIdentificationPointID: IdentificationPointKey? {
+        guard case .identificationPoint(let id) = selectedMapCallout else { return nil }
+        return id
+    }
+
+    private var selectedTimingTargetKey: NavigationTimingTargetKey? {
+        guard case .timingTarget(let key) = selectedMapCallout else { return nil }
+        return key
+    }
+
     private var destinationCalloutOffset: Binding<AviationMapCalloutOffset> {
         let key = mapPresentation.destinationTarget.id
         return Binding(
@@ -705,13 +746,20 @@ struct CockpitView: View {
         )
     }
 
+    private var destinationVORDMECalloutOffset: Binding<AviationMapCalloutOffset> {
+        let waypointID = mapPresentation.destinationTarget.id.targetID
+        return Binding(
+            get: { vorDMECalloutOffsets[waypointID] ?? visualStyle.defaultVORDMECalloutOffset },
+            set: { vorDMECalloutOffsets[waypointID] = $0 }
+        )
+    }
+
     private func selectIdentificationPoint(_ id: IdentificationPointKey) {
-        selectedTimingTargetKey = nil
         if selectedIdentificationPointID == id {
-            selectedIdentificationPointID = nil
+            selectedMapCallout = nil
             return
         }
-        selectedIdentificationPointID = id
+        selectedMapCallout = .identificationPoint(id)
         isNextPreparationPresented = false
         onCollapseChecklist()
     }
@@ -719,17 +767,15 @@ struct CockpitView: View {
     private func commitPilotETA(_ key: NavigationTimingTargetKey) {
         onCommitPilotETA(key)
         guard key.kind == .identificationPoint else { return }
-        selectedTimingTargetKey = nil
-        selectedIdentificationPointID = IdentificationPointKey(
+        selectedMapCallout = .identificationPoint(IdentificationPointKey(
             legID: key.legID,
             identificationPointID: key.targetID
-        )
+        ))
     }
 
     private func selectTimingTarget(_ key: NavigationTimingTargetKey) {
         guard let target = mapPresentation.timingTarget(for: key) else { return }
-        selectedIdentificationPointID = nil
-        selectedTimingTargetKey = selectedTimingTargetKey == key ? nil : key
+        selectedMapCallout = selectedTimingTargetKey == key ? nil : .timingTarget(key)
         if selectedTimingTargetKey != nil {
             isNextPreparationPresented = false
             onCollapseChecklist()
@@ -739,8 +785,7 @@ struct CockpitView: View {
     }
 
     private func reviseNextETA(_ target: AviationMapETATarget) {
-        selectedIdentificationPointID = nil
-        selectedTimingTargetKey = target.id
+        selectedMapCallout = .timingTarget(target.id)
         onOpenPilotETA(target)
         focusMap(on: target)
     }
@@ -991,21 +1036,26 @@ private struct LegStartChecklistCard: View {
     let legStartedAt: Date
     let onCollapse: () -> Void
     let onNoted: () -> Void
+    private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
+    private let secondaryText = Color(red: 87 / 255, green: 99 / 255, blue: 117 / 255)
+    private let actionBlue = Color(red: 0, green: 107 / 255, blue: 199 / 255)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(checklist.template.featureTitle)
-                        .font(.caption2.weight(.bold))
-                        .tracking(0.7)
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(secondaryText)
                     Text(checklist.template.displayName)
-                        .font(.headline.weight(.bold))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(primaryText)
                 }
                 Spacer(minLength: 4)
                 Button(action: onCollapse) {
                     Image(systemName: "chevron.down")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color(red: 51 / 255, green: 61 / 255, blue: 77 / 255))
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
@@ -1031,18 +1081,23 @@ private struct LegStartChecklistCard: View {
 
             Button(action: onNoted) {
                 Label("Noted", systemImage: reviewState == .noted ? "checkmark.circle.fill" : "checkmark")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
+            .tint(actionBlue)
             .accessibilityLabel("Mark leg start checklist noted")
             .accessibilityHint("Records that the checklist review is finished")
             .accessibilityIdentifier("leg-start-checklist-noted")
         }
-        .padding(12)
+        .padding(14)
         .frame(width: 280)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .overlay { RoundedRectangle(cornerRadius: 14).stroke(.primary.opacity(0.18), lineWidth: 1) }
+        .background(
+            Color(red: 251 / 255, green: 252 / 255, blue: 1).opacity(0.97),
+            in: RoundedRectangle(cornerRadius: 14)
+        )
+        .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color(red: 31 / 255, green: 41 / 255, blue: 56 / 255).opacity(0.2), lineWidth: 1) }
+        .shadow(color: .black.opacity(0.18), radius: 9, y: 6)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("leg-start-checklist")
     }
@@ -1051,25 +1106,28 @@ private struct LegStartChecklistCard: View {
 private struct LegStartFlightCheckSection: View {
     let checklist: LegStartChecklistPresentation
     let legStartedAt: Date
+    private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
+    private let secondaryText = Color(red: 87 / 255, green: 99 / 255, blue: 117 / 255)
+    private let headingBlue = Color(red: 0, green: 97 / 255, blue: 191 / 255)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             if let timerItem = checklist.template.item(.timer) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(timerItem.title).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+                    Text(timerItem.title).font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text("Started · \(duration(from: legStartedAt, to: context.date))")
-                            .font(.subheadline.weight(.semibold)).monospacedDigit()
+                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(primaryText).monospacedDigit()
                     }
                 }
             }
             if let directionItem = checklist.template.item(.direction) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(directionLabel(templateTitle: directionItem.title))
-                        .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                    Text(directionValue).font(.title3.weight(.bold)).monospacedDigit()
+                        .font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
+                    Text(directionValue).font(.system(size: 22, weight: .bold)).foregroundStyle(headingBlue).monospacedDigit()
                     if let instruction = directionItem.instruction {
-                        Text(instruction).font(.caption).foregroundStyle(.secondary)
+                        Text(instruction).font(.system(size: 12)).foregroundStyle(secondaryText)
                     }
                 }
             }
@@ -1095,12 +1153,14 @@ private struct LegStartFlightCheckSection: View {
 
 private struct LegStartGamadSection: View {
     let checklist: LegStartChecklistPresentation
+    private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
+    private let secondaryText = Color(red: 87 / 255, green: 99 / 255, blue: 117 / 255)
 
     var body: some View {
         if let section = checklist.template.gamadSection {
             VStack(alignment: .leading, spacing: 8) {
                 if let title = section.title {
-                    Text(title).font(.caption.weight(.bold)).foregroundStyle(.secondary)
+                    Text(title).font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
                 }
                 if let altitudeItem = checklist.template.item(.altitude) {
                     LegStartStaticItem(
@@ -1143,10 +1203,11 @@ private struct LegStartStaticItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.caption.weight(.bold))
+            Text(title).font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
             Text(lines.joined(separator: "\n"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
         }
     }
 }

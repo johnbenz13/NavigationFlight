@@ -7,6 +7,7 @@
 
 import Foundation
 import Testing
+import UIKit
 @testable import NavigationFlight
 
 private final class FixtureLocator {}
@@ -1108,6 +1109,28 @@ struct NavigationFlightTests {
         #expect(abs(AviationMapGeometry.bearing(from: from, to: to) - expected) < 0.000_001)
     }
 
+    @Test func selectedMapCalloutRepresentsOnlyOneOperationalTarget() {
+        let legID = UUID()
+        let pointID = UUID()
+        let waypointID = UUID()
+        let pointKey = IdentificationPointKey(legID: legID, identificationPointID: pointID)
+        let targetKey = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .destination,
+            targetID: waypointID
+        )
+
+        var selection: SelectedMapCallout? = .identificationPoint(pointKey)
+        #expect(selection == .identificationPoint(pointKey))
+
+        selection = .timingTarget(targetKey)
+        #expect(selection == .timingTarget(targetKey))
+        #expect(selection != .identificationPoint(pointKey))
+
+        selection = nil
+        #expect(selection == nil)
+    }
+
     @Test func mapMinuteMarkersUseEveryFullMinuteOfSavedPlannedDuration() {
         let from = AviationMapCoordinate(latitude: 32, longitude: 34)
         let to = AviationMapCoordinate(latitude: 33, longitude: 35)
@@ -1145,15 +1168,19 @@ struct NavigationFlightTests {
         #expect(style.etaCalloutTextOpacity == 1)
         #expect(style.currentLegAccentColor != style.nextLegAccentColor)
         #expect(style.activeLegColor == style.currentLegAccentColor)
+        #expect(style.activeLegColor == UIColor(red: 8 / 255, green: 99 / 255, blue: 235 / 255, alpha: 1))
+        #expect(style.primaryActionColor == UIColor(red: 0, green: 107 / 255, blue: 199 / 255, alpha: 1))
+        #expect(style.checklistHeadingColor == UIColor(red: 0, green: 97 / 255, blue: 191 / 255, alpha: 1))
         #expect(style.defaultEtaCalloutOffset.x <= -160)
+        #expect(style.defaultVORDMECalloutOffset.x == -148)
+        #expect(style.defaultVORDMECalloutOffset.y == 50)
         #expect(abs(style.identificationPointCollapsedCalloutBackgroundOpacity - 0.72) < 0.001)
         #expect(abs(style.identificationPointExpandedCalloutBackgroundOpacity - 0.90) < 0.001)
         #expect(style.identificationPointColor != style.currentLegAccentColor)
-        #expect(style.identificationPointColor != style.nextLegAccentColor)
         #expect(style.identificationPointColor != style.identificationPointReachedColor)
-        #expect(abs(style.defaultIdentificationPointCalloutOffset.x) >= 80)
-        #expect(style.defaultIdentificationPointCalloutOffset.y != 0)
-        #expect(style.identificationPointEllipseFillOpacity < 0.15)
+        #expect(style.defaultIdentificationPointCalloutOffset.x > 0)
+        #expect(style.defaultIdentificationPointCalloutOffset.y == 0)
+        #expect(style.identificationPointEllipseFillOpacity == 1)
         #expect(style.identificationPointEllipseOutlineOpacity >= 0.9)
     }
 
@@ -1606,7 +1633,7 @@ struct NavigationFlightTests {
         let firstPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
         let firstPoint = try #require(firstPresentation.identificationPoints.first)
         #expect(firstPresentation.identificationPoints.count == 1)
-        #expect(firstPoint.name == "Identification Point 1")
+        #expect(firstPoint.name == "IP1")
         let firstTarget = firstPresentation.destinationTarget.id
         let firstOffset = AviationMapCalloutOffset(x: 91, y: -63)
         let storedOffsets = [firstPoint.id: firstOffset]
@@ -1622,7 +1649,7 @@ struct NavigationFlightTests {
         let secondPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
         let secondPoint = try #require(secondPresentation.identificationPoints.first)
         #expect(secondPresentation.identificationPoints.count == 1)
-        #expect(secondPoint.name == "Identification Point 1")
+        #expect(secondPoint.name == "IP1")
         #expect(firstPoint.id != secondPoint.id)
         #expect(firstPoint.id.legID != secondPoint.id.legID)
         #expect(secondPoint.isReached == false)

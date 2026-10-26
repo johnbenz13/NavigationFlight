@@ -67,6 +67,13 @@ final class NavigationFlightUITests: XCTestCase {
         let groupedVOR = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'"))
         XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("3,000"))
+        XCTAssertTrue(app.buttons["focus-leg"].exists)
+        XCTAssertTrue(app.buttons["focus-waypoint"].exists)
+        XCTAssertTrue(app.buttons["route-overview"].exists)
+        XCTAssertTrue(app.buttons["show-plan-inspection"].exists)
+        let map = app.descendants(matching: .any)["aviation-map"]
+        XCTAssertTrue(map.exists)
+        map.swipeLeft()
         let startLeg = app.buttons["start-leg"]
         XCTAssertTrue(startLeg.isEnabled)
         XCTAssertFalse(app.buttons["waypoint-identified"].exists)
@@ -85,6 +92,8 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].exists)
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
         XCTAssertTrue(cockpitHeading.label.contains("Planned-wind heading · magnetic"))
+        map.swipeRight()
+        XCTAssertTrue(activeTimer.label.contains("Running from pilot start"))
 
         let checklist = app.descendants(matching: .any)["leg-start-checklist"]
         XCTAssertTrue(checklist.waitForExistence(timeout: 2))

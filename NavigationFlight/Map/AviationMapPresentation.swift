@@ -257,7 +257,7 @@ struct AviationMapPresentationFactory {
                 )
                 return AviationMapIdentificationPoint(
                     id: pointKey,
-                    name: "Identification Point \(offset + 1)",
+                    name: "IP\(offset + 1)",
                     coordinate: coordinate(resolved.position),
                     plannedElapsedSeconds: plannedElapsed,
                     isReached: session.identificationPointTiming(for: pointKey) != nil,

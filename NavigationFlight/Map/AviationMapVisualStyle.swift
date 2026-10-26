@@ -17,7 +17,14 @@ struct AviationMapCalloutOffset: Equatable, Sendable {
 struct AviationMapVisualStyle {
     static let `default` = AviationMapVisualStyle()
 
-    let currentLegAccentColor = UIColor.systemCyan
+    let currentLegAccentColor = UIColor(
+        red: 8 / 255,
+        green: 99 / 255,
+        blue: 235 / 255,
+        alpha: 1
+    )
+    let primaryActionColor = UIColor(red: 0, green: 107 / 255, blue: 199 / 255, alpha: 1)
+    let checklistHeadingColor = UIColor(red: 0, green: 97 / 255, blue: 191 / 255, alpha: 1)
     let nextLegAccentColor = UIColor.systemOrange
     let previousLegAccentColor = UIColor.systemGray
     /// Semantic completion/progression action colors, kept here for future visual preferences.
@@ -34,13 +41,13 @@ struct AviationMapVisualStyle {
     let destinationWaypointRadius: CGFloat = 17
     let destinationWaypointFillColor = UIColor.systemBackground
     let destinationWaypointFillOpacity: CGFloat = 0.20
-    let destinationWaypointStrokeColor = UIColor.label
+    var destinationWaypointStrokeColor: UIColor { currentLegAccentColor }
     let destinationWaypointStrokeOpacity: CGFloat = 1
     let destinationWaypointStrokeWidth: CGFloat = 3
 
     let oddMinuteTickLengthFraction = 0.014
     let evenMinuteTickLengthFraction = 0.026
-    let minuteTickColor = UIColor.systemCyan
+    var minuteTickColor: UIColor { currentLegAccentColor }
     let minuteTickWidth: CGFloat = 2.5
     let minuteTickCasingColor = UIColor.white
     let minuteTickCasingOpacity: CGFloat = 0.9
@@ -61,9 +68,10 @@ struct AviationMapVisualStyle {
     let etaCalloutTextOpacity: CGFloat = 1
 
     let defaultEtaCalloutOffset = AviationMapCalloutOffset(x: -180, y: -72)
+    let defaultVORDMECalloutOffset = AviationMapCalloutOffset(x: -148, y: 50)
 
     let identificationPointSymbolSize: CGFloat = 19
-    let identificationPointColor = UIColor.systemIndigo
+    let identificationPointColor = UIColor.systemOrange
     let identificationPointReachedColor = UIColor.systemGreen
     let identificationPointSymbolLineWidth: CGFloat = 2
     let identificationPointCalloutBackgroundColor = UIColor.systemBackground
@@ -77,10 +85,10 @@ struct AviationMapVisualStyle {
     let identificationPointCalloutTimeFontSize: CGFloat = 16
     let identificationPointPanelWidth: CGFloat = 300
     let etaAdjustmentStepSeconds = 5
-    let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: -112, y: -38)
-    let identificationPointEllipseWidth: CGFloat = 34
-    let identificationPointEllipseHeight: CGFloat = 20
-    let identificationPointEllipseFillOpacity: CGFloat = 0.12
+    let defaultIdentificationPointCalloutOffset = AviationMapCalloutOffset(x: 42, y: 0)
+    let identificationPointEllipseWidth: CGFloat = 18
+    let identificationPointEllipseHeight: CGFloat = 18
+    let identificationPointEllipseFillOpacity: CGFloat = 1
     let identificationPointEllipseOutlineOpacity: CGFloat = 0.95
     let identificationPointEllipseHaloColor = UIColor.white
     let identificationPointEllipseHaloOpacity: CGFloat = 0.90

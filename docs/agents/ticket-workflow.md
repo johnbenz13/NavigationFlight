@@ -3,11 +3,40 @@
 Use this workflow whenever implementing a GitHub issue in this repository. One
 ticket owns one focused branch and, when explicitly requested, one pull request.
 
-## 1. Establish the ticket boundary
+## 1. Pass the readiness preflight
+
+Run this preflight before planning, editing, or creating the ticket branch. It
+is a fail-closed gate: missing or contradictory evidence blocks implementation.
+
+1. Fetch current remote state with `git fetch origin --prune`.
+2. Read the target issue's `blockedBy` relationships and every fallback
+   `Blocked by: #<number>` reference in its body and comments. Treat the union
+   as the complete blocker set.
+3. For every blocker, use
+   `gh issue view <number> --json state,closedByPullRequestsReferences` and
+   verify all of the following:
+   - the issue state is `CLOSED`;
+   - at least one closing pull request is linked to the issue;
+   - `gh pr view <pr> --json state,mergedAt,baseRefName,mergeCommit` reports
+     `state` as `MERGED`, a non-null `mergedAt`, and `baseRefName` as `main`;
+   - the PR's `mergeCommit.oid` is an ancestor of `origin/main`, verified with
+     `git merge-base --is-ancestor <merge-oid> origin/main`.
+4. Require a clean working tree, switch to `main`, and run
+   `git pull --ff-only origin main`.
+5. Verify `git rev-list --left-right --count main...origin/main` reports `0 0`.
+6. Create the ticket's `feature/<kebab-case-feature-name>` branch from that
+   synchronized local `main`.
+
+If any check fails, stop before implementation and report the exact blocker,
+issue, PR, or Git divergence. Resume only after the missing merge or repository
+synchronization is resolved. The preflight is complete when every blocker has
+traceable merged-PR evidence, both `main` refs contain every merge commit, and
+the new ticket branch points at the synchronized `main` commit.
+
+## 2. Establish the ticket boundary
 
 1. Read the complete issue body, comments, labels, and native dependencies.
-2. Confirm every blocker is closed and no open pull request already implements
-   the ticket.
+2. Confirm no open pull request already implements the ticket.
 3. Read `AGENTS.md`, `GLOSSARY.md`, and relevant architecture records.
 4. Treat every acceptance criterion and the issue's **Design evidence** section
    as the completion contract.
@@ -15,7 +44,7 @@ ticket owns one focused branch and, when explicitly requested, one pull request.
 The boundary is established when current behavior, required behavior, visual
 states, exclusions, and closed blockers are all accounted for.
 
-## 2. Load the Flying a Leg authority
+## 3. Load the Flying a Leg authority
 
 For Flying a Leg issues #1–#16, read:
 
@@ -30,7 +59,7 @@ structure, and the exact Figma nodes linked by the issue own layout, hierarchy,
 and interaction presentation. A conflict blocks implementation until the human
 owner reconciles the paired baseline.
 
-## 3. Inspect design before implementation
+## 4. Inspect design before implementation
 
 For every UI-affecting ticket:
 
@@ -47,7 +76,7 @@ For every UI-affecting ticket:
 Design inspection is complete when the implementation plan names the current UI
 branch, the target Figma state, and the observable visual delta.
 
-## 4. Implement the vertical slice
+## 5. Implement the vertical slice
 
 Carry the ticket through every layer needed for observable completion:
 
@@ -63,7 +92,7 @@ navigation outcomes, Reference ETA, operational heading, or undo validity.
 The slice is complete when behavior and its ticket-owned visual state are both
 implemented. A passing state transition with a legacy UI branch is incomplete.
 
-## 5. Validate behavior and design
+## 6. Validate behavior and design
 
 Follow the validation matrix in `AGENTS.md`. For SwiftUI work:
 
@@ -79,7 +108,7 @@ Post the acceptance-evidence comment required by `AGENTS.md`. Agents may check
 objective criteria after evidence passes. Leave visual criteria unchecked until
 the human owner explicitly approves the screenshots.
 
-## 6. Deliver one ticket
+## 7. Deliver one ticket
 
 Keep one issue per branch and pull request. Create the pull request only after
 the human explicitly requests it, include `Closes #<number>`, and link the

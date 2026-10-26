@@ -1072,12 +1072,12 @@ private struct LegStartChecklistCard: View {
                         legStartedAt: legStartedAt
                     )
                     Divider()
-                    LegStartGamadSection(checklist: checklist)
+                    LegStartCruiseSection(checklist: checklist)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollIndicators(.hidden)
-            .frame(maxHeight: 285)
+            .frame(maxHeight: 320)
 
             Button(action: onNoted) {
                 Label("Noted", systemImage: reviewState == .noted ? "checkmark.circle.fill" : "checkmark")
@@ -1151,16 +1151,19 @@ private struct LegStartFlightCheckSection: View {
     }
 }
 
-private struct LegStartGamadSection: View {
+private struct LegStartCruiseSection: View {
     let checklist: LegStartChecklistPresentation
     private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
     private let secondaryText = Color(red: 87 / 255, green: 99 / 255, blue: 117 / 255)
 
     var body: some View {
-        if let section = checklist.template.gamadSection {
+        if let section = checklist.template.cruiseSection {
             VStack(alignment: .leading, spacing: 8) {
                 if let title = section.title {
-                    Text(title).font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
+                    Text(title)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(secondaryText)
+                        .frame(maxWidth: .infinity, alignment: checklist.template.layoutDirection == .rightToLeft ? .trailing : .leading)
                 }
                 if let altitudeItem = checklist.template.item(.altitude) {
                     LegStartStaticItem(

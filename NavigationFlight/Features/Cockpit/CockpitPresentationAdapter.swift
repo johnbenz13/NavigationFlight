@@ -111,6 +111,11 @@ struct PreviousLegSummary: Equatable, Sendable {
 }
 
 struct LegStartChecklistTemplate: Equatable, Sendable {
+    enum LayoutDirection: Equatable, Sendable {
+        case leftToRight
+        case rightToLeft
+    }
+
     struct Section: Identifiable, Equatable, Sendable {
         let id: String
         let title: String?
@@ -118,7 +123,7 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
     }
 
     struct Item: Identifiable, Equatable, Sendable {
-        enum Kind: String, Equatable, Sendable {
+        enum Kind: String, CaseIterable, Equatable, Sendable {
             case timer
             case direction
             case altitude
@@ -137,6 +142,7 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
     let featureTitle: String
     let displayName: String
     let collapsedTitle: String
+    let layoutDirection: LayoutDirection
     let sections: [Section]
 
     static let tzeKivun = LegStartChecklistTemplate(
@@ -144,6 +150,7 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
         featureTitle: "LEG START CHECKLIST",
         displayName: "צא כיוון",
         collapsedTitle: "צא כיוון · גמ״ד",
+        layoutDirection: .rightToLeft,
         sections: [
             Section(
                 id: "leg-start",
@@ -184,13 +191,78 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
         ]
     )
 
+    static let establishHeading = LegStartChecklistTemplate(
+        id: "establish-heading-cruise-check",
+        featureTitle: "SELECTED TEMPLATE",
+        displayName: "Establish Heading",
+        collapsedTitle: "Establish Heading · Cruise Check",
+        layoutDirection: .leftToRight,
+        sections: [
+            Section(
+                id: "leg-start",
+                title: nil,
+                items: [
+                    Item(kind: .timer, title: "TIMER", instruction: nil, staticLines: []),
+                    Item(
+                        kind: .direction,
+                        title: "HEADING",
+                        instruction: "Check magnetic compass",
+                        staticLines: []
+                    )
+                ]
+            ),
+            Section(
+                id: "cruise-check",
+                title: "CRUISE CHECK",
+                items: [
+                    Item(kind: .altitude, title: "ALTITUDE", instruction: nil, staticLines: []),
+                    Item(
+                        kind: .speedAndEngine,
+                        title: "AIRSPEED & ENGINE",
+                        instruction: nil,
+                        staticLines: [
+                            "Oil pressure",
+                            "Oil temperature",
+                            "Amperage · Suction · Fuel"
+                        ]
+                    ),
+                    Item(
+                        kind: .reporting,
+                        title: "REPORTING",
+                        instruction: "What is the next report?",
+                        staticLines: []
+                    )
+                ]
+            )
+        ]
+    )
+
+    static let bundled: [LegStartChecklistTemplate] = [.tzeKivun, .establishHeading]
+
     func item(_ kind: Item.Kind) -> Item? {
         sections.lazy.flatMap(\.items).first { $0.kind == kind }
     }
 
-    var gamadSection: Section? {
-        sections.first { $0.id == "gamad" }
+    var cruiseSection: Section? {
+        sections.first { $0.id != "leg-start" }
     }
+
+    func validated() throws -> LegStartChecklistTemplate {
+        guard !id.isEmpty, !displayName.isEmpty, !sections.isEmpty else {
+            throw LegStartChecklistTemplateError.invalidStructure
+        }
+        let items = sections.flatMap(\.items)
+        guard Set(items.map(\.kind)).count == items.count,
+              Set(items.map(\.kind)) == Set(Item.Kind.allCases),
+              items.allSatisfy({ !$0.title.isEmpty }) else {
+            throw LegStartChecklistTemplateError.invalidStructure
+        }
+        return self
+    }
+}
+
+enum LegStartChecklistTemplateError: Error, Equatable, Sendable {
+    case invalidStructure
 }
 
 struct LegStartChecklistPresentation: Equatable, Sendable {
@@ -210,7 +282,8 @@ struct LegStartChecklistPresentation: Equatable, Sendable {
 struct CockpitPresentationAdapter: Sendable {
     func makeLegStartChecklist(
         flight: NavigationFlight,
-        session: FlightSession
+        session: FlightSession,
+        template: LegStartChecklistTemplate = .tzeKivun
     ) throws -> LegStartChecklistPresentation? {
         guard session.legState == .active,
               flight.legs.indices.contains(session.activeLegIndex),
@@ -231,7 +304,7 @@ struct CockpitPresentationAdapter: Sendable {
 
         return LegStartChecklistPresentation(
             legID: flight.legs[session.activeLegIndex].id,
-            template: .tzeKivun,
+            template: try template.validated(),
             direction: direction,
             plannedAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
             plannedIndicatedAirspeedKnots: nil

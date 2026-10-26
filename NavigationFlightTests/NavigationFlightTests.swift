@@ -777,7 +777,7 @@ struct NavigationFlightTests {
 
     @Test func builtInLegStartTemplateDefinesTzeKivunAndGamadWithoutFlightValues() throws {
         let template = LegStartChecklistTemplate.tzeKivun
-        let gamad = try #require(template.gamadSection)
+        let gamad = try #require(template.cruiseSection)
         let allTemplateText = ([template.featureTitle, template.displayName, template.collapsedTitle] +
             template.sections.flatMap { section in
                 [section.title].compactMap { $0 } + section.items.flatMap {
@@ -796,6 +796,26 @@ struct NavigationFlightTests {
         #expect(!allTemplateText.contains("002°"))
         #expect(!allTemplateText.contains("3,000"))
         #expect(!allTemplateText.contains("KIAS"))
+    }
+
+    @Test func bundledLegStartTemplatesAreValidatedAndEquivalent() throws {
+        let templates = LegStartChecklistTemplate.bundled
+
+        #expect(templates.map(\.id) == [
+            "tze-kivun-gamad",
+            "establish-heading-cruise-check"
+        ])
+        for template in templates {
+            #expect(try template.validated() == template)
+            #expect(template.sections.flatMap(\.items).map(\.kind) == [
+                .timer, .direction, .altitude, .speedAndEngine, .reporting
+            ])
+        }
+        #expect(templates[0].layoutDirection == .rightToLeft)
+        #expect(templates[1].layoutDirection == .leftToRight)
+        #expect(templates[1].displayName == "Establish Heading")
+        #expect(templates[1].cruiseSection?.title == "CRUISE CHECK")
+        #expect(templates[1].item(.reporting)?.instruction == "What is the next report?")
     }
 
     @Test(arguments: [false, true])
@@ -943,6 +963,18 @@ struct NavigationFlightTests {
         #expect(noWind.plannedAltitudeFeetMsl == 2000)
         #expect(noWind.plannedIndicatedAirspeedKnots == nil)
         #expect(noWind.template == .tzeKivun)
+
+        let english = try #require(
+            try CockpitPresentationAdapter().makeLegStartChecklist(
+                flight: flight,
+                session: noWindSession,
+                template: .establishHeading
+            )
+        )
+        #expect(english.template == .establishHeading)
+        #expect(english.direction == .course(355))
+        #expect(english.plannedAltitudeFeetMsl == 2000)
+        #expect(english.plannedIndicatedAirspeedKnots == nil)
 
         var windSession = FlightSession(
             flightID: flight.id,

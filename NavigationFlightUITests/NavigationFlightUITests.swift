@@ -116,10 +116,148 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testDirectReachAutomaticallyStartsSuccessor() throws {
+        let app = launchCockpit(planData: try twoLegPlanData())
+
+        app.buttons["start-leg"].tap()
+        XCTAssertTrue(app.buttons["reached-now"].waitForExistence(timeout: 2))
+        app.buttons["reached-now"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("ACTIVE"))
+        XCTAssertTrue(app.staticTexts["LEG 2 OF 2"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+        XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
+    }
+
+    @MainActor
+    func testIdentifyThenReachPreservesActiveTimingAndCompletesFinalLeg() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+
+        app.buttons["start-leg"].tap()
+        app.buttons["waypoint-identified"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("DESTINATION IDENTIFIED"))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Leg timing continues'")).firstMatch.exists)
+        XCTAssertTrue(app.buttons["waypoint-reached"].isEnabled)
+        app.buttons["waypoint-reached"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["FLIGHT COMPLETE"].exists)
+        XCTAssertTrue(app.staticTexts["No successor leg or timer is started."].exists)
+    }
+
+    @MainActor
+    func testManualProgressionLeavesSuccessorReadyUntilStart() throws {
+        let app = launchCockpit(planData: try twoLegPlanData(), progressionPolicy: "manual")
+
+        app.buttons["start-leg"].tap()
+        app.buttons["reached-now"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("READY · SUCCESSOR TRACK-UP"))
+        XCTAssertTrue(app.staticTexts["This leg remains untimed until Start Leg."].exists)
+        XCTAssertTrue(app.buttons["start-leg"].isEnabled)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Starts when Start Leg is pressed"))
+        app.buttons["start-leg"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }
+    }
+
+    @MainActor
+    private func launchCockpit(planData: Data, progressionPolicy: String? = nil) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
+        if let progressionPolicy {
+            app.launchEnvironment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] = progressionPolicy
+        }
+        app.launch()
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+        app.buttons["open-cockpit"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 2))
+        return app
+    }
+
+    private func oneLegPlanData() throws -> Data {
+        let data = try fixtureData(named: "representative-v7", directory: "V7/Official")
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var navigation = try XCTUnwrap(object["navigation"] as? [String: Any])
+        let identificationPoints = try XCTUnwrap(navigation["identificationPoints"] as? [[String: Any]])
+        let identificationPointIDs = Set(identificationPoints.compactMap { $0["id"] as? String })
+        navigation["identificationPoints"] = []
+        let altitudeChanges = try XCTUnwrap(navigation["altitudeChanges"] as? [[String: Any]])
+        let dependentAltitudeChangeIDs = Set(altitudeChanges.compactMap { change -> String? in
+            guard let anchor = change["anchor"] as? [String: Any],
+                  anchor["kind"] as? String == "identification-point",
+                  let pointID = anchor["identificationPointId"] as? String,
+                  identificationPointIDs.contains(pointID) else { return nil }
+            return change["id"] as? String
+        })
+        navigation["altitudeChanges"] = altitudeChanges.filter { change in
+            guard let id = change["id"] as? String else { return true }
+            return !dependentAltitudeChangeIDs.contains(id)
+        }
+        object["navigation"] = navigation
+
+        var execution = try XCTUnwrap(object["execution"] as? [String: Any])
+        let annotations = try XCTUnwrap(execution["annotations"] as? [[String: Any]])
+        let removedEntityIDs = identificationPointIDs.union(dependentAltitudeChangeIDs)
+        execution["annotations"] = annotations.filter { annotation in
+            guard let entityID = annotation["entityId"] as? String else { return true }
+            return !removedEntityIDs.contains(entityID)
+        }
+        object["execution"] = execution
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func twoLegPlanData() throws -> Data {
+        let data = try oneLegPlanData()
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var navigation = try XCTUnwrap(object["navigation"] as? [String: Any])
+        var route = try XCTUnwrap(navigation["route"] as? [String: Any])
+        var waypoints = try XCTUnwrap(route["waypoints"] as? [[String: Any]])
+        var thirdWaypoint = waypoints[1]
+        let thirdWaypointID = "00000000-0000-4000-8000-000000000020"
+        thirdWaypoint["id"] = thirdWaypointID
+        thirdWaypoint["name"] = "Third waypoint"
+        thirdWaypoint["position"] = ["latitude": 0.03, "longitude": 0.01]
+        waypoints.append(thirdWaypoint)
+        route["waypoints"] = waypoints
+        let firstWaypointID = try XCTUnwrap(waypoints[0]["id"] as? String)
+        let secondWaypointID = try XCTUnwrap(waypoints[1]["id"] as? String)
+        route["waypointOrder"] = [firstWaypointID, secondWaypointID, thirdWaypointID]
+
+        var sourceLegs = try XCTUnwrap(route["legs"] as? [[String: Any]])
+        var secondLeg = sourceLegs[0]
+        let secondLegID = "00000000-0000-4000-8000-000000000021"
+        secondLeg["id"] = secondLegID
+        secondLeg["departureWaypointId"] = secondWaypointID
+        secondLeg["arrivalWaypointId"] = thirdWaypointID
+        sourceLegs.append(secondLeg)
+        route["legs"] = sourceLegs
+        navigation["route"] = route
+
+        var execution = try XCTUnwrap(object["execution"] as? [String: Any])
+        var resolvedLegs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+        var resolvedSecondLeg = resolvedLegs[0]
+        resolvedSecondLeg["legId"] = secondLegID
+        resolvedLegs.append(resolvedSecondLeg)
+        execution["legs"] = resolvedLegs
+
+        object["navigation"] = navigation
+        object["execution"] = execution
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func fixtureData(named name: String, directory: String) throws -> Data {
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repository = sourceFile.deletingLastPathComponent().deletingLastPathComponent()
+        let fixture = repository.appending(path: "NavigationFlightTests/Fixtures/FPLNav/\(directory)/\(name).fplnav")
+        return try Data(contentsOf: fixture)
     }
 }

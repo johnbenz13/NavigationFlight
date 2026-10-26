@@ -237,22 +237,25 @@ struct CockpitView: View {
     private var legHeader: some View {
         HStack(spacing: 16) {
             HStack(spacing: 12) {
-                if session.legState != .completed {
-                    Text(session.legState == .ready ? "READY" : "ACTIVE")
-                        .font(.subheadline.weight(.bold))
-                    Text("·").foregroundStyle(.secondary)
-                }
-                Text(data.legPosition.uppercased()).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                Text(legStatusText)
+                    .font(.subheadline.weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .accessibilityIdentifier("leg-status")
                 Text("·").foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    Text(data.origin).lineLimit(1)
-                    Image(systemName: "arrow.right").font(.caption)
-                    Text(data.destination).lineLimit(1)
+                Text(data.legPosition.uppercased()).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                if showsLegRouteInHeader {
+                    Text("·").foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text(data.origin).lineLimit(1)
+                        Image(systemName: "arrow.right").font(.caption)
+                        Text(data.destination).lineLimit(1)
+                    }
+                    .font(.headline).minimumScaleFactor(0.7)
+                    .environment(\.layoutDirection, .leftToRight)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("From \(data.origin) to \(data.destination)")
                 }
-                .font(.headline).minimumScaleFactor(0.7)
-                .environment(\.layoutDirection, .leftToRight)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("From \(data.origin) to \(data.destination)")
             }
             Spacer(minLength: 8)
             Button { showsChartsUnavailable = true } label: {
@@ -504,10 +507,14 @@ struct CockpitView: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text("Confirm planned values before beginning.")
+                Text(previousLegSummary == nil
+                    ? "Confirm planned values before beginning."
+                    : "The previous leg is complete. Review the successor before starting.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Text("Timing starts only after this action.")
+                Text(previousLegSummary == nil
+                    ? "Timing starts only after this action."
+                    : "This leg remains untimed until Start Leg.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -534,13 +541,13 @@ struct CockpitView: View {
         case .active:
             HStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("ARRIVAL · \(data.destination.uppercased())")
+                    Text("ARRIVAL CALL TO ACTION · \(data.destination.uppercased())")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.secondary)
-                    Text("Identify the waypoint when it is positively recognized.")
+                    Text(arrivalPrimaryGuidance)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("The active leg continues until you record reaching it.")
+                    Text(arrivalSecondaryGuidance)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -550,8 +557,67 @@ struct CockpitView: View {
                     .frame(maxWidth: 350)
             }
         case .completed:
-            waypointReachedButton
+            HStack(spacing: 24) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("FLIGHT COMPLETE")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.secondary)
+                    Text("Final arrival reached at \(completedLegDurationText).")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("No successor leg or timer is started.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                waypointReachedButton
+                    .frame(maxWidth: 350)
+            }
         }
+    }
+
+    private var legStatusText: String {
+        switch session.legState {
+        case .ready:
+            previousLegSummary == nil ? "READY" : "READY · SUCCESSOR TRACK-UP"
+        case .active:
+            session.destinationIdentifiedAt == nil ? "ACTIVE" : "ACTIVE · DESTINATION IDENTIFIED"
+        case .completed:
+            "COMPLETE"
+        }
+    }
+
+    private var showsLegRouteInHeader: Bool {
+        switch session.legState {
+        case .ready:
+            previousLegSummary == nil
+        case .active:
+            session.destinationIdentifiedAt == nil
+        case .completed:
+            false
+        }
+    }
+
+    private var arrivalPrimaryGuidance: String {
+        guard let identifiedAt = session.destinationIdentifiedAt,
+              let startedAt = session.legStartedAt else {
+            return "Identify the waypoint when it is positively recognized."
+        }
+        let elapsedSeconds = max(0, Int(identifiedAt.timeIntervalSince(startedAt).rounded()))
+        return "Destination identified at \(Self.duration(elapsedSeconds)). Leg timing continues."
+    }
+
+    private var arrivalSecondaryGuidance: String {
+        session.destinationIdentifiedAt == nil
+            ? "The active leg continues until you record reaching it."
+            : "ETA revisions remain available until reach."
+    }
+
+    private var completedLegDurationText: String {
+        guard let timing = session.legTimings.first(where: { $0.legIndex == session.activeLegIndex }),
+              let duration = timing.actualElapsedDuration else { return "–:––" }
+        return Self.duration(max(0, Int(duration.rounded())))
     }
 
     private var landscapeControlPanel: some View {
@@ -672,7 +738,6 @@ struct CockpitView: View {
                     Button {
                         selectedMapCallout = nil
                         onIdentifyDestination()
-                        isNextPreparationPresented = true
                     } label: {
                         HStack(spacing: 8) {
                             Text("◉")
@@ -702,7 +767,7 @@ struct CockpitView: View {
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor))
+                .tint(Color(uiColor: visualStyle.primaryActionColor))
                 .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
                 .accessibilityIdentifier("waypoint-reached")
@@ -710,8 +775,11 @@ struct CockpitView: View {
         case .completed:
             Label("Navigation Complete", systemImage: "checkmark.circle.fill")
                 .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
-                .foregroundStyle(.secondary)
-                .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 10))
+                .foregroundStyle(.white)
+                .background(
+                    Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 10)
+                )
                 .accessibilityIdentifier("navigation-complete")
         }
     }

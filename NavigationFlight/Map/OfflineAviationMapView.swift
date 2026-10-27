@@ -1640,8 +1640,10 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         isEnabled = true
         centerOffset = CGVector(dx: self.offset.x, dy: self.offset.y)
         updateLeader()
-        accessibilityLabel = "\(annotation.point.name), planned time \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
-        accessibilityTraits = .button
+        // Keep the annotation container out of the accessibility tree so the
+        // hosted SwiftUI callout exposes each operational control separately.
+        // The symbol annotation already describes the collapsed target state.
+        isAccessibilityElement = false
     }
 
     @objc private func selectPoint() { onSelect(pointID) }

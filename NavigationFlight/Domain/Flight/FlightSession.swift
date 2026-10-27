@@ -36,6 +36,9 @@ struct FlightSession: Equatable, Sendable {
         case destinationAlreadyIdentified(Int)
         case waypointAlreadyReached(Int)
         case identificationPointAlreadyReached(UUID)
+        case identificationPointPassedWithoutReport(UUID)
+        case identificationPointWrongLeg(UUID)
+        case invalidIdentificationPointOrder
         case timestampPrecedesStart
         case finalLegCompleted
 
@@ -55,6 +58,12 @@ struct FlightSession: Equatable, Sendable {
                 "This waypoint has already been reached."
             case .identificationPointAlreadyReached:
                 "This identification point has already been reached."
+            case .identificationPointPassedWithoutReport:
+                "This identification point was passed without report and can no longer be reached."
+            case .identificationPointWrongLeg:
+                "This identification point is not part of the active leg."
+            case .invalidIdentificationPointOrder:
+                "The active leg’s identification-point order is unavailable."
             case .timestampPrecedesStart:
                 "The reported time cannot be earlier than the leg start."
             case .finalLegCompleted:
@@ -76,16 +85,31 @@ struct FlightSession: Equatable, Sendable {
     }
 
     struct IdentificationPointTiming: Equatable, Sendable {
+        enum Outcome: Equatable, Sendable {
+            case reached(Date)
+            case passedWithoutReport
+        }
+
         let key: IdentificationPointKey
         let legIndex: Int
-        let reachedAt: Date
+        let outcome: Outcome
 
         var identificationPointID: UUID { key.identificationPointID }
         var legID: UUID { key.legID }
-
-        func actualLegElapsedDuration(startedAt: Date) -> TimeInterval {
-            reachedAt.timeIntervalSince(startedAt)
+        var reachedAt: Date? {
+            guard case .reached(let timestamp) = outcome else { return nil }
+            return timestamp
         }
+
+        func actualLegElapsedDuration(startedAt: Date) -> TimeInterval? {
+            reachedAt?.timeIntervalSince(startedAt)
+        }
+    }
+
+    enum IdentificationPointState: Equatable, Sendable {
+        case future
+        case reached(Date)
+        case passedWithoutReport
     }
 
     struct PilotETAState: Equatable, Sendable {
@@ -182,26 +206,86 @@ struct FlightSession: Equatable, Sendable {
         )
     }
 
-    mutating func reachIdentificationPoint(key: IdentificationPointKey, at timestamp: Date) throws {
+    mutating func reachIdentificationPoint(
+        key: IdentificationPointKey,
+        orderedActiveLegPointKeys: [IdentificationPointKey],
+        at timestamp: Date
+    ) throws {
         guard legState == .active, let startedAt = legStartedAt else {
             throw TransitionError.legNotActive
         }
-        guard key.legID == legIDs[activeLegIndex] else { throw TransitionError.legNotActive }
-        guard identificationPointTimings.allSatisfy({ $0.key != key }) else {
+        let activeLegID = legIDs[activeLegIndex]
+        guard key.legID == activeLegID else {
+            throw TransitionError.identificationPointWrongLeg(key.identificationPointID)
+        }
+        guard !orderedActiveLegPointKeys.isEmpty,
+              orderedActiveLegPointKeys.allSatisfy({ $0.legID == activeLegID }),
+              Set(orderedActiveLegPointKeys).count == orderedActiveLegPointKeys.count,
+              let selectedIndex = orderedActiveLegPointKeys.firstIndex(of: key) else {
+            throw TransitionError.invalidIdentificationPointOrder
+        }
+        switch identificationPointState(for: key) {
+        case .reached:
             throw TransitionError.identificationPointAlreadyReached(key.identificationPointID)
+        case .passedWithoutReport:
+            throw TransitionError.identificationPointPassedWithoutReport(key.identificationPointID)
+        case .future:
+            break
         }
         guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
-        identificationPointTimings.append(
+
+        var nextTimings = identificationPointTimings
+        for earlierKey in orderedActiveLegPointKeys[..<selectedIndex]
+        where identificationPointState(for: earlierKey) == .future {
+            nextTimings.append(
+                IdentificationPointTiming(
+                    key: earlierKey,
+                    legIndex: activeLegIndex,
+                    outcome: .passedWithoutReport
+                )
+            )
+        }
+        nextTimings.append(
             IdentificationPointTiming(
                 key: key,
                 legIndex: activeLegIndex,
-                reachedAt: timestamp
+                outcome: .reached(timestamp)
             )
         )
+
+        var nextETAStates = pilotETAStatesByTargetKey
+        let selectedTargetKey = NavigationTimingTargetKey(
+            legID: key.legID,
+            kind: .identificationPoint,
+            targetID: key.identificationPointID
+        )
+        if var selectedETAState = nextETAStates[selectedTargetKey] {
+            if let committedSeconds = selectedETAState.committedSeconds {
+                selectedETAState.draftSeconds = committedSeconds
+                selectedETAState.isEditing = false
+                selectedETAState.isCheckResultVisible = false
+                nextETAStates[selectedTargetKey] = selectedETAState
+            } else {
+                nextETAStates.removeValue(forKey: selectedTargetKey)
+            }
+        }
+
+        identificationPointTimings = nextTimings
+        pilotETAStatesByTargetKey = nextETAStates
     }
 
     func identificationPointTiming(for key: IdentificationPointKey) -> IdentificationPointTiming? {
         identificationPointTimings.first { $0.key == key }
+    }
+
+    func identificationPointState(for key: IdentificationPointKey) -> IdentificationPointState {
+        guard let timing = identificationPointTiming(for: key) else { return .future }
+        switch timing.outcome {
+        case .reached(let timestamp):
+            return .reached(timestamp)
+        case .passedWithoutReport:
+            return .passedWithoutReport
+        }
     }
 
     func actualLegElapsedDuration(atIdentificationPoint key: IdentificationPointKey) -> TimeInterval? {
@@ -215,7 +299,9 @@ struct FlightSession: Equatable, Sendable {
         plannedElapsedSeconds: Int,
         timingObservationKey: IdentificationPointKey? = nil
     ) {
-        guard plannedElapsedSeconds >= 0, pilotETAStatesByTargetKey[targetKey] == nil else { return }
+        guard plannedElapsedSeconds >= 0,
+              canRevisePilotETA(targetKey: targetKey),
+              pilotETAStatesByTargetKey[targetKey] == nil else { return }
         pilotETAStatesByTargetKey[targetKey] = PilotETAState(
             draftSeconds: IdentificationPointTimingCalculator.roundToNearestFiveSeconds(plannedElapsedSeconds),
             committedSeconds: nil,
@@ -226,13 +312,15 @@ struct FlightSession: Equatable, Sendable {
     }
 
     mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {
-        guard var state = pilotETAStatesByTargetKey[targetKey], state.isEditing else { return }
+        guard canRevisePilotETA(targetKey: targetKey),
+              var state = pilotETAStatesByTargetKey[targetKey], state.isEditing else { return }
         state.draftSeconds = max(0, state.draftSeconds + deltaSeconds)
         pilotETAStatesByTargetKey[targetKey] = state
     }
 
     mutating func commitPilotETA(targetKey: NavigationTimingTargetKey) {
-        guard var state = pilotETAStatesByTargetKey[targetKey] else { return }
+        guard canRevisePilotETA(targetKey: targetKey),
+              var state = pilotETAStatesByTargetKey[targetKey] else { return }
         state.committedSeconds = state.draftSeconds
         state.isEditing = false
         state.isCheckResultVisible = false
@@ -240,7 +328,8 @@ struct FlightSession: Equatable, Sendable {
     }
 
     mutating func beginEditingPilotETA(targetKey: NavigationTimingTargetKey) {
-        guard var state = pilotETAStatesByTargetKey[targetKey],
+        guard canRevisePilotETA(targetKey: targetKey),
+              var state = pilotETAStatesByTargetKey[targetKey],
               let committed = state.committedSeconds else { return }
         state.draftSeconds = committed
         state.isEditing = true
@@ -266,6 +355,14 @@ struct FlightSession: Equatable, Sendable {
 
     func committedPilotETA(targetKey: NavigationTimingTargetKey) -> Int? {
         pilotETAStatesByTargetKey[targetKey]?.committedSeconds
+    }
+
+    private func canRevisePilotETA(targetKey: NavigationTimingTargetKey) -> Bool {
+        guard targetKey.kind == .identificationPoint else { return true }
+        return identificationPointState(for: IdentificationPointKey(
+            legID: targetKey.legID,
+            identificationPointID: targetKey.targetID
+        )) == .future
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date) throws {

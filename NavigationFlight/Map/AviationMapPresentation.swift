@@ -51,16 +51,58 @@ struct AviationMapMinuteMarker: Equatable, Sendable {
 }
 
 struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
+    enum Status: Equatable, Sendable {
+        case future
+        case reached
+        case passedWithoutReport
+    }
+
     let id: IdentificationPointKey
     let name: String
     let coordinate: AviationMapCoordinate
     let plannedElapsedSeconds: Int
-    let isReached: Bool
+    let status: Status
     let committedETASeconds: Int?
+
+    var isReached: Bool { status == .reached }
+
+    init(
+        id: IdentificationPointKey,
+        name: String,
+        coordinate: AviationMapCoordinate,
+        plannedElapsedSeconds: Int,
+        status: Status,
+        committedETASeconds: Int?
+    ) {
+        self.id = id
+        self.name = name
+        self.coordinate = coordinate
+        self.plannedElapsedSeconds = plannedElapsedSeconds
+        self.status = status
+        self.committedETASeconds = committedETASeconds
+    }
+
+    init(
+        id: IdentificationPointKey,
+        name: String,
+        coordinate: AviationMapCoordinate,
+        plannedElapsedSeconds: Int,
+        isReached: Bool,
+        committedETASeconds: Int?
+    ) {
+        self.init(
+            id: id,
+            name: name,
+            coordinate: coordinate,
+            plannedElapsedSeconds: plannedElapsedSeconds,
+            status: isReached ? .reached : .future,
+            committedETASeconds: committedETASeconds
+        )
+    }
 
     var operationalState: AviationMapIdentificationPointOperationalState {
         AviationMapIdentificationPointOperationalState(
-            isReached: isReached,
+            status: status,
             plannedElapsedSeconds: plannedElapsedSeconds,
             committedETASeconds: committedETASeconds
         )
@@ -68,12 +110,14 @@ struct AviationMapIdentificationPoint: Identifiable, Equatable, Sendable {
 }
 
 struct AviationMapIdentificationPointOperationalState: Equatable, Sendable {
-    let isReached: Bool
+    let status: AviationMapIdentificationPoint.Status
     let plannedElapsedSeconds: Int
     let committedETASeconds: Int?
 
-    var canMarkReached: Bool { !isReached }
-    var canEditETA: Bool { !isReached }
+    var isReached: Bool { status == .reached }
+    var isPassedWithoutReport: Bool { status == .passedWithoutReport }
+    var canMarkReached: Bool { status == .future }
+    var canEditETA: Bool { status == .future }
     var operationalETASeconds: Int { committedETASeconds ?? plannedElapsedSeconds }
 }
 
@@ -89,12 +133,26 @@ struct AviationMapIdentificationContext: Equatable, Sendable {
     let pointID: IdentificationPointKey
     let actualElapsedSeconds: Int?
     let nextTarget: AviationMapETATarget?
+    let reportError: FlightSession.TransitionError?
+
+    init(
+        pointID: IdentificationPointKey,
+        actualElapsedSeconds: Int?,
+        nextTarget: AviationMapETATarget?,
+        reportError: FlightSession.TransitionError? = nil
+    ) {
+        self.pointID = pointID
+        self.actualElapsedSeconds = actualElapsedSeconds
+        self.nextTarget = nextTarget
+        self.reportError = reportError
+    }
 }
 
 struct AviationMapTimingTargetContext: Equatable, Sendable {
     let target: AviationMapETATarget
     let pilotETAState: FlightSession.PilotETAState
     let timingReferenceSeconds: Int?
+    let observationBasis: String?
 }
 
 struct AviationMapPresentation: Equatable, Sendable {
@@ -128,7 +186,7 @@ struct AviationMapPresentation: Equatable, Sendable {
         guard let reachedIndex = identificationPoints.firstIndex(where: { $0.id == identificationPointID }) else {
             return nil
         }
-        if let next = identificationPoints[(reachedIndex + 1)...].first(where: { !$0.isReached }) {
+        if let next = identificationPoints[(reachedIndex + 1)...].first(where: { $0.status == .future }) {
             return AviationMapETATarget(
                 id: NavigationTimingTargetKey(
                     legID: next.id.legID,
@@ -144,7 +202,7 @@ struct AviationMapPresentation: Equatable, Sendable {
     }
 
     var currentETATarget: AviationMapETATarget {
-        if let next = identificationPoints.first(where: { !$0.isReached }) {
+        if let next = identificationPoints.first(where: { $0.status == .future }) {
             return AviationMapETATarget(
                 id: NavigationTimingTargetKey(
                     legID: next.id.legID,
@@ -255,12 +313,17 @@ struct AviationMapPresentationFactory {
                     kind: .identificationPoint,
                     targetID: sourcePoint.id
                 )
+                let status: AviationMapIdentificationPoint.Status = switch session.identificationPointState(for: pointKey) {
+                case .future: .future
+                case .reached: .reached
+                case .passedWithoutReport: .passedWithoutReport
+                }
                 return AviationMapIdentificationPoint(
                     id: pointKey,
                     name: "IP\(offset + 1)",
                     coordinate: coordinate(resolved.position),
                     plannedElapsedSeconds: plannedElapsed,
-                    isReached: session.identificationPointTiming(for: pointKey) != nil,
+                    status: status,
                     committedETASeconds: session.committedPilotETA(targetKey: targetKey)
                 )
             }

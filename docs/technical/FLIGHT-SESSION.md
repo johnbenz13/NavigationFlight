@@ -109,12 +109,12 @@ An optional `timingObservationKey` links an ETA state to the reached identificat
 | `selectReadyLeg(index:mode:)` | Session ready; valid unstarted index | Changes active index and execution mode | Throws typed transition error |
 | `startLeg(at:)` | Session ready; active index never started | Appends timing record and becomes active | Throws typed transition error |
 | `identifyDestination(at:)` | Active leg; not previously identified; timestamp at or after start | Records identification timestamp only | Throws typed transition error |
-| `reachIdentificationPoint(key:at:)` | Active leg; key belongs to active leg; key unreached; timestamp at or after start | Appends point timing without changing leg state | Throws typed transition error |
+| `reachIdentificationPoint(key:orderedActiveLegPointKeys:at:)` | Active leg; complete unique active-leg order; selected point future; timestamp at or after start | Marks earlier future points passed without report, records the selected reach, and leaves later points future | Throws typed transition error before mutation |
 | `reachCurrentWaypoint(at:)` | Active leg with timing record; unreached; timestamp at or after start | Completes current timing and applies progression policy | Throws typed transition error |
-| `initializePilotETA(...)` | Nonnegative planned seconds; target absent | Creates editing state with rounded draft | Otherwise no-op |
-| `adjustPilotETA(...)` | Existing target in editing state | Adds delta and clamps draft to zero | Otherwise no-op |
-| `commitPilotETA(...)` | Existing target | Commits draft and ends editing/check display | Otherwise no-op |
-| `beginEditingPilotETA(...)` | Existing target with committed value | Restores committed value into draft and edits | Otherwise no-op |
+| `initializePilotETA(...)` | Nonnegative planned seconds; target absent and still future | Creates editing state with rounded draft | Otherwise no-op |
+| `adjustPilotETA(...)` | Future target in editing state | Adds delta and clamps draft to zero | Otherwise no-op |
+| `commitPilotETA(...)` | Existing future target | Commits draft and ends editing/check display | Otherwise no-op |
+| `beginEditingPilotETA(...)` | Future target with committed value | Restores committed value into draft and edits | Otherwise no-op |
 | `showPilotETACheck(...)` | Existing target with committed value | Shows comparison state | Otherwise no-op |
 | `hidePilotETACheck(...)` | Existing target | Hides comparison state | Otherwise no-op |
 
@@ -126,8 +126,9 @@ The mixed failure interface is significant: lifecycle and reach commands use typ
 | --- | --- |
 | `legStartedAt` | Start timestamp for the active leg, if a timing record exists |
 | `destinationIdentifiedAt` | Destination-identification timestamp for the active leg, if recorded |
-| `identificationPointTiming(for:)` | Exact reach record for a composite point key |
-| `actualLegElapsedDuration(atIdentificationPoint:)` | Point reach minus the associated leg start |
+| `identificationPointTiming(for:)` | Reached or passed-without-report record for a composite point key |
+| `identificationPointState(for:)` | Explicit future, reached, or passed-without-report outcome |
+| `actualLegElapsedDuration(atIdentificationPoint:)` | Point reach minus the associated leg start; `nil` for future or passed points |
 | `pilotETAState(targetKey:)` | Full canonical editor state for a target |
 | `committedPilotETA(targetKey:)` | Committed pilot ETA only |
 | `elapsedTime(at:)` | Active leg elapsed time, clamped to zero; otherwise `nil` |

@@ -178,7 +178,7 @@ SwiftUI reevaluates CockpitFeatureView and CockpitView
 | Waypoint Identified | Clears the identification-point selection and opens next-leg preparation | `onIdentifyDestination()` | `state.identifyDestination(at: .now)` |
 | Reached now / Waypoint Reached | The shortcut closes next-leg preparation | `onWaypointReached()` | `state.reachCurrentWaypoint(at: .now)` |
 | Select identification point | Toggles the selection, clears timing-target selection, closes next-leg preparation, and requests checklist collapse | No progression callback yet | Local selection plus `state.collapseLegStartChecklist()` through `onCollapseChecklist` |
-| Mark selected identification point reached | Resolves the point and its next ETA target | `onIdentificationPointReached(point.id, nextTarget)` | `state.reachIdentificationPoint(key:nextTarget:at: .now)` |
+| Mark selected identification point reached | Sends the selected key with the ordered map presentation and retains any typed failure for the callout | `onIdentificationPointReached(point.id, mapPresentation)` | `state.reachIdentificationPoint(key:mapPresentation:at: .now)` |
 | Select ETA timing target | Toggles selection, clears identification-point selection, collapses the checklist, and focuses the map | `onOpenPilotETA(target)` | `state.openPilotETAEditor(target:)` |
 | Adjust, commit, edit, show check, or hide check in a map callout | Mostly forwards directly; committing an identification-point ETA returns selection to that point | Corresponding typed ETA callback | Corresponding `CockpitFeatureState` ETA command |
 | Collapse, reopen, or note checklist | On narrow maps, reopening also closes the previous-leg drawer | Corresponding checklist callback | Corresponding checklist command |

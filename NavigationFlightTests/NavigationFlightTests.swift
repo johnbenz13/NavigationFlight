@@ -1376,8 +1376,16 @@ struct NavigationFlightTests {
         )
         try session.startLeg(at: startedAt)
 
-        try session.reachIdentificationPoint(key: keyA, at: reachedA)
-        try session.reachIdentificationPoint(key: keyB, at: reachedB)
+        try session.reachIdentificationPoint(
+            key: keyA,
+            orderedActiveLegPointKeys: [keyA, keyB],
+            at: reachedA
+        )
+        try session.reachIdentificationPoint(
+            key: keyB,
+            orderedActiveLegPointKeys: [keyA, keyB],
+            at: reachedB
+        )
 
         #expect(session.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
         #expect(session.actualLegElapsedDuration(atIdentificationPoint: keyA) == 173)
@@ -1388,9 +1396,136 @@ struct NavigationFlightTests {
         #expect(session.legStartedAt == startedAt)
         #expect(session.elapsedTime(at: startedAt.addingTimeInterval(300)) == 300)
         #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(pointA)) {
-            try session.reachIdentificationPoint(key: keyA, at: startedAt.addingTimeInterval(400))
+            try session.reachIdentificationPoint(
+                key: keyA,
+                orderedActiveLegPointKeys: [keyA, keyB],
+                at: startedAt.addingTimeInterval(400)
+            )
         }
         #expect(session.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
+    }
+
+    @Test func reportingLaterIdentificationPointPassesEarlierFuturePointsAtomically() throws {
+        let legID = UUID()
+        let keys = (0..<3).map { _ in
+            IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        }
+        let targetKey = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .identificationPoint,
+            targetID: keys[1].identificationPointID
+        )
+        let start = Date(timeIntervalSince1970: 50_000)
+        let report = start.addingTimeInterval(208)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [legID],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: start)
+        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 200)
+        session.adjustPilotETA(targetKey: targetKey, by: 5)
+        session.commitPilotETA(targetKey: targetKey)
+        session.beginEditingPilotETA(targetKey: targetKey)
+        session.adjustPilotETA(targetKey: targetKey, by: 10)
+
+        try session.reachIdentificationPoint(
+            key: keys[1],
+            orderedActiveLegPointKeys: keys,
+            at: report
+        )
+
+        #expect(session.identificationPointState(for: keys[0]) == .passedWithoutReport)
+        #expect(session.identificationPointTiming(for: keys[0])?.reachedAt == nil)
+        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[0]) == nil)
+        #expect(session.identificationPointState(for: keys[1]) == .reached(report))
+        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == 208)
+        #expect(session.identificationPointState(for: keys[2]) == .future)
+        let retainedETA = try #require(session.pilotETAState(targetKey: targetKey))
+        #expect(retainedETA.committedSeconds == 205)
+        #expect(retainedETA.draftSeconds == 205)
+        #expect(retainedETA.isEditing == false)
+
+        session.beginEditingPilotETA(targetKey: targetKey)
+        session.adjustPilotETA(targetKey: targetKey, by: 5)
+        #expect(session.pilotETAState(targetKey: targetKey) == retainedETA)
+    }
+
+    @Test func rejectedIdentificationPointReportsDoNotMutateState() throws {
+        let legID = UUID()
+        let key = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let wrongLegKey = IdentificationPointKey(legID: UUID(), identificationPointID: UUID())
+        let start = Date(timeIntervalSince1970: 60_000)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [legID],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: start)
+
+        let beforeWrongLeg = session
+        #expect(throws: FlightSession.TransitionError.identificationPointWrongLeg(wrongLegKey.identificationPointID)) {
+            try session.reachIdentificationPoint(
+                key: wrongLegKey,
+                orderedActiveLegPointKeys: [wrongLegKey],
+                at: start.addingTimeInterval(10)
+            )
+        }
+        #expect(session == beforeWrongLeg)
+
+        try session.reachIdentificationPoint(
+            key: key,
+            orderedActiveLegPointKeys: [key],
+            at: start.addingTimeInterval(20)
+        )
+        let beforeDuplicate = session
+        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(key.identificationPointID)) {
+            try session.reachIdentificationPoint(
+                key: key,
+                orderedActiveLegPointKeys: [key],
+                at: start.addingTimeInterval(30)
+            )
+        }
+        #expect(session == beforeDuplicate)
+    }
+
+    @Test func featureAndMapPresentationProjectPassedReachedAndFutureOutcomes() throws {
+        let flight = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 70_000)
+        try state.startLeg(at: start)
+        let before = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        #expect(before.identificationPoints.map(\.status) == [.future, .future, .future])
+
+        try state.reachIdentificationPoint(
+            key: before.identificationPoints[1].id,
+            mapPresentation: before,
+            at: start.addingTimeInterval(150)
+        )
+
+        let after = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        #expect(after.identificationPoints.map(\.status) == [
+            .passedWithoutReport,
+            .reached,
+            .future
+        ])
+        #expect(after.identificationPoints[0].operationalState.canMarkReached == false)
+        #expect(after.identificationPoints[0].operationalState.canEditETA == false)
+        #expect(state.session?.actualLegElapsedDuration(
+            atIdentificationPoint: after.identificationPoints[0].id
+        ) == nil)
+        #expect(state.session?.actualLegElapsedDuration(
+            atIdentificationPoint: after.identificationPoints[1].id
+        ) == 150)
     }
 
     @Test func identificationPointTimingDeltaAndTargetProgressionAreDeterministic() throws {
@@ -1582,7 +1717,11 @@ struct NavigationFlightTests {
         session.commitPilotETA(targetKey: targetKey)
         let revised = try #require(session.committedPilotETA(targetKey: targetKey))
 
-        try session.reachIdentificationPoint(key: point.id, at: reachedAt)
+        try session.reachIdentificationPoint(
+            key: point.id,
+            orderedActiveLegPointKeys: before.identificationPoints.map(\.id),
+            at: reachedAt
+        )
 
         #expect(session.identificationPointTiming(for: point.id)?.reachedAt == reachedAt)
         #expect(session.committedPilotETA(targetKey: targetKey) == revised)
@@ -1660,7 +1799,7 @@ struct NavigationFlightTests {
         let target = try #require(presentation.nextETATarget(after: point.id))
         try state.reachIdentificationPoint(
             key: point.id,
-            nextTarget: target,
+            mapPresentation: presentation,
             at: Date(timeIntervalSince1970: 10_015)
         )
         state.adjustPilotETA(targetKey: target.id, by: 5)
@@ -1693,7 +1832,11 @@ struct NavigationFlightTests {
         let firstOffset = AviationMapCalloutOffset(x: 91, y: -63)
         let storedOffsets = [firstPoint.id: firstOffset]
 
-        try session.reachIdentificationPoint(key: firstPoint.id, at: start.addingTimeInterval(16))
+        try session.reachIdentificationPoint(
+            key: firstPoint.id,
+            orderedActiveLegPointKeys: firstPresentation.identificationPoints.map(\.id),
+            at: start.addingTimeInterval(16)
+        )
         session.initializePilotETA(targetKey: firstTarget, plannedElapsedSeconds: 40)
         session.adjustPilotETA(targetKey: firstTarget, by: 5)
         session.commitPilotETA(targetKey: firstTarget)
@@ -1889,6 +2032,51 @@ struct NavigationFlightTests {
             frequenciesByPhase["en-route"] = enRoute
             execution["frequenciesByPhase"] = frequenciesByPhase
         }
+        object["navigation"] = navigation
+        object["execution"] = execution
+        return try decode(object)
+    }
+
+    private func flightWithThreeIdentificationPoints() throws -> NavigationFlight {
+        var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
+        var navigation = try #require(object["navigation"] as? [String: Any])
+        var points = try #require(navigation["identificationPoints"] as? [[String: Any]])
+        let originalPoint = try #require(points.first)
+        let legID = try #require(originalPoint["legId"] as? String)
+        var execution = try #require(object["execution"] as? [String: Any])
+        var annotations = try #require(execution["annotations"] as? [[String: Any]])
+        let originalPointID = try #require(originalPoint["id"] as? String)
+        let sourceAnnotation = try #require(annotations.first {
+            $0["entityId"] as? String == originalPointID
+        })
+        let sourceAnnotationIndex = try #require(annotations.firstIndex {
+            $0["entityId"] as? String == originalPointID
+        })
+        annotations[sourceAnnotationIndex]["noWindTimeFromLegStartSeconds"] = 10
+        if sourceAnnotation["withWindTimeFromLegStartSeconds"] != nil {
+            annotations[sourceAnnotationIndex]["withWindTimeFromLegStartSeconds"] = 10
+        }
+
+        for (offset, pointID) in [
+            "00000000-0000-4000-8000-000000000030",
+            "00000000-0000-4000-8000-000000000031"
+        ].enumerated() {
+            var point = originalPoint
+            point["id"] = pointID
+            point["legId"] = legID
+            points.append(point)
+
+            var annotation = sourceAnnotation
+            annotation["entityId"] = pointID
+            annotation["legId"] = legID
+            annotation["noWindTimeFromLegStartSeconds"] = (offset + 2) * 10
+            if sourceAnnotation["withWindTimeFromLegStartSeconds"] != nil {
+                annotation["withWindTimeFromLegStartSeconds"] = (offset + 2) * 10
+            }
+            annotations.append(annotation)
+        }
+        navigation["identificationPoints"] = points
+        execution["annotations"] = annotations
         object["navigation"] = navigation
         object["execution"] = execution
         return try decode(object)

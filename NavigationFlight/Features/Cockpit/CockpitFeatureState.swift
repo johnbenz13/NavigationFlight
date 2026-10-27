@@ -126,8 +126,19 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func reachCurrentWaypoint(at timestamp: Date = .now) throws {
+        guard let flight, var nextSession = session else {
+            throw FlightSession.TransitionError.legNotActive
+        }
+        let mapPresentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: nextSession
+        )
         let departingLegID = activeLegStartChecklist?.legID
-        try session?.reachCurrentWaypoint(at: timestamp)
+        try nextSession.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
+            at: timestamp
+        )
+        session = nextSession
         if let departingLegID {
             hideLegStartChecklist(for: departingLegID)
         }

@@ -365,7 +365,10 @@ struct FlightSession: Equatable, Sendable {
         )) == .future
     }
 
-    mutating func reachCurrentWaypoint(at timestamp: Date) throws {
+    mutating func reachCurrentWaypoint(
+        orderedActiveLegPointKeys: [IdentificationPointKey] = [],
+        at timestamp: Date
+    ) throws {
         guard legState == .active else {
             if legTimings.first(where: { $0.legIndex == activeLegIndex })?.reachedAt != nil {
                 throw TransitionError.waypointAlreadyReached(activeLegIndex)
@@ -381,6 +384,37 @@ struct FlightSession: Equatable, Sendable {
         }
         guard timestamp >= current.startedAt else { throw TransitionError.timestampPrecedesStart }
 
+        let activeLegID = legIDs[activeLegIndex]
+        guard orderedActiveLegPointKeys.allSatisfy({ $0.legID == activeLegID }),
+              Set(orderedActiveLegPointKeys).count == orderedActiveLegPointKeys.count else {
+            throw TransitionError.invalidIdentificationPointOrder
+        }
+
+        var nextIdentificationPointTimings = identificationPointTimings
+        var nextETAStates = pilotETAStatesByTargetKey
+        for pointKey in orderedActiveLegPointKeys
+        where identificationPointState(for: pointKey) == .future {
+            nextIdentificationPointTimings.append(
+                IdentificationPointTiming(
+                    key: pointKey,
+                    legIndex: activeLegIndex,
+                    outcome: .passedWithoutReport
+                )
+            )
+            closePilotETADraft(
+                targetKey: NavigationTimingTargetKey(
+                    legID: pointKey.legID,
+                    kind: .identificationPoint,
+                    targetID: pointKey.identificationPointID
+                ),
+                in: &nextETAStates
+            )
+        }
+        for destinationTargetKey in Array(nextETAStates.keys)
+        where destinationTargetKey.legID == activeLegID && destinationTargetKey.kind == .destination {
+            closePilotETADraft(targetKey: destinationTargetKey, in: &nextETAStates)
+        }
+
         legTimings[timingIndex] = LegTiming(
             legID: current.legID,
             legIndex: current.legIndex,
@@ -388,6 +422,8 @@ struct FlightSession: Equatable, Sendable {
             destinationIdentifiedAt: current.destinationIdentifiedAt,
             reachedAt: timestamp
         )
+        identificationPointTimings = nextIdentificationPointTimings
+        pilotETAStatesByTargetKey = nextETAStates
 
         guard activeLegIndex + 1 < legIDs.count else {
             legState = .completed
@@ -410,6 +446,20 @@ struct FlightSession: Equatable, Sendable {
         case .manualNextLeg:
             legState = .ready
         }
+    }
+
+    private func closePilotETADraft(
+        targetKey: NavigationTimingTargetKey,
+        in states: inout [NavigationTimingTargetKey: PilotETAState]
+    ) {
+        guard var state = states[targetKey] else { return }
+        guard let committedSeconds = state.committedSeconds else {
+            states.removeValue(forKey: targetKey)
+            return
+        }
+        state.draftSeconds = committedSeconds
+        state.isEditing = false
+        states[targetKey] = state
     }
 
     func elapsedTime(at now: Date) -> TimeInterval? {

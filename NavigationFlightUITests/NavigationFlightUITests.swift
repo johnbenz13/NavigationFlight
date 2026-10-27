@@ -147,6 +147,20 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testFinalReachPassesEveryUnreportedIdentificationPoint() throws {
+        let plan = try fixtureData(named: "representative-v7", directory: "V7/Official")
+        let app = launchCockpit(planData: plan)
+
+        app.buttons["start-leg"].tap()
+        XCTAssertTrue(app.buttons["reached-now"].waitForExistence(timeout: 2))
+        app.buttons["reached-now"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.buttons["identification-point-reached"].exists)
+        XCTAssertFalse(app.buttons["edit-identification-point-eta"].exists)
+    }
+
+    @MainActor
     func testManualProgressionLeavesSuccessorReadyUntilStart() throws {
         let app = launchCockpit(planData: try twoLegPlanData(), progressionPolicy: "manual")
 

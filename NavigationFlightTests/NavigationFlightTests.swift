@@ -1452,6 +1452,136 @@ struct NavigationFlightTests {
         #expect(session.pilotETAState(targetKey: targetKey) == retainedETA)
     }
 
+    @Test(arguments: [
+        FlightSession.ProgressionPolicy.automaticNextLeg,
+        FlightSession.ProgressionPolicy.manualNextLeg
+    ])
+    func destinationReachPassesEveryRemainingIdentificationPointAtomically(
+        progressionPolicy: FlightSession.ProgressionPolicy
+    ) throws {
+        let legIDs = [UUID(), UUID()]
+        let keys = (0..<3).map { _ in
+            IdentificationPointKey(legID: legIDs[0], identificationPointID: UUID())
+        }
+        let committedTarget = NavigationTimingTargetKey(
+            legID: legIDs[0],
+            kind: .identificationPoint,
+            targetID: keys[1].identificationPointID
+        )
+        let transientTarget = NavigationTimingTargetKey(
+            legID: legIDs[0],
+            kind: .identificationPoint,
+            targetID: keys[2].identificationPointID
+        )
+        let destinationTarget = NavigationTimingTargetKey(
+            legID: legIDs[0],
+            kind: .destination,
+            targetID: UUID()
+        )
+        let start = Date(timeIntervalSince1970: 80_000)
+        let firstReport = start.addingTimeInterval(100)
+        let destinationReport = start.addingTimeInterval(300)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: legIDs,
+            activeLegIndex: 0,
+            executionMode: .noWind,
+            progressionPolicy: progressionPolicy
+        )
+        try session.startLeg(at: start)
+        try session.reachIdentificationPoint(
+            key: keys[0],
+            orderedActiveLegPointKeys: keys,
+            at: firstReport
+        )
+        session.initializePilotETA(targetKey: committedTarget, plannedElapsedSeconds: 200)
+        session.adjustPilotETA(targetKey: committedTarget, by: 5)
+        session.commitPilotETA(targetKey: committedTarget)
+        session.beginEditingPilotETA(targetKey: committedTarget)
+        session.adjustPilotETA(targetKey: committedTarget, by: 10)
+        session.initializePilotETA(targetKey: transientTarget, plannedElapsedSeconds: 250)
+        session.initializePilotETA(targetKey: destinationTarget, plannedElapsedSeconds: 300)
+
+        try session.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: keys,
+            at: destinationReport
+        )
+
+        #expect(session.identificationPointState(for: keys[0]) == .reached(firstReport))
+        #expect(session.identificationPointState(for: keys[1]) == .passedWithoutReport)
+        #expect(session.identificationPointState(for: keys[2]) == .passedWithoutReport)
+        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == nil)
+        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[2]) == nil)
+        #expect(session.pilotETAState(targetKey: committedTarget)?.committedSeconds == 205)
+        #expect(session.pilotETAState(targetKey: committedTarget)?.draftSeconds == 205)
+        #expect(session.pilotETAState(targetKey: committedTarget)?.isEditing == false)
+        #expect(session.pilotETAState(targetKey: transientTarget) == nil)
+        #expect(session.pilotETAState(targetKey: destinationTarget) == nil)
+        #expect(session.legTimings[0].reachedAt == destinationReport)
+        #expect(session.activeLegIndex == 1)
+        switch progressionPolicy {
+        case .automaticNextLeg:
+            #expect(session.legState == .active)
+            #expect(session.legStartedAt == destinationReport)
+        case .manualNextLeg:
+            #expect(session.legState == .ready)
+            #expect(session.legStartedAt == nil)
+        }
+    }
+
+    @Test func finalDestinationReachPassesRemainingPointsWithoutStartingSuccessor() throws {
+        let legID = UUID()
+        let keys = (0..<2).map { _ in
+            IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        }
+        let start = Date(timeIntervalSince1970: 90_000)
+        let report = start.addingTimeInterval(240)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [legID],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: start)
+
+        try session.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: keys,
+            at: report
+        )
+
+        #expect(keys.allSatisfy { session.identificationPointState(for: $0) == .passedWithoutReport })
+        #expect(session.identificationPointTimings.allSatisfy { $0.reachedAt == nil })
+        #expect(session.legState == .completed)
+        #expect(session.activeLegIndex == 0)
+        #expect(session.legTimings.count == 1)
+        #expect(session.legTimings[0].reachedAt == report)
+    }
+
+    @Test func invalidDestinationReachContextDoesNotMutateSession() throws {
+        let legID = UUID()
+        let start = Date(timeIntervalSince1970: 100_000)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [legID],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: start)
+        let before = session
+        let wrongLegPoint = IdentificationPointKey(
+            legID: UUID(),
+            identificationPointID: UUID()
+        )
+
+        #expect(throws: FlightSession.TransitionError.invalidIdentificationPointOrder) {
+            try session.reachCurrentWaypoint(
+                orderedActiveLegPointKeys: [wrongLegPoint],
+                at: start.addingTimeInterval(60)
+            )
+        }
+        #expect(session == before)
+    }
+
     @Test func rejectedIdentificationPointReportsDoNotMutateState() throws {
         let legID = UUID()
         let key = IdentificationPointKey(legID: legID, identificationPointID: UUID())

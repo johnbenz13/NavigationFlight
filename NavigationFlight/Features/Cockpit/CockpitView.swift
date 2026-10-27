@@ -117,7 +117,7 @@ struct CockpitView: View {
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: () -> Void
-    let onIdentificationPointReached: (IdentificationPointKey, AviationMapETATarget?) -> Void
+    let onIdentificationPointReached: (IdentificationPointKey, AviationMapPresentation) throws -> Void
     let onOpenPilotETA: (AviationMapETATarget) -> Void
     let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
     let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
@@ -138,6 +138,7 @@ struct CockpitView: View {
     @State private var selectedMapCallout: SelectedMapCallout?
     @State private var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset] = [:]
     @State private var vorDMECalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
+    @State private var identificationPointReportError: FlightSession.TransitionError?
 
     var body: some View {
         GeometryReader { geometry in
@@ -823,6 +824,7 @@ struct CockpitView: View {
     }
 
     private func selectIdentificationPoint(_ id: IdentificationPointKey) {
+        identificationPointReportError = nil
         if selectedIdentificationPointID == id {
             selectedMapCallout = nil
             return
@@ -875,7 +877,14 @@ struct CockpitView: View {
 
     private func reachSelectedIdentificationPoint() {
         guard let point = selectedIdentificationPoint else { return }
-        onIdentificationPointReached(point.id, mapPresentation.nextETATarget(after: point.id))
+        do {
+            try onIdentificationPointReached(point.id, mapPresentation)
+            identificationPointReportError = nil
+        } catch let error as FlightSession.TransitionError {
+            identificationPointReportError = error
+        } catch {
+            identificationPointReportError = .invalidIdentificationPointOrder
+        }
     }
 
     private var identificationContext: AviationMapIdentificationContext? {
@@ -887,7 +896,8 @@ struct CockpitView: View {
         return AviationMapIdentificationContext(
             pointID: point.id,
             actualElapsedSeconds: actual,
-            nextTarget: nextTarget
+            nextTarget: nextTarget,
+            reportError: identificationPointReportError
         )
     }
 
@@ -904,7 +914,18 @@ struct CockpitView: View {
                 plannedTargetElapsed: TimeInterval(target.plannedElapsedSeconds)
             ).map(IdentificationPointTimingCalculator.displaySeconds)
         }
-        return AviationMapTimingTargetContext(target: target, pilotETAState: etaState, timingReferenceSeconds: reference)
+        let observationBasis = etaState.timingObservationKey.flatMap { observationKey -> String? in
+            guard let point = mapPresentation.identificationPoints.first(where: { $0.id == observationKey }),
+                  let actual = session.actualLegElapsedDuration(atIdentificationPoint: observationKey) else { return nil }
+            let actualSeconds = IdentificationPointTimingCalculator.displaySeconds(actual)
+            return "\(point.name) · Actual \(AviationMapSymbology.formatDuration(actualSeconds)) / Planned \(AviationMapSymbology.formatDuration(point.plannedElapsedSeconds))"
+        }
+        return AviationMapTimingTargetContext(
+            target: target,
+            pilotETAState: etaState,
+            timingReferenceSeconds: reference,
+            observationBasis: observationBasis
+        )
     }
 }
 

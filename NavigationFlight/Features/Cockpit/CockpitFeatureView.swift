@@ -90,8 +90,12 @@ struct CockpitFeatureView: View {
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
-                        onIdentificationPointReached: { pointID, target in
-                            try? state.reachIdentificationPoint(key: pointID, nextTarget: target, at: .now)
+                        onIdentificationPointReached: { pointID, mapPresentation in
+                            try state.reachIdentificationPoint(
+                                key: pointID,
+                                mapPresentation: mapPresentation,
+                                at: .now
+                            )
                         },
                         onOpenPilotETA: { state.openPilotETAEditor(target: $0) },
                         onAdjustPilotETA: { targetID, delta in

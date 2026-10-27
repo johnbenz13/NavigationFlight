@@ -67,14 +67,28 @@ For every UI-affecting ticket:
    `figma:figma-swiftui` for the SwiftUI translation.
 2. Inspect every linked state, annotation, device, and orientation in **Design
    evidence**.
-3. Compare the current simulator state with those nodes before editing.
-4. Identify every conditional UI branch affected by the transition. A Ready
+3. For each linked node, write a concise visual contract in the implementation
+   plan or working notes. Record:
+   - the node link or ID, UI state, device, orientation, and deterministic data
+     needed to reproduce it;
+   - component-level geometry: hierarchy, alignment, dimensions, insets,
+     spacing, and spatial relationships;
+   - visual treatment: text styles, semantic or exact colors, materials,
+     borders, corner radii, shadows, symbols, and assets; and
+   - which values are measured from Figma, supplied by a native component, or
+     intentionally adaptive.
+4. Compare the current simulator state with those nodes before editing.
+5. Identify every conditional UI branch affected by the transition. A Ready
    implementation does not satisfy the corresponding Active branch.
-5. Implement the ticket's design now. Do not defer its primary visual state to
-   the later adaptive-conformance ticket.
+6. Implement the ticket's design now. Use the visual contract to select and
+   configure native or project components; a generic component is acceptable
+   only when its rendered result satisfies the contract. Do not defer the
+   primary visual state to the later adaptive-conformance ticket.
 
-Design inspection is complete when the implementation plan names the current UI
-branch, the target Figma state, and the observable visual delta.
+Design inspection is complete when every affected state has a documented
+reproduction path and a visual contract detailed enough to compare its rendered
+result. Missing design data is recorded as unverified; it is not filled by
+approximation.
 
 ## 5. Implement the vertical slice
 
@@ -101,12 +115,33 @@ Follow the validation matrix in `AGENTS.md`. For SwiftUI work:
 3. build the application;
 4. run relevant unit and UI tests;
 5. verify the affected interaction in every issue-listed device/orientation;
-6. capture simulator evidence and compare it with every linked Figma node;
-7. run `git diff --check`.
+6. reproduce each visual-contract state with deterministic fixture data, using
+   existing launch arguments, fixtures, or UI automation where available;
+7. capture a full-resolution simulator screenshot for each state and have the
+   implementing agent inspect it directly beside the corresponding Figma
+   reference;
+8. compare measurable geometry against Figma values and the simulator hierarchy
+   under the same device, orientation, content, and display settings. Record the
+   measurements and any explicit tolerance. For visual treatment that cannot be
+   measured reliably, record a bounded side-by-side judgment rather than calling
+   it quantitatively verified;
+9. record each state as matched, discrepant, or unverified, with screenshot and
+   Figma-node references. Resolve discrepancies or report them explicitly; and
+10. run `git diff --check`.
 
 Post the acceptance-evidence comment required by `AGENTS.md`. Agents may check
 objective criteria after evidence passes. Leave visual criteria unchecked until
-the human owner explicitly approves the screenshots.
+the human owner explicitly approves the screenshots. Until then, report the work
+as **implementation ready for human visual approval**, not complete. List every
+unverified state and unresolved discrepancy in the handoff.
+
+These visual gates are instruction-enforced: today no repository check proves
+that the contract was derived from the nodes, that the implementer inspected the
+screenshots, or that a visual judgment is sound. Builds, tests, and
+`git diff --check` are mechanically enforceable. A future issue or pull-request
+template check could require structured node/screenshot evidence, and CI could
+validate deterministic screenshot capture or numeric bounds; human visual
+approval remains an explicit owner decision.
 
 ## 7. Deliver one ticket
 

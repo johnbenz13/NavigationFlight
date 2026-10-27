@@ -194,13 +194,13 @@ If the session reach command throws, the checklist, selected index, and post-tra
 
 ### Reaching an identification point
 
-`reachIdentificationPoint(key:nextTarget:at:)` first forwards the reach to the session. When that succeeds and `nextTarget` is present, it initializes pilot ETA state for that target using:
+`reachIdentificationPoint(key:mapPresentation:at:)` passes the complete ordered active-leg point keys from resolved map presentation into a copied session. The session validates the whole command before marking earlier future points passed without report and the selected point reached. The feature then derives the next still-future target, falling back to the destination, and initializes its pilot ETA state using:
 
 - the target's canonical `NavigationTimingTargetKey`;
 - its planned elapsed seconds; and
 - the reached identification-point key as `timingObservationKey`.
 
-If the session already contains ETA state for the target, session initialization is idempotent and preserves the original state and observation key. Reaching an identification point does not change either leg index.
+If the session already contains ETA state for the target, session initialization is idempotent and preserves the original state and observation key. The selected point's uncommitted draft is discarded while committed history is retained. The copied session is published only after every step succeeds, and reaching an identification point does not change either leg index.
 
 ## Pilot ETA command forwarding
 
@@ -269,12 +269,12 @@ Historical checklist entries remain in `legStartChecklists` across leg progressi
 | `startLeg(at:)` | Starts session timing and creates active-leg checklist | Propagates session error; optional session absence performs no transition |
 | `identifyDestination(at:)` | Records identification and hides active checklist for phase | Propagates session error; optional session absence performs no session transition |
 | `reachCurrentWaypoint(at:)` | Applies session progression, checklist hiding, index synchronization, and possible successor checklist | Propagates session error before feature side effects |
-| `reachIdentificationPoint(...)` | Records reach and optionally initializes next-target ETA | Propagates reach error; ETA initialization is conditional on target presence |
+| `reachIdentificationPoint(...)` | Atomically projects passed/reached/future outcomes and initializes the next future target ETA | Propagates typed validation failures without publishing the copied session |
 | ETA commands | Forward to canonical session ETA state | No-op when the session or required ETA state is absent |
 | Checklist commands | Mutate the active leg's stored checklist dimensions | No-op without an active leg or checklist; reopen also requires available phase |
 | `cancelImport()` | No state change | Always a no-op |
 
-Lifecycle commands use the optional session through optional chaining. Consequently, `startLeg`, `identifyDestination`, `reachCurrentWaypoint`, and `reachIdentificationPoint` return normally without changing state when invoked before plan admission. When a session exists and rejects a transition, its typed error propagates.
+Most lifecycle commands use the optional session through optional chaining. `reachIdentificationPoint` instead requires a session and returns `legNotActive` when invoked before plan admission. When a session exists and rejects a transition, its typed error propagates.
 
 ## Enforced invariants
 

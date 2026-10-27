@@ -850,7 +850,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 let hasIdentificationCallout = identificationContext?.pointID == point.id
                 let hasTimingCallout = timingTargetContext?.target.id.targetID == point.id.identificationPointID
                     && timingTargetContext?.target.id.legID == point.id.legID
-                if hasIdentificationCallout || hasTimingCallout {
+                if hasIdentificationCallout || hasTimingCallout || point.status == .passedWithoutReport {
                     endpointAnnotations.append(IdentificationPointLabelAnnotation(point: point))
                 }
             }
@@ -1488,10 +1488,13 @@ private final class IdentificationPointSymbolAnnotationView: MLNAnnotationView {
         self.onSelect = onSelect
         super.init(reuseIdentifier: "identification-symbol-\(annotation.point.id)")
         frame = CGRect(origin: .zero, size: CGSize(width: 100, height: 44))
+        let symbolColor: UIColor = switch annotation.point.status {
+            case .future: visualStyle.identificationPointColor
+            case .reached: visualStyle.identificationPointReachedColor
+            case .passedWithoutReport: visualStyle.identificationPointPassedColor
+        }
         let symbol = IdentificationPointEllipseView(
-            color: annotation.point.name == "IP1"
-                ? visualStyle.identificationPointReachedColor
-                : visualStyle.identificationPointColor,
+            color: symbolColor,
             visualStyle: visualStyle
         )
         symbol.frame = CGRect(x: 0, y: 0, width: 44, height: 44)
@@ -1510,7 +1513,14 @@ private final class IdentificationPointSymbolAnnotationView: MLNAnnotationView {
         centerOffset = CGVector(dx: 28, dy: 0)
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
         isEnabled = true
-        accessibilityLabel = "\(annotation.point.name), \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
+        accessibilityLabel = switch annotation.point.status {
+        case .future:
+            "\(annotation.point.name), future target, planned ETA \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
+        case .reached:
+            "\(annotation.point.name), reached"
+        case .passedWithoutReport:
+            "\(annotation.point.name), passed without report, no Actual ETA"
+        }
         accessibilityTraits = .button
     }
 
@@ -1586,7 +1596,12 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         clipsToBounds = false
         layer.masksToBounds = false
 
-        leader.strokeColor = visualStyle.identificationPointCalloutBorderColor
+        let leaderColor: UIColor = switch annotation.point.status {
+        case .future: visualStyle.identificationPointColor
+        case .reached: visualStyle.identificationPointReachedColor
+        case .passedWithoutReport: visualStyle.identificationPointPassedColor
+        }
+        leader.strokeColor = leaderColor
             .withAlphaComponent(visualStyle.identificationPointCalloutBorderOpacity).cgColor
         leader.lineWidth = visualStyle.identificationPointCalloutBorderWidth
         leader.fillColor = UIColor.clear.cgColor
@@ -1625,8 +1640,10 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         isEnabled = true
         centerOffset = CGVector(dx: self.offset.x, dy: self.offset.y)
         updateLeader()
-        accessibilityLabel = "\(annotation.point.name), planned time \(AviationMapSymbology.formatDuration(annotation.point.plannedElapsedSeconds))"
-        accessibilityTraits = .button
+        // Keep the annotation container out of the accessibility tree so the
+        // hosted SwiftUI callout exposes each operational control separately.
+        // The symbol annotation already describes the collapsed target state.
+        isAccessibilityElement = false
     }
 
     @objc private func selectPoint() { onSelect(pointID) }
@@ -1699,9 +1716,13 @@ private struct TimingTargetCalloutContent: View {
     let onHideCheck: (NavigationTimingTargetKey) -> Void
 
     var body: some View {
+        let isFocusedRevision = context?.pilotETAState.isEditing == true && context?.observationBasis != nil
         VStack(alignment: context == nil ? .center : .leading, spacing: context == nil ? 1 : 9) {
             if let context {
-                Button(action: onCollapseOrExpand) {
+                if isFocusedRevision {
+                    focusedRevisionEditor(context)
+                } else {
+                    Button(action: onCollapseOrExpand) {
                     HStack {
                         Text(target.name).font(.headline).lineLimit(1)
                         Spacer()
@@ -1742,6 +1763,7 @@ private struct TimingTargetCalloutContent: View {
                             .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.bordered)
                     }
                 }
+                }
             } else {
                 Text(target.name).font(.caption.weight(.semibold)).lineLimit(1)
                 Text(AviationMapSymbology.formatDuration(target.committedETASeconds ?? target.plannedElapsedSeconds))
@@ -1756,20 +1778,104 @@ private struct TimingTargetCalloutContent: View {
                 }
             }
         }
-        .padding(context == nil ? 6 : 12)
-        .frame(width: context == nil ? (collapsedReferenceText == nil ? 154 : 236) : 286)
+        .padding(context == nil ? 6 : (isFocusedRevision ? 0 : 12))
+        .frame(
+            width: context == nil ? (collapsedReferenceText == nil ? 154 : 236) : (isFocusedRevision ? 338 : 286),
+            height: isFocusedRevision ? 352 : nil
+        )
         .background(
             Color(uiColor: visualStyle.etaCalloutBackgroundColor)
                 .opacity(context == nil ? visualStyle.etaCalloutBackgroundOpacity : visualStyle.etaExpandedCalloutBackgroundOpacity),
-            in: RoundedRectangle(cornerRadius: 7)
+            in: RoundedRectangle(cornerRadius: isFocusedRevision ? 18 : 7)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 7).stroke(
-                Color(uiColor: accentColor).opacity(visualStyle.etaCalloutBorderOpacity),
-                lineWidth: visualStyle.etaCalloutBorderWidth
+            RoundedRectangle(cornerRadius: isFocusedRevision ? 18 : 7).stroke(
+                (isFocusedRevision ? Color(uiColor: .systemGray4) : Color(uiColor: accentColor))
+                    .opacity(visualStyle.etaCalloutBorderOpacity),
+                lineWidth: isFocusedRevision ? 1 : visualStyle.etaCalloutBorderWidth
             )
         }
+        .shadow(color: .black.opacity(isFocusedRevision ? 0.18 : 0), radius: 8, y: 5)
         .accessibilityIdentifier("timing-target-\(target.id.targetID.uuidString)")
+    }
+
+    private func focusedRevisionEditor(_ context: AviationMapTimingTargetContext) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(target.name.uppercased()) · REVISE NEXT ETA")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                .frame(height: 20, alignment: .leading)
+            Text("Draft from Revised ETA")
+                .font(.body.weight(.semibold))
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 2)
+            Divider().padding(.top, 8)
+            Text("OBSERVATION BASIS")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 12)
+            Text(context.observationBasis ?? "")
+                .font(.footnote)
+                .frame(height: 20, alignment: .leading)
+            Text("DRAFT REVISED ETA")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 15)
+            HStack(spacing: 0) {
+                stepperButton("−5s", delta: -visualStyle.etaAdjustmentStepSeconds)
+                Text(AviationMapSymbology.formatDuration(context.pilotETAState.draftSeconds))
+                    .font(.title2.weight(.bold).monospacedDigit())
+                    .frame(maxWidth: .infinity)
+                stepperButton("+5s", delta: visualStyle.etaAdjustmentStepSeconds)
+            }
+            .frame(height: 62)
+            .background(Color(uiColor: .systemBlue).opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color(uiColor: .systemGray4)) }
+
+            HStack(spacing: 10) {
+                editorButton("Cancel", foreground: .primary, background: Color(uiColor: .systemGray6)) {
+                    onCollapseOrExpand()
+                }
+                editorButton("Commit Revision", foreground: .white, background: Color(uiColor: visualStyle.primaryActionColor)) {
+                    onCommit(target.id)
+                }
+            }
+            .padding(.top, 17)
+            editorButton("Check", foreground: .white, background: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor)) {
+                onCommit(target.id)
+                onShowCheck(target.id)
+            }
+            .padding(.top, 12)
+        }
+        .padding(.horizontal, 17)
+        .padding(.top, 15)
+        .padding(.bottom, 17)
+    }
+
+    private func stepperButton(_ title: LocalizedStringKey, delta: Int) -> some View {
+        Button(title) { onAdjust(target.id, delta) }
+            .font(.title3.weight(.semibold).monospacedDigit())
+            .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+            .frame(width: 82, height: 62)
+            .buttonStyle(.plain)
+    }
+
+    private func editorButton(
+        _ title: LocalizedStringKey,
+        foreground: Color,
+        background: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(foreground)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .background(background, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func adjustmentButton(_ title: String, _ delta: Int) -> some View {
@@ -1826,68 +1932,84 @@ private struct IdentificationPointCalloutContent: View {
     }
 
     private var observationCallout: some View {
-        Group {
-            if let context { expanded(context) } else { collapsed }
+        let isPassed = point.status == .passedWithoutReport
+        let isFutureExpanded = context != nil && point.status == .future
+        let isReachedExpanded = context != nil && point.status == .reached
+        let isDesignedExpanded = isFutureExpanded || isReachedExpanded
+        return Group {
+            if let context {
+                if isFutureExpanded && context.reportError == nil {
+                    futureCallout(point.operationalState)
+                } else if isReachedExpanded,
+                          context.reportError == nil,
+                          let actual = context.actualElapsedSeconds {
+                    reachedResultCallout(context: context, actual: actual)
+                } else {
+                    expanded(context)
+                }
+            } else {
+                collapsed
+            }
         }
-        .padding(context == nil ? 2 : 12)
-        .frame(width: context == nil ? 42 : 286)
+        .padding(context == nil ? (isPassed ? 8 : 2) : (isDesignedExpanded ? 0 : 12))
+        .frame(
+            width: context == nil ? (isPassed ? 180 : 42) : (isFutureExpanded ? 310 : (isReachedExpanded ? 330 : 286)),
+            height: isFutureExpanded ? 218 : (isReachedExpanded ? 294 : nil)
+        )
         .background(
             Color(uiColor: visualStyle.identificationPointCalloutBackgroundColor)
                 .opacity(context == nil
-                    ? 0
+                    ? (isPassed ? 0.88 : 0)
                     : visualStyle.identificationPointExpandedCalloutBackgroundOpacity),
-            in: RoundedRectangle(cornerRadius: 7)
+            in: RoundedRectangle(cornerRadius: isDesignedExpanded ? 18 : 7)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 7)
+            RoundedRectangle(cornerRadius: isDesignedExpanded ? 18 : 7)
                 .stroke(
-                    Color(uiColor: visualStyle.identificationPointCalloutBorderColor)
-                        .opacity(context == nil ? 0 : visualStyle.identificationPointCalloutBorderOpacity),
-                    lineWidth: visualStyle.identificationPointCalloutBorderWidth
+                    (isDesignedExpanded ? Color(uiColor: .systemGray4) : Color(uiColor: calloutAccentColor))
+                        .opacity(context == nil && !isPassed ? 0 : visualStyle.identificationPointCalloutBorderOpacity),
+                    lineWidth: isDesignedExpanded ? 1 : visualStyle.identificationPointCalloutBorderWidth
                 )
         }
+        .shadow(color: .black.opacity(isDesignedExpanded ? 0.18 : 0), radius: 8, y: 5)
     }
 
-    private var collapsed: some View {
-        Text(point.name)
-            .font(.caption.weight(.bold))
-            .foregroundStyle(.primary)
-            .shadow(color: .white, radius: 2)
-    }
+    private func futureCallout(
+        _ operationalState: AviationMapIdentificationPointOperationalState
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(kicker(for: operationalState))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                .frame(height: 20, alignment: .leading)
 
-    private func expanded(_ context: AviationMapIdentificationContext) -> some View {
-        let operationalState = point.operationalState
-        return VStack(alignment: .leading, spacing: 9) {
-            Button(action: onCollapseOrExpand) {
-                HStack {
-                    Text("IDENTIFICATION POINT").font(.caption.weight(.bold)).tracking(0.7)
-                    Spacer()
-                    Image(systemName: "chevron.up")
+            Text("Planned ETA \(AviationMapSymbology.formatDuration(operationalState.plannedElapsedSeconds))")
+                .font(.body.weight(.semibold).monospacedDigit())
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 2)
+
+            Divider()
+                .padding(.top, 8)
+
+            Group {
+                if let committed = operationalState.committedETASeconds {
+                    Text("Revised ETA \(AviationMapSymbology.formatDuration(committed))")
+                        .fontWeight(.semibold)
+                        .monospacedDigit()
+                } else {
+                    Text("No revision committed")
                 }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            Text(operationalState.isReached ? "\(point.name) · Reached" : point.name).font(.headline)
-            if !operationalState.isReached, let committed = operationalState.committedETASeconds {
-                timingRow("ETA", committed, strong: true)
-                timingRow("PLAN", operationalState.plannedElapsedSeconds, strong: false)
-            } else {
-                timingRow(operationalState.isReached ? "PLAN" : "PLAN ETA", operationalState.plannedElapsedSeconds, strong: false)
-            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .frame(height: 20, alignment: .leading)
+            .padding(.top, 13)
 
-            if operationalState.isReached, let actual = context.actualElapsedSeconds {
-                timingRow("ACTUAL", actual, strong: false)
-                signedTimingRow("Δ", actual - point.plannedElapsedSeconds)
-            }
-
-            if operationalState.canMarkReached {
-                Button("Point Reached", systemImage: "checkmark", action: onReach)
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("identification-point-reached")
-                Button("Edit ETA") {
+            HStack(spacing: 10) {
+                calloutActionButton(
+                    operationalState.committedETASeconds == nil ? "Revise ETA" : "Edit ETA",
+                    color: Color(uiColor: visualStyle.primaryActionColor)
+                ) {
                     let targetKey = NavigationTimingTargetKey(
                         legID: point.id.legID,
                         kind: .identificationPoint,
@@ -1896,53 +2018,295 @@ private struct IdentificationPointCalloutContent: View {
                     if operationalState.committedETASeconds != nil { onEdit(targetKey) }
                     onRevise(targetKey)
                 }
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .buttonStyle(.plain)
                 .accessibilityIdentifier("edit-identification-point-eta")
-            } else if let target = context.nextTarget,
-                      true {
-                Divider()
-                Text("NEXT TARGET · \(target.name)")
-                    .font(.caption.weight(.bold)).foregroundStyle(.secondary)
-                if let committed = target.committedETASeconds {
-                    timingRow("ETA", committed, strong: true)
-                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
-                } else {
-                    timingRow("PLAN ETA", target.plannedElapsedSeconds, strong: false)
-                }
-                Button(target.committedETASeconds == nil ? "Revise next ETA" : "Edit next ETA") {
+
+                calloutActionButton(
+                    "Reached",
+                    color: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
+                    action: onReach
+                )
+                .accessibilityIdentifier("identification-point-reached")
+            }
+            .padding(.top, 14)
+
+            Text("Reached is available only inside this callout.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 10)
+        }
+        .padding(.horizontal, 17)
+        .padding(.top, 15)
+        .padding(.bottom, 15)
+        .overlay(alignment: .trailing) {
+            Button(action: onCollapseOrExpand) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Collapse identification point callout")
+        }
+    }
+
+    private func reachedResultCallout(
+        context: AviationMapIdentificationContext,
+        actual: Int
+    ) -> some View {
+        let expected = point.committedETASeconds ?? point.plannedElapsedSeconds
+        return VStack(alignment: .leading, spacing: 0) {
+            Text(kicker(for: point.operationalState))
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                .frame(height: 20, alignment: .leading)
+            Text("Actual ETA \(AviationMapSymbology.formatDuration(actual))")
+                .font(.body.weight(.semibold).monospacedDigit())
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 2)
+            Divider().padding(.top, 8)
+            HStack(alignment: .top, spacing: 10) {
+                timingColumn(
+                    point.committedETASeconds == nil ? "EXPECTED · PLANNED" : "EXPECTED · REVISED",
+                    expected,
+                    color: .primary
+                )
+                timingColumn(
+                    "ACTUAL",
+                    actual,
+                    color: .primary,
+                    titleColor: Color(uiColor: visualStyle.identificationPointReachedColor)
+                )
+            }
+            .padding(.top, 13)
+            Text(timingDifferenceDescription(actual - expected))
+                .font(.title3.weight(.bold))
+                .foregroundStyle(.orange)
+                .frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
+                .padding(.horizontal, 13)
+                .background(Color.orange.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color(uiColor: .systemGray4)) }
+                .padding(.top, 17)
+
+            if let target = context.nextTarget {
+                calloutActionButton(
+                    "Revise Next ETA",
+                    color: Color(uiColor: visualStyle.primaryActionColor)
+                ) {
                     if target.committedETASeconds != nil { onEdit(target.id) }
                     onRevise(target.id)
                 }
+                .frame(height: 46)
+                .padding(.top, 18)
+            }
+            Text("Pilot-reported position fix · not GPS verified")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 8)
+        }
+        .padding(.horizontal, 17)
+        .padding(.top, 15)
+        .padding(.bottom, 5)
+    }
+
+    private func calloutActionButton(
+        _ title: LocalizedStringKey,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, minHeight: 44)
-                .buttonStyle(.borderedProminent)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(color, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var collapsed: some View {
+        Text(point.status == .passedWithoutReport
+            ? "\(point.name) · Passed without report"
+            : point.name)
+            .font(.caption.weight(.bold))
+            .foregroundStyle(point.status == .passedWithoutReport ? .secondary : .primary)
+            .shadow(color: .white, radius: 2)
+            .accessibilityLabel(point.status == .passedWithoutReport
+                ? "\(point.name), passed without report, no Actual ETA"
+                : point.name)
+    }
+
+    private func expanded(_ context: AviationMapIdentificationContext) -> some View {
+        let operationalState = point.operationalState
+        return VStack(alignment: .leading, spacing: 9) {
+            Button(action: onCollapseOrExpand) {
+                HStack {
+                    Text(kicker(for: operationalState)).font(.caption.weight(.bold)).tracking(0.7)
+                    Spacer()
+                    Image(systemName: "chevron.up")
+                }
+                .foregroundStyle(Color(uiColor: calloutAccentColor))
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let reportError = context.reportError {
+                if let actual = context.actualElapsedSeconds {
+                    Text("Actual ETA \(AviationMapSymbology.formatDuration(actual))")
+                        .font(.title3.weight(.bold).monospacedDigit())
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Reach report not recorded")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.red)
+                    Text(reportError.localizedDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                Text("Existing timing and reach history remain unchanged.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else if operationalState.isPassedWithoutReport {
+                Text("Passed without report")
+                    .font(.title3.weight(.bold))
+                Divider()
+                Text("Passed without report")
+                    .font(.subheadline.weight(.semibold))
+                Text("No reach timestamp or Actual ETA was recorded.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else if operationalState.canMarkReached {
+                futureContent(operationalState)
+            } else if operationalState.isReached, let actual = context.actualElapsedSeconds {
+                reachedContent(context: context, actual: actual)
             }
         }
     }
 
-    private func timingRow(_ title: String, _ seconds: Int, strong: Bool) -> some View {
-        HStack {
-            Text(title).foregroundStyle(.secondary)
-            Spacer()
+    @ViewBuilder
+    private func futureContent(_ operationalState: AviationMapIdentificationPointOperationalState) -> some View {
+        Text("Planned ETA \(AviationMapSymbology.formatDuration(operationalState.plannedElapsedSeconds))")
+            .font(.title3.weight(.bold).monospacedDigit())
+        Divider()
+        if let committed = operationalState.committedETASeconds {
+            Text("Revised ETA \(AviationMapSymbology.formatDuration(committed))")
+                .font(.subheadline.weight(.semibold).monospacedDigit())
+        } else {
+            Text("No revision committed")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        HStack(spacing: 8) {
+            Button(operationalState.committedETASeconds == nil ? "Revise ETA" : "Edit ETA") {
+                let targetKey = NavigationTimingTargetKey(
+                    legID: point.id.legID,
+                    kind: .identificationPoint,
+                    targetID: point.id.identificationPointID
+                )
+                if operationalState.committedETASeconds != nil { onEdit(targetKey) }
+                onRevise(targetKey)
+            }
+            .tint(Color(uiColor: visualStyle.primaryActionColor))
+            .accessibilityIdentifier("edit-identification-point-eta")
+
+            Button("Reached", action: onReach)
+                .tint(Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor))
+                .accessibilityIdentifier("identification-point-reached")
+        }
+        .font(.subheadline.weight(.semibold))
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+        Text("Reached is available only inside this callout.")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+    }
+
+    @ViewBuilder
+    private func reachedContent(context: AviationMapIdentificationContext, actual: Int) -> some View {
+        let expected = point.committedETASeconds ?? point.plannedElapsedSeconds
+        Text("Actual ETA \(AviationMapSymbology.formatDuration(actual))")
+            .font(.title3.weight(.bold).monospacedDigit())
+        Divider()
+        HStack(alignment: .top, spacing: 12) {
+            timingColumn(
+                point.committedETASeconds == nil ? "EXPECTED · PLANNED" : "EXPECTED · REVISED",
+                expected,
+                color: .secondary
+            )
+            timingColumn(
+                "ACTUAL",
+                actual,
+                color: Color(uiColor: visualStyle.identificationPointReachedColor)
+            )
+        }
+        Text(timingDifferenceDescription(actual - expected))
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Color.orange.opacity(0.12), in: Capsule())
+
+        if let target = context.nextTarget {
+                Divider()
+            Button("Revise Next ETA") {
+                if target.committedETASeconds != nil { onEdit(target.id) }
+                onRevise(target.id)
+            }
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .buttonStyle(.borderedProminent)
+            .tint(Color(uiColor: visualStyle.primaryActionColor))
+        }
+        Text("Pilot-reported position fix · not GPS verified")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+    }
+
+    private var calloutAccentColor: UIColor {
+        switch point.status {
+        case .future: visualStyle.identificationPointColor
+        case .reached: visualStyle.identificationPointReachedColor
+        case .passedWithoutReport: visualStyle.identificationPointPassedColor
+        }
+    }
+
+    private func kicker(
+        for operationalState: AviationMapIdentificationPointOperationalState
+    ) -> String {
+        switch operationalState.status {
+        case .future: "\(point.name.uppercased()) · FUTURE TARGET"
+        case .reached: "\(point.name.uppercased()) · REACHED"
+        case .passedWithoutReport: "\(point.name.uppercased()) · HISTORICAL"
+        }
+    }
+
+    private func timingColumn(
+        _ title: String,
+        _ seconds: Int,
+        color: Color,
+        titleColor: Color = .secondary
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(titleColor)
             Text(AviationMapSymbology.formatDuration(seconds))
                 .monospacedDigit()
-                .fontWeight(strong ? .bold : .semibold)
+                .font(.headline.weight(.bold))
+                .foregroundStyle(color)
         }
-        .font(.subheadline)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func signedTimingRow(_ title: String, _ seconds: Int) -> some View {
-        HStack {
-            Text(title).foregroundStyle(.secondary)
-            Spacer()
-            Text(signedDuration(seconds)).monospacedDigit().bold()
-        }
-        .font(.subheadline)
-    }
-
-    private func signedDuration(_ seconds: Int) -> String {
-        (seconds >= 0 ? "+" : "−") + AviationMapSymbology.formatDuration(abs(seconds))
+    private func timingDifferenceDescription(_ seconds: Int) -> String {
+        if seconds == 0 { return "On time" }
+        return "\(abs(seconds)) seconds \(seconds > 0 ? "late" : "early")"
     }
 }
 

@@ -62,10 +62,9 @@ Track work as GitHub issues in `johnbenz13/NavigationFlight`. See
 ### Ticket implementation
 
 When implementing a GitHub issue, follow
-[`docs/agents/ticket-workflow.md`](docs/agents/ticket-workflow.md). For every
-UI-affecting ticket, inspect the exact Figma nodes in the issue's **Design
-evidence** section before editing and implement that visual state in the same
-ticket as its behavior.
+[`docs/agents/ticket-workflow.md`](docs/agents/ticket-workflow.md). Its pre-edit
+visual-contract and rendered-comparison gates are mandatory for every
+Figma-driven UI ticket.
 
 ### Triage labels
 

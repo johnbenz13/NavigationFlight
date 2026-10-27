@@ -73,6 +73,7 @@ struct AviationMapVisualStyle {
     let identificationPointSymbolSize: CGFloat = 19
     let identificationPointColor = UIColor.systemOrange
     let identificationPointReachedColor = UIColor.systemGreen
+    let identificationPointPassedColor = UIColor.systemGray
     let identificationPointSymbolLineWidth: CGFloat = 2
     let identificationPointCalloutBackgroundColor = UIColor.systemBackground
     let identificationPointCollapsedCalloutBackgroundOpacity: CGFloat = 0.72

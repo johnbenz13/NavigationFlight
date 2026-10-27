@@ -146,17 +146,41 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func reachIdentificationPoint(
         key: IdentificationPointKey,
-        nextTarget: AviationMapETATarget?,
+        mapPresentation: AviationMapPresentation,
         at timestamp: Date = .now
     ) throws {
-        try session?.reachIdentificationPoint(key: key, at: timestamp)
-        if let nextTarget {
-            session?.initializePilotETA(
-                targetKey: nextTarget.id,
-                plannedElapsedSeconds: nextTarget.plannedElapsedSeconds,
-                timingObservationKey: key
-            )
+        guard var nextSession = session else {
+            throw FlightSession.TransitionError.legNotActive
         }
+        let orderedPoints = mapPresentation.identificationPoints
+        try nextSession.reachIdentificationPoint(
+            key: key,
+            orderedActiveLegPointKeys: orderedPoints.map(\.id),
+            at: timestamp
+        )
+        guard let selectedIndex = orderedPoints.firstIndex(where: { $0.id == key }) else {
+            throw FlightSession.TransitionError.invalidIdentificationPointOrder
+        }
+        let nextTarget = orderedPoints[(selectedIndex + 1)...]
+            .first(where: { nextSession.identificationPointState(for: $0.id) == .future })
+            .map { point in
+                AviationMapETATarget(
+                    id: NavigationTimingTargetKey(
+                        legID: point.id.legID,
+                        kind: .identificationPoint,
+                        targetID: point.id.identificationPointID
+                    ),
+                    name: point.name,
+                    plannedElapsedSeconds: point.plannedElapsedSeconds,
+                    committedETASeconds: point.committedETASeconds
+                )
+            } ?? mapPresentation.destinationTarget
+        nextSession.initializePilotETA(
+            targetKey: nextTarget.id,
+            plannedElapsedSeconds: nextTarget.plannedElapsedSeconds,
+            timingObservationKey: key
+        )
+        session = nextSession
     }
 
     mutating func openPilotETAEditor(target: AviationMapETATarget) {

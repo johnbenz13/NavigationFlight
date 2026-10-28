@@ -195,22 +195,41 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func openPilotETAEditor(target: AviationMapETATarget) {
+        let elapsedSeconds = currentLegElapsedSeconds()
         session?.initializePilotETA(
             targetKey: target.id,
-            plannedElapsedSeconds: target.plannedElapsedSeconds
+            plannedElapsedSeconds: target.plannedElapsedSeconds,
+            currentElapsedSeconds: elapsedSeconds
         )
     }
 
     mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {
-        session?.adjustPilotETA(targetKey: targetKey, by: deltaSeconds)
+        let elapsedSeconds = currentLegElapsedSeconds()
+        session?.adjustPilotETA(
+            targetKey: targetKey,
+            by: deltaSeconds,
+            currentElapsedSeconds: elapsedSeconds
+        )
     }
 
     mutating func commitPilotETA(targetKey: NavigationTimingTargetKey) {
-        session?.commitPilotETA(targetKey: targetKey)
+        let elapsedSeconds = currentLegElapsedSeconds()
+        session?.commitPilotETA(
+            targetKey: targetKey,
+            currentElapsedSeconds: elapsedSeconds
+        )
     }
 
     mutating func beginEditingPilotETA(targetKey: NavigationTimingTargetKey) {
-        session?.beginEditingPilotETA(targetKey: targetKey)
+        let elapsedSeconds = currentLegElapsedSeconds()
+        session?.beginEditingPilotETA(
+            targetKey: targetKey,
+            currentElapsedSeconds: elapsedSeconds
+        )
+    }
+
+    mutating func cancelPilotETAEditing(targetKey: NavigationTimingTargetKey) {
+        session?.cancelPilotETAEditing(targetKey: targetKey)
     }
 
     mutating func showPilotETACheck(targetKey: NavigationTimingTargetKey) {
@@ -219,6 +238,10 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func hidePilotETACheck(targetKey: NavigationTimingTargetKey) {
         session?.hidePilotETACheck(targetKey: targetKey)
+    }
+
+    private func currentLegElapsedSeconds(at timestamp: Date = .now) -> Int {
+        session?.elapsedTime(at: timestamp).map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
     }
 
     mutating func cancelImport() {

@@ -113,11 +113,22 @@ struct FlightSession: Equatable, Sendable {
     }
 
     struct PilotETAState: Equatable, Sendable {
+        struct Commit: Equatable, Sendable {
+            let seconds: Int
+        }
+
         var draftSeconds: Int
-        var committedSeconds: Int?
+        var commits: [Commit]
         var isEditing: Bool
         var isCheckResultVisible: Bool
+        var validationError: PilotETAError?
         let timingObservationKey: IdentificationPointKey?
+
+        var committedSeconds: Int? { commits.last?.seconds }
+    }
+
+    enum PilotETAError: Error, Equatable, Sendable {
+        case staleDraft(minimumSeconds: Int)
     }
 
     let flightID: UUID
@@ -297,43 +308,87 @@ struct FlightSession: Equatable, Sendable {
     mutating func initializePilotETA(
         targetKey: NavigationTimingTargetKey,
         plannedElapsedSeconds: Int,
+        currentElapsedSeconds: Int = 0,
         timingObservationKey: IdentificationPointKey? = nil
     ) {
         guard plannedElapsedSeconds >= 0,
               canRevisePilotETA(targetKey: targetKey),
               pilotETAStatesByTargetKey[targetKey] == nil else { return }
+        let floor = Self.pilotETAMinimumSeconds(currentElapsedSeconds: currentElapsedSeconds)
         pilotETAStatesByTargetKey[targetKey] = PilotETAState(
-            draftSeconds: IdentificationPointTimingCalculator.roundToNearestFiveSeconds(plannedElapsedSeconds),
-            committedSeconds: nil,
+            draftSeconds: max(
+                IdentificationPointTimingCalculator.roundToNearestFiveSeconds(plannedElapsedSeconds),
+                floor
+            ),
+            commits: [],
             isEditing: true,
             isCheckResultVisible: false,
+            validationError: nil,
             timingObservationKey: timingObservationKey
         )
     }
 
-    mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {
+    mutating func adjustPilotETA(
+        targetKey: NavigationTimingTargetKey,
+        by deltaSeconds: Int,
+        currentElapsedSeconds: Int = 0
+    ) {
         guard canRevisePilotETA(targetKey: targetKey),
               var state = pilotETAStatesByTargetKey[targetKey], state.isEditing else { return }
-        state.draftSeconds = max(0, state.draftSeconds + deltaSeconds)
+        let floor = Self.pilotETAMinimumSeconds(currentElapsedSeconds: currentElapsedSeconds)
+        state.draftSeconds = max(floor, state.draftSeconds + deltaSeconds)
+        state.validationError = state.draftSeconds < floor ? .staleDraft(minimumSeconds: floor) : nil
         pilotETAStatesByTargetKey[targetKey] = state
     }
 
-    mutating func commitPilotETA(targetKey: NavigationTimingTargetKey) {
+    @discardableResult
+    mutating func commitPilotETA(
+        targetKey: NavigationTimingTargetKey,
+        currentElapsedSeconds: Int = 0
+    ) -> PilotETAError? {
         guard canRevisePilotETA(targetKey: targetKey),
-              var state = pilotETAStatesByTargetKey[targetKey] else { return }
-        state.committedSeconds = state.draftSeconds
+              var state = pilotETAStatesByTargetKey[targetKey], state.isEditing else { return nil }
+        let floor = Self.pilotETAMinimumSeconds(currentElapsedSeconds: currentElapsedSeconds)
+        guard state.draftSeconds >= floor else {
+            let error = PilotETAError.staleDraft(minimumSeconds: floor)
+            state.validationError = error
+            pilotETAStatesByTargetKey[targetKey] = state
+            return error
+        }
+        state.commits.append(.init(seconds: state.draftSeconds))
         state.isEditing = false
         state.isCheckResultVisible = false
+        state.validationError = nil
         pilotETAStatesByTargetKey[targetKey] = state
+        return nil
     }
 
-    mutating func beginEditingPilotETA(targetKey: NavigationTimingTargetKey) {
+    mutating func beginEditingPilotETA(
+        targetKey: NavigationTimingTargetKey,
+        currentElapsedSeconds: Int = 0
+    ) {
         guard canRevisePilotETA(targetKey: targetKey),
               var state = pilotETAStatesByTargetKey[targetKey],
               let committed = state.committedSeconds else { return }
-        state.draftSeconds = committed
+        state.draftSeconds = max(
+            committed,
+            Self.pilotETAMinimumSeconds(currentElapsedSeconds: currentElapsedSeconds)
+        )
         state.isEditing = true
         state.isCheckResultVisible = false
+        state.validationError = nil
+        pilotETAStatesByTargetKey[targetKey] = state
+    }
+
+    mutating func cancelPilotETAEditing(targetKey: NavigationTimingTargetKey) {
+        guard var state = pilotETAStatesByTargetKey[targetKey], state.isEditing else { return }
+        guard let committed = state.committedSeconds else {
+            pilotETAStatesByTargetKey.removeValue(forKey: targetKey)
+            return
+        }
+        state.draftSeconds = committed
+        state.isEditing = false
+        state.validationError = nil
         pilotETAStatesByTargetKey[targetKey] = state
     }
 
@@ -357,8 +412,18 @@ struct FlightSession: Equatable, Sendable {
         pilotETAStatesByTargetKey[targetKey]?.committedSeconds
     }
 
+    func pilotETACommitHistory(targetKey: NavigationTimingTargetKey) -> [PilotETAState.Commit] {
+        pilotETAStatesByTargetKey[targetKey]?.commits ?? []
+    }
+
+    static func pilotETAMinimumSeconds(currentElapsedSeconds: Int) -> Int {
+        IdentificationPointTimingCalculator.roundUpToFiveSeconds(max(0, currentElapsedSeconds))
+    }
+
     private func canRevisePilotETA(targetKey: NavigationTimingTargetKey) -> Bool {
-        guard targetKey.kind == .identificationPoint else { return true }
+        guard targetKey.kind == .identificationPoint else {
+            return legTimings.first(where: { $0.legID == targetKey.legID })?.reachedAt == nil
+        }
         return identificationPointState(for: IdentificationPointKey(
             legID: targetKey.legID,
             identificationPointID: targetKey.targetID

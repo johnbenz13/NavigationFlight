@@ -1716,53 +1716,17 @@ private struct TimingTargetCalloutContent: View {
     let onHideCheck: (NavigationTimingTargetKey) -> Void
 
     var body: some View {
-        let isFocusedRevision = context?.pilotETAState.isEditing == true && context?.observationBasis != nil
+        let isFocusedRevision = context?.pilotETAState.isEditing == true
+        let isCommittedRevision = context?.pilotETAState.committedSeconds != nil && !isFocusedRevision
+        let isCommittedCheckVisible = isCommittedRevision
+            && context?.pilotETAState.isCheckResultVisible == true
+            && context?.timingReferenceSeconds != nil
         VStack(alignment: context == nil ? .center : .leading, spacing: context == nil ? 1 : 9) {
             if let context {
                 if isFocusedRevision {
                     focusedRevisionEditor(context)
-                } else {
-                    Button(action: onCollapseOrExpand) {
-                    HStack {
-                        Text(target.name).font(.headline).lineLimit(1)
-                        Spacer()
-                        Image(systemName: "chevron.up")
-                    }
-                    .frame(minHeight: 44)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                if context.pilotETAState.isEditing {
-                    timingRow("PLAN ETA", target.plannedElapsedSeconds, strong: false)
-                    timingRow("NEW ETA", context.pilotETAState.draftSeconds, strong: true)
-                    HStack(spacing: 10) {
-                        adjustmentButton("−5s", -visualStyle.etaAdjustmentStepSeconds)
-                        adjustmentButton("+5s", visualStyle.etaAdjustmentStepSeconds)
-                    }
-                    Button(context.pilotETAState.committedSeconds == nil ? "Set new ETA" : "Update ETA") {
-                        onCommit(target.id)
-                    }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .buttonStyle(.borderedProminent)
                 } else if let committed = context.pilotETAState.committedSeconds {
-                    timingRow("ETA", committed, strong: true)
-                    timingRow("PLAN", target.plannedElapsedSeconds, strong: false)
-                    Label("Set", systemImage: "checkmark").font(.caption).foregroundStyle(.secondary)
-                    Button("Edit ETA") { onEdit(target.id) }
-                        .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.bordered)
-                    if context.pilotETAState.isCheckResultVisible, let reference = context.timingReferenceSeconds {
-                        timingRow("YOUR ETA", committed, strong: true)
-                        timingRow("TIMING REFERENCE", reference, strong: false)
-                        signedTimingRow("DIFFERENCE", committed - reference)
-                        Text("If the observed pace continues").font(.caption).foregroundStyle(.secondary)
-                        Button("Hide check") { onHideCheck(target.id) }
-                            .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.plain)
-                    } else if context.timingReferenceSeconds != nil {
-                        Button("Cross-check calculation") { onShowCheck(target.id) }
-                            .frame(maxWidth: .infinity, minHeight: 44).buttonStyle(.bordered)
-                    }
-                }
+                    committedRevision(context, committed: committed)
                 }
             } else {
                 Text(target.name).font(.caption.weight(.semibold)).lineLimit(1)
@@ -1778,53 +1742,159 @@ private struct TimingTargetCalloutContent: View {
                 }
             }
         }
-        .padding(context == nil ? 6 : (isFocusedRevision ? 0 : 12))
+        .padding(context == nil ? 6 : ((isFocusedRevision || isCommittedRevision) ? 0 : 12))
         .frame(
-            width: context == nil ? (collapsedReferenceText == nil ? 154 : 236) : (isFocusedRevision ? 338 : 286),
-            height: isFocusedRevision ? 352 : nil
+            width: context == nil
+                ? (collapsedReferenceText == nil ? 154 : 236)
+                : (isFocusedRevision ? 338 : (isCommittedRevision ? 322 : 286)),
+            height: isFocusedRevision
+                ? (context?.observationBasis == nil ? 326 : 352)
+                : (isCommittedRevision ? (isCommittedCheckVisible ? 390 : 282) : nil)
         )
         .background(
             Color(uiColor: visualStyle.etaCalloutBackgroundColor)
                 .opacity(context == nil ? visualStyle.etaCalloutBackgroundOpacity : visualStyle.etaExpandedCalloutBackgroundOpacity),
-            in: RoundedRectangle(cornerRadius: isFocusedRevision ? 18 : 7)
+            in: RoundedRectangle(cornerRadius: (isFocusedRevision || isCommittedRevision) ? 18 : 7)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: isFocusedRevision ? 18 : 7).stroke(
-                (isFocusedRevision ? Color(uiColor: .systemGray4) : Color(uiColor: accentColor))
+            RoundedRectangle(cornerRadius: (isFocusedRevision || isCommittedRevision) ? 18 : 7).stroke(
+                ((isFocusedRevision || isCommittedRevision) ? Color(uiColor: .systemGray4) : Color(uiColor: accentColor))
                     .opacity(visualStyle.etaCalloutBorderOpacity),
-                lineWidth: isFocusedRevision ? 1 : visualStyle.etaCalloutBorderWidth
+                lineWidth: (isFocusedRevision || isCommittedRevision) ? 1 : visualStyle.etaCalloutBorderWidth
             )
         }
-        .shadow(color: .black.opacity(isFocusedRevision ? 0.18 : 0), radius: 8, y: 5)
+        .shadow(color: .black.opacity((isFocusedRevision || isCommittedRevision) ? 0.18 : 0), radius: 8, y: 5)
         .accessibilityIdentifier("timing-target-\(target.id.targetID.uuidString)")
+    }
+
+    private func committedRevision(
+        _ context: AviationMapTimingTargetContext,
+        committed: Int
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(target.name.uppercased()) · FUTURE TARGET")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                .frame(height: 20, alignment: .leading)
+            Text("Revised ETA \(AviationMapSymbology.formatDuration(committed))")
+                .font(.body.weight(.semibold).monospacedDigit())
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 2)
+            Divider().padding(.top, 8)
+            Text("Planned \(AviationMapSymbology.formatDuration(target.plannedElapsedSeconds))")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+                .frame(height: 20, alignment: .leading)
+                .padding(.top, 12)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("REVISED")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
+                Text(AviationMapSymbology.formatDuration(committed))
+                    .font(.title3.weight(.bold).monospacedDigit())
+            }
+            .frame(maxWidth: .infinity, minHeight: 50, alignment: .leading)
+            .padding(.horizontal, 11)
+            .background(Color(uiColor: .systemBlue).opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color(uiColor: .systemGray4)) }
+            .padding(.top, 8)
+            if context.pilotETAState.isCheckResultVisible,
+               let reference = context.timingReferenceSeconds {
+                timingRow("TIMING REFERENCE", reference, strong: false)
+                    .padding(.top, 12)
+                signedTimingRow("DIFFERENCE", committed - reference)
+                Text("If the observed pace continues")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                editorButton(
+                    "Hide Check",
+                    foreground: .primary,
+                    background: Color(uiColor: .systemGray6)
+                ) {
+                    onHideCheck(target.id)
+                }
+                .padding(.top, 8)
+            } else {
+                HStack(spacing: 10) {
+                    editorButton(
+                        "Edit Revision",
+                        foreground: .white,
+                        background: Color(uiColor: visualStyle.primaryActionColor)
+                    ) {
+                        onEdit(target.id)
+                    }
+                    editorButton(
+                        "Check",
+                        foreground: context.timingReferenceSeconds == nil ? Color(uiColor: .systemGray) : .white,
+                        background: context.timingReferenceSeconds == nil
+                            ? Color(uiColor: .systemGray5)
+                            : Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
+                        disabled: context.timingReferenceSeconds == nil
+                    ) {
+                        onShowCheck(target.id)
+                    }
+                }
+                .padding(.top, 17)
+                Text(context.timingReferenceSeconds == nil
+                    ? "Requires a reached preceding identification point."
+                    : "Check against the preceding identification point.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(height: 20, alignment: .leading)
+                    .padding(.top, 8)
+            }
+        }
+        .padding(.horizontal, 17)
+        .padding(.top, 15)
+        .padding(.bottom, 15)
     }
 
     private func focusedRevisionEditor(_ context: AviationMapTimingTargetContext) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("\(target.name.uppercased()) · REVISE NEXT ETA")
+            Text(
+                target.name.uppercased()
+                    + " · "
+                    + (context.observationBasis == nil ? "REVISE ETA" : "REVISE NEXT ETA")
+            )
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
                 .frame(height: 20, alignment: .leading)
-            Text("Draft from Revised ETA")
+            Text(editorTitle(context))
                 .font(.body.weight(.semibold))
                 .frame(height: 20, alignment: .leading)
                 .padding(.top, 2)
             Divider().padding(.top, 8)
-            Text("OBSERVATION BASIS")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(height: 20, alignment: .leading)
-                .padding(.top, 12)
-            Text(context.observationBasis ?? "")
-                .font(.footnote)
-                .frame(height: 20, alignment: .leading)
+            if let observationBasis = context.observationBasis {
+                Text("OBSERVATION BASIS")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(height: 20, alignment: .leading)
+                    .padding(.top, 12)
+                Text(observationBasis)
+                    .font(.footnote)
+                    .frame(height: 20, alignment: .leading)
+            } else {
+                Text("PLANNED")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(height: 20, alignment: .leading)
+                    .padding(.top, 12)
+                Text(AviationMapSymbology.formatDuration(target.plannedElapsedSeconds))
+                    .font(.body.weight(.semibold).monospacedDigit())
+                    .frame(height: 20, alignment: .leading)
+            }
             Text("DRAFT REVISED ETA")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
                 .frame(height: 20, alignment: .leading)
                 .padding(.top, 15)
             HStack(spacing: 0) {
-                stepperButton("−5s", delta: -visualStyle.etaAdjustmentStepSeconds)
+                stepperButton(
+                    "−5s",
+                    delta: -visualStyle.etaAdjustmentStepSeconds,
+                    disabled: context.pilotETAState.draftSeconds <= context.minimumETASeconds
+                )
                 Text(AviationMapSymbology.formatDuration(context.pilotETAState.draftSeconds))
                     .font(.title2.weight(.bold).monospacedDigit())
                     .frame(maxWidth: .infinity)
@@ -1838,34 +1908,50 @@ private struct TimingTargetCalloutContent: View {
                 editorButton("Cancel", foreground: .primary, background: Color(uiColor: .systemGray6)) {
                     onCollapseOrExpand()
                 }
-                editorButton("Commit Revision", foreground: .white, background: Color(uiColor: visualStyle.primaryActionColor)) {
+                editorButton(
+                    "Commit Revision",
+                    foreground: .white,
+                    background: Color(uiColor: visualStyle.primaryActionColor),
+                    disabled: !context.canCommit
+                ) {
                     onCommit(target.id)
                 }
             }
             .padding(.top, 17)
-            editorButton("Check", foreground: .white, background: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor)) {
-                onCommit(target.id)
-                onShowCheck(target.id)
+            if context.observationBasis != nil {
+                editorButton("Check", foreground: .white, background: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor)) {
+                    onCommit(target.id)
+                    onShowCheck(target.id)
+                }
+                .padding(.top, 12)
+            } else {
+                Text(minimumDescription(context))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(height: 20, alignment: .leading)
+                    .padding(.top, 10)
             }
-            .padding(.top, 12)
         }
         .padding(.horizontal, 17)
         .padding(.top, 15)
         .padding(.bottom, 17)
     }
 
-    private func stepperButton(_ title: LocalizedStringKey, delta: Int) -> some View {
+    private func stepperButton(_ title: LocalizedStringKey, delta: Int, disabled: Bool = false) -> some View {
         Button(title) { onAdjust(target.id, delta) }
             .font(.title3.weight(.semibold).monospacedDigit())
             .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
             .frame(width: 82, height: 62)
             .buttonStyle(.plain)
+            .disabled(disabled)
+            .opacity(disabled ? 0.35 : 1)
     }
 
     private func editorButton(
         _ title: LocalizedStringKey,
         foreground: Color,
         background: Color,
+        disabled: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -1876,6 +1962,24 @@ private struct TimingTargetCalloutContent: View {
         }
         .buttonStyle(.plain)
         .background(background, in: RoundedRectangle(cornerRadius: 12))
+        .disabled(disabled)
+        .opacity(disabled ? 0.45 : 1)
+    }
+
+    private func editorTitle(_ context: AviationMapTimingTargetContext) -> String {
+        if !context.canCommit { return "Timer advanced · draft now invalid" }
+        if context.pilotETAState.draftSeconds == context.minimumETASeconds,
+           context.minimumETASeconds > target.plannedElapsedSeconds {
+            return "Raised to current timer floor"
+        }
+        return context.observationBasis == nil ? "Draft from Planned ETA" : "Draft from Revised ETA"
+    }
+
+    private func minimumDescription(_ context: AviationMapTimingTargetContext) -> String {
+        let minimum = AviationMapSymbology.formatDuration(context.minimumETASeconds)
+        return context.canCommit
+            ? "Minimum · current leg time \(minimum)."
+            : "Minimum now \(minimum) · adjust before commit."
     }
 
     private func adjustmentButton(_ title: String, _ delta: Int) -> some View {

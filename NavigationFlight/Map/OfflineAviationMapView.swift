@@ -1767,12 +1767,26 @@ private struct TimingTargetCalloutContent: View {
         .accessibilityIdentifier("timing-target-\(target.id.targetID.uuidString)")
     }
 
+    @ViewBuilder
     private func committedRevision(
         _ context: AviationMapTimingTargetContext,
         committed: Int
     ) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("\(target.name.uppercased()) · FUTURE TARGET")
+        if context.pilotETAState.isCheckResultVisible,
+           let reference = context.timingReferenceSeconds {
+            TimingTargetCrossCheckView(
+                targetIdentifier: context.targetIdentifier,
+                plannedSeconds: target.plannedElapsedSeconds,
+                revisedSeconds: committed,
+                referenceSeconds: reference,
+                observationBasis: context.observationBasis,
+                primaryActionColor: Color(uiColor: visualStyle.primaryActionColor),
+                onHide: { onHideCheck(target.id) },
+                onEdit: { onEdit(target.id) }
+            )
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+            Text("\(context.targetIdentifier) · FUTURE TARGET")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
                 .frame(height: 20, alignment: .leading)
@@ -1799,23 +1813,6 @@ private struct TimingTargetCalloutContent: View {
             .background(Color(uiColor: .systemBlue).opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color(uiColor: .systemGray4)) }
             .padding(.top, 8)
-            if context.pilotETAState.isCheckResultVisible,
-               let reference = context.timingReferenceSeconds {
-                timingRow("TIMING REFERENCE", reference, strong: false)
-                    .padding(.top, 12)
-                signedTimingRow("DIFFERENCE", committed - reference)
-                Text("If the observed pace continues")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                editorButton(
-                    "Hide Check",
-                    foreground: .primary,
-                    background: Color(uiColor: .systemGray6)
-                ) {
-                    onHideCheck(target.id)
-                }
-                .padding(.top, 8)
-            } else {
                 HStack(spacing: 10) {
                     editorButton(
                         "Edit Revision",
@@ -1826,17 +1823,17 @@ private struct TimingTargetCalloutContent: View {
                     }
                     editorButton(
                         "Check",
-                        foreground: context.timingReferenceSeconds == nil ? Color(uiColor: .systemGray) : .white,
-                        background: context.timingReferenceSeconds == nil
-                            ? Color(uiColor: .systemGray5)
-                            : Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
-                        disabled: context.timingReferenceSeconds == nil
+                        foreground: context.canCheck ? .white : Color(uiColor: .systemGray),
+                        background: context.canCheck
+                            ? Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor)
+                            : Color(uiColor: .systemGray5),
+                        disabled: !context.canCheck
                     ) {
                         onShowCheck(target.id)
                     }
                 }
                 .padding(.top, 17)
-                Text(context.timingReferenceSeconds == nil
+                Text(!context.canCheck
                     ? "Requires a reached preceding identification point."
                     : "Check against the preceding identification point.")
                     .font(.caption)
@@ -1844,16 +1841,16 @@ private struct TimingTargetCalloutContent: View {
                     .frame(height: 20, alignment: .leading)
                     .padding(.top, 8)
             }
+            .padding(.horizontal, 17)
+            .padding(.top, 15)
+            .padding(.bottom, 15)
         }
-        .padding(.horizontal, 17)
-        .padding(.top, 15)
-        .padding(.bottom, 15)
     }
 
     private func focusedRevisionEditor(_ context: AviationMapTimingTargetContext) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(
-                target.name.uppercased()
+                context.targetIdentifier
                     + " · "
                     + (context.observationBasis == nil ? "REVISE ETA" : "REVISE NEXT ETA")
             )
@@ -1997,6 +1994,120 @@ private struct TimingTargetCalloutContent: View {
     private func signedTimingRow(_ title: String, _ seconds: Int) -> some View {
         HStack { Text(title).foregroundStyle(.secondary); Spacer(); Text((seconds >= 0 ? "+" : "−") + AviationMapSymbology.formatDuration(abs(seconds))).monospacedDigit().bold() }
             .font(.subheadline)
+    }
+
+    private func referenceDifferenceText(_ seconds: Int) -> String {
+        if seconds == 0 { return "Revision matches reference" }
+        return "Revision is \(AviationMapSymbology.formatDuration(abs(seconds))) \(seconds > 0 ? "later" : "earlier") than reference"
+    }
+}
+
+private struct TimingTargetCrossCheckView: View {
+    let targetIdentifier: String
+    let plannedSeconds: Int
+    let revisedSeconds: Int
+    let referenceSeconds: Int
+    let observationBasis: String?
+    let primaryActionColor: Color
+    let onHide: () -> Void
+    let onEdit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("\(targetIdentifier) · ETA CROSS-CHECK")
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(primaryActionColor)
+                .lineLimit(1)
+            Text("Pilot revision remains operational")
+                .font(.body.weight(.semibold))
+                .padding(.top, 3)
+            Divider().padding(.top, 10)
+
+            HStack(alignment: .bottom, spacing: 20) {
+                timingColumn("PLANNED", seconds: plannedSeconds, alignment: .leading)
+                timingColumn("REVISED · OPERATIONAL", seconds: revisedSeconds, alignment: .trailing)
+            }
+            .padding(.vertical, 11)
+
+            Divider()
+            HStack(alignment: .firstTextBaseline) {
+                Text("REFERENCE ETA")
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 12)
+                Text(AviationMapSymbology.formatDuration(referenceSeconds))
+                    .fontWeight(.bold)
+                    .monospacedDigit()
+            }
+            .font(.subheadline)
+            .padding(.top, 11)
+
+            if let observationBasis {
+                Text("Based on \(observationBasis)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .padding(.top, 7)
+            }
+
+            Text(differenceText)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color(uiColor: .systemGreen))
+                .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+                .padding(.horizontal, 12)
+                .background(Color(uiColor: .systemGreen).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.top, 11)
+
+            HStack(spacing: 10) {
+                actionButton("Hide Check", foreground: .primary, background: Color(uiColor: .systemGray6), action: onHide)
+                actionButton("Edit Revision", foreground: .white, background: primaryActionColor, action: onEdit)
+            }
+            .padding(.top, 11)
+
+            Text("Reference does not replace or verify the pilot's value.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 9)
+        }
+        .padding(17)
+    }
+
+    private func timingColumn(
+        _ title: String,
+        seconds: Int,
+        alignment: HorizontalAlignment
+    ) -> some View {
+        VStack(alignment: alignment, spacing: 3) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            Text(AviationMapSymbology.formatDuration(seconds))
+                .font(.body.weight(.semibold).monospacedDigit())
+        }
+        .frame(maxWidth: .infinity, alignment: alignment == .leading ? .leading : .trailing)
+    }
+
+    private func actionButton(
+        _ title: LocalizedStringKey,
+        foreground: Color,
+        background: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(foreground)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .background(background, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var differenceText: String {
+        let difference = revisedSeconds - referenceSeconds
+        if difference == 0 { return "Revision matches reference" }
+        return "Revision is \(AviationMapSymbology.formatDuration(abs(difference))) \(difference > 0 ? "later" : "earlier") than reference"
     }
 }
 

@@ -150,9 +150,11 @@ struct AviationMapIdentificationContext: Equatable, Sendable {
 
 struct AviationMapTimingTargetContext: Equatable, Sendable {
     let target: AviationMapETATarget
+    let targetIdentifier: String
     let pilotETAState: FlightSession.PilotETAState
     let timingReferenceSeconds: Int?
     let observationBasis: String?
+    let canCheck: Bool
     let minimumETASeconds: Int
 
     var canCommit: Bool { pilotETAState.draftSeconds >= minimumETASeconds }

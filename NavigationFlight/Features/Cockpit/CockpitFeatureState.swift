@@ -188,8 +188,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             } ?? mapPresentation.destinationTarget
         nextSession.initializePilotETA(
             targetKey: nextTarget.id,
-            plannedElapsedSeconds: nextTarget.plannedElapsedSeconds,
-            timingObservationKey: key
+            plannedElapsedSeconds: nextTarget.plannedElapsedSeconds
         )
         session = nextSession
     }
@@ -232,8 +231,26 @@ struct CockpitFeatureState: Equatable, Sendable {
         session?.cancelPilotETAEditing(targetKey: targetKey)
     }
 
-    mutating func showPilotETACheck(targetKey: NavigationTimingTargetKey) {
-        session?.showPilotETACheck(targetKey: targetKey)
+    mutating func showPilotETACheck(
+        targetKey: NavigationTimingTargetKey,
+        mapPresentation: AviationMapPresentation
+    ) {
+        guard var nextSession = session,
+              let target = mapPresentation.timingTarget(for: targetKey),
+              let observationKey = nextSession.latestEligibleTimingObservation(
+                before: targetKey,
+                orderedPointKeys: mapPresentation.identificationPoints.map(\.id)
+              ),
+              let observation = mapPresentation.identificationPoints.first(where: { $0.id == observationKey }),
+              let actual = nextSession.actualLegElapsedDuration(atIdentificationPoint: observation.id),
+              nextSession.showPilotETACheck(
+                targetKey: targetKey,
+                observationKey: observation.id,
+                plannedObservationElapsed: TimeInterval(observation.plannedElapsedSeconds),
+                actualObservationElapsed: actual,
+                plannedTargetElapsed: TimeInterval(target.plannedElapsedSeconds)
+              ) else { return }
+        session = nextSession
     }
 
     mutating func hidePilotETACheck(targetKey: NavigationTimingTargetKey) {

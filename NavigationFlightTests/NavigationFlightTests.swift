@@ -1711,7 +1711,13 @@ struct NavigationFlightTests {
         session.commitPilotETA(targetKey: targetID)
         #expect(session.committedPilotETA(targetKey: targetID) == 345)
         #expect(session.pilotETAState(targetKey: targetID)?.isEditing == false)
-        session.showPilotETACheck(targetKey: targetID)
+        _ = session.showPilotETACheck(
+            targetKey: targetID,
+            observationKey: .init(legID: legID, identificationPointID: UUID()),
+            plannedObservationElapsed: 100,
+            actualObservationElapsed: 101,
+            plannedTargetElapsed: 338
+        )
         #expect(session.pilotETAState(targetKey: targetID)?.isCheckResultVisible == true)
         session.beginEditingPilotETA(targetKey: targetID)
         #expect(session.pilotETAState(targetKey: targetID)?.draftSeconds == 345)
@@ -1810,21 +1816,23 @@ struct NavigationFlightTests {
             flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
 
-        session.initializePilotETA(
-            targetKey: destination,
-            plannedElapsedSeconds: 256,
-            timingObservationKey: observation
-        )
+        session.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 256)
         session.initializePilotETA(targetKey: identification, plannedElapsedSeconds: 190)
         session.adjustPilotETA(targetKey: destination, by: 5)
         session.commitPilotETA(targetKey: destination)
 
         #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
         #expect(session.pilotETAState(targetKey: destination)?.committedSeconds == 260)
-        #expect(session.pilotETAState(targetKey: destination)?.timingObservationKey == observation)
+        #expect(session.pilotETAState(targetKey: destination)?.checkDisclosures.isEmpty == true)
         #expect(session.pilotETAState(targetKey: identification)?.draftSeconds == 190)
         #expect(session.pilotETAState(targetKey: identification)?.committedSeconds == nil)
-        session.showPilotETACheck(targetKey: destination)
+        _ = session.showPilotETACheck(
+            targetKey: destination,
+            observationKey: observation,
+            plannedObservationElapsed: 100,
+            actualObservationElapsed: 101,
+            plannedTargetElapsed: 256
+        )
         #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == true)
         session.beginEditingPilotETA(targetKey: destination)
         #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == false)
@@ -2002,7 +2010,7 @@ struct NavigationFlightTests {
         state.openPilotETAEditor(target: target)
 
         let etaState = try #require(state.session?.pilotETAState(targetKey: target.id))
-        #expect(etaState.timingObservationKey == point.id)
+        #expect(etaState.checkDisclosures.isEmpty)
         #expect(etaState.isEditing == false)
         #expect(etaState.draftSeconds == etaState.committedSeconds)
     }
@@ -2035,7 +2043,13 @@ struct NavigationFlightTests {
         session.initializePilotETA(targetKey: firstTarget, plannedElapsedSeconds: 40)
         session.adjustPilotETA(targetKey: firstTarget, by: 5)
         session.commitPilotETA(targetKey: firstTarget)
-        session.showPilotETACheck(targetKey: firstTarget)
+        _ = session.showPilotETACheck(
+            targetKey: firstTarget,
+            observationKey: firstPoint.id,
+            plannedObservationElapsed: TimeInterval(firstPoint.plannedElapsedSeconds),
+            actualObservationElapsed: 16,
+            plannedTargetElapsed: 40
+        )
         try session.identifyDestination(at: start.addingTimeInterval(35))
         try session.reachCurrentWaypoint(at: start.addingTimeInterval(40))
 
@@ -2055,6 +2069,105 @@ struct NavigationFlightTests {
         #expect(session.identificationPointTiming(for: secondPoint.id) == nil)
         #expect(Set(secondPresentation.identificationPoints.map(\.id.legID)) == [flight.legs[1].id])
         #expect(flight == originalFlight)
+    }
+
+    @Test func checkDisclosureRoundsOnlyAfterFullPrecisionCalculationAndNeverChangesRevision() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        session.adjustPilotETA(targetKey: target, by: 5)
+        session.commitPilotETA(targetKey: target)
+
+        let requested = session.showPilotETACheck(
+            targetKey: target,
+            observationKey: observation,
+            plannedObservationElapsed: 3,
+            actualObservationElapsed: 2,
+            plannedTargetElapsed: 100
+        )
+
+        #expect(requested)
+        #expect(session.committedPilotETA(targetKey: target) == 105)
+        #expect(session.pilotETAState(targetKey: target)?.latestCheckDisclosure?.referenceSeconds == 67)
+    }
+
+    @Test func checkSelectsLatestReachedPredecessorAtRequestTime() throws {
+        let legID = UUID()
+        let first = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let second = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let destination = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        let start = Date(timeIntervalSince1970: 1_000)
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        try session.startLeg(at: start)
+        try session.reachIdentificationPoint(
+            key: first,
+            orderedActiveLegPointKeys: [first, second],
+            at: start.addingTimeInterval(10)
+        )
+        session.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 100)
+        session.commitPilotETA(targetKey: destination)
+        try session.reachIdentificationPoint(
+            key: second,
+            orderedActiveLegPointKeys: [first, second],
+            at: start.addingTimeInterval(20)
+        )
+
+        #expect(session.latestEligibleTimingObservation(
+            before: destination,
+            orderedPointKeys: [first, second]
+        ) == second)
+    }
+
+    @Test func hidingCheckPreservesRequestedHistoryAndNeverRequestedCheckHasNone() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        session.commitPilotETA(targetKey: target)
+        #expect(session.pilotETAState(targetKey: target)?.checkDisclosures.isEmpty == true)
+
+        _ = session.showPilotETACheck(
+            targetKey: target,
+            observationKey: observation,
+            plannedObservationElapsed: 50,
+            actualObservationElapsed: 51,
+            plannedTargetElapsed: 100
+        )
+        session.hidePilotETACheck(targetKey: target)
+
+        #expect(session.pilotETAState(targetKey: target)?.isCheckResultVisible == false)
+        #expect(session.pilotETAState(targetKey: target)?.checkDisclosures.map(\.referenceSeconds) == [102])
+    }
+
+    @Test func invalidCheckTimingProducesNoPartialMutation() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        session.commitPilotETA(targetKey: target)
+        let before = session
+
+        let requested = session.showPilotETACheck(
+            targetKey: target,
+            observationKey: .init(legID: legID, identificationPointID: UUID()),
+            plannedObservationElapsed: 0,
+            actualObservationElapsed: 20,
+            plannedTargetElapsed: 100
+        )
+
+        #expect(!requested)
+        #expect(session == before)
     }
 
     @Test func proportionalReferenceAndInvalidCases() throws {

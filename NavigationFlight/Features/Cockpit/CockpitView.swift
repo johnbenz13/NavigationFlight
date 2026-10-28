@@ -843,8 +843,13 @@ struct CockpitView: View {
 
     private func dismissMapCallout() {
         if let key = selectedTimingTargetKey,
-           session.pilotETAState(targetKey: key)?.isEditing == true {
-            onCancelPilotETA(key)
+           let etaState = session.pilotETAState(targetKey: key) {
+            if etaState.isEditing {
+                onCancelPilotETA(key)
+            }
+            if etaState.isCheckResultVisible {
+                onHidePilotETACheck(key)
+            }
         }
         selectedMapCallout = nil
     }
@@ -923,16 +928,20 @@ struct CockpitView: View {
         guard let key = selectedTimingTargetKey,
               let target = mapPresentation.timingTarget(for: key),
               let etaState = session.pilotETAState(targetKey: key) else { return nil }
-        let reference = etaState.timingObservationKey.flatMap { observationKey -> Int? in
-            guard let point = mapPresentation.identificationPoints.first(where: { $0.id == observationKey }),
-                  let actual = session.actualLegElapsedDuration(atIdentificationPoint: observationKey) else { return nil }
-            return IdentificationPointTimingCalculator.referenceTargetElapsed(
-                plannedReachedElapsed: TimeInterval(point.plannedElapsedSeconds),
-                actualReachedElapsed: actual,
-                plannedTargetElapsed: TimeInterval(target.plannedElapsedSeconds)
-            ).map(IdentificationPointTimingCalculator.displaySeconds)
-        }
-        let observationBasis = etaState.timingObservationKey.flatMap { observationKey -> String? in
+        let disclosure = etaState.latestCheckDisclosure
+        let reference = disclosure?.referenceSeconds
+        let targetIndex = target.kind == .destination
+            ? mapPresentation.identificationPoints.endIndex
+            : mapPresentation.identificationPoints.firstIndex { $0.id.identificationPointID == target.id.targetID }
+        let canCheck = targetIndex.map { index in
+            mapPresentation.identificationPoints[..<index].contains {
+                $0.plannedElapsedSeconds > 0
+                    && session.identificationPointState(for: $0.id).isReached
+                    && session.actualLegElapsedDuration(atIdentificationPoint: $0.id) != nil
+            }
+        } ?? false
+        let observationBasis = disclosure.flatMap { disclosure -> String? in
+            let observationKey = disclosure.observationKey
             guard let point = mapPresentation.identificationPoints.first(where: { $0.id == observationKey }),
                   let actual = session.actualLegElapsedDuration(atIdentificationPoint: observationKey) else { return nil }
             let actualSeconds = IdentificationPointTimingCalculator.displaySeconds(actual)
@@ -940,9 +949,13 @@ struct CockpitView: View {
         }
         return AviationMapTimingTargetContext(
             target: target,
+            targetIdentifier: targetIndex.map { index in
+                target.kind == .destination ? target.name.uppercased() : "IP \(index + 1)"
+            } ?? target.name.uppercased(),
             pilotETAState: etaState,
             timingReferenceSeconds: reference,
             observationBasis: observationBasis,
+            canCheck: canCheck,
             minimumETASeconds: FlightSession.pilotETAMinimumSeconds(
                 currentElapsedSeconds: session.elapsedTime(at: timestamp)
                     .map(IdentificationPointTimingCalculator.displaySeconds) ?? 0

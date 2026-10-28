@@ -110,6 +110,11 @@ struct FlightSession: Equatable, Sendable {
         case future
         case reached(Date)
         case passedWithoutReport
+
+        var isReached: Bool {
+            if case .reached = self { return true }
+            return false
+        }
     }
 
     struct PilotETAState: Equatable, Sendable {
@@ -117,14 +122,20 @@ struct FlightSession: Equatable, Sendable {
             let seconds: Int
         }
 
+        struct CheckDisclosure: Equatable, Sendable {
+            let observationKey: IdentificationPointKey
+            let referenceSeconds: Int
+        }
+
         var draftSeconds: Int
         var commits: [Commit]
         var isEditing: Bool
         var isCheckResultVisible: Bool
         var validationError: PilotETAError?
-        let timingObservationKey: IdentificationPointKey?
+        var checkDisclosures: [CheckDisclosure]
 
         var committedSeconds: Int? { commits.last?.seconds }
+        var latestCheckDisclosure: CheckDisclosure? { checkDisclosures.last }
     }
 
     enum PilotETAError: Error, Equatable, Sendable {
@@ -305,11 +316,29 @@ struct FlightSession: Equatable, Sendable {
         return record.actualLegElapsedDuration(startedAt: legTiming.startedAt)
     }
 
+    func latestEligibleTimingObservation(
+        before targetKey: NavigationTimingTargetKey,
+        orderedPointKeys: [IdentificationPointKey]
+    ) -> IdentificationPointKey? {
+        let endIndex: Int
+        switch targetKey.kind {
+        case .destination:
+            endIndex = orderedPointKeys.endIndex
+        case .identificationPoint:
+            guard let index = orderedPointKeys.firstIndex(where: {
+                $0.legID == targetKey.legID && $0.identificationPointID == targetKey.targetID
+            }) else { return nil }
+            endIndex = index
+        }
+        return orderedPointKeys[..<endIndex].last(where: {
+            $0.legID == targetKey.legID && identificationPointState(for: $0).isReached
+        })
+    }
+
     mutating func initializePilotETA(
         targetKey: NavigationTimingTargetKey,
         plannedElapsedSeconds: Int,
-        currentElapsedSeconds: Int = 0,
-        timingObservationKey: IdentificationPointKey? = nil
+        currentElapsedSeconds: Int = 0
     ) {
         guard plannedElapsedSeconds >= 0,
               canRevisePilotETA(targetKey: targetKey),
@@ -324,7 +353,7 @@ struct FlightSession: Equatable, Sendable {
             isEditing: true,
             isCheckResultVisible: false,
             validationError: nil,
-            timingObservationKey: timingObservationKey
+            checkDisclosures: []
         )
     }
 
@@ -392,10 +421,28 @@ struct FlightSession: Equatable, Sendable {
         pilotETAStatesByTargetKey[targetKey] = state
     }
 
-    mutating func showPilotETACheck(targetKey: NavigationTimingTargetKey) {
-        guard var state = pilotETAStatesByTargetKey[targetKey], state.committedSeconds != nil else { return }
+    @discardableResult
+    mutating func showPilotETACheck(
+        targetKey: NavigationTimingTargetKey,
+        observationKey: IdentificationPointKey,
+        plannedObservationElapsed: TimeInterval,
+        actualObservationElapsed: TimeInterval,
+        plannedTargetElapsed: TimeInterval
+    ) -> Bool {
+        guard var state = pilotETAStatesByTargetKey[targetKey],
+              state.committedSeconds != nil,
+              let exactReference = IdentificationPointTimingCalculator.referenceTargetElapsed(
+                plannedReachedElapsed: plannedObservationElapsed,
+                actualReachedElapsed: actualObservationElapsed,
+                plannedTargetElapsed: plannedTargetElapsed
+              ) else { return false }
+        state.checkDisclosures.append(.init(
+            observationKey: observationKey,
+            referenceSeconds: IdentificationPointTimingCalculator.displaySeconds(exactReference)
+        ))
         state.isCheckResultVisible = true
         pilotETAStatesByTargetKey[targetKey] = state
+        return true
     }
 
     mutating func hidePilotETACheck(targetKey: NavigationTimingTargetKey) {

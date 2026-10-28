@@ -172,13 +172,14 @@ template check could require structured design-reference/screenshot evidence,
 and CI could validate deterministic screenshot capture or numeric bounds; human
 visual approval remains an explicit owner decision.
 
-Do not delegate routine authority retrieval or repeat visual validation solely
-to obtain a second agent summary. When the environment supports it, prefer
-bounded, no-history delegation with a compact explicit handoff for independent
-tasks whose parallel value exceeds duplicated context and tool output. Verify
-the actual context-inheritance mechanism rather than assuming isolation, and
-avoid nested delegation unless independently justified. The implementing agent
-remains responsible for the state trace, direct design-reference/screenshot
+Keep implementation, test/build waiting, and required direct visual comparison
+in the implementing context. Delegate only a bounded independent task whose
+parallel value exceeds its coordination and context cost. When supported, use a
+no-history agent with a compact explicit handoff, verify that the mechanism is
+actually isolated, and avoid nested delegation unless independently justified.
+Wait once for completion with a long mailbox timeout that returns early on an
+agent update; wait again only if the agent is still running. The implementing
+agent remains responsible for the state trace, direct design-reference/screenshot
 comparison, and acceptance claims.
 
 ## 7. Deliver one ticket

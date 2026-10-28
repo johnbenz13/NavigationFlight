@@ -95,6 +95,19 @@ Use progressive verification during implementation.
 3. Fix detected issues before proceeding.
 4. Avoid repeatedly running the complete test suite without a reason.
 
+Keep the verification loop low-overhead:
+
+- Run the smallest relevant tests while iterating. Run each required broad suite
+  after the implementation is stable, and rerun it only after a relevant change
+  or failure.
+- For a long-running command, use the longest supported initial yield up to 60
+  seconds. If it continues in a background cell or session, let it run and use
+  one 30–60 second blocking wait; wait again only when the tool reports that it
+  is still running. One-second polling is not an acceptable default.
+- Keep successful test and build responses to status, counts, failures, and
+  paths to retained logs. Read detailed logs only when a failure or diagnosis
+  requires them.
+
 Before completing a checkpoint:
 
 - Run `git diff --check`.

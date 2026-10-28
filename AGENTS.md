@@ -121,6 +121,10 @@ Before declaring an issue complete, audit every acceptance criterion and post a
 GitHub comment mapping each criterion to concrete test, build, simulator, or
 review evidence.
 
+- A visual result may be reported as matched only when its evidence identifies
+  the exact authoritative Figma frame, component, variant, or design rule and
+  corresponding simulator screenshot. Missing, ambiguous, or uninspected
+  artifacts make the result unverified.
 - Agents may check objective criteria after the cited evidence passes.
 - Criteria requiring product, visual, or design judgment remain unchecked until
   the human owner explicitly approves them.

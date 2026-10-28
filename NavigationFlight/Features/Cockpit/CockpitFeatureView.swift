@@ -102,6 +102,7 @@ struct CockpitFeatureView: View {
                             state.adjustPilotETA(targetKey: targetID, by: delta)
                         },
                         onCommitPilotETA: { state.commitPilotETA(targetKey: $0) },
+                        onCancelPilotETA: { state.cancelPilotETAEditing(targetKey: $0) },
                         onEditPilotETA: { state.beginEditingPilotETA(targetKey: $0) },
                         onShowPilotETACheck: { state.showPilotETACheck(targetKey: $0) },
                         onHidePilotETACheck: { state.hidePilotETACheck(targetKey: $0) },

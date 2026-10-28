@@ -6,6 +6,11 @@ enum IdentificationPointTimingCalculator {
         return Int((Double(seconds) / 5).rounded(.toNearestOrAwayFromZero)) * 5
     }
 
+    nonisolated static func roundUpToFiveSeconds(_ seconds: Int) -> Int {
+        guard seconds > 0 else { return 0 }
+        return ((seconds + 4) / 5) * 5
+    }
+
     nonisolated static func referenceTargetElapsed(
         plannedReachedElapsed: TimeInterval?,
         actualReachedElapsed: TimeInterval?,

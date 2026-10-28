@@ -1732,6 +1732,71 @@ struct NavigationFlightTests {
         #expect(plan == 338)
     }
 
+    @Test func pilotETAMinimumUsesExactAndRoundedRunningTimerFloors() {
+        #expect(FlightSession.pilotETAMinimumSeconds(currentElapsedSeconds: 170) == 170)
+        #expect(FlightSession.pilotETAMinimumSeconds(currentElapsedSeconds: 172) == 175)
+    }
+
+    @Test func pilotETADecrementStopsAtCurrentRunningTimerFloor() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+
+        session.initializePilotETA(
+            targetKey: target,
+            plannedElapsedSeconds: 200,
+            currentElapsedSeconds: 172
+        )
+        for _ in 0..<20 {
+            session.adjustPilotETA(targetKey: target, by: -5, currentElapsedSeconds: 172)
+        }
+
+        #expect(session.pilotETAState(targetKey: target)?.draftSeconds == 175)
+    }
+
+    @Test func stalePilotETADraftReturnsTypedErrorAndRemainsOpenWithoutCommit() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        session.initializePilotETA(
+            targetKey: target,
+            plannedElapsedSeconds: 175,
+            currentElapsedSeconds: 170
+        )
+
+        let error = session.commitPilotETA(targetKey: target, currentElapsedSeconds: 176)
+
+        #expect(error == .staleDraft(minimumSeconds: 180))
+        #expect(session.pilotETAState(targetKey: target)?.isEditing == true)
+        #expect(session.pilotETAState(targetKey: target)?.validationError == error)
+        #expect(session.pilotETACommitHistory(targetKey: target).isEmpty)
+    }
+
+    @Test func repeatedPilotETACommitsRetainOrderedHistoryAndCancelPreservesIt() {
+        let legID = UUID()
+        let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
+        var session = FlightSession(
+            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        )
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 200)
+        session.commitPilotETA(targetKey: target)
+        session.beginEditingPilotETA(targetKey: target)
+        session.adjustPilotETA(targetKey: target, by: 5)
+        session.commitPilotETA(targetKey: target)
+        session.beginEditingPilotETA(targetKey: target)
+        session.adjustPilotETA(targetKey: target, by: 5)
+        session.cancelPilotETAEditing(targetKey: target)
+
+        #expect(session.pilotETACommitHistory(targetKey: target).map(\.seconds) == [200, 205])
+        #expect(session.committedPilotETA(targetKey: target) == 205)
+        #expect(session.pilotETAState(targetKey: target)?.draftSeconds == 205)
+        #expect(session.pilotETAState(targetKey: target)?.isEditing == false)
+    }
+
     @Test func destinationAndIdentificationTargetsUseTheSameCanonicalETAStateMachine() throws {
         let legID = UUID()
         let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())

@@ -755,7 +755,88 @@ struct NavigationFlightTests {
         #expect(summary.vorDme?.station == "SYN")
         #expect(summary.vorDme?.magneticRadialFromDegrees == 270)
         #expect(summary.vorDme?.slantRangeNauticalMiles == 12.4)
+        #expect(summary.targets.map(\.name) == ["IP1", flight.legs[0].arrival.name])
+        if case .passedWithoutReport = summary.targets[0].outcome {
+            // Expected: completing the leg retains no fabricated actual ETA for an unreported point.
+        } else {
+            Issue.record("Expected the unreported target to be passed without report")
+        }
+        #expect(summary.targets.allSatisfy { $0.referenceETADisclosures.isEmpty })
+        #expect(summary.headingHistory.baselineDegrees == 355)
+        #expect(summary.headingHistory.commits.isEmpty)
+        #expect(summary.headingHistory.operationalDegrees == 355)
         #expect(flight == originalFlight)
+    }
+
+    @Test func previousLegHistoryProjectsTargetsETACommitOrderDisclosuresAndHeadingCommits() throws {
+        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let start = Date(timeIntervalSince1970: 10_000)
+        var session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let map = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let points = map.identificationPoints
+        let first = try #require(points.first)
+        let reported = try #require(points.last)
+        let target = NavigationTimingTargetKey(
+            legID: reported.id.legID,
+            kind: .identificationPoint,
+            targetID: reported.id.identificationPointID
+        )
+
+        try session.startLeg(at: start)
+        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: reported.plannedElapsedSeconds)
+        session.adjustPilotETA(targetKey: target, by: 5)
+        session.commitPilotETA(targetKey: target)
+        session.beginEditingPilotETA(targetKey: target)
+        session.adjustPilotETA(targetKey: target, by: 5)
+        session.commitPilotETA(targetKey: target)
+        let didShowReference = session.showPilotETACheck(
+            targetKey: target,
+            observationKey: first.id,
+            plannedObservationElapsed: TimeInterval(first.plannedElapsedSeconds),
+            actualObservationElapsed: TimeInterval(first.plannedElapsedSeconds + 10),
+            plannedTargetElapsed: TimeInterval(reported.plannedElapsedSeconds)
+        )
+        #expect(didShowReference)
+        session.openPilotHeadingEditor(baselineDegrees: 355)
+        session.adjustPilotHeading(by: 2)
+        session.commitPilotHeading()
+        session.openPilotHeadingEditor(baselineDegrees: 355)
+        session.adjustPilotHeading(by: 3)
+        session.commitPilotHeading()
+        try session.reachIdentificationPoint(
+            key: reported.id,
+            orderedActiveLegPointKeys: points.map(\.id),
+            at: start.addingTimeInterval(TimeInterval(reported.plannedElapsedSeconds + 14))
+        )
+        try session.reachCurrentWaypoint(
+            at: start.addingTimeInterval(TimeInterval(map.plannedDurationSeconds + 8))
+        )
+
+        let summary = try #require(
+            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+        )
+        #expect(summary.targets.map(\.name) == points.map(\.name) + [flight.legs[0].arrival.name])
+        let initialRevision = IdentificationPointTimingCalculator.roundToNearestFiveSeconds(
+            reported.plannedElapsedSeconds
+        )
+        #expect(summary.targets.last(where: { $0.id == target })?.revisedETACommits == [
+            initialRevision + 5,
+            initialRevision + 10
+        ])
+        #expect(summary.targets.last(where: { $0.id == target })?.referenceETADisclosures.count == 1)
+        if case .reached(let actual, let difference) = summary.targets[0].outcome {
+            #expect(actual == reported.plannedElapsedSeconds + 14)
+            #expect(difference == actual - (initialRevision + 10))
+        } else {
+            Issue.record("Expected the reported target to retain actual ETA and signed difference")
+        }
+        #expect(summary.headingHistory.commits == [357, 360])
+        #expect(summary.headingHistory.operationalDegrees == 360)
     }
 
     @Test func previousLegSummaryUsesCompletedLegRevisedDestinationETAAsComparisonBasis() throws {

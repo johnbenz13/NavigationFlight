@@ -248,9 +248,6 @@ struct CockpitView: View {
                 isPresented: $isPreviousDrawerPresented,
                 onOpen: {
                     selectedMapCallout = nil
-                    if mapWidth < 900, checklistState?.presentationState == .expanded {
-                        onCollapseChecklist()
-                    }
                 }
             )
             LegStartChecklistOverlay(
@@ -259,12 +256,7 @@ struct CockpitView: View {
                 legStartedAt: session.legStartedAt,
                 isLandscape: isLandscape,
                 onCollapse: onCollapseChecklist,
-                onReopen: {
-                    if mapWidth < 900 {
-                        isPreviousDrawerPresented = false
-                    }
-                    onReopenChecklist()
-                },
+                onReopen: onReopenChecklist,
                 onNoted: onNoteChecklist
             )
         }
@@ -1322,19 +1314,27 @@ private struct LegStartChecklistOverlay: View {
                     )
                 } else {
                     Button(action: onReopen) {
-                        HStack(spacing: 7) {
+                        HStack(spacing: 8) {
                             if state.reviewState == .noted {
-                                Image(systemName: "checkmark.circle.fill")
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(Color(red: 0, green: 133 / 255, blue: 102 / 255))
                             }
                             Text(checklist.template.collapsedTitle)
-                                .font(.subheadline.weight(.bold))
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color(red: 77 / 255, green: 87 / 255, blue: 102 / 255))
                         }
                         .padding(.horizontal, 14)
-                        .frame(minHeight: 44)
+                        .frame(width: 254, height: 46)
                     }
                     .buttonStyle(.plain)
-                    .background(.regularMaterial, in: Capsule())
-                    .overlay { Capsule().stroke(.primary.opacity(0.18), lineWidth: 1) }
+                    .background(Color(red: 251 / 255, green: 252 / 255, blue: 1).opacity(0.96), in: Capsule())
+                    .overlay { Capsule().stroke(Color(red: 31 / 255, green: 41 / 255, blue: 56 / 255).opacity(0.2)) }
+                    .shadow(color: .black.opacity(0.14), radius: 6, y: 4)
                     .accessibilityLabel(state.reviewState == .noted
                         ? "Review noted start of leg checklist"
                         : "Open start of leg checklist")
@@ -1342,8 +1342,8 @@ private struct LegStartChecklistOverlay: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.trailing, isLandscape ? 20 : 24)
-            .padding(.bottom, 16)
+            .padding(.trailing, isLandscape ? 32 : 24)
+            .padding(.bottom, isLandscape ? 74 : 16)
         }
     }
 }
@@ -1656,20 +1656,39 @@ private struct PreviousLegDrawer: View {
                         onOpen()
                         withAnimation(.easeOut(duration: 0.2)) { isPresented = true }
                     } label: {
-                        VStack(spacing: 3) {
-                            Text("PREV").font(.caption2.weight(.bold))
-                            Text(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds))
-                                .font(.caption.weight(.semibold)).monospacedDigit()
+                        HStack(spacing: 6) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("PREVIOUS LEG")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color(red: 97 / 255, green: 110 / 255, blue: 125 / 255))
+                                Text("Leg \(summary.legIndex + 1) · \(summary.origin) → \(summary.destination)")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(Color(red: 10 / 255, green: 28 / 255, blue: 46 / 255))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                            }
+                            Spacer(minLength: 0)
+                            Image(systemName: "chevron.up")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(Color(red: 0, green: 107 / 255, blue: 199 / 255))
                         }
-                        .frame(width: 54, height: 58)
+                        .padding(.horizontal, 13)
+                        .frame(width: 236, height: 48)
                     }
                     .buttonStyle(.plain)
-                    .background(.regularMaterial, in: UnevenRoundedRectangle(bottomTrailingRadius: 10, topTrailingRadius: 10))
+                    .background(Color(red: 247 / 255, green: 250 / 255, blue: 252 / 255), in: RoundedRectangle(cornerRadius: 14))
+                    .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color(red: 194 / 255, green: 204 / 255, blue: 214 / 255)) }
+                    .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
                     .accessibilityIdentifier("previous-leg-tab")
                     .gesture(openGesture)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: .bottom
+            )
+            .padding(.bottom, isPresented ? 62 : 0)
         }
     }
 
@@ -1698,64 +1717,108 @@ private struct PreviousLegSummaryCard: View {
     private let style = AviationMapVisualStyle.default
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        ZStack(alignment: .topLeading) {
             HStack {
-                Text("PREVIOUS · LEG \(summary.legIndex + 1)")
-                    .font(.caption.weight(.bold))
+                Text("PREVIOUS LEG · LEG \(summary.legIndex + 1)")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(uiColor: style.previousLegAccentColor))
                 Spacer()
                 Button(action: onClose) {
-                    Image(systemName: "chevron.left").frame(width: 28, height: 28)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 20, weight: .regular))
+                        .frame(width: 24, height: 28)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close previous leg")
-            }
+            }.frame(width: 378, height: 28)
+                .offset(x: 24, y: 14)
             Text("\(summary.origin) → \(summary.destination)")
-                .font(.subheadline.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
-            Divider()
-            row("PLAN", duration(summary.plannedDurationSeconds))
-            if let revisedETA = summary.revisedETASeconds {
-                row("REVISED ETA", duration(revisedETA))
+                .font(.system(size: 23, weight: .semibold))
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(width: 340, height: 30, alignment: .leading)
+                .offset(x: 24, y: 48)
+            Rectangle()
+                .fill(.primary.opacity(0.14))
+                .frame(width: 372, height: 1)
+                .offset(x: 24, y: 88)
+            sectionLabel("TIMING")
+                .offset(x: 24, y: 108)
+            Text("Planned \(duration(summary.plannedDurationSeconds))     Actual \(duration(summary.actualDurationSeconds))     \(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds))")
+                .font(.system(size: 14))
+                .monospacedDigit()
+                .frame(width: 372, height: 20, alignment: .leading)
+                .offset(x: 24, y: 130)
+            sectionLabel("TARGET HISTORY")
+                .offset(x: 24, y: 170)
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(summary.targets) { target in
+                    targetHistory(target)
+                }
             }
-            row("ACTUAL", duration(summary.actualDurationSeconds))
-            row(summary.revisedETASeconds == nil ? "Δ PLAN" : "Δ ETA", CockpitPresentationFormatter.signedDuration(summary.deltaSeconds))
-            if let heading = summary.magneticHeadingDegrees {
-                row("HDG", CockpitPresentationFormatter.aviationDegrees(heading))
+            .frame(width: 205, height: 90, alignment: .topLeading)
+            .offset(x: 24, y: 192)
+            sectionLabel("HEADING HISTORY")
+                .offset(x: 244, y: 170)
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 8) {
+                    historyLine(
+                        CockpitPresentationFormatter.aviationDegrees(Double(summary.headingHistory.baselineDegrees)),
+                        detail: "planned"
+                    )
+                    ForEach(Array(summary.headingHistory.commits.enumerated()), id: \.offset) { _, degrees in
+                        historyLine(CockpitPresentationFormatter.aviationDegrees(Double(degrees)), detail: "revised")
+                    }
+                }
             }
-            row("COURSE", CockpitPresentationFormatter.aviationDegrees(summary.magneticCourseDegrees))
-            if let reference = summary.vorDme {
-                Divider()
-                Text("VOR/DME").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text(referenceText(reference))
-                    .font(.caption.weight(.semibold)).monospacedDigit()
-            }
+            .frame(width: 152, height: 90, alignment: .topLeading)
+            .offset(x: 244, y: 192)
+            Text("Review only · current leg continues unchanged")
+                .font(.system(size: 12))
+                .foregroundStyle(Color(red: 87 / 255, green: 94 / 255, blue: 107 / 255))
+                .frame(width: 340, height: 18, alignment: .leading)
+                .offset(x: 24, y: 302)
         }
-        .padding(14)
-        .frame(width: 272)
-        .background(.regularMaterial, in: UnevenRoundedRectangle(bottomTrailingRadius: 14, topTrailingRadius: 14))
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(Color(uiColor: style.previousLegAccentColor)).frame(width: 2)
-        }
+        .frame(width: 420, height: 336, alignment: .topLeading)
+        .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.16), radius: 10, y: 3)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("previous-leg-drawer")
     }
 
-    private func row(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).font(.subheadline.weight(.semibold)).monospacedDigit()
+    private func targetHistory(_ target: PreviousLegSummary.Target) -> some View {
+        HStack(spacing: 8) {
+            Text(target.name).fontWeight(.semibold)
+            switch target.outcome {
+            case .reached(let actualETASeconds, _):
+                Text("Reached \(duration(actualETASeconds))")
+            case .passedWithoutReport:
+                Text("Passed without report")
+            }
         }
+        .font(.system(size: 14))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(Color(red: 87 / 255, green: 94 / 255, blue: 107 / 255))
+            .frame(height: 16, alignment: .leading)
+    }
+
+    private func historyLine(_ value: String, detail: String) -> some View {
+        Text("\(value) · \(detail)")
+            .font(.system(size: 14))
+            .monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func duration(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 
-    private func referenceText(_ reference: PreviousLegSummary.VORDME) -> String {
-        let radial = Int(reference.magneticRadialFromDegrees.rounded())
-        let distance = reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))
-        return "\(reference.station) · R-\(String(format: "%03d", radial)) FROM · \(distance) NM"
-    }
 }
 
 private struct CockpitTimeMetric: View {

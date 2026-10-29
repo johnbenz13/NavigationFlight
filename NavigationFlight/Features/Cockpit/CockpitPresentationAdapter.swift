@@ -92,6 +92,27 @@ struct NextLegPreparation: Equatable, Sendable {
 }
 
 struct PreviousLegSummary: Equatable, Sendable {
+    struct Target: Identifiable, Equatable, Sendable {
+        enum Outcome: Equatable, Sendable {
+            case reached(actualETASeconds: Int, differenceSeconds: Int)
+            case passedWithoutReport
+        }
+
+        let id: NavigationTimingTargetKey
+        let name: String
+        let plannedETASeconds: Int
+        let revisedETACommits: [Int]
+        let referenceETADisclosures: [Int]
+        let outcome: Outcome
+    }
+
+    struct HeadingHistory: Equatable, Sendable {
+        let baselineDegrees: Int
+        let baselineLabel: String
+        let commits: [Int]
+        let operationalDegrees: Int
+    }
+
     struct VORDME: Equatable, Sendable {
         let station: String
         let magneticRadialFromDegrees: Double
@@ -108,6 +129,8 @@ struct PreviousLegSummary: Equatable, Sendable {
     let magneticHeadingDegrees: Double?
     let magneticCourseDegrees: Double
     let vorDme: VORDME?
+    let targets: [Target]
+    let headingHistory: HeadingHistory
 }
 
 struct LegStartChecklistTemplate: Equatable, Sendable {
@@ -395,6 +418,73 @@ struct CockpitPresentationAdapter: Sendable {
         )
         let revisedETA = session.committedPilotETA(targetKey: destinationTargetKey)
 
+        let annotationsByID = Dictionary(uniqueKeysWithValues: execution.annotations.map { ($0.entityID, $0) })
+        let identificationTargets = try flight.identificationPoints
+            .filter { $0.legID == timing.legID }
+            .enumerated()
+            .map { offset, point -> PreviousLegSummary.Target in
+                guard let annotation = annotationsByID[point.id],
+                      annotation.kind == .identificationPoint,
+                      annotation.legID == timing.legID else {
+                    throw CockpitPresentationError.missingSourceLeg(point.id)
+                }
+                let plannedETA: Int
+                switch session.executionMode {
+                case .noWind:
+                    plannedETA = annotation.noWindTimeFromLegStartSeconds
+                case .wind:
+                    guard let withWind = annotation.withWindTimeFromLegStartSeconds else {
+                        throw CockpitPresentationError.unavailableWindMode
+                    }
+                    plannedETA = withWind
+                }
+                let targetKey = NavigationTimingTargetKey(
+                    legID: timing.legID,
+                    kind: .identificationPoint,
+                    targetID: point.id
+                )
+                let etaState = session.pilotETAStatesByTargetKey[targetKey]
+                let expectation = etaState?.committedSeconds ?? plannedETA
+                let pointTiming = session.identificationPointTimings.first {
+                    $0.legID == timing.legID && $0.identificationPointID == point.id
+                }
+                let outcome: PreviousLegSummary.Target.Outcome
+                if let actual = pointTiming?.actualLegElapsedDuration(startedAt: timing.startedAt) {
+                    let actualSeconds = max(0, Int(actual.rounded()))
+                    outcome = .reached(
+                        actualETASeconds: actualSeconds,
+                        differenceSeconds: actualSeconds - expectation
+                    )
+                } else {
+                    outcome = .passedWithoutReport
+                }
+                return PreviousLegSummary.Target(
+                    id: targetKey,
+                    name: "IP\(offset + 1)",
+                    plannedETASeconds: plannedETA,
+                    revisedETACommits: etaState?.commits.map(\.seconds) ?? [],
+                    referenceETADisclosures: etaState?.checkDisclosures.map(\.referenceSeconds) ?? [],
+                    outcome: outcome
+                )
+            }
+        let destinationETAState = session.pilotETAStatesByTargetKey[destinationTargetKey]
+        let destinationTarget = PreviousLegSummary.Target(
+            id: destinationTargetKey,
+            name: sourceLeg.arrival.name,
+            plannedETASeconds: plannedDuration,
+            revisedETACommits: destinationETAState?.commits.map(\.seconds) ?? [],
+            referenceETADisclosures: destinationETAState?.checkDisclosures.map(\.referenceSeconds) ?? [],
+            outcome: .reached(
+                actualETASeconds: actualDuration,
+                differenceSeconds: actualDuration - (destinationETAState?.committedSeconds ?? plannedDuration)
+            )
+        )
+        let baselineDegrees = FlightSession.normalizedHeading(
+            Int((heading ?? resolvedLeg.magneticCourse.value).rounded())
+        )
+        let headingState = session.pilotHeadingStatesByLegID[timing.legID]
+        let headingCommits = headingState?.commits.map(\.degrees) ?? []
+
         let acceptedReferences = Dictionary(
             uniqueKeysWithValues: execution.vorDmeReferences.map { ($0.referenceID, $0) }
         )
@@ -420,7 +510,14 @@ struct CockpitPresentationAdapter: Sendable {
             deltaSeconds: actualDuration - (revisedETA ?? plannedDuration),
             magneticHeadingDegrees: heading,
             magneticCourseDegrees: resolvedLeg.magneticCourse.value,
-            vorDme: vorDme
+            vorDme: vorDme,
+            targets: identificationTargets + [destinationTarget],
+            headingHistory: PreviousLegSummary.HeadingHistory(
+                baselineDegrees: baselineDegrees,
+                baselineLabel: heading == nil ? "Imported course" : "Imported heading",
+                commits: headingCommits,
+                operationalDegrees: headingState?.operationalDegrees ?? baselineDegrees
+            )
         )
     }
 

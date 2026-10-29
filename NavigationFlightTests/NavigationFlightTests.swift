@@ -13,6 +13,65 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @Test(arguments: [
+        (-721, 359), (-360, 360), (-1, 359), (0, 360), (360, 360), (361, 1), (721, 1)
+    ])
+    func headingNormalization(input: Int, expected: Int) {
+        #expect(FlightSession.normalizedHeading(input) == expected)
+    }
+
+    @Test func pilotHeadingHistoryAndLegLifecycleAreScoped() throws {
+        let firstLegID = UUID()
+        let secondLegID = UUID()
+        let pointID = UUID()
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var session = FlightSession(
+            flightID: UUID(),
+            legIDs: [firstLegID, secondLegID],
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try session.startLeg(at: startedAt)
+
+        session.openPilotHeadingEditor(baselineDegrees: 81)
+        session.adjustPilotHeading(by: 4)
+        session.commitPilotHeading()
+        session.openPilotHeadingEditor(baselineDegrees: 81)
+        session.adjustPilotHeading(by: 2)
+        session.commitPilotHeading()
+        session.openPilotHeadingEditor(baselineDegrees: 81)
+        session.adjustPilotHeading(by: 2)
+
+        let pointKey = IdentificationPointKey(legID: firstLegID, identificationPointID: pointID)
+        try session.reachIdentificationPoint(
+            key: pointKey,
+            orderedActiveLegPointKeys: [pointKey],
+            at: startedAt.addingTimeInterval(60)
+        )
+        let afterPoint = try #require(session.pilotHeadingState(for: firstLegID))
+        #expect(afterPoint.commits.map(\.degrees) == [85, 87])
+        #expect(afterPoint.operationalDegrees == 87)
+        #expect(afterPoint.draftDegrees == 89)
+        #expect(afterPoint.isEditing)
+
+        try session.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [pointKey],
+            at: startedAt.addingTimeInterval(120)
+        )
+        let completed = try #require(session.pilotHeadingState(for: firstLegID))
+        #expect(completed.commits.map(\.degrees) == [85, 87])
+        #expect(completed.operationalDegrees == 87)
+        #expect(completed.draftDegrees == 87)
+        #expect(!completed.isEditing)
+        #expect(session.pilotHeadingState(for: secondLegID) == nil)
+
+        session.openPilotHeadingEditor(baselineDegrees: 143)
+        let successor = try #require(session.pilotHeadingState(for: secondLegID))
+        #expect(successor.baselineDegrees == 143)
+        #expect(successor.draftDegrees == 143)
+        #expect(successor.commits.isEmpty)
+    }
+
     @Test func representativeV5MapsIntoDomain() throws {
         let flight = try FPLNavDecoder().decode(try representativeData())
 

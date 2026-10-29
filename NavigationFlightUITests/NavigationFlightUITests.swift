@@ -176,6 +176,35 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPreviousLegHistoryExpandsWithoutChangingSuccessorOrTimer() throws {
+        let app = launchCockpit(planData: try twoLegPlanData())
+        XCTAssertFalse(app.buttons["previous-leg-tab"].exists)
+
+        app.buttons["start-leg"].tap()
+        app.buttons["reached-now"].tap()
+
+        let timer = app.descendants(matching: .any)["cockpit-time"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 2))
+        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        let previousLeg = app.buttons["previous-leg-tab"]
+        XCTAssertTrue(previousLeg.waitForExistence(timeout: 2))
+        previousLeg.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["previous-leg-drawer"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'PREVIOUS LEG · LEG 1'")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["TARGET HISTORY"].exists)
+        XCTAssertTrue(app.staticTexts["HEADING HISTORY"].exists)
+        XCTAssertTrue(app.staticTexts["Review only · current leg continues unchanged"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["leg-start-checklist"].exists)
+        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+
+        app.buttons["Close previous leg"].tap()
+        XCTAssertFalse(app.descendants(matching: .any)["previous-leg-drawer"].exists)
+        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        XCTAssertTrue(app.staticTexts["LEG 2 OF 2"].exists)
+    }
+
+    @MainActor
     func testIdentifyThenReachPreservesActiveTimingAndCompletesFinalLeg() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
 

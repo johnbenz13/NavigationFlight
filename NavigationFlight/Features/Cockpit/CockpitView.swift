@@ -248,9 +248,6 @@ struct CockpitView: View {
                 isPresented: $isPreviousDrawerPresented,
                 onOpen: {
                     selectedMapCallout = nil
-                    if mapWidth < 900, checklistState?.presentationState == .expanded {
-                        onCollapseChecklist()
-                    }
                 }
             )
             LegStartChecklistOverlay(
@@ -259,12 +256,7 @@ struct CockpitView: View {
                 legStartedAt: session.legStartedAt,
                 isLandscape: isLandscape,
                 onCollapse: onCollapseChecklist,
-                onReopen: {
-                    if mapWidth < 900 {
-                        isPreviousDrawerPresented = false
-                    }
-                    onReopenChecklist()
-                },
+                onReopen: onReopenChecklist,
                 onNoted: onNoteChecklist
             )
         }
@@ -1669,7 +1661,11 @@ private struct PreviousLegDrawer: View {
                     .gesture(openGesture)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: .infinity,
+                alignment: isPresented ? .center : .leading
+            )
         }
     }
 
@@ -1698,64 +1694,107 @@ private struct PreviousLegSummaryCard: View {
     private let style = AviationMapVisualStyle.default
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("PREVIOUS · LEG \(summary.legIndex + 1)")
+                Text("PREVIOUS LEG · LEG \(summary.legIndex + 1)")
                     .font(.caption.weight(.bold))
+                    .foregroundStyle(Color(uiColor: style.previousLegAccentColor))
                 Spacer()
                 Button(action: onClose) {
-                    Image(systemName: "chevron.left").frame(width: 28, height: 28)
+                    Image(systemName: "xmark").frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close previous leg")
             }
             Text("\(summary.origin) → \(summary.destination)")
-                .font(.subheadline.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
+                .font(.title3.weight(.semibold)).lineLimit(2).minimumScaleFactor(0.8)
             Divider()
-            row("PLAN", duration(summary.plannedDurationSeconds))
-            if let revisedETA = summary.revisedETASeconds {
-                row("REVISED ETA", duration(revisedETA))
+            ScrollView {
+                HStack(alignment: .top, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionLabel("TARGET HISTORY")
+                        ForEach(summary.targets) { target in
+                            targetHistory(target)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionLabel("HEADING HISTORY")
+                        historyLine(
+                            CockpitPresentationFormatter.aviationDegrees(
+                                Double(summary.headingHistory.baselineDegrees)
+                            ),
+                            detail: summary.headingHistory.baselineLabel.lowercased()
+                        )
+                        ForEach(Array(summary.headingHistory.commits.enumerated()), id: \.offset) { _, degrees in
+                            historyLine(
+                                CockpitPresentationFormatter.aviationDegrees(Double(degrees)),
+                                detail: "revised"
+                            )
+                        }
+                        historyLine(
+                            CockpitPresentationFormatter.aviationDegrees(
+                                Double(summary.headingHistory.operationalDegrees)
+                            ),
+                            detail: "final operational"
+                        )
+                    }
+                    .frame(width: 145, alignment: .leading)
+                }
             }
-            row("ACTUAL", duration(summary.actualDurationSeconds))
-            row(summary.revisedETASeconds == nil ? "Δ PLAN" : "Δ ETA", CockpitPresentationFormatter.signedDuration(summary.deltaSeconds))
-            if let heading = summary.magneticHeadingDegrees {
-                row("HDG", CockpitPresentationFormatter.aviationDegrees(heading))
-            }
-            row("COURSE", CockpitPresentationFormatter.aviationDegrees(summary.magneticCourseDegrees))
-            if let reference = summary.vorDme {
-                Divider()
-                Text("VOR/DME").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                Text(referenceText(reference))
-                    .font(.caption.weight(.semibold)).monospacedDigit()
-            }
+            .frame(maxHeight: 230)
+            Text("Review only · current leg continues unchanged")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
-        .padding(14)
-        .frame(width: 272)
-        .background(.regularMaterial, in: UnevenRoundedRectangle(bottomTrailingRadius: 14, topTrailingRadius: 14))
-        .overlay(alignment: .trailing) {
-            Rectangle().fill(Color(uiColor: style.previousLegAccentColor)).frame(width: 2)
-        }
+        .padding(20)
+        .frame(width: 420)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.16), radius: 10, y: 3)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("previous-leg-drawer")
     }
 
-    private func row(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).font(.subheadline.weight(.semibold)).monospacedDigit()
+    private func targetHistory(_ target: PreviousLegSummary.Target) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(target.name).font(.subheadline.weight(.semibold))
+            historyLine(duration(target.plannedETASeconds), detail: "planned")
+            ForEach(Array(target.revisedETACommits.enumerated()), id: \.offset) { _, eta in
+                historyLine(duration(eta), detail: "revised")
+            }
+            ForEach(Array(target.referenceETADisclosures.enumerated()), id: \.offset) { _, eta in
+                historyLine(duration(eta), detail: "reference requested")
+            }
+            switch target.outcome {
+            case .reached(let actualETASeconds, let differenceSeconds):
+                historyLine(
+                    duration(actualETASeconds),
+                    detail: "actual · \(CockpitPresentationFormatter.signedDuration(differenceSeconds))"
+                )
+            case .passedWithoutReport:
+                Text("Passed without report")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text).font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+    }
+
+    private func historyLine(_ value: String, detail: String) -> some View {
+        Text("\(value) · \(detail)")
+            .font(.caption)
+            .monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func duration(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 
-    private func referenceText(_ reference: PreviousLegSummary.VORDME) -> String {
-        let radial = Int(reference.magneticRadialFromDegrees.rounded())
-        let distance = reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))
-        return "\(reference.station) · R-\(String(format: "%03d", radial)) FROM · \(distance) NM"
-    }
 }
 
 private struct CockpitTimeMetric: View {

@@ -263,6 +263,22 @@ struct CockpitFeatureState: Equatable, Sendable {
         session?.hidePilotETACheck(targetKey: targetKey)
     }
 
+    mutating func openPilotHeadingEditor(baselineDegrees: Int) {
+        session?.openPilotHeadingEditor(baselineDegrees: baselineDegrees)
+    }
+
+    mutating func adjustPilotHeading(by deltaDegrees: Int) {
+        session?.adjustPilotHeading(by: deltaDegrees)
+    }
+
+    mutating func commitPilotHeading() {
+        session?.commitPilotHeading()
+    }
+
+    mutating func cancelPilotHeadingEditing() {
+        session?.cancelPilotHeadingEditing()
+    }
+
     private func currentLegElapsedSeconds(at timestamp: Date = .now) -> Int {
         session?.elapsedTime(at: timestamp).map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
     }

@@ -138,6 +138,20 @@ struct FlightSession: Equatable, Sendable {
         var latestCheckDisclosure: CheckDisclosure? { checkDisclosures.last }
     }
 
+    struct PilotHeadingState: Equatable, Sendable {
+        struct Commit: Equatable, Sendable {
+            let degrees: Int
+        }
+
+        let baselineDegrees: Int
+        var draftDegrees: Int
+        var commits: [Commit]
+        var isEditing: Bool
+
+        var committedDegrees: Int? { commits.last?.degrees }
+        var operationalDegrees: Int { committedDegrees ?? baselineDegrees }
+    }
+
     enum PilotETAError: Error, Equatable, Sendable {
         case staleDraft(minimumSeconds: Int)
     }
@@ -151,6 +165,7 @@ struct FlightSession: Equatable, Sendable {
     private(set) var legTimings: [LegTiming]
     private(set) var identificationPointTimings: [IdentificationPointTiming]
     private(set) var pilotETAStatesByTargetKey: [NavigationTimingTargetKey: PilotETAState]
+    private(set) var pilotHeadingStatesByLegID: [UUID: PilotHeadingState]
 
     var legStartedAt: Date? {
         legTimings.first { $0.legIndex == activeLegIndex }?.startedAt
@@ -177,6 +192,7 @@ struct FlightSession: Equatable, Sendable {
         self.legTimings = []
         self.identificationPointTimings = []
         self.pilotETAStatesByTargetKey = [:]
+        self.pilotHeadingStatesByLegID = [:]
     }
 
     mutating func selectReadyLeg(index: Int, mode: NavigationMode) throws {
@@ -467,6 +483,63 @@ struct FlightSession: Equatable, Sendable {
         IdentificationPointTimingCalculator.roundUpToFiveSeconds(max(0, currentElapsedSeconds))
     }
 
+    static func normalizedHeading(_ degrees: Int) -> Int {
+        let remainder = degrees % 360
+        return remainder > 0 ? remainder : remainder + 360
+    }
+
+    mutating func openPilotHeadingEditor(baselineDegrees: Int) {
+        guard legState == .active else { return }
+        let legID = legIDs[activeLegIndex]
+        if var state = pilotHeadingStatesByLegID[legID] {
+            state.draftDegrees = state.operationalDegrees
+            state.isEditing = true
+            pilotHeadingStatesByLegID[legID] = state
+        } else {
+            let baseline = Self.normalizedHeading(baselineDegrees)
+            pilotHeadingStatesByLegID[legID] = PilotHeadingState(
+                baselineDegrees: baseline,
+                draftDegrees: baseline,
+                commits: [],
+                isEditing: true
+            )
+        }
+    }
+
+    mutating func adjustPilotHeading(by deltaDegrees: Int) {
+        guard legState == .active else { return }
+        let legID = legIDs[activeLegIndex]
+        guard var state = pilotHeadingStatesByLegID[legID], state.isEditing else { return }
+        state.draftDegrees = Self.normalizedHeading(state.draftDegrees + deltaDegrees)
+        pilotHeadingStatesByLegID[legID] = state
+    }
+
+    mutating func commitPilotHeading() {
+        guard legState == .active else { return }
+        let legID = legIDs[activeLegIndex]
+        guard var state = pilotHeadingStatesByLegID[legID], state.isEditing else { return }
+        state.commits.append(.init(degrees: state.draftDegrees))
+        state.isEditing = false
+        pilotHeadingStatesByLegID[legID] = state
+    }
+
+    mutating func cancelPilotHeadingEditing() {
+        guard legState == .active else { return }
+        let legID = legIDs[activeLegIndex]
+        guard var state = pilotHeadingStatesByLegID[legID], state.isEditing else { return }
+        if state.commits.isEmpty {
+            pilotHeadingStatesByLegID.removeValue(forKey: legID)
+        } else {
+            state.draftDegrees = state.operationalDegrees
+            state.isEditing = false
+            pilotHeadingStatesByLegID[legID] = state
+        }
+    }
+
+    func pilotHeadingState(for legID: UUID) -> PilotHeadingState? {
+        pilotHeadingStatesByLegID[legID]
+    }
+
     private func canRevisePilotETA(targetKey: NavigationTimingTargetKey) -> Bool {
         guard targetKey.kind == .identificationPoint else {
             return legTimings.first(where: { $0.legID == targetKey.legID })?.reachedAt == nil
@@ -536,6 +609,12 @@ struct FlightSession: Equatable, Sendable {
         )
         identificationPointTimings = nextIdentificationPointTimings
         pilotETAStatesByTargetKey = nextETAStates
+
+        if var headingState = pilotHeadingStatesByLegID[activeLegID] {
+            headingState.draftDegrees = headingState.operationalDegrees
+            headingState.isEditing = false
+            pilotHeadingStatesByLegID[activeLegID] = headingState
+        }
 
         guard activeLegIndex + 1 < legIDs.count else {
             legState = .completed

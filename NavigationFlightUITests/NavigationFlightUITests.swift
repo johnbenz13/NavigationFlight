@@ -133,6 +133,35 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPilotCanCommitAndReopenMagneticHeading() throws {
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repository = sourceFile.deletingLastPathComponent().deletingLastPathComponent()
+        let fixture = repository.appending(path: "NavigationFlightTests/Fixtures/FPLNav/V7/Editor/editor-wind.fplnav")
+        let app = launchCockpit(planData: try Data(contentsOf: fixture))
+
+        app.buttons["start-leg"].tap()
+        let heading = app.buttons["cockpit-heading"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 2))
+        XCTAssertTrue(heading.label.contains("PLANNED HEADING"))
+        XCTAssertTrue(heading.label.contains("magnetic"))
+        heading.tap()
+
+        XCTAssertTrue(app.staticTexts["REVISED HEADING · MAGNETIC"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("033°"))
+        app.buttons["increase-heading"].tap()
+        app.buttons["increase-heading"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("035°"))
+        app.buttons["commit-heading"].tap()
+
+        XCTAssertFalse(app.staticTexts["REVISED HEADING · MAGNETIC"].exists)
+        XCTAssertTrue(heading.label.contains("Pilot-revised · magnetic"))
+        XCTAssertTrue(heading.label.contains("035°"))
+        heading.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("035°"))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Committed 035°'")).firstMatch.exists)
+    }
+
+    @MainActor
     func testDirectReachAutomaticallyStartsSuccessor() throws {
         let app = launchCockpit(planData: try twoLegPlanData())
 

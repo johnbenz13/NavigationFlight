@@ -109,6 +109,10 @@ struct CockpitFeatureView: View {
                             state.showPilotETACheck(targetKey: $0, mapPresentation: mapPresentation)
                         },
                         onHidePilotETACheck: { state.hidePilotETACheck(targetKey: $0) },
+                        onOpenPilotHeading: { baseline in state.openPilotHeadingEditor(baselineDegrees: baseline) },
+                        onAdjustPilotHeading: { state.adjustPilotHeading(by: $0) },
+                        onCommitPilotHeading: { state.commitPilotHeading() },
+                        onCancelPilotHeading: { state.cancelPilotHeadingEditing() },
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },

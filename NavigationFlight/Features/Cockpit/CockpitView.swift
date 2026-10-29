@@ -127,6 +127,10 @@ struct CockpitView: View {
     let onEditPilotETA: (NavigationTimingTargetKey) -> Void
     let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
     let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
+    var onOpenPilotHeading: (Int) -> Void = { _ in }
+    var onAdjustPilotHeading: (Int) -> Void = { _ in }
+    var onCommitPilotHeading: () -> Void = {}
+    var onCancelPilotHeading: () -> Void = {}
     let onCollapseChecklist: () -> Void
     let onReopenChecklist: () -> Void
     let onNoteChecklist: () -> Void
@@ -143,6 +147,7 @@ struct CockpitView: View {
     @State private var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset] = [:]
     @State private var vorDMECalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
     @State private var identificationPointReportError: FlightSession.TransitionError?
+    @State private var showsHeadingCommitConfirmation = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -163,6 +168,28 @@ struct CockpitView: View {
             }
         }
         .background(Color(.systemBackground))
+        .overlay {
+            ZStack {
+                if let headingState = activeHeadingState, headingState.isEditing {
+                    headingEditor(state: headingState)
+                }
+                if showsHeadingCommitConfirmation,
+                   let committed = activeHeadingState?.committedDegrees {
+                    VStack {
+                        Spacer()
+                        Label("Revised Heading \(Self.heading(committed)) is now operational", systemImage: "checkmark")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color(.systemGreen))
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 14)
+                            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: .black.opacity(0.16), radius: 8, y: 3)
+                            .padding(.bottom, 24)
+                            .accessibilityIdentifier("heading-commit-confirmation")
+                    }
+                }
+            }
+        }
         .alert("Charts Unavailable", isPresented: $showsChartsUnavailable) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -172,6 +199,7 @@ struct CockpitView: View {
             isNextPreparationPresented = false
             isPreviousDrawerPresented = false
             selectedMapCallout = nil
+            showsHeadingCommitConfirmation = false
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -405,13 +433,130 @@ struct CockpitView: View {
     }
 
     private var readyHeadingMetric: some View {
-        readyInstrumentCard(
-            title: data.magneticHeadingDegrees == nil ? "PLANNED COURSE" : "PLANNED HEADING",
-            value: CockpitPresentationFormatter.aviationDegrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees),
-            detail: data.magneticHeadingDegrees == nil ? "No-wind course · magnetic" : "Planned-wind heading · magnetic",
-            valueColor: Color(uiColor: visualStyle.currentLegAccentColor),
-            accessibilityIdentifier: "cockpit-heading"
+        Button {
+            showsHeadingCommitConfirmation = false
+            onOpenPilotHeading(importedHeadingDegrees)
+        } label: {
+            readyInstrumentCard(
+                title: activeHeadingState?.committedDegrees == nil
+                    ? (data.magneticHeadingDegrees == nil ? "PLANNED COURSE" : "PLANNED HEADING")
+                    : "REVISED HEADING",
+                value: Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees),
+                detail: activeHeadingState?.committedDegrees == nil
+                    ? (activeHeadingState?.isEditing == true
+                        ? "Operational until Commit"
+                        : (data.magneticHeadingDegrees == nil ? "No-wind course · magnetic" : "Planned-wind heading · magnetic"))
+                    : "Baseline \(Self.heading(activeHeadingState?.baselineDegrees ?? importedHeadingDegrees)) · magnetic",
+                valueColor: Color(uiColor: visualStyle.currentLegAccentColor),
+                accessibilityIdentifier: "cockpit-heading",
+                highlighted: true,
+                highlightColor: activeHeadingState?.committedDegrees == nil ? Color(.systemBlue) : Color(.systemGreen)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(session.legState != .active)
+        .accessibilityLabel(
+            activeHeadingState?.committedDegrees == nil
+                ? "\(data.magneticHeadingDegrees == nil ? "PLANNED COURSE" : "PLANNED HEADING"), \(Self.heading(importedHeadingDegrees)), \(data.magneticHeadingDegrees == nil ? "No-wind course · magnetic" : "Planned-wind heading · magnetic")"
+                : "REVISED HEADING, \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees)), Pilot-revised · magnetic"
         )
+        .accessibilityHint(session.legState == .active ? "Opens the magnetic heading editor" : "Available while the leg is active")
+        .accessibilityIdentifier("cockpit-heading")
+    }
+
+    private var activeHeadingState: FlightSession.PilotHeadingState? {
+        guard session.legIDs.indices.contains(session.activeLegIndex) else { return nil }
+        return session.pilotHeadingState(for: session.legIDs[session.activeLegIndex])
+    }
+
+    private var importedHeadingDegrees: Int {
+        Int((data.magneticHeadingDegrees ?? data.magneticCourseDegrees).rounded())
+    }
+
+    private func headingEditor(state: FlightSession.PilotHeadingState) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("REVISED HEADING · MAGNETIC")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.blue)
+            Text(state.commits.isEmpty ? "Set pilot-calculated heading" : "Revise current segment heading")
+                .font(.headline)
+            Divider()
+            Text("IMPORTED BASELINE")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Text(state.commits.isEmpty
+                    ? "\(data.magneticHeadingDegrees == nil ? "No-wind magnetic course" : "Planned magnetic heading") · \(Self.heading(state.baselineDegrees))"
+                    : "Current revised \(Self.heading(state.operationalDegrees)) · baseline \(Self.heading(state.baselineDegrees))")
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 4)
+                if state.draftDegrees != state.operationalDegrees {
+                    Text("NOT COMMITTED")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Color(.systemOrange))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemOrange).opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            Text("DRAFT HEADING")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.blue)
+            HStack {
+                headingAdjustmentButton(title: "−1°", delta: -1)
+                Spacer()
+                Text(Self.heading(state.draftDegrees))
+                    .font(.title.weight(.bold))
+                    .monospacedDigit()
+                    .accessibilityIdentifier("heading-draft")
+                Spacer()
+                headingAdjustmentButton(title: "+1°", delta: 1)
+            }
+            .padding()
+            .background(Color(.systemBlue).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+            HStack {
+                Button("Cancel", action: onCancelPilotHeading)
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+                Button("Commit Heading") {
+                    onCommitPilotHeading()
+                    showsHeadingCommitConfirmation = true
+                }
+                    .buttonStyle(.borderedProminent)
+                    .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier("commit-heading")
+            }
+            Text("Pilot-calculated · no Check or recommendation")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if !state.commits.isEmpty {
+                Divider()
+                Text("THIS SEGMENT")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Text("Committed \(state.commits.map { Self.heading($0.degrees) }.joined(separator: " → "))")
+                    .font(.caption)
+            }
+        }
+        .padding(20)
+        .frame(width: 370)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 20))
+        .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color(.separator)) }
+        .shadow(color: .black.opacity(0.2), radius: 12, y: 5)
+    }
+
+    private func headingAdjustmentButton(title: String, delta: Int) -> some View {
+        Button(title) { onAdjustPilotHeading(delta) }
+            .font(.headline)
+            .frame(minWidth: 64, minHeight: 44)
+            .accessibilityLabel(delta < 0 ? "Decrease magnetic heading by one degree" : "Increase magnetic heading by one degree")
+            .accessibilityIdentifier(delta < 0 ? "decrease-heading" : "increase-heading")
+    }
+
+    private static func heading(_ degrees: Int) -> String {
+        String(format: "%03d°", FlightSession.normalizedHeading(degrees))
     }
 
     private var readyTimerMetric: some View {
@@ -451,7 +596,8 @@ struct CockpitView: View {
         detail: String,
         valueColor: Color,
         accessibilityIdentifier: String,
-        highlighted: Bool = false
+        highlighted: Bool = false,
+        highlightColor: Color = Color(.systemTeal)
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title)
@@ -471,17 +617,18 @@ struct CockpitView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
                 .minimumScaleFactor(0.75)
+                .id(detail)
         }
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .padding(10)
         .background(
-            highlighted ? Color(.systemTeal).opacity(0.12) : Color(.secondarySystemBackground),
+            highlighted ? highlightColor.opacity(0.12) : Color(.secondarySystemBackground),
             in: RoundedRectangle(cornerRadius: 14)
         )
         .overlay {
             if highlighted {
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color(.systemTeal).opacity(0.75), lineWidth: 2)
+                    .stroke(highlightColor.opacity(0.75), lineWidth: 2)
             }
         }
         .accessibilityElement(children: .combine)
@@ -671,12 +818,21 @@ struct CockpitView: View {
     }
 
     private var headingMetric: some View {
-        VStack(spacing: 3) {
-            Text(data.magneticHeadingDegrees == nil ? "COURSE · MAGNETIC" : "HEADING · MAGNETIC")
+        Button {
+            showsHeadingCommitConfirmation = false
+            onOpenPilotHeading(importedHeadingDegrees)
+        } label: {
+            VStack(spacing: 3) {
+            Text(activeHeadingState?.committedDegrees == nil
+                ? (data.magneticHeadingDegrees == nil ? "COURSE · MAGNETIC" : "HEADING · MAGNETIC")
+                : "REVISED HEADING · MAGNETIC")
                 .font(.caption.weight(.semibold)).tracking(0.8).foregroundStyle(.secondary)
-            Text(CockpitPresentationFormatter.aviationDegrees(data.magneticHeadingDegrees ?? data.magneticCourseDegrees))
+            Text(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees))
                 .font(.system(size: 30, weight: .semibold, design: .rounded)).monospacedDigit().lineLimit(1)
-            if data.magneticHeadingDegrees == nil {
+            if let state = activeHeadingState, state.committedDegrees != nil {
+                Text("Baseline \(Self.heading(state.baselineDegrees)) · pilot-revised")
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+            } else if data.magneticHeadingDegrees == nil {
                 Text("Saved course · No planned heading")
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
             } else {
@@ -684,7 +840,15 @@ struct CockpitView: View {
                     .font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
             }
         }
-        .frame(maxWidth: .infinity).accessibilityElement(children: .combine).accessibilityIdentifier("cockpit-heading")
+        .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .disabled(session.legState != .active)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(activeHeadingState?.committedDegrees == nil
+            ? "Planned magnetic heading, \(Self.heading(importedHeadingDegrees))"
+            : "Pilot-revised magnetic heading, \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees))")
+        .accessibilityIdentifier("cockpit-heading")
     }
 
     private var timeMetric: some View {

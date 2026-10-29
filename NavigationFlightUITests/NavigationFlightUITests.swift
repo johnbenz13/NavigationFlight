@@ -116,6 +116,23 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testDriftLineVisibilityPersistsAcrossPlanInspection() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        let toggle = app.buttons["toggle-drift-lines"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 2))
+        XCTAssertEqual(toggle.label, "Hide drift lines, manual calculation aid")
+
+        toggle.tap()
+        XCTAssertEqual(toggle.label, "Show drift lines, manual calculation aid")
+        app.buttons["show-plan-inspection"].tap()
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 2))
+        app.buttons["open-cockpit"].tap()
+
+        XCTAssertTrue(toggle.waitForExistence(timeout: 2))
+        XCTAssertEqual(toggle.label, "Show drift lines, manual calculation aid")
+    }
+
+    @MainActor
     func testDirectReachAutomaticallyStartsSuccessor() throws {
         let app = launchCockpit(planData: try twoLegPlanData())
 

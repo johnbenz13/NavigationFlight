@@ -87,6 +87,7 @@ struct CockpitFeatureView: View {
                         legStartChecklist: legStartChecklist,
                         checklistState: state.activeLegStartChecklist,
                         session: session,
+                        areDriftLinesVisible: state.areDriftLinesVisible,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
@@ -111,6 +112,7 @@ struct CockpitFeatureView: View {
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },
+                        onToggleDriftLines: { state.toggleDriftLines() },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
                 }

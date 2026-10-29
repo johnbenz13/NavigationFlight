@@ -52,6 +52,7 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var mode = NavigationMode.noWind
     private(set) var session: FlightSession?
     private(set) var legStartChecklists: [UUID: LegStartChecklistState] = [:]
+    private(set) var areDriftLinesVisible = true
 
     init(progressionPolicy: FlightSession.ProgressionPolicy = .automaticNextLeg) {
         self.progressionPolicy = progressionPolicy
@@ -91,7 +92,12 @@ struct CockpitFeatureState: Equatable, Sendable {
                 progressionPolicy: progressionPolicy
             )
             legStartChecklists = [:]
+            areDriftLinesVisible = true
         }
+    }
+
+    mutating func toggleDriftLines() {
+        areDriftLinesVisible.toggle()
     }
 
     mutating func selectPreviousLeg() {

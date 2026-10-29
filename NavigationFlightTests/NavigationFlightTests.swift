@@ -1658,6 +1658,93 @@ struct NavigationFlightTests {
         ) == 150)
     }
 
+    @Test func driftReferenceGeometryUsesConfiguredAngleAndResolvedEndpoints() throws {
+        let from = AviationMapCoordinate(latitude: 32.0, longitude: 34.0)
+        let to = AviationMapCoordinate(latitude: 32.1, longitude: 34.2)
+        let shallow = AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: 5)
+        let configured = AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: 10)
+
+        #expect(configured.count == 2)
+        #expect(configured[0].from == from)
+        #expect(configured[1].from == to)
+        #expect(configured[0].to != configured[1].to)
+        #expect(configured[0].to != shallow[0].to)
+
+        let midpoint = AviationMapCoordinate(
+            latitude: (from.latitude + to.latitude) / 2,
+            longitude: (from.longitude + to.longitude) / 2
+        )
+        let trackEast = to.longitude - from.longitude
+        let trackNorth = to.latitude - from.latitude
+        let departureSide = trackEast * (configured[0].to.latitude - midpoint.latitude)
+            - trackNorth * (configured[0].to.longitude - midpoint.longitude)
+        let arrivalSide = trackEast * (configured[1].to.latitude - midpoint.latitude)
+            - trackNorth * (configured[1].to.longitude - midpoint.longitude)
+        #expect(departureSide * arrivalSide < 0)
+
+        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
+        let session = FlightSession(
+            flightID: flight.id,
+            legIDs: flight.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        let presentation = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: session
+        )
+        let activeLeg = try #require(presentation.activeLeg)
+        let expected = AviationMapGeometry.driftReferenceArms(
+            from: activeLeg.from,
+            to: activeLeg.to,
+            angleDegrees: flight.parameters.driftAngle.value
+        )
+        #expect(presentation.driftReferenceArms == expected)
+    }
+
+    @Test func driftVisibilityIsCurrentFlightPresentationState() throws {
+        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        #expect(state.areDriftLinesVisible)
+
+        state.toggleDriftLines()
+        #expect(!state.areDriftLinesVisible)
+        try state.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_100))
+        #expect(!state.areDriftLinesVisible)
+
+        try state.accept(flight)
+        #expect(state.areDriftLinesVisible)
+    }
+
+    @Test func timingAndReachChangesDoNotAlterActiveLegDriftGeometry() throws {
+        let flight = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 2_000)
+        try state.startLeg(at: start)
+        let initial = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        let target = initial.currentETATarget
+        state.openPilotETAEditor(target: target)
+        state.adjustPilotETA(targetKey: target.id, by: 15)
+        state.commitPilotETA(targetKey: target.id)
+        try state.reachIdentificationPoint(
+            key: initial.identificationPoints[0].id,
+            mapPresentation: initial,
+            at: start.addingTimeInterval(60)
+        )
+        let changed = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+
+        #expect(changed.driftReferenceArms == initial.driftReferenceArms)
+    }
+
     @Test func identificationPointTimingDeltaAndTargetProgressionAreDeterministic() throws {
         let pointA = UUID()
         let pointB = UUID()
@@ -1674,7 +1761,8 @@ struct NavigationFlightTests {
             waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
             endpointReferences: [], plannedDurationSeconds: 338, minuteMarkers: [],
             identificationPoints: points,
-            destinationTarget: .init(id: destinationKey, name: "Destination", plannedElapsedSeconds: 338, committedETASeconds: nil)
+            destinationTarget: .init(id: destinationKey, name: "Destination", plannedElapsedSeconds: 338, committedETASeconds: nil),
+            driftReferenceArms: []
         )
 
         #expect(presentation.nextETATarget(after: pointAKey)?.id.targetID == pointB)
@@ -1685,7 +1773,8 @@ struct NavigationFlightTests {
             waypoints: [], legs: [], activeLegIndex: 0, nextLegPreview: nil,
             endpointReferences: [], plannedDurationSeconds: 338, minuteMarkers: [],
             identificationPoints: completedPoints,
-            destinationTarget: presentation.destinationTarget
+            destinationTarget: presentation.destinationTarget,
+            driftReferenceArms: []
         )
         #expect(completedPresentation.nextETATarget(after: pointAKey)?.id == destinationKey)
         #expect(completedPresentation.nextETATarget(after: pointBKey)?.id == destinationKey)
@@ -1984,7 +2073,8 @@ struct NavigationFlightTests {
             destinationTarget: .init(
                 id: .init(legID: legID, kind: .destination, targetID: UUID()),
                 name: "Destination", plannedElapsedSeconds: 256, committedETASeconds: nil
-            )
+            ),
+            driftReferenceArms: []
         )
 
         #expect(presentation.nextETATarget(after: first)?.id == expected)

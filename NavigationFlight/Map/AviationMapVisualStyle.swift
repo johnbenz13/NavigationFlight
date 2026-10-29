@@ -37,6 +37,9 @@ struct AviationMapVisualStyle {
     let cockpitProgressionActionForegroundColor = UIColor.white
     var activeLegColor: UIColor { currentLegAccentColor }
     let activeLegWidth: CGFloat = 6
+    let driftReferenceColor = UIColor.systemOrange
+    let driftReferenceOpacity: CGFloat = 0.60
+    let driftReferenceWidth: CGFloat = 3
 
     let destinationWaypointRadius: CGFloat = 17
     let destinationWaypointFillColor = UIColor.systemBackground

@@ -77,25 +77,26 @@ private extension AviationMapPresentation {
                 name: "Destination",
                 plannedElapsedSeconds: 382,
                 committedETASeconds: nil
-            )
+            ),
+            driftReferenceArms: AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: 10)
         )
     }()
 }
 
 #Preview("11-inch iPad Portrait · Wind", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, areDriftLinesVisible: true, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onToggleDriftLines: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Portrait · No Wind · Hebrew", traits: .fixedLayout(width: 834, height: 1210)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: true, hebrew: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, areDriftLinesVisible: true, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onToggleDriftLines: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Missing Optional Data", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: nil, populated: false), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, areDriftLinesVisible: true, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onToggleDriftLines: {}, onShowPlanInspection: {})
 }
 
 #Preview("11-inch iPad Landscape · Dark", traits: .fixedLayout(width: 1210, height: 834)) {
-    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onShowPlanInspection: {})
+    CockpitView(data: .cockpitPreview(heading: 74, populated: true), mapPresentation: .preview, nextLegPreparation: nil, previousLegSummary: nil, legStartChecklist: nil, checklistState: nil, session: .preview, areDriftLinesVisible: true, onStartLeg: {}, onIdentifyDestination: {}, onWaypointReached: {}, onIdentificationPointReached: { _, _ in }, onOpenPilotETA: { _ in }, onAdjustPilotETA: { _, _ in }, onCommitPilotETA: { _ in }, onCancelPilotETA: { _ in }, onEditPilotETA: { _ in }, onShowPilotETACheck: { _ in }, onHidePilotETACheck: { _ in }, onCollapseChecklist: {}, onReopenChecklist: {}, onNoteChecklist: {}, onToggleDriftLines: {}, onShowPlanInspection: {})
         .preferredColorScheme(.dark)
 }
 #endif
@@ -114,6 +115,7 @@ struct CockpitView: View {
     let legStartChecklist: LegStartChecklistPresentation?
     let checklistState: CockpitFeatureState.LegStartChecklistState?
     let session: FlightSession
+    let areDriftLinesVisible: Bool
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: () -> Void
@@ -128,6 +130,7 @@ struct CockpitView: View {
     let onCollapseChecklist: () -> Void
     let onReopenChecklist: () -> Void
     let onNoteChecklist: () -> Void
+    let onToggleDriftLines: () -> Void
     let onShowPlanInspection: () -> Void
     @State private var showsChartsUnavailable = false
     @State private var mapFocusRequest = AviationMapFocusRequest(mode: .leg)
@@ -181,6 +184,7 @@ struct CockpitView: View {
                 OfflineAviationMapView(
                 presentation: mapPresentation,
                 legState: session.legState,
+                showsDriftReferenceArms: areDriftLinesVisible,
                 focusRequest: mapFocusRequest,
                 etaCalloutOffset: destinationCalloutOffset,
                 vorDMECalloutOffset: destinationVORDMECalloutOffset,
@@ -202,6 +206,7 @@ struct CockpitView: View {
                 .accessibilityIdentifier("aviation-map")
             }
             mapControls
+            driftLinesControl
             legHeader
             NextLegPreparationOverlay(
                 preparation: session.destinationIdentifiedAt == nil ? nil : nextLegPreparation,
@@ -288,6 +293,31 @@ struct CockpitView: View {
         .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         .padding(.top, 96).padding(.trailing, 20)
+    }
+
+    private var driftLinesControl: some View {
+        Button(action: onToggleDriftLines) {
+            Label(
+                areDriftLinesVisible ? "Drift lines on" : "Drift lines off",
+                systemImage: "wind"
+            )
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(areDriftLinesVisible ? .primary : .secondary)
+            .frame(width: 150, height: 40)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(
+            areDriftLinesVisible
+                ? "Hide drift lines, manual calculation aid"
+                : "Show drift lines, manual calculation aid"
+        )
+        .accessibilityHint("Does not show the aircraft’s actual track.")
+        .accessibilityIdentifier("toggle-drift-lines")
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.top, 96)
+        .padding(.leading, 20)
     }
 
     private func mapFocusButton(

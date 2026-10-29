@@ -39,6 +39,7 @@ struct BundledAviationMapResourceProvider: AviationMapResourceProviding {
 struct OfflineAviationMapView: UIViewRepresentable {
     let presentation: AviationMapPresentation
     let legState: FlightSession.LegState
+    let showsDriftReferenceArms: Bool
     let focusRequest: AviationMapFocusRequest
     let resources: any AviationMapResourceProviding
     let visualStyle: AviationMapVisualStyle
@@ -62,6 +63,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     init(
         presentation: AviationMapPresentation,
         legState: FlightSession.LegState,
+        showsDriftReferenceArms: Bool,
         focusRequest: AviationMapFocusRequest,
         resources: any AviationMapResourceProviding = BundledAviationMapResourceProvider(),
         visualStyle: AviationMapVisualStyle = .default,
@@ -84,6 +86,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     ) {
         self.presentation = presentation
         self.legState = legState
+        self.showsDriftReferenceArms = showsDriftReferenceArms
         self.focusRequest = focusRequest
         self.resources = resources
         self.visualStyle = visualStyle
@@ -109,6 +112,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         Coordinator(
             presentation: presentation,
             legState: legState,
+            showsDriftReferenceArms: showsDriftReferenceArms,
             focusRequest: focusRequest,
             chartURL: resources.chartURL(),
             visualStyle: visualStyle,
@@ -166,6 +170,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         context.coordinator.update(
             presentation: presentation,
             legState: legState,
+            showsDriftReferenceArms: showsDriftReferenceArms,
             identificationContext: identificationContext,
             timingTargetContext: timingTargetContext,
             focusRequest: focusRequest,
@@ -180,6 +185,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             static let routeSource = "planned-route-source"
             static let routeLayer = "planned-route-layer"
             static let activeLayer = "active-leg-layer"
+            static let driftReferenceSource = "drift-reference-source"
+            static let driftReferenceLayer = "drift-reference-layer"
             static let previewSource = "next-leg-preview-source"
             static let previewLayer = "next-leg-preview-layer"
             static let waypointSource = "route-waypoint-source"
@@ -191,6 +198,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         private var presentation: AviationMapPresentation
         private var legState: FlightSession.LegState
+        private var showsDriftReferenceArms: Bool
         private var identificationContext: AviationMapIdentificationContext?
         private var timingTargetContext: AviationMapTimingTargetContext?
         private var lastFocusRequest: AviationMapFocusRequest
@@ -220,6 +228,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         init(
             presentation: AviationMapPresentation,
             legState: FlightSession.LegState,
+            showsDriftReferenceArms: Bool,
             focusRequest: AviationMapFocusRequest,
             chartURL: URL?,
             visualStyle: AviationMapVisualStyle,
@@ -243,6 +252,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         ) {
             self.presentation = presentation
             self.legState = legState
+            self.showsDriftReferenceArms = showsDriftReferenceArms
             self.identificationContext = identificationContext
             self.timingTargetContext = timingTargetContext
             self.lastFocusRequest = focusRequest
@@ -291,6 +301,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
             addChart(to: style)
             addRoute(to: style)
+            addDriftReferences(to: style)
             addWaypoints(to: style)
             addMinuteMarks(to: style)
             updateEndpointAnnotations(on: mapView)
@@ -455,6 +466,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         func update(
             presentation: AviationMapPresentation,
             legState: FlightSession.LegState,
+            showsDriftReferenceArms: Bool,
             identificationContext: AviationMapIdentificationContext?,
             timingTargetContext: AviationMapTimingTargetContext?,
             focusRequest: AviationMapFocusRequest,
@@ -464,10 +476,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
+            let driftVisibilityChanged = self.showsDriftReferenceArms != showsDriftReferenceArms
             let identificationContextChanged = self.identificationContext != identificationContext
             let timingTargetContextChanged = self.timingTargetContext != timingTargetContext
             self.presentation = presentation
             self.legState = legState
+            self.showsDriftReferenceArms = showsDriftReferenceArms
             self.identificationContext = identificationContext
             self.timingTargetContext = timingTargetContext
             if activeLegChanged {
@@ -481,6 +495,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
             if presentationChanged, let style = mapView.style {
                 updateShapes(in: style)
+            }
+            if driftVisibilityChanged, let layer = mapView.style?.layer(withIdentifier: Identifier.driftReferenceLayer) as? MLNLineStyleLayer {
+                layer.isVisible = showsDriftReferenceArms
             }
             if presentationChanged || legStateChanged || identificationContextChanged || timingTargetContextChanged {
                 updateEndpointAnnotations(on: mapView)
@@ -576,6 +593,23 @@ struct OfflineAviationMapView: UIViewRepresentable {
             style.addLayer(points)
         }
 
+        private func addDriftReferences(to style: MLNStyle) {
+            let source = MLNShapeSource(
+                identifier: Identifier.driftReferenceSource,
+                shape: driftReferenceShape(),
+                options: nil
+            )
+            style.addSource(source)
+            let layer = MLNLineStyleLayer(identifier: Identifier.driftReferenceLayer, source: source)
+            layer.lineColor = NSExpression(forConstantValue: visualStyle.driftReferenceColor)
+            layer.lineOpacity = NSExpression(forConstantValue: visualStyle.driftReferenceOpacity)
+            layer.lineWidth = NSExpression(forConstantValue: visualStyle.driftReferenceWidth)
+            layer.lineDashPattern = NSExpression(forConstantValue: [2, 2])
+            layer.lineCap = NSExpression(forConstantValue: "round")
+            layer.isVisible = showsDriftReferenceArms
+            style.addLayer(layer)
+        }
+
         private func addMinuteMarks(to style: MLNStyle) {
             let source = MLNShapeSource(
                 identifier: Identifier.minuteMarkSource,
@@ -606,6 +640,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             (style.source(withIdentifier: Identifier.previewSource) as? MLNShapeSource)?.shape = previewShape()
             (style.source(withIdentifier: Identifier.waypointSource) as? MLNShapeSource)?.shape = waypointShape()
             (style.source(withIdentifier: Identifier.minuteMarkSource) as? MLNShapeSource)?.shape = minuteMarkShape()
+            (style.source(withIdentifier: Identifier.driftReferenceSource) as? MLNShapeSource)?.shape = driftReferenceShape()
             (style.layer(withIdentifier: Identifier.activeLayer) as? MLNLineStyleLayer)?.predicate =
                 NSPredicate(format: "legIndex == %d", presentation.activeLegIndex)
         }
@@ -631,6 +666,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 let feature = MLNPointFeature()
                 feature.coordinate = coordinate(waypoint.coordinate)
                 return feature
+            })
+        }
+
+        private func driftReferenceShape() -> MLNShapeCollectionFeature {
+            MLNShapeCollectionFeature(shapes: presentation.driftReferenceArms.map { arm in
+                lineFeature(from: arm.from, to: arm.to, attributes: [:])
             })
         }
 

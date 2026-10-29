@@ -31,6 +31,11 @@ struct AviationMapLeg: Identifiable, Equatable, Sendable {
     let to: AviationMapCoordinate
 }
 
+struct AviationMapDriftReferenceArm: Equatable, Sendable {
+    let from: AviationMapCoordinate
+    let to: AviationMapCoordinate
+}
+
 struct AviationMapVORDMEReference: Identifiable, Equatable, Sendable {
     let id: UUID
     let waypointID: UUID
@@ -170,6 +175,7 @@ struct AviationMapPresentation: Equatable, Sendable {
     let minuteMarkers: [AviationMapMinuteMarker]
     let identificationPoints: [AviationMapIdentificationPoint]
     let destinationTarget: AviationMapETATarget
+    let driftReferenceArms: [AviationMapDriftReferenceArm]
 
     var activeLeg: AviationMapLeg? {
         legs.first { $0.index == activeLegIndex }
@@ -385,6 +391,11 @@ struct AviationMapPresentationFactory {
                     kind: .destination,
                     targetID: activeSourceLeg.arrival.id
                 ))
+            ),
+            driftReferenceArms: AviationMapGeometry.driftReferenceArms(
+                from: coordinate(activeSourceLeg.departure.position),
+                to: coordinate(activeSourceLeg.arrival.position),
+                angleDegrees: flight.parameters.driftAngle.value
             )
         )
     }
@@ -434,6 +445,37 @@ enum AviationMapSymbology {
 }
 
 enum AviationMapGeometry {
+    static func driftReferenceArms(
+        from: AviationMapCoordinate,
+        to: AviationMapCoordinate,
+        angleDegrees: Double
+    ) -> [AviationMapDriftReferenceArm] {
+        guard angleDegrees.isFinite, angleDegrees >= 0, angleDegrees < 90 else { return [] }
+
+        let midpointLatitude = (from.latitude + to.latitude) / 2
+        let longitudeScale = max(cos(midpointLatitude * .pi / 180), 0.2)
+        let east = (to.longitude - from.longitude) * longitudeScale
+        let north = to.latitude - from.latitude
+        let length = hypot(east, north)
+        guard length > .leastNonzeroMagnitude else { return [] }
+
+        let rightEast = north / length
+        let rightNorth = -east / length
+        let lateralOffset = length * 0.5 * tan(angleDegrees * .pi / 180)
+        let departureReferenceEnd = AviationMapCoordinate(
+            latitude: midpointLatitude + rightNorth * lateralOffset,
+            longitude: (from.longitude + to.longitude) / 2 + rightEast * lateralOffset / longitudeScale
+        )
+        let arrivalReferenceEnd = AviationMapCoordinate(
+            latitude: midpointLatitude - rightNorth * lateralOffset,
+            longitude: (from.longitude + to.longitude) / 2 - rightEast * lateralOffset / longitudeScale
+        )
+        return [
+            AviationMapDriftReferenceArm(from: from, to: departureReferenceEnd),
+            AviationMapDriftReferenceArm(from: to, to: arrivalReferenceEnd)
+        ]
+    }
+
     static func bearing(
         from: AviationMapCoordinate,
         to: AviationMapCoordinate

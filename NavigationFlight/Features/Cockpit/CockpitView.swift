@@ -18,6 +18,8 @@ private struct ReachUndoBanner: View {
             Spacer(minLength: 12)
             Button("Undo · 00:\(remainingSeconds, format: .number.precision(.integerLength(2)))", action: onUndo)
                 .foregroundStyle(Color(red: 89 / 255, green: 178 / 255, blue: 1))
+                .accessibilityLabel("Undo reach report")
+                .accessibilityValue("\(remainingSeconds) seconds remaining")
                 .accessibilityIdentifier("undo-reach")
         }
         .font(.subheadline.weight(.semibold))
@@ -26,7 +28,7 @@ private struct ReachUndoBanner: View {
         .background(Color(red: 14 / 255, green: 17 / 255, blue: 22 / 255), in: RoundedRectangle(cornerRadius: 14))
         .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator)) }
         .padding(20)
-        .accessibilityLabel("\(label). Undo available for \(remainingSeconds) seconds")
+        .accessibilityElement(children: .contain)
     }
 }
 

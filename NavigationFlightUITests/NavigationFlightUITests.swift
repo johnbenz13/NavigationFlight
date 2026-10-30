@@ -183,9 +183,12 @@ final class NavigationFlightUITests: XCTestCase {
 
         let banner = app.staticTexts["reach-undo-banner"]
         XCTAssertTrue(banner.waitForExistence(timeout: 2))
-        XCTAssertTrue(banner.label.contains("reached"))
+        XCTAssertEqual(banner.label, "Final arrival reached")
         let undo = app.buttons["undo-reach"]
         XCTAssertTrue(undo.exists)
+        XCTAssertEqual(undo.label, "Undo reach report")
+        let undoValue = undo.value as? String
+        XCTAssertTrue(undoValue == "20 seconds remaining" || undoValue == "19 seconds remaining")
         undo.tap()
 
         let legStatus = app.descendants(matching: .any)["leg-status"]

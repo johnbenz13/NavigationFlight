@@ -176,6 +176,26 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testWaypointReachUndoRestoresActiveLeg() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        app.buttons["start-leg"].tap()
+        app.buttons["reached-now"].tap()
+
+        let banner = app.staticTexts["reach-undo-banner"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 2))
+        XCTAssertTrue(banner.label.contains("reached"))
+        let undo = app.buttons["undo-reach"]
+        XCTAssertTrue(undo.exists)
+        undo.tap()
+
+        let legStatus = app.descendants(matching: .any)["leg-status"]
+        expectation(for: NSPredicate(format: "label CONTAINS 'ACTIVE'"), evaluatedWith: legStatus)
+        waitForExpectations(timeout: 2)
+        XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
+        XCTAssertFalse(banner.exists)
+    }
+
+    @MainActor
     func testPreviousLegHistoryExpandsWithoutChangingSuccessorOrTimer() throws {
         let app = launchCockpit(planData: try twoLegPlanData())
         XCTAssertFalse(app.buttons["previous-leg-tab"].exists)
@@ -198,8 +218,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["leg-start-checklist"].exists)
         XCTAssertTrue(timer.label.contains("Running from pilot start"))
 
-        app.buttons["Close previous leg"].tap()
-        XCTAssertFalse(app.descendants(matching: .any)["previous-leg-drawer"].exists)
+        let drawer = app.descendants(matching: .any)["previous-leg-drawer"]
+        XCTAssertTrue(app.buttons["undo-reach"].exists)
+        drawer.swipeLeft()
+        XCTAssertFalse(drawer.exists)
         XCTAssertTrue(timer.label.contains("Running from pilot start"))
         XCTAssertTrue(app.staticTexts["LEG 2 OF 2"].exists)
     }

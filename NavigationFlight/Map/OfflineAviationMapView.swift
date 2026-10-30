@@ -348,7 +348,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     longitude: mapView.centerCoordinate.longitude
                 ),
                 zoomLevel: mapView.zoomLevel,
-                direction: mapView.direction
+                direction: mapView.direction,
+                pitch: mapView.camera.pitch
             )
             DispatchQueue.main.async { [weak self, weak mapView] in
                 guard let self, let mapView else { return }
@@ -1030,12 +1031,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         private func restore(_ camera: AviationMapCameraState, on mapView: MLNMapView) {
-            mapView.setCenter(
-                coordinate(camera.center),
-                zoomLevel: camera.zoomLevel,
-                direction: camera.direction,
-                animated: false
-            )
+            let restoredCamera = mapView.camera
+            restoredCamera.centerCoordinate = coordinate(camera.center)
+            restoredCamera.heading = camera.direction
+            restoredCamera.pitch = camera.pitch
+            mapView.setCamera(restoredCamera, withDuration: 0, animationTimingFunction: nil)
+            mapView.setZoomLevel(camera.zoomLevel, animated: false)
         }
 
         private func lineFeature(

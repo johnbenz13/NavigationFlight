@@ -88,16 +88,21 @@ struct CockpitFeatureView: View {
                         checklistState: state.activeLegStartChecklist,
                         session: session,
                         areDriftLinesVisible: state.areDriftLinesVisible,
+                        pendingReachUndo: state.pendingReachUndo,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
-                        onWaypointReached: { try? state.reachCurrentWaypoint(at: .now) },
-                        onIdentificationPointReached: { pointID, mapPresentation in
+                        onWaypointReached: { restoration in
+                            try? state.reachCurrentWaypoint(cockpitRestoration: restoration, at: .now)
+                        },
+                        onIdentificationPointReached: { pointID, mapPresentation, restoration in
                             try state.reachIdentificationPoint(
                                 key: pointID,
                                 mapPresentation: mapPresentation,
+                                cockpitRestoration: restoration,
                                 at: .now
                             )
                         },
+                        onUndoReach: { state.undoMostRecentReach(at: $0) },
                         onOpenPilotETA: { state.openPilotETAEditor(target: $0) },
                         onAdjustPilotETA: { targetID, delta in
                             state.adjustPilotETA(targetKey: targetID, by: delta)

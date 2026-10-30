@@ -9,6 +9,7 @@ struct AviationMapCameraState: Equatable, Sendable {
     let center: AviationMapCoordinate
     let zoomLevel: Double
     let direction: Double
+    let pitch: Double
 }
 
 struct AviationMapWaypoint: Identifiable, Equatable, Sendable {

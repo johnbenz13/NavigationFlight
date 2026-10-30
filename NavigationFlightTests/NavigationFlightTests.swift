@@ -1798,6 +1798,102 @@ struct NavigationFlightTests {
         ) == 150)
     }
 
+    @Test func identificationPointReachUndoRestoresCompleteAtomicSnapshot() throws {
+        let flight = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 70_000)
+        try state.startLeg(at: start)
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        let etaTarget = map.destinationTarget
+        state.openPilotETAEditor(target: etaTarget)
+        state.adjustPilotETA(targetKey: etaTarget.id, by: 15)
+        state.openPilotHeadingEditor(baselineDegrees: 81)
+        state.adjustPilotHeading(by: 4)
+        state.commitPilotHeading()
+        let expectedSession = try #require(state.session)
+        let restoration = CockpitRestoration(
+            camera: AviationMapCameraState(
+                center: .init(latitude: 32.1, longitude: 34.8),
+                zoomLevel: 10.5,
+                direction: 123,
+                pitch: 37
+            ),
+            isCameraUserControlled: true,
+            selectedCallout: .identificationPoint(map.identificationPoints[1].id),
+            focusRequest: AviationMapFocusRequest(mode: .overview)
+        )
+
+        try state.reachIdentificationPoint(
+            key: map.identificationPoints[1].id,
+            mapPresentation: map,
+            cockpitRestoration: restoration,
+            at: start.addingTimeInterval(150)
+        )
+        #expect(state.session?.identificationPointState(for: map.identificationPoints[0].id) == .passedWithoutReport)
+
+        let restored = state.undoMostRecentReach(at: start.addingTimeInterval(169))
+        #expect(restored == restoration)
+        #expect(state.session == expectedSession)
+        #expect(state.session?.identificationPointState(for: map.identificationPoints[0].id) == .future)
+        #expect(state.session?.identificationPointState(for: map.identificationPoints[1].id) == .future)
+        #expect(state.pendingReachUndo == nil)
+    }
+
+    @Test func reachUndoUsesStrictWallClockDeadlineAndPassiveActionsPreserveIt() throws {
+        let flight = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 80_000)
+        try state.startLeg(at: start)
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        try state.reachIdentificationPoint(
+            key: map.identificationPoints[0].id,
+            mapPresentation: map,
+            at: start.addingTimeInterval(10)
+        )
+        let pending = try #require(state.pendingReachUndo)
+
+        state.toggleDriftLines()
+        state.collapseLegStartChecklist()
+        #expect(state.pendingReachUndo == pending)
+        #expect(state.availableReachUndo(at: start.addingTimeInterval(29.999)) != nil)
+        #expect(state.availableReachUndo(at: start.addingTimeInterval(30)) == nil)
+        #expect(state.undoMostRecentReach(at: start.addingTimeInterval(30)) == nil)
+    }
+
+    @Test func rejectedReachPreservesUndoWhileSuccessfulFlightStateCommitInvalidatesIt() throws {
+        let flight = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 90_000)
+        try state.startLeg(at: start)
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        let point = map.identificationPoints[0]
+        try state.reachIdentificationPoint(key: point.id, mapPresentation: map, at: start.addingTimeInterval(10))
+        let beforeRejected = state
+
+        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(point.id.identificationPointID)) {
+            try state.reachIdentificationPoint(key: point.id, mapPresentation: map, at: start.addingTimeInterval(11))
+        }
+        #expect(state == beforeRejected)
+
+        let target = map.destinationTarget
+        state.openPilotETAEditor(target: target)
+        state.adjustPilotETA(targetKey: target.id, by: 15)
+        state.commitPilotETA(targetKey: target.id)
+        #expect(state.pendingReachUndo == nil)
+    }
+
     @Test func driftReferenceGeometryUsesConfiguredAngleAndResolvedEndpoints() throws {
         let from = AviationMapCoordinate(latitude: 32.0, longitude: 34.0)
         let to = AviationMapCoordinate(latitude: 32.1, longitude: 34.2)

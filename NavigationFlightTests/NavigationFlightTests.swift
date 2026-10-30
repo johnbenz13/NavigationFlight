@@ -1894,6 +1894,141 @@ struct NavigationFlightTests {
         #expect(state.pendingReachUndo == nil)
     }
 
+    @Test(arguments: [
+        FlightSession.ProgressionPolicy.automaticNextLeg,
+        FlightSession.ProgressionPolicy.manualNextLeg
+    ])
+    func arrivalReachUndoRestoresAtomicSnapshotAcrossProgressionPolicies(
+        progressionPolicy: FlightSession.ProgressionPolicy
+    ) throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState(progressionPolicy: progressionPolicy)
+        try state.accept(flight)
+        let start = Date(timeIntervalSince1970: 100_000)
+        let arrival = start.addingTimeInterval(300)
+        try state.startLeg(at: start)
+        state.noteLegStartChecklist()
+
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        state.openPilotETAEditor(target: map.destinationTarget)
+        state.adjustPilotETA(targetKey: map.destinationTarget.id, by: 15)
+        state.commitPilotETA(targetKey: map.destinationTarget.id)
+        state.openPilotHeadingEditor(baselineDegrees: 81)
+        state.adjustPilotHeading(by: 6)
+        state.commitPilotHeading()
+
+        let expectedSession = try #require(state.session)
+        let expectedChecklists = state.legStartChecklists
+        let restoration = CockpitRestoration(
+            camera: AviationMapCameraState(
+                center: .init(latitude: 32.31, longitude: 34.87),
+                zoomLevel: 11.25,
+                direction: 147,
+                pitch: 28
+            ),
+            isCameraUserControlled: true,
+            selectedCallout: .timingTarget(map.destinationTarget.id),
+            focusRequest: AviationMapFocusRequest(mode: .waypoint)
+        )
+
+        try state.reachCurrentWaypoint(cockpitRestoration: restoration, at: arrival)
+
+        let progressed = try #require(state.session)
+        #expect(state.pendingReachUndo?.kind.label == "Leg 1 arrival reached")
+        #expect(progressed.activeLegIndex == 1)
+        #expect(state.selectedLegIndex == 1)
+        switch progressionPolicy {
+        case .automaticNextLeg:
+            #expect(progressed.legState == .active)
+            #expect(progressed.legStartedAt == arrival)
+            #expect(state.activeLegStartChecklist != nil)
+        case .manualNextLeg:
+            #expect(progressed.legState == .ready)
+            #expect(progressed.legStartedAt == nil)
+            #expect(state.activeLegStartChecklist == nil)
+        }
+
+        let restored = state.undoMostRecentReach(at: arrival.addingTimeInterval(19))
+
+        #expect(restored == restoration)
+        #expect(state.session == expectedSession)
+        #expect(state.legStartChecklists == expectedChecklists)
+        #expect(state.selectedLegIndex == 0)
+        #expect(state.session?.legState == .active)
+        #expect(state.session?.legStartedAt == start)
+        #expect(state.session?.elapsedTime(at: arrival.addingTimeInterval(19)) == 319)
+        #expect(state.pendingReachUndo == nil)
+    }
+
+    @Test func finalNavigationCompletionUndoRestoresActiveFinalLeg() throws {
+        let flight = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(flight)
+        let firstStart = Date(timeIntervalSince1970: 110_000)
+        let finalStart = firstStart.addingTimeInterval(200)
+        try state.startLeg(at: firstStart)
+        try state.reachCurrentWaypoint(at: finalStart)
+        state.commitPilotHeading()
+        let finalMap = try AviationMapPresentationFactory().makePresentation(
+            flight: flight,
+            session: try #require(state.session)
+        )
+        state.openPilotETAEditor(target: finalMap.destinationTarget)
+        state.adjustPilotETA(targetKey: finalMap.destinationTarget.id, by: 10)
+        let expectedSession = try #require(state.session)
+        let expectedChecklists = state.legStartChecklists
+        let restoration = CockpitRestoration(
+            camera: AviationMapCameraState(
+                center: .init(latitude: 32.4, longitude: 34.9),
+                zoomLevel: 10,
+                direction: 93,
+                pitch: 0
+            ),
+            isCameraUserControlled: true,
+            selectedCallout: .timingTarget(finalMap.destinationTarget.id),
+            focusRequest: AviationMapFocusRequest(mode: .waypoint)
+        )
+        let finalArrival = finalStart.addingTimeInterval(240)
+
+        try state.reachCurrentWaypoint(cockpitRestoration: restoration, at: finalArrival)
+        #expect(state.pendingReachUndo?.kind.label == "Final arrival reached")
+        #expect(state.session?.legState == .completed)
+        #expect(state.session?.activeLegIndex == 1)
+
+        #expect(state.undoMostRecentReach(at: finalArrival.addingTimeInterval(10)) == restoration)
+        #expect(state.session == expectedSession)
+        #expect(state.legStartChecklists == expectedChecklists)
+        #expect(state.selectedLegIndex == 1)
+        #expect(state.session?.legState == .active)
+        #expect(state.session?.legStartedAt == finalStart)
+    }
+
+    @Test func arrivalUndoExpiresAcrossBackgroundTimeAndLaterSuccessorActivityInvalidatesIt() throws {
+        let flight = try twoLegFlight()
+        let start = Date(timeIntervalSince1970: 120_000)
+        let arrival = start.addingTimeInterval(300)
+
+        var automatic = CockpitFeatureState()
+        try automatic.accept(flight)
+        try automatic.startLeg(at: start)
+        try automatic.reachCurrentWaypoint(at: arrival)
+        #expect(automatic.availableReachUndo(at: arrival.addingTimeInterval(19.999)) != nil)
+        #expect(automatic.availableReachUndo(at: arrival.addingTimeInterval(20)) == nil)
+        #expect(automatic.undoMostRecentReach(at: arrival.addingTimeInterval(45)) == nil)
+
+        var manual = CockpitFeatureState(progressionPolicy: .manualNextLeg)
+        try manual.accept(flight)
+        try manual.startLeg(at: start)
+        try manual.reachCurrentWaypoint(at: arrival)
+        #expect(manual.pendingReachUndo != nil)
+        try manual.startLeg(at: arrival.addingTimeInterval(5))
+        #expect(manual.pendingReachUndo == nil)
+        #expect(manual.undoMostRecentReach(at: arrival.addingTimeInterval(6)) == nil)
+    }
+
     @Test func driftReferenceGeometryUsesConfiguredAngleAndResolvedEndpoints() throws {
         let from = AviationMapCoordinate(latitude: 32.0, longitude: 34.0)
         let to = AviationMapCoordinate(latitude: 32.1, longitude: 34.2)

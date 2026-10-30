@@ -27,12 +27,13 @@ struct CockpitFeatureState: Equatable, Sendable {
     struct PendingReachUndo: Equatable, Sendable {
         enum Kind: Equatable, Sendable {
             case identificationPoint(String)
-            case destination(String)
+            case destination(legNumber: Int, isFinalLeg: Bool)
 
             var label: String {
                 switch self {
                 case .identificationPoint(let name): "\(name) reached"
-                case .destination(let name): "\(name) reached"
+                case .destination(let legNumber, let isFinalLeg):
+                    isFinalLeg ? "Final arrival reached" : "Leg \(legNumber) arrival reached"
                 }
             }
         }
@@ -185,7 +186,10 @@ struct CockpitFeatureState: Equatable, Sendable {
             createPendingLegStartChecklistForActiveLeg()
         }
         pendingReachUndo = PendingReachUndo(
-            kind: .destination(mapPresentation.destinationTarget.name),
+            kind: .destination(
+                legNumber: restorationLegIndex + 1,
+                isFinalLeg: restorationLegIndex == nextSession.legIDs.count - 1
+            ),
             expiresAt: timestamp.addingTimeInterval(20),
             session: restorationSession,
             legStartChecklists: restorationChecklists,

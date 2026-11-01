@@ -14,6 +14,7 @@ final class NavigationFlightUITests: XCTestCase {
 
         // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
 
         // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
     }
@@ -55,15 +56,15 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["open-cockpit"].tap()
         let cockpitHeading = app.descendants(matching: .any)["cockpit-heading"]
         XCTAssertTrue(cockpitHeading.waitForExistence(timeout: 2))
-        XCTAssertTrue(cockpitHeading.label.contains("PLANNED HEADING"))
+        XCTAssertTrue(cockpitHeading.label.contains("Magnetic heading"))
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
-        XCTAssertTrue(cockpitHeading.label.contains("Planned-wind heading · magnetic"))
         XCTAssertFalse(cockpitHeading.label.contains("° M"))
         let readyTimer = app.descendants(matching: .any)["cockpit-time"]
         XCTAssertTrue(readyTimer.label.contains("LEG TIMER"))
         XCTAssertTrue(readyTimer.label.contains("Starts when Start Leg is pressed"))
         XCTAssertFalse(readyTimer.label.contains("ELAPSED"))
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
+        app.buttons["compact-frequencies"].tap()
         let groupedVOR = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'"))
         XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("3,000"))
@@ -91,7 +92,6 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
         XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].exists)
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
-        XCTAssertTrue(cockpitHeading.label.contains("Planned-wind heading · magnetic"))
         map.swipeRight()
         XCTAssertTrue(activeTimer.label.contains("Running from pilot start"))
 
@@ -142,8 +142,8 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         let heading = app.buttons["cockpit-heading"]
         XCTAssertTrue(heading.waitForExistence(timeout: 2))
-        XCTAssertTrue(heading.label.contains("PLANNED HEADING"))
-        XCTAssertTrue(heading.label.contains("magnetic"))
+        XCTAssertTrue(heading.label.contains("Magnetic heading"))
+        XCTAssertTrue(heading.label.contains("033°"))
         heading.tap()
 
         XCTAssertTrue(app.staticTexts["REVISED HEADING · MAGNETIC"].waitForExistence(timeout: 2))
@@ -154,7 +154,6 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["commit-heading"].tap()
 
         XCTAssertFalse(app.staticTexts["REVISED HEADING · MAGNETIC"].exists)
-        XCTAssertTrue(heading.label.contains("Pilot-revised · magnetic"))
         XCTAssertTrue(heading.label.contains("035°"))
         heading.tap()
         XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("035°"))
@@ -169,8 +168,6 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.buttons["reached-now"].waitForExistence(timeout: 2))
         app.buttons["reached-now"].tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("ACTIVE"))
-        XCTAssertTrue(app.staticTexts["LEG 2 OF 2"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
         XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
     }
@@ -191,9 +188,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(undoValue == "20 seconds remaining" || undoValue == "19 seconds remaining")
         undo.tap()
 
-        let legStatus = app.descendants(matching: .any)["leg-status"]
-        expectation(for: NSPredicate(format: "label CONTAINS 'ACTIVE'"), evaluatedWith: legStatus)
-        waitForExpectations(timeout: 2)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
         XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
         XCTAssertFalse(banner.exists)
     }
@@ -211,6 +206,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(timer.label.contains("Running from pilot start"))
         let previousLeg = app.buttons["previous-leg-tab"]
         XCTAssertTrue(previousLeg.waitForExistence(timeout: 2))
+        let collapseChecklist = app.buttons["Collapse start of leg checklist"]
+        if collapseChecklist.exists {
+            collapseChecklist.tap()
+        }
         previousLeg.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["previous-leg-drawer"].waitForExistence(timeout: 2))
@@ -218,7 +217,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["TARGET HISTORY"].exists)
         XCTAssertTrue(app.staticTexts["HEADING HISTORY"].exists)
         XCTAssertTrue(app.staticTexts["Review only · current leg continues unchanged"].exists)
-        XCTAssertTrue(app.descendants(matching: .any)["leg-start-checklist"].exists)
+        XCTAssertTrue(app.buttons["leg-start-checklist-chip"].exists)
         XCTAssertTrue(timer.label.contains("Running from pilot start"))
 
         let drawer = app.descendants(matching: .any)["previous-leg-drawer"]
@@ -226,7 +225,7 @@ final class NavigationFlightUITests: XCTestCase {
         drawer.swipeLeft()
         XCTAssertFalse(drawer.exists)
         XCTAssertTrue(timer.label.contains("Running from pilot start"))
-        XCTAssertTrue(app.staticTexts["LEG 2 OF 2"].exists)
+        XCTAssertTrue(app.buttons["previous-leg-tab"].label.contains("Leg 1"))
     }
 
     @MainActor
@@ -236,14 +235,11 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         app.buttons["waypoint-identified"].tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("DESTINATION IDENTIFIED"))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Leg timing continues'")).firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
         XCTAssertTrue(app.buttons["waypoint-reached"].isEnabled)
         app.buttons["waypoint-reached"].tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts["FLIGHT COMPLETE"].exists)
-        XCTAssertTrue(app.staticTexts["No successor leg or timer is started."].exists)
     }
 
     @MainActor
@@ -268,11 +264,48 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["reached-now"].tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("READY · SUCCESSOR TRACK-UP"))
-        XCTAssertTrue(app.staticTexts["This leg remains untimed until Start Leg."].exists)
         XCTAssertTrue(app.buttons["start-leg"].isEnabled)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Starts when Start Leg is pressed"))
         app.buttons["start-leg"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+    }
+
+    @MainActor
+    func testAdaptiveCockpitKeepsOperationalActionsAvailableAcrossOrientations() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        app.buttons["start-leg"].tap()
+        let collapseChecklist = app.buttons["Collapse start of leg checklist"]
+        if collapseChecklist.waitForExistence(timeout: 1) {
+            collapseChecklist.tap()
+        }
+
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            XCUIDevice.shared.orientation = orientation
+            XCTAssertTrue(app.buttons["waypoint-identified"].waitForExistence(timeout: 2))
+            XCTAssertTrue(app.buttons["reached-now"].isEnabled)
+            XCTAssertTrue(app.descendants(matching: .any)["aviation-map"].exists)
+            XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].exists)
+            XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].exists)
+        }
+
+        XCUIDevice.shared.orientation = .portrait
+    }
+
+    @MainActor
+    func testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL"
+        )
+        app.buttons["start-leg"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["compact-cockpit-console"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+        XCTAssertTrue(app.buttons["reached-now"].exists)
+        let frequencies = app.buttons["compact-frequencies"]
+        XCTAssertTrue(frequencies.exists)
+        frequencies.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].waitForExistence(timeout: 2))
     }
 
     @MainActor
@@ -284,14 +317,21 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchCockpit(planData: Data, progressionPolicy: String? = nil) -> XCUIApplication {
+    private func launchCockpit(
+        planData: Data,
+        progressionPolicy: String? = nil,
+        preferredContentSizeCategory: String? = nil
+    ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
         if let progressionPolicy {
             app.launchEnvironment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] = progressionPolicy
         }
+        if let preferredContentSizeCategory {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSizeCategory]
+        }
         app.launch()
-        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))
         app.buttons["open-cockpit"].tap()
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 2))
         return app

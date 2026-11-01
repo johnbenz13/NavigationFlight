@@ -37,6 +37,7 @@ struct BundledAviationMapResourceProvider: AviationMapResourceProviding {
 }
 
 struct OfflineAviationMapView: UIViewRepresentable {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     let presentation: AviationMapPresentation
     let legState: FlightSession.LegState
     let showsDriftReferenceArms: Bool
@@ -59,6 +60,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let onEditPilotETA: (NavigationTimingTargetKey) -> Void
     let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
     let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
+    let onMapInteraction: () -> Void
 
     init(
         presentation: AviationMapPresentation,
@@ -82,7 +84,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
         onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
         onEditPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
         onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
-        onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void
+        onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
+        onMapInteraction: @escaping () -> Void = {}
     ) {
         self.presentation = presentation
         self.legState = legState
@@ -106,6 +109,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.onEditPilotETA = onEditPilotETA
         self.onShowPilotETACheck = onShowPilotETACheck
         self.onHidePilotETACheck = onHidePilotETACheck
+        self.onMapInteraction = onMapInteraction
     }
 
     func makeCoordinator() -> Coordinator {
@@ -124,6 +128,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             initialCamera: preservedCamera,
             preservedCamera: $preservedCamera,
             isCameraUserControlled: $isCameraUserControlled,
+            reducesMotion: accessibilityReduceMotion,
             onSelectIdentificationPoint: onSelectIdentificationPoint,
             onSelectTimingTarget: onSelectTimingTarget,
             onDismissCallout: onDismissCallout,
@@ -132,7 +137,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onCommitPilotETA: onCommitPilotETA,
             onEditPilotETA: onEditPilotETA,
             onShowPilotETACheck: onShowPilotETACheck,
-            onHidePilotETACheck: onHidePilotETACheck
+            onHidePilotETACheck: onHidePilotETACheck,
+            onMapInteraction: onMapInteraction
         )
     }
 
@@ -165,7 +171,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onCommitPilotETA: onCommitPilotETA,
             onEditPilotETA: onEditPilotETA,
             onShowPilotETACheck: onShowPilotETACheck,
-            onHidePilotETACheck: onHidePilotETACheck
+            onHidePilotETACheck: onHidePilotETACheck,
+            onMapInteraction: onMapInteraction
         )
         context.coordinator.update(
             presentation: presentation,
@@ -174,6 +181,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             identificationContext: identificationContext,
             timingTargetContext: timingTargetContext,
             focusRequest: focusRequest,
+            reducesMotion: accessibilityReduceMotion,
             mapView: mapView
         )
     }
@@ -211,6 +219,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private let initialCamera: AviationMapCameraState?
         private let preservedCamera: Binding<AviationMapCameraState?>
         private let isCameraUserControlled: Binding<Bool>
+        private var reducesMotion: Bool
         private var styleIsReady = false
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
@@ -224,6 +233,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var onEditPilotETA: (NavigationTimingTargetKey) -> Void
         private var onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
         private var onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
+        private var onMapInteraction: () -> Void
 
         init(
             presentation: AviationMapPresentation,
@@ -240,6 +250,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             initialCamera: AviationMapCameraState?,
             preservedCamera: Binding<AviationMapCameraState?>,
             isCameraUserControlled: Binding<Bool>,
+            reducesMotion: Bool,
             onSelectIdentificationPoint: @escaping (IdentificationPointKey) -> Void,
             onSelectTimingTarget: @escaping (NavigationTimingTargetKey) -> Void,
             onDismissCallout: @escaping () -> Void,
@@ -248,7 +259,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
             onEditPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
             onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
-            onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void
+            onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
+            onMapInteraction: @escaping () -> Void
         ) {
             self.presentation = presentation
             self.legState = legState
@@ -265,6 +277,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.initialCamera = initialCamera
             self.preservedCamera = preservedCamera
             self.isCameraUserControlled = isCameraUserControlled
+            self.reducesMotion = reducesMotion
             self.onSelectIdentificationPoint = onSelectIdentificationPoint
             self.onSelectTimingTarget = onSelectTimingTarget
             self.onDismissCallout = onDismissCallout
@@ -274,6 +287,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.onEditPilotETA = onEditPilotETA
             self.onShowPilotETACheck = onShowPilotETACheck
             self.onHidePilotETACheck = onHidePilotETACheck
+            self.onMapInteraction = onMapInteraction
         }
 
         func updateHandlers(
@@ -285,7 +299,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onCommitPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
             onEditPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
             onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
-            onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void
+            onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
+            onMapInteraction: @escaping () -> Void
         ) {
             self.onSelectIdentificationPoint = onSelectIdentificationPoint
             self.onSelectTimingTarget = onSelectTimingTarget
@@ -296,6 +311,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.onEditPilotETA = onEditPilotETA
             self.onShowPilotETACheck = onShowPilotETACheck
             self.onHidePilotETACheck = onHidePilotETACheck
+            self.onMapInteraction = onMapInteraction
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
@@ -326,6 +342,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         @objc func didTapMapBackground() {
+            onMapInteraction()
             onDismissCallout()
         }
 
@@ -471,8 +488,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
             identificationContext: AviationMapIdentificationContext?,
             timingTargetContext: AviationMapTimingTargetContext?,
             focusRequest: AviationMapFocusRequest,
+            reducesMotion: Bool,
             mapView: MLNMapView
         ) {
+            self.reducesMotion = reducesMotion
             let becameActive = self.legState == .ready && legState == .active
             let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
             let legStateChanged = self.legState != legState
@@ -507,15 +526,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
             if becameActive || (activeLegChanged && legState == .active) {
                 focusLeg(
                     on: mapView,
-                    animated: !UIAccessibility.isReduceMotionEnabled,
+                    animated: !reducesMotion,
                     duration: activeLegChanged ? 1.0 : nil
                 )
             } else if activeLegChanged && legState == .ready {
-                focusLeg(on: mapView, animated: !UIAccessibility.isReduceMotionEnabled)
+                focusLeg(on: mapView, animated: !reducesMotion)
             } else if lastFocusRequest.id != focusRequest.id {
                 switch focusRequest.mode {
                 case .leg:
-                    focusLeg(on: mapView, animated: true)
+                    focusLeg(on: mapView, animated: !reducesMotion)
                 case .waypoint:
                     focusWaypoint(on: mapView)
                 case .overview:
@@ -746,7 +765,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     on: mapView,
                     direction: 0,
                     padding: UIEdgeInsets(top: 170, left: 105, bottom: 130, right: 145),
-                    animated: true
+                    animated: !reducesMotion
                 )
                 return
             }
@@ -762,7 +781,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 on: mapView,
                 direction: AviationMapGeometry.bearing(from: leg.from, to: leg.to),
                 padding: UIEdgeInsets(top: 210, left: 95, bottom: 120, right: 135),
-                animated: true
+                animated: !reducesMotion
             )
         }
 
@@ -772,9 +791,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 presentation.waypoints.map { $0.coordinate },
                 on: mapView,
                 padding: UIEdgeInsets(top: 120, left: 110, bottom: 85, right: 220),
-                animated: true
+                animated: !reducesMotion
             )
-            mapView.setDirection(0, animated: true)
+            mapView.setDirection(0, animated: !reducesMotion)
         }
 
         private func focusTimingTarget(_ target: AviationMapCoordinate, on mapView: MLNMapView) {
@@ -783,7 +802,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 coordinate(target),
                 zoomLevel: mapView.zoomLevel,
                 direction: mapView.direction,
-                animated: !UIAccessibility.isReduceMotionEnabled
+                animated: !reducesMotion
             )
         }
 
@@ -1148,7 +1167,10 @@ private final class VORDMECalloutAnnotationView: MLNAnnotationView, UIGestureRec
         isEnabled = true
         isAccessibilityElement = true
         accessibilityLabel = "VOR DME reference, \(annotation.titleText)"
-        accessibilityHint = "Drag to reposition"
+        accessibilityHint = "Drag to reposition, or use the Reset position action"
+        accessibilityCustomActions = [
+            UIAccessibilityCustomAction(name: "Reset position", target: self, selector: #selector(resetPosition))
+        ]
         apply(offset: offset)
     }
 
@@ -1171,6 +1193,11 @@ private final class VORDMECalloutAnnotationView: MLNAnnotationView, UIGestureRec
         if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
             mapView?.isScrollEnabled = true
         }
+    }
+
+    @objc private func resetPosition() -> Bool {
+        apply(offset: offsetHandler(AviationMapCalloutOffset(x: 0, y: 0), bounds.size))
+        return true
     }
 
     required init?(coder: NSCoder) { nil }
@@ -1406,6 +1433,7 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
             onEdit: onEdit,
             onShowCheck: onShowCheck,
             onHideCheck: onHideCheck
+            , onResetPosition: { [weak self] in self?.resetPosition() }
         )
         let host = UIHostingController(rootView: content)
         host.view.backgroundColor = .clear
@@ -1453,6 +1481,10 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
         if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
             mapView?.isScrollEnabled = true
         }
+    }
+
+    private func resetPosition() {
+        apply(offset: offsetHandler(AviationMapCalloutOffset(x: 0, y: 0), bounds.size))
     }
 
     private func updateLeader() {
@@ -1663,6 +1695,7 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
             onRevise: onRevise,
             onShowCheck: onShowCheck,
             onHideCheck: onHideCheck
+            , onResetPosition: { [weak self] in self?.resetPosition() }
         )
         let host = UIHostingController(rootView: content)
         hostingController = host
@@ -1711,6 +1744,10 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         }
     }
 
+    private func resetPosition() {
+        apply(offset: onOffsetChange(AviationMapCalloutOffset(x: 0, y: 0), bounds.size))
+    }
+
     private func updateLeader() {
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
         let anchor = CGPoint(x: center.x - offset.x, y: center.y - offset.y)
@@ -1756,6 +1793,7 @@ private struct TimingTargetCalloutContent: View {
     let onEdit: (NavigationTimingTargetKey) -> Void
     let onShowCheck: (NavigationTimingTargetKey) -> Void
     let onHideCheck: (NavigationTimingTargetKey) -> Void
+    let onResetPosition: () -> Void
 
     var body: some View {
         let isFocusedRevision = context?.pilotETAState.isEditing == true
@@ -1807,6 +1845,7 @@ private struct TimingTargetCalloutContent: View {
         }
         .shadow(color: .black.opacity((isFocusedRevision || isCommittedRevision) ? 0.18 : 0), radius: 8, y: 5)
         .accessibilityIdentifier("timing-target-\(target.id.targetID.uuidString)")
+        .accessibilityAction(named: "Reset position", onResetPosition)
     }
 
     @ViewBuilder
@@ -2166,6 +2205,7 @@ private struct IdentificationPointCalloutContent: View {
     let onRevise: (NavigationTimingTargetKey) -> Void
     let onShowCheck: (NavigationTimingTargetKey) -> Void
     let onHideCheck: (NavigationTimingTargetKey) -> Void
+    let onResetPosition: () -> Void
 
     @ViewBuilder
     var body: some View {
@@ -2181,7 +2221,8 @@ private struct IdentificationPointCalloutContent: View {
                 onCommit: onCommit,
                 onEdit: onEdit,
                 onShowCheck: onShowCheck,
-                onHideCheck: onHideCheck
+                onHideCheck: onHideCheck,
+                onResetPosition: onResetPosition
             )
         } else {
             observationCallout
@@ -2229,6 +2270,7 @@ private struct IdentificationPointCalloutContent: View {
                 )
         }
         .shadow(color: .black.opacity(isDesignedExpanded ? 0.18 : 0), radius: 8, y: 5)
+        .accessibilityAction(named: "Reset position", onResetPosition)
     }
 
     private func futureCallout(
@@ -2388,6 +2430,7 @@ private struct IdentificationPointCalloutContent: View {
             ? "\(point.name) · Passed without report"
             : point.name)
             .font(.caption.weight(.bold))
+            .dynamicTypeSize(.xSmall ... .large)
             .foregroundStyle(point.status == .passedWithoutReport ? .secondary : .primary)
             .shadow(color: .white, radius: 2)
             .accessibilityLabel(point.status == .passedWithoutReport

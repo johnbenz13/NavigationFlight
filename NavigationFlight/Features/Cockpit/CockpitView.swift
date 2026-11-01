@@ -155,6 +155,8 @@ extension CockpitRestoration {
 }
 
 struct CockpitView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let visualStyle = AviationMapVisualStyle.default
     let data: CockpitPresentationData
     let mapPresentation: AviationMapPresentation
@@ -200,14 +202,31 @@ struct CockpitView: View {
     @State private var showsHeadingCommitConfirmation = false
     @State private var isRestoringReach = false
     @State private var mapIdentity = UUID()
+    @State private var showsCompactFrequencies = false
+    @State private var isCompactMapChromeVisible = true
+    @State private var compactMapChromeVisibilityID = 0
 
     var body: some View {
         GeometryReader { geometry in
-            if geometry.size.width > geometry.size.height {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 0) {
+                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
+                        .frame(height: geometry.size.height * 0.47)
+                    compactControlPanel
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else if horizontalSizeClass == .regular, geometry.size.width > geometry.size.height {
                 HStack(spacing: 0) {
-                    mapSurface(isLandscape: true, mapWidth: geometry.size.width * 0.74)
-                        .frame(width: geometry.size.width * 0.74)
+                    mapSurface(isLandscape: true, mapWidth: geometry.size.width * 0.64)
+                        .frame(width: geometry.size.width * 0.64)
                     landscapeControlPanel
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            } else if horizontalSizeClass == .compact {
+                VStack(spacing: 0) {
+                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
+                        .frame(height: geometry.size.height * 0.64)
+                    compactControlPanel
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } else {
@@ -256,6 +275,20 @@ struct CockpitView: View {
             isPreviousDrawerPresented = false
             selectedMapCallout = nil
             showsHeadingCommitConfirmation = false
+            showsCompactFrequencies = false
+        }
+        .onChange(of: session.legState) { _, newValue in
+            guard horizontalSizeClass == .compact else { return }
+            isCompactMapChromeVisible = newValue != .active
+            compactMapChromeVisibilityID += 1
+        }
+        .task(id: compactMapChromeVisibilityID) {
+            guard horizontalSizeClass == .compact,
+                  session.legState == .active,
+                  isCompactMapChromeVisible else { return }
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            isCompactMapChromeVisible = false
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -285,14 +318,21 @@ struct CockpitView: View {
                 onCommitPilotETA: commitPilotETA,
                 onEditPilotETA: onEditPilotETA,
                 onShowPilotETACheck: onShowPilotETACheck,
-                onHidePilotETACheck: onHidePilotETACheck
+                onHidePilotETACheck: onHidePilotETACheck,
+                onMapInteraction: revealCompactMapChrome
                 )
                 .id(mapIdentity)
                 .accessibilityIdentifier("aviation-map")
+                .accessibilitySortPriority(90)
             }
-            mapControls
-            driftLinesControl
-            legHeader
+            if shouldShowMapChrome {
+                mapControls
+                    .accessibilitySortPriority(80)
+                driftLinesControl
+                    .accessibilitySortPriority(81)
+                legHeader
+                    .accessibilitySortPriority(100)
+            }
             NextLegPreparationOverlay(
                 preparation: session.destinationIdentifiedAt == nil ? nil : nextLegPreparation,
                 isPresented: Binding(
@@ -334,13 +374,73 @@ struct CockpitView: View {
         .clipped()
     }
 
+    private var shouldShowMapChrome: Bool {
+        horizontalSizeClass != .compact || session.legState != .active || isCompactMapChromeVisible
+    }
+
+    private func revealCompactMapChrome() {
+        guard horizontalSizeClass == .compact, session.legState == .active else { return }
+        isCompactMapChromeVisible = true
+        compactMapChromeVisibilityID += 1
+    }
+
+    @ViewBuilder
     private var legHeader: some View {
+        if horizontalSizeClass == .compact, !dynamicTypeSize.isAccessibilitySize {
+            compactLegHeader
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(12)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                regularLegHeader
+                accessibilityLegHeader
+            }
+            .padding(.horizontal, 16).padding(.vertical, 6)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+            .frame(maxHeight: .infinity, alignment: .top).padding(20)
+        }
+    }
+
+    private var compactLegHeader: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text(legStatusText)
+                    .font(.caption.weight(.bold))
+                    .lineLimit(1)
+                    .accessibilityIdentifier("leg-status")
+                Text("·").foregroundStyle(.secondary)
+                Text(data.legPosition.uppercased())
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Button { showsChartsUnavailable = true } label: {
+                    Label("Charts", systemImage: "map")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+            }
+            Text("\(data.origin) → \(data.destination)")
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+        }
+    }
+
+    private var regularLegHeader: some View {
         HStack(spacing: 16) {
             HStack(spacing: 12) {
                 Text(legStatusText)
                     .font(.subheadline.weight(.bold))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
                     .accessibilityIdentifier("leg-status")
                 Text("·").foregroundStyle(.secondary)
                 Text(data.legPosition.uppercased()).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
@@ -351,7 +451,7 @@ struct CockpitView: View {
                         Image(systemName: "arrow.right").font(.caption)
                         Text(data.destination).lineLimit(1)
                     }
-                    .font(.headline).minimumScaleFactor(0.7)
+                    .font(.headline)
                     .environment(\.layoutDirection, .leftToRight)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("From \(data.origin) to \(data.destination)")
@@ -363,10 +463,27 @@ struct CockpitView: View {
             }
             .buttonStyle(.plain).foregroundStyle(.primary)
         }
-        .padding(.horizontal, 16).padding(.vertical, 6)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
-        .frame(maxHeight: .infinity, alignment: .top).padding(20)
+    }
+
+    private var accessibilityLegHeader: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(legStatusText)
+                    .font(.subheadline.weight(.bold))
+                    .accessibilityIdentifier("leg-status")
+                Spacer()
+                Button("Charts", systemImage: "map") { showsChartsUnavailable = true }
+                    .frame(minHeight: 44)
+                    .buttonStyle(.plain)
+            }
+            Text(data.legPosition.uppercased())
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text("\(data.origin) → \(data.destination)")
+                .font(.headline)
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+        }
     }
 
     private var mapControls: some View {
@@ -394,7 +511,8 @@ struct CockpitView: View {
             )
             .font(.caption.weight(.semibold))
             .foregroundStyle(areDriftLinesVisible ? .primary : .secondary)
-            .frame(width: 150, height: 40)
+            .frame(width: 150)
+            .frame(minHeight: 44)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
         }
@@ -475,6 +593,106 @@ struct CockpitView: View {
         .padding(.top, 10)
         .padding(.bottom, 12)
         .background(Color(.systemBackground))
+    }
+
+    private var compactControlPanel: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("ACTIVE LEG INSTRUMENTS")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+
+                if dynamicTypeSize.isAccessibilitySize {
+                    portraitTimerMetric
+                    compactOperationalSummary
+                } else {
+                    HStack(alignment: .top, spacing: 8) {
+                        portraitTimerMetric
+                        readyETAMetric
+                    }
+                    compactSummaryButtons
+                }
+
+                if showsCompactFrequencies {
+                    readyFrequencyRow
+                }
+
+                waypointReachedButton
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+        }
+        .background(Color(.systemBackground))
+        .accessibilityIdentifier("compact-cockpit-console")
+    }
+
+    private var compactSummaryButtons: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                compactHeadingButton
+                compactSummary("ALT \(Self.feet(data.initialAltitudeFeetMsl)) ft", identifier: "cockpit-altitude")
+                compactFrequencyButton
+            }
+            VStack(spacing: 8) {
+                compactHeadingButton
+                compactSummary("ALTITUDE \(Self.feet(data.initialAltitudeFeetMsl)) ft", identifier: "cockpit-altitude")
+                compactFrequencyButton
+            }
+        }
+    }
+
+    private var compactOperationalSummary: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            compactHeadingButton
+            compactSummary(
+                "NEXT ETA \(Self.duration(data.legDurationSeconds))",
+                identifier: "cockpit-eta"
+            )
+            compactSummary("ALTITUDE \(Self.feet(data.initialAltitudeFeetMsl)) ft", identifier: "cockpit-altitude")
+            compactFrequencyButton
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private var compactHeadingButton: some View {
+        Button {
+            showsHeadingCommitConfirmation = false
+            onOpenPilotHeading(importedHeadingDegrees)
+        } label: {
+            Text("HEADING \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees))")
+                .font(.subheadline.weight(.bold))
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .disabled(session.legState != .active)
+        .accessibilityLabel("Magnetic heading, \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees))")
+        .accessibilityHint("Opens the magnetic heading editor")
+        .accessibilityIdentifier("cockpit-heading")
+    }
+
+    private var compactFrequencyButton: some View {
+        Button {
+            showsCompactFrequencies.toggle()
+        } label: {
+            Text("FREQUENCIES \(orderedFrequencies.count) \(showsCompactFrequencies ? "▴" : "▾")")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.tint)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Planned frequencies")
+        .accessibilityValue(showsCompactFrequencies ? "Expanded" : "Collapsed, \(orderedFrequencies.count) frequencies")
+        .accessibilityHint(showsCompactFrequencies ? "Collapses planned frequencies" : "Shows planned frequencies")
+        .accessibilityIdentifier("compact-frequencies")
+    }
+
+    private func compactSummary(_ label: String, identifier: String) -> some View {
+        Text(label)
+            .font(.subheadline.weight(.bold))
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .accessibilityIdentifier(identifier)
     }
 
     @ViewBuilder
@@ -674,12 +892,10 @@ struct CockpitView: View {
                 .monospacedDigit()
                 .foregroundStyle(valueColor)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
             Text(detail)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
-                .minimumScaleFactor(0.75)
                 .id(detail)
         }
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
@@ -719,6 +935,7 @@ struct CockpitView: View {
             .scrollIndicators(.hidden)
         }
         .accessibilityIdentifier("planned-frequencies")
+        .accessibilitySortPriority(60)
     }
 
     private func readyFrequencyCard(_ frequency: CockpitPresentationData.DisplayFrequency) -> some View {
@@ -865,18 +1082,27 @@ struct CockpitView: View {
     }
 
     private var landscapeControlPanel: some View {
-        VStack(spacing: 14) {
-            headingMetric
-            Divider()
-            timeMetric
-            Divider()
-            altitudeMetric
-            Divider()
-            frequencyColumn
-            Spacer(minLength: 8)
-            waypointReachedButton
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("ACTIVE LEG INSTRUMENTS")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                    readyHeadingMetric
+                    portraitTimerMetric
+                    readyETAMetric
+                    readyAltitudeMetric
+                }
+                Divider()
+                frequencyColumn
+                    .frame(minHeight: 130)
+                Divider()
+                waypointReachedButton
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 20)
         }
-        .padding(.horizontal, 18).padding(.vertical, 20)
         .background(Color(.systemBackground)).overlay(alignment: .leading) { Divider() }
     }
 
@@ -1010,13 +1236,18 @@ struct CockpitView: View {
                     .tint(Color(uiColor: visualStyle.primaryActionColor))
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
-                    Button("Reached now") {
+                    Button {
                         isNextPreparationPresented = false
                         onWaypointReached(cockpitRestoration)
+                    } label: {
+                        Text("Reached now")
+                            .padding(.vertical, 15)
+                            .frame(maxWidth: .infinity)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")
                     .accessibilityIdentifier("reached-now")
                 }

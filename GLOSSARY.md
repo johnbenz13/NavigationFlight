@@ -1,5 +1,21 @@
 # NavigationFlight Glossary
 
+## Navigation plan
+
+A prepared route and its navigation information, imported into the app for use in Cockpit. The Flights destination presents navigation plans, rather than records of previous flight sessions.
+
+## Flights
+
+The app's offline library of imported navigation plans available to load in Cockpit.
+
+## Cockpit
+
+The app's operational destination for flying a loaded navigation plan.
+
+## Flight session
+
+A single execution of a navigation plan, including the pilot's recorded progress, timing, and revisions.
+
 ## Manual-navigation primacy
 
 During normal flight, the pilot is the navigation authority. The pilot starts each leg, identifies and reports reaching navigation targets, performs navigation calculations, and decides which heading and timing values to use. The app may present recorded observations and provide an explicitly requested cross-check, but it does not silently perform or replace these pilot actions.

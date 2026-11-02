@@ -1,6 +1,6 @@
 import Foundation
 
-struct FlightPlan: Equatable, Sendable {
+nonisolated struct FlightPlan: Equatable, Sendable {
     let id: UUID
     let title: String
     let createdAt: Date

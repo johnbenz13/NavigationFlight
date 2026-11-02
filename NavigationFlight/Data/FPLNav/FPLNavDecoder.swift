@@ -1,6 +1,6 @@
 import Foundation
 
-enum FPLNavDecoderError: Error, Equatable, Sendable {
+nonisolated enum FPLNavDecoderError: Error, Equatable, Sendable {
     case invalidMetadata
     case unsupportedFormatVersion(Int)
     case invalidV5Document(String)
@@ -9,7 +9,7 @@ enum FPLNavDecoderError: Error, Equatable, Sendable {
     case mapping(FPLNavMappingError)
 }
 
-struct FPLNavDecoder: Sendable {
+nonisolated struct FPLNavDecoder: Sendable {
     private struct Metadata: Decodable {
         let formatVersion: Int
     }

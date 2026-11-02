@@ -655,6 +655,37 @@ struct Flight: Equatable, Sendable {
         states[targetKey] = state
     }
 
+    var hasRecordedLegTiming: Bool {
+        !legTimings.isEmpty
+    }
+
+    var hasIdentificationPointOutcomes: Bool {
+        !identificationPointTimings.isEmpty
+    }
+
+    var hasNavigationProgress: Bool {
+        legState == .completed
+            || legTimings.contains { $0.reachedAt != nil }
+    }
+
+    var hasCommittedPilotRevisions: Bool {
+        pilotETAStatesByTargetKey.values.contains { !$0.commits.isEmpty }
+            || pilotHeadingStatesByLegID.values.contains { !$0.commits.isEmpty }
+    }
+
+    var hasOpenPilotRevisionDrafts: Bool {
+        pilotETAStatesByTargetKey.values.contains(where: \.isEditing)
+            || pilotHeadingStatesByLegID.values.contains(where: \.isEditing)
+    }
+
+    var hasProtectedPilotWork: Bool {
+        hasRecordedLegTiming
+            || hasIdentificationPointOutcomes
+            || hasNavigationProgress
+            || hasCommittedPilotRevisions
+            || hasOpenPilotRevisionDrafts
+    }
+
     func elapsedTime(at now: Date) -> TimeInterval? {
         guard legState == .active, let legStartedAt else { return nil }
         return max(0, now.timeIntervalSince(legStartedAt))

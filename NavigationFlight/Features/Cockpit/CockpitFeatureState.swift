@@ -91,12 +91,20 @@ struct CockpitFeatureState: Equatable, Sendable {
         return selectedLegIndex + 1 < plannedNavigation.legs.count
     }
 
+    var hasChecklistAcknowledgements: Bool {
+        legStartChecklists.values.contains { $0.reviewState == .noted }
+    }
+
+    var hasProtectedPilotWork: Bool {
+        flight?.hasProtectedPilotWork == true || hasChecklistAcknowledgements
+    }
+
     var activeLegStartChecklist: LegStartChecklistState? {
         guard let flight, flight.legState == .active else { return nil }
         return legStartChecklists[flight.legIDs[flight.activeLegIndex]]
     }
 
-    mutating func accept(_ flightPlan: FlightPlan) throws {
+    mutating func accept(_ flightPlan: FlightPlan, flightID: UUID = UUID()) throws {
         switch flightPlan.plannedNavigation {
         case .unavailableLegacyFormat(let version):
             throw CockpitPlanError.legacyPlan(version: version)
@@ -108,6 +116,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             selectedLegIndex = 0
             mode = plannedNavigation.defaultMode
             flight = Flight(
+                id: flightID,
                 flightPlanID: flightPlan.id,
                 legIDs: flightPlan.legs.map(\.id),
                 activeLegIndex: selectedLegIndex,

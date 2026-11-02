@@ -1,11 +1,11 @@
 import Foundation
 
-struct FPLNavV7ValidationError: Error, Equatable, Sendable {
+nonisolated struct FPLNavV7ValidationError: Error, Equatable, Sendable {
     let path: String
     let reason: String
 }
 
-struct FPLNavV7Mapper {
+nonisolated struct FPLNavV7Mapper {
     func map(_ source: FPLNavV7DTO) throws -> FlightPlan {
         guard source.format == "fpl-navigation-project", source.formatVersion == 7 else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)

@@ -1,6 +1,6 @@
 import Foundation
 
-struct FPLNavV7DTO: Decodable {
+nonisolated struct FPLNavV7DTO: Decodable {
     let format: String
     let formatVersion: Int
     let project: FPLNavV5DTO.Project

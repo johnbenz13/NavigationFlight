@@ -1,6 +1,6 @@
 import Foundation
 
-enum FPLNavMappingError: Error, Equatable, Sendable {
+nonisolated enum FPLNavMappingError: Error, Equatable, Sendable {
     case unexpectedFormat(String, version: Int)
     case duplicateWaypoint(UUID)
     case missingWaypointInOrder(UUID)
@@ -20,7 +20,7 @@ enum FPLNavMappingError: Error, Equatable, Sendable {
     case unknownVORDMEWaypoint(referenceID: UUID, waypointID: UUID)
 }
 
-struct FPLNavV5Mapper {
+nonisolated struct FPLNavV5Mapper {
     func map(_ source: FPLNavV5DTO) throws -> FlightPlan {
         guard source.format == "fpl-navigation-project", source.formatVersion == 5 else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)
@@ -29,9 +29,10 @@ struct FPLNavV5Mapper {
         let waypointPairs = source.navigation.route.waypoints.map { ($0.id, mapWaypoint($0)) }
         var waypointsByID: [UUID: RouteWaypoint] = [:]
         for (id, waypoint) in waypointPairs {
-            guard waypointsByID.updateValue(waypoint, forKey: id) == nil else {
+            guard !waypointsByID.keys.contains(id) else {
                 throw FPLNavMappingError.duplicateWaypoint(id)
             }
+            waypointsByID[id] = waypoint
         }
 
         let orderedWaypoints = try source.navigation.route.waypointOrder.map { id in
@@ -68,9 +69,10 @@ struct FPLNavV5Mapper {
 
         var legsByID: [UUID: NavigationLeg] = [:]
         for leg in legs {
-            guard legsByID.updateValue(leg, forKey: leg.id) == nil else {
+            guard !legsByID.keys.contains(leg.id) else {
                 throw FPLNavMappingError.duplicateLeg(leg.id)
             }
+            legsByID[leg.id] = leg
         }
         let identificationPoints = try source.navigation.identificationPoints.map { point in
             guard legsByID[point.legId] != nil else {
@@ -86,9 +88,10 @@ struct FPLNavV5Mapper {
         }
         var pointsByID: [UUID: IdentificationPoint] = [:]
         for point in identificationPoints {
-            guard pointsByID.updateValue(point, forKey: point.id) == nil else {
+            guard !pointsByID.keys.contains(point.id) else {
                 throw FPLNavMappingError.duplicateIdentificationPoint(point.id)
             }
+            pointsByID[point.id] = point
         }
 
         let altitudeChanges = try source.navigation.altitudeChanges.map { change in

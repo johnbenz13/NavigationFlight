@@ -39,7 +39,7 @@ struct BundledAviationMapResourceProvider: AviationMapResourceProviding {
 struct OfflineAviationMapView: UIViewRepresentable {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     let presentation: AviationMapPresentation
-    let legState: FlightSession.LegState
+    let legState: Flight.LegState
     let showsDriftReferenceArms: Bool
     let focusRequest: AviationMapFocusRequest
     let resources: any AviationMapResourceProviding
@@ -64,7 +64,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
     init(
         presentation: AviationMapPresentation,
-        legState: FlightSession.LegState,
+        legState: Flight.LegState,
         showsDriftReferenceArms: Bool,
         focusRequest: AviationMapFocusRequest,
         resources: any AviationMapResourceProviding = BundledAviationMapResourceProvider(),
@@ -205,7 +205,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         private var presentation: AviationMapPresentation
-        private var legState: FlightSession.LegState
+        private var legState: Flight.LegState
         private var showsDriftReferenceArms: Bool
         private var identificationContext: AviationMapIdentificationContext?
         private var timingTargetContext: AviationMapTimingTargetContext?
@@ -237,7 +237,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         init(
             presentation: AviationMapPresentation,
-            legState: FlightSession.LegState,
+            legState: Flight.LegState,
             showsDriftReferenceArms: Bool,
             focusRequest: AviationMapFocusRequest,
             chartURL: URL?,
@@ -483,7 +483,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         func update(
             presentation: AviationMapPresentation,
-            legState: FlightSession.LegState,
+            legState: Flight.LegState,
             showsDriftReferenceArms: Bool,
             identificationContext: AviationMapIdentificationContext?,
             timingTargetContext: AviationMapTimingTargetContext?,

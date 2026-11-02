@@ -1,6 +1,6 @@
 import Foundation
 
-struct NavigationFlight: Equatable, Sendable {
+struct FlightPlan: Equatable, Sendable {
     let id: UUID
     let title: String
     let createdAt: Date
@@ -15,5 +15,5 @@ struct NavigationFlight: Equatable, Sendable {
     let frequencyChanges: [FrequencyChange]
     let vorDmeReferences: [VORDMEReference]
     let operationalContext: OperationalContext
-    let execution: NavigationExecutionAvailability
+    let plannedNavigation: PlannedNavigationAvailability
 }

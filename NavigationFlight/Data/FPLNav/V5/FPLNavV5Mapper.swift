@@ -21,7 +21,7 @@ enum FPLNavMappingError: Error, Equatable, Sendable {
 }
 
 struct FPLNavV5Mapper {
-    func map(_ source: FPLNavV5DTO) throws -> NavigationFlight {
+    func map(_ source: FPLNavV5DTO) throws -> FlightPlan {
         guard source.format == "fpl-navigation-project", source.formatVersion == 5 else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)
         }
@@ -187,7 +187,7 @@ struct FPLNavV5Mapper {
             )
         }
 
-        return NavigationFlight(
+        return FlightPlan(
             id: source.project.id,
             title: source.project.title,
             createdAt: source.project.createdAt,
@@ -205,7 +205,7 @@ struct FPLNavV5Mapper {
             frequencyChanges: frequencyChanges,
             vorDmeReferences: vorDmeReferences,
             operationalContext: try mapOperationalContext(source.navigation.operationalContext),
-            execution: .unavailableLegacyFormat(version: 5)
+            plannedNavigation: .unavailableLegacyFormat(version: 5)
         )
     }
 

@@ -2,16 +2,16 @@
 
 Status: read-only reverse engineering of the implementation as of 2026-10-22.
 
-This document describes the technical contract implemented by `CockpitFeatureState`. It records observed behavior rather than proposing a redesign. The delegated runtime state machine is documented separately in [`FlightSession` Technical Specification](FLIGHT-SESSION.md). The system context is described in the [architecture overview](../architecture.md).
+This document describes the technical contract implemented by `CockpitFeatureState`. It records observed behavior rather than proposing a redesign. The delegated runtime state machine is documented separately in [`Flight` Technical Specification](FLIGHT.md). The system context is described in the [architecture overview](../architecture.md).
 
 ## Responsibility and scope
 
 `CockpitFeatureState` is the in-memory mutable state and command coordinator for the cockpit feature. It owns:
 
-- the accepted `NavigationFlight`, if any;
+- the accepted `FlightPlan`, if any;
 - the selected leg index used for the feature's primary plan presentation;
 - the selected whole-plan navigation calculation mode;
-- the `FlightSession` that owns runtime flight execution;
+- the `Flight` that owns runtime flight execution;
 - the immutable automatic or manual progression policy used to construct sessions; and
 - per-leg start-checklist interaction state.
 
@@ -19,7 +19,7 @@ It coordinates three workflows:
 
 1. admitting an imported plan into the executable cockpit;
 2. selecting a leg and calculation mode before execution; and
-3. forwarding pilot actions to `FlightSession` while applying cockpit-specific checklist and presentation synchronization.
+3. forwarding pilot actions to `Flight` while applying cockpit-specific checklist and presentation synchronization.
 
 It does not decode files, calculate resolved navigation values, construct presentation models, render views, store map interaction state, implement flight timing transitions, or persist runtime state.
 
@@ -32,11 +32,11 @@ The component is an internal value type (`struct`) conforming to `Equatable` and
 ```mermaid
 flowchart LR
     Root[RootView] --> FeatureView[CockpitFeatureView]
-    Loader[FPLNavFileLoader] -->|NavigationFlight candidate| Feature[CockpitFeatureState]
+    Loader[FPLNavFileLoader] -->|FlightPlan| Feature[CockpitFeatureState]
     FeatureView -->|owns with @State| Feature
-    Feature -->|constructs and commands| Session[FlightSession]
+    Feature -->|constructs and commands| Session[Flight]
     Feature -->|flight + selectedLegIndex + mode| Adapter[CockpitPresentationAdapter]
-    Feature -->|flight + session| Map[AviationMapPresentationFactory]
+    Feature -->|flightPlan + flight| Map[AviationMapPresentationFactory]
     Feature --> Inspection[PlanInspectionView]
     Feature --> Cockpit[CockpitView]
     Session --> Adapter
@@ -45,11 +45,11 @@ flowchart LR
 
 `RootView` installs `CockpitFeatureView` as the application root. `CockpitFeatureView` owns one `CockpitFeatureState` in SwiftUI `@State` and translates view callbacks into feature commands. It also owns file-importer presentation, cockpit-versus-inspection presentation, and presented import errors; those values are outside `CockpitFeatureState`.
 
-The feature state is the sole production owner and mutation adapter for its `FlightSession`. Views and presentation factories receive value snapshots and callbacks rather than mutating the feature state directly.
+The feature state is the sole production owner and mutation adapter for its `Flight`. Views and presentation factories receive value snapshots and callbacks rather than mutating the feature state directly.
 
 ## Construction and initial state
 
-The initializer accepts a `FlightSession.ProgressionPolicy`, defaulting to `.automaticNextLeg`. Before any plan is accepted:
+The initializer accepts a `Flight.ProgressionPolicy`, defaulting to `.automaticNextLeg`. Before any plan is accepted:
 
 | Property | Initial value |
 | --- | --- |
@@ -57,14 +57,14 @@ The initializer accepts a `FlightSession.ProgressionPolicy`, defaulting to `.aut
 | `flight` | `nil` |
 | `selectedLegIndex` | `0` |
 | `mode` | `.noWind` |
-| `session` | `nil` |
+| `flight` | `nil` |
 | `legStartChecklists` | Empty dictionary |
 
 The policy is fixed for the lifetime of the feature-state value. In production builds, `CockpitFeatureView` uses automatic progression. Debug configuration can select manual progression through the `NAVIGATION_FLIGHT_PROGRESSION_POLICY` environment value. Debug configuration can also decode and accept a plan supplied through `NAVIGATION_FLIGHT_UI_TEST_PLAN` during view initialization.
 
 ## Plan-admission contract
 
-`accept(_:)` examines `NavigationFlight.execution` before mutating feature state.
+`accept(_:)` examines `FlightPlan.plannedNavigation` before mutating feature state.
 
 | Candidate execution state | Result |
 | --- | --- |
@@ -78,7 +78,7 @@ Successful admission performs these operations in order:
 1. Stores the candidate as `flight`.
 2. Resets `selectedLegIndex` to zero.
 3. Sets `mode` to the execution's saved `defaultMode`.
-4. Constructs a new `FlightSession` using the candidate flight ID, the ordered domain-leg IDs, index zero, the selected mode, and the feature's progression policy.
+4. Constructs a new `Flight` using the candidate flight ID, the ordered domain-leg IDs, index zero, the selected mode, and the feature's progression policy.
 5. Clears all per-leg checklist state.
 
 Rejection occurs before any stored property is changed, so an already accepted plan, selection, mode, session, and checklist history remain intact after a rejected candidate.
@@ -92,7 +92,7 @@ The file loader performs the preceding boundary step: it restricts selection to 
 | `flight` | Immutable imported plan and resolved execution values accepted for this feature session | Both presentation factories and views |
 | `selectedLegIndex` | Leg index supplied to the primary cockpit/inspection presentation adapter | `CockpitPresentationAdapter.makePresentation` and selection queries |
 | `mode` | Navigation mode supplied to the primary presentation adapter and synchronized into a ready session | Plan inspection and primary cockpit presentation |
-| `session` | Authoritative runtime execution, timing, progression, and pilot ETA state | Feature commands, cockpit presentation, and map presentation |
+| `flight` | Authoritative runtime execution, timing, progression, and pilot ETA state | Feature commands, cockpit presentation, and map presentation |
 | `legStartChecklists` | Per-leg cockpit checklist interaction history keyed by leg UUID | `activeLegStartChecklist` and checklist commands |
 
 The derived selection queries are true only before flight execution has produced any leg timing:
@@ -100,30 +100,30 @@ The derived selection queries are true only before flight execution has produced
 - `canSelectPreviousLeg` requires a ready session, no leg timings, and a selected index above zero.
 - `canSelectNextLeg` requires a ready session, no leg timings, eligible execution data, and a successor execution leg.
 
-`activeLegStartChecklist` is available only while the session is active. It resolves the active leg UUID from `session.legIDs[session.activeLegIndex]` and looks up that UUID in the checklist dictionary. The query may return an entry whose `phaseState` is hidden; `CockpitView` applies the additional requirement that the phase be available before rendering the checklist.
+`activeLegStartChecklist` is available only while the session is active. It resolves the active leg UUID from `flight.legIDs[flight.activeLegIndex]` and looks up that UUID in the checklist dictionary. The query may return an entry whose `phaseState` is hidden; `CockpitView` applies the additional requirement that the phase be available before rendering the checklist.
 
 ## Selected leg and active leg
 
-The component stores both `selectedLegIndex` and `FlightSession.activeLegIndex`.
+The component stores both `selectedLegIndex` and `Flight.activeLegIndex`.
 
 ### Current consumers
 
 The indices feed different presentation paths:
 
 - `selectedLegIndex` is passed with `flight` and `mode` to `CockpitPresentationAdapter.makePresentation`. That presentation supplies plan inspection and the cockpit's primary saved-plan data.
-- `session.activeLegIndex` drives runtime-sensitive presentation and behavior, including the aviation map, active checklist, next-leg preparation, leg timing, identification-point validation, and progression.
+- `flight.activeLegIndex` drives runtime-sensitive presentation and behavior, including the aviation map, active checklist, next-leg preparation, leg timing, identification-point validation, and progression.
 
 The names therefore describe a presentation selection and an execution position. The current feature behavior does not allow those positions to diverge persistently.
 
 ### Synchronization invariant
 
-Whenever `session` is non-`nil`, every state externally observable through the current `CockpitFeatureState` command interface satisfies:
+Whenever `flight` is non-`nil`, every state externally observable through the current `CockpitFeatureState` command interface satisfies:
 
 ```text
-selectedLegIndex == session.activeLegIndex
+selectedLegIndex == flight.activeLegIndex
 ```
 
-Before a plan is accepted, `selectedLegIndex` is zero and `session` is `nil`, so there is no session index to compare.
+Before a plan is accepted, `selectedLegIndex` is zero and `flight` is `nil`, so there is no session index to compare.
 
 The invariant is maintained procedurally by each index-changing path:
 
@@ -132,18 +132,18 @@ The invariant is maintained procedurally by each index-changing path:
 | Successful plan admission | Resets to zero | Constructed from `selectedLegIndex` |
 | Previous/next selection | Assigns the candidate only after session selection succeeds | `selectReadyLeg` assigns the same candidate |
 | Rejected or unavailable selection | Remains unchanged | Remains unchanged |
-| Successful non-final waypoint reach | Copies `session.activeLegIndex` after progression | Advances to the successor |
+| Successful non-final waypoint reach | Copies `flight.activeLegIndex` after progression | Advances to the successor |
 | Final waypoint reach | Remains on the final index | Remains on the final index |
 | Failed waypoint reach | Remains unchanged | Validation fails before index mutation |
 | All other feature commands | Unchanged | Unchanged |
 
 Within `reachCurrentWaypoint`, the session advances before `selectedLegIndex` is copied from it. Checklist cleanup occurs between those statements. This is synchronous code with no callback or suspension point, so the intermediate mismatch is not externally observable as a stable feature state.
 
-Access control prevents production callers from independently assigning `selectedLegIndex`, replacing the stored session, or assigning `FlightSession.activeLegIndex`. Because both containing types are value types, reading a session snapshot also does not provide shared mutable identity back into the stored feature state.
+Access control prevents production callers from independently assigning `selectedLegIndex`, replacing the stored session, or assigning `Flight.activeLegIndex`. Because both containing types are value types, reading a session snapshot also does not provide shared mutable identity back into the stored feature state.
 
 ### Repository history
 
-The two properties entered the code at different times. `selectedLegIndex` existed in the initial cockpit implementation before `FlightSession`. `FlightSession.activeLegIndex` was added later with the leg-timer runtime state. The existing selected index was retained and synchronized into the new session. When waypoint progression was introduced, `reachCurrentWaypoint` added the copy from the progressed session index back to the selected index. The current candidate-first selection sequence was introduced with that progression work so that the feature index changes only after session selection succeeds.
+The two properties entered the code at different times. `selectedLegIndex` existed in the initial cockpit implementation before `Flight`. `Flight.activeLegIndex` was added later with the leg-timer runtime state. The existing selected index was retained and synchronized into the new session. When waypoint progression was introduced, `reachCurrentWaypoint` added the copy from the progressed session index back to the selected index. The current candidate-first selection sequence was introduced with that progression work so that the feature index changes only after session selection succeeds.
 
 No current product path independently browses an inspected leg while a different session leg remains active. Before timing begins, browsing updates both indices. After the first timing record exists, the previous and next selection queries are false. Returning from the cockpit to plan inspection therefore continues to present the session's current leg.
 
@@ -164,7 +164,7 @@ The session call validates readiness, index bounds, and that the target leg has 
 
 ### Mode selection
 
-`selectMode(_:)` operates only when a session is ready and the accepted flight has eligible execution data. Wind mode is ignored unless every execution leg contains a `withWind` value. An accepted mode is stored in `mode`, then passed to `session.selectReadyLeg` together with the current selected index. The session updates its `executionMode` without changing its active index.
+`selectMode(_:)` operates only when a session is ready and the accepted flight has eligible execution data. Wind mode is ignored unless every execution leg contains a `withWind` value. An accepted mode is stored in `mode`, then passed to `flight.selectReadyLeg` together with the current selected index. The session updates its `executionMode` without changing its active index.
 
 The mode is whole-plan selection state: moving between browsed legs does not reset it. Once the session is active or completed, the mode command is ignored by its ready-state guard.
 
@@ -172,7 +172,7 @@ The mode is whole-plan selection state: moving between browsed legs does not res
 
 ### Starting a leg
 
-`startLeg(at:)` forwards the timestamp to `FlightSession.startLeg`. A session transition error propagates to the caller. After a successful call, the feature creates a pending checklist for the session's active leg if one does not already exist.
+`startLeg(at:)` forwards the timestamp to `Flight.startLeg`. A session transition error propagates to the caller. After a successful call, the feature creates a pending checklist for the session's active leg if one does not already exist.
 
 ### Identifying the destination
 
@@ -213,7 +213,7 @@ If the session already contains ETA state for the target, session initialization
 | `showPilotETACheck(targetKey:)` | `showPilotETACheck` | None |
 | `hidePilotETACheck(targetKey:)` | `hidePilotETACheck` | None |
 
-These methods use optional chaining. When no session exists, they are no-ops. The validity rules, rounding, editing lifecycle, and committed values belong to `FlightSession`.
+These methods use optional chaining. When no session exists, they are no-ops. The validity rules, rounding, editing lifecycle, and committed values belong to `Flight`.
 
 ## Leg-start checklist state model
 
@@ -280,10 +280,10 @@ Most lifecycle commands use the optional session through optional chaining. `rea
 
 - Successful plan admission always creates a session and resets selection to the first leg.
 - Rejected plan admission leaves the complete prior feature state unchanged.
-- Whenever a session exists, all externally observable states reachable through current feature commands have `selectedLegIndex == session.activeLegIndex`.
+- Whenever a session exists, all externally observable states reachable through current feature commands have `selectedLegIndex == flight.activeLegIndex`.
 - Pre-flight adjacent-leg selection ends after any leg timing record exists.
 - Wind mode is selectable only when every eligible execution leg supplies wind-resolved data.
-- The accepted `NavigationFlight` is not mutated by execution, ETA, or checklist commands.
+- The accepted `FlightPlan` is not mutated by execution, ETA, or checklist commands.
 - Checklist entries are unique by leg UUID and are not recreated during the same accepted plan.
 - Checklist review, presentation, and phase availability are represented independently.
 - A hidden checklist cannot be reopened through the feature command.
@@ -295,8 +295,8 @@ Most lifecycle commands use the optional session through optional chaining. `rea
 
 The component relies on the following conditions established by imported domain data and collaborators:
 
-- `NavigationFlight.legs` and eligible execution legs share compatible ordering and cardinality.
-- Domain leg IDs are unique and correspond to `FlightSession.legIDs`.
+- `FlightPlan.legs` and eligible planned-navigation legs share compatible ordering and cardinality.
+- Domain leg IDs are unique and correspond to `Flight.legIDs`.
 - Map-provided identification-point and ETA target keys refer to the active imported flight and leg.
 - Planned elapsed seconds supplied by an `AviationMapETATarget` belong to that target and the session's execution context.
 - `CockpitFeatureView` rebuilds presentations from the latest value state after synchronous mutations.
@@ -308,13 +308,13 @@ These are current integration contracts. `CockpitFeatureState` does not independ
 
 `CockpitFeatureState` directly depends on:
 
-- `NavigationFlight` for imported plan and eligibility state;
+- `FlightPlan` for imported plan and eligibility state;
 - `NavigationMode` for whole-plan mode selection;
-- `FlightSession` for execution, timing, progression, and ETA state;
+- `Flight` for execution, timing, progression, and ETA state;
 - `IdentificationPointKey` and `NavigationTimingTargetKey` for timing identity; and
 - `AviationMapETATarget` for ETA target identity and planned elapsed seconds.
 
-Its primary input seam is `accept(_:)`, which accepts a decoded domain value rather than a URL or raw data. Its runtime seam is `FlightSession`, exposed as a readable snapshot while mutations remain mediated by feature commands. Its view seam consists of synchronous commands called from closures in `CockpitFeatureView`.
+Its primary input seam is `accept(_:)`, which accepts a decoded domain value rather than a URL or raw data. Its runtime seam is `Flight`, exposed as a readable snapshot while mutations remain mediated by feature commands. Its view seam consists of synchronous commands called from closures in `CockpitFeatureView`.
 
 `FPLNavFileLoader` is the adjacent filesystem and decoder seam. `CockpitPresentationAdapter` and `AviationMapPresentationFactory` are read-only output seams that derive renderable values from feature snapshots.
 
@@ -328,7 +328,7 @@ Its primary input seam is `accept(_:)`, which accepts a decoded domain value rat
 | [`AviationMapPresentationFactory`](../../NavigationFlight/Map/AviationMapPresentation.swift) | Flight and session | Uses the session active index and runtime timing state for the map |
 | [`CockpitView`](../../NavigationFlight/Features/Cockpit/CockpitView.swift) | Presentations, session, active checklist state, and action closures | Renders cockpit controls and sends execution, ETA, checklist, and navigation actions upward |
 
-The primary presentation is derived from `selectedLegIndex` and `mode`. Runtime-sensitive presentations are derived from `session.activeLegIndex` and `session.executionMode`. Their agreement depends on the feature's synchronization behavior documented above.
+The primary presentation is derived from `selectedLegIndex` and `mode`. Runtime-sensitive presentations are derived from `flight.activeLegIndex` and `flight.executionMode`. Their agreement depends on the feature's synchronization behavior documented above.
 
 ## Lifetime and persistence
 
@@ -362,7 +362,7 @@ The file-loader boundary is covered by fixture-loading tests, and the user-facin
 
 - [`CockpitFeatureState.swift`](../../NavigationFlight/Features/Cockpit/CockpitFeatureState.swift) — primary implementation, checklist state, plan errors, and file loader.
 - [`CockpitFeatureView.swift`](../../NavigationFlight/Features/Cockpit/CockpitFeatureView.swift) — state ownership, import handling, presentation construction, and command wiring.
-- [`FlightSession.swift`](../../NavigationFlight/Domain/Flight/FlightSession.swift) — delegated runtime state machine.
+- [`Flight.swift`](../../NavigationFlight/Domain/Flight/Flight.swift) — delegated runtime state machine.
 - [`CockpitPresentationAdapter.swift`](../../NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift) — primary, checklist, next-leg, and previous-leg presentation consumers.
 - [`PlanInspectionView.swift`](../../NavigationFlight/Features/Cockpit/PlanInspectionView.swift) — pre-flight leg and mode selection UI.
 - [`CockpitView.swift`](../../NavigationFlight/Features/Cockpit/CockpitView.swift) — cockpit action source and checklist rendering rules.
@@ -370,7 +370,7 @@ The file-loader boundary is covered by fixture-loading tests, and the user-facin
 - [`NavigationFlightTests.swift`](../../NavigationFlightTests/NavigationFlightTests.swift) — deterministic unit and integration evidence.
 - [`NavigationFlightUITests.swift`](../../NavigationFlightUITests/NavigationFlightUITests.swift) — end-to-end interaction evidence.
 
-Repository history was consulted to establish the order in which `selectedLegIndex`, `FlightSession`, and progression synchronization entered the implementation. The current runtime contract above is derived from the present source.
+Repository history was consulted to establish the order in which `selectedLegIndex`, `Flight`, and progression synchronization entered the implementation. The current runtime contract above is derived from the present source.
 
 ## Open specification questions
 

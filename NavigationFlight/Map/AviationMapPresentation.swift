@@ -139,13 +139,13 @@ struct AviationMapIdentificationContext: Equatable, Sendable {
     let pointID: IdentificationPointKey
     let actualElapsedSeconds: Int?
     let nextTarget: AviationMapETATarget?
-    let reportError: FlightSession.TransitionError?
+    let reportError: Flight.TransitionError?
 
     init(
         pointID: IdentificationPointKey,
         actualElapsedSeconds: Int?,
         nextTarget: AviationMapETATarget?,
-        reportError: FlightSession.TransitionError? = nil
+        reportError: Flight.TransitionError? = nil
     ) {
         self.pointID = pointID
         self.actualElapsedSeconds = actualElapsedSeconds
@@ -157,7 +157,7 @@ struct AviationMapIdentificationContext: Equatable, Sendable {
 struct AviationMapTimingTargetContext: Equatable, Sendable {
     let target: AviationMapETATarget
     let targetIdentifier: String
-    let pilotETAState: FlightSession.PilotETAState
+    let pilotETAState: Flight.PilotETAState
     let timingReferenceSeconds: Int?
     let observationBasis: String?
     let canCheck: Bool
@@ -246,28 +246,28 @@ struct AviationMapPresentation: Equatable, Sendable {
 
 enum AviationMapPresentationError: Error, Equatable {
     case invalidActiveLegIndex(Int)
-    case missingExecutionReference(UUID)
-    case unavailableExecution
+    case missingPlannedNavigationReference(UUID)
+    case unavailablePlannedNavigation
     case unavailableWindMode
 }
 
 struct AviationMapPresentationFactory {
     func makePresentation(
-        flight: NavigationFlight,
-        session: FlightSession
+        flightPlan: FlightPlan,
+        flight: Flight
     ) throws -> AviationMapPresentation {
-        guard flight.legs.indices.contains(session.activeLegIndex) else {
-            throw AviationMapPresentationError.invalidActiveLegIndex(session.activeLegIndex)
+        guard flightPlan.legs.indices.contains(flight.activeLegIndex) else {
+            throw AviationMapPresentationError.invalidActiveLegIndex(flight.activeLegIndex)
         }
-        guard case .eligible(let execution) = flight.execution,
-              execution.legs.indices.contains(session.activeLegIndex) else {
-            throw AviationMapPresentationError.unavailableExecution
+        guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
+              plannedNavigation.legs.indices.contains(flight.activeLegIndex) else {
+            throw AviationMapPresentationError.unavailablePlannedNavigation
         }
 
-        let activeSourceLeg = flight.legs[session.activeLegIndex]
-        let resolvedLeg = execution.legs[session.activeLegIndex]
+        let activeSourceLeg = flightPlan.legs[flight.activeLegIndex]
+        let resolvedLeg = plannedNavigation.legs[flight.activeLegIndex]
         let plannedDurationSeconds: Int
-        switch session.executionMode {
+        switch flight.executionMode {
         case .noWind:
             plannedDurationSeconds = resolvedLeg.noWind.durationSeconds
         case .wind:
@@ -276,7 +276,7 @@ struct AviationMapPresentationFactory {
             }
             plannedDurationSeconds = wind.timing.durationSeconds
         }
-        let waypoints = flight.waypoints.map { waypoint in
+        let waypoints = flightPlan.waypoints.map { waypoint in
             AviationMapWaypoint(
                 id: waypoint.id,
                 name: waypoint.name,
@@ -288,7 +288,7 @@ struct AviationMapPresentationFactory {
                 )
             )
         }
-        let legs = flight.legs.enumerated().map { index, leg in
+        let legs = flightPlan.legs.enumerated().map { index, leg in
             AviationMapLeg(
                 id: leg.id,
                 index: index,
@@ -296,18 +296,18 @@ struct AviationMapPresentationFactory {
                 to: coordinate(leg.arrival.position)
             )
         }
-        let annotationsByID = Dictionary(uniqueKeysWithValues: execution.annotations.map { ($0.entityID, $0) })
-        let activeIdentificationPoints = try flight.identificationPoints
+        let annotationsByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
+        let activeIdentificationPoints = try flightPlan.identificationPoints
             .filter { $0.legID == activeSourceLeg.id }
             .enumerated()
             .map { offset, sourcePoint in
                 guard let resolved = annotationsByID[sourcePoint.id],
                       resolved.kind == .identificationPoint,
                       resolved.legID == activeSourceLeg.id else {
-                    throw AviationMapPresentationError.missingExecutionReference(sourcePoint.id)
+                    throw AviationMapPresentationError.missingPlannedNavigationReference(sourcePoint.id)
                 }
                 let plannedElapsed: Int
-                switch session.executionMode {
+                switch flight.executionMode {
                 case .noWind:
                     plannedElapsed = resolved.noWindTimeFromLegStartSeconds
                 case .wind:
@@ -325,7 +325,7 @@ struct AviationMapPresentationFactory {
                     kind: .identificationPoint,
                     targetID: sourcePoint.id
                 )
-                let status: AviationMapIdentificationPoint.Status = switch session.identificationPointState(for: pointKey) {
+                let status: AviationMapIdentificationPoint.Status = switch flight.identificationPointState(for: pointKey) {
                 case .future: .future
                 case .reached: .reached
                 case .passedWithoutReport: .passedWithoutReport
@@ -336,41 +336,41 @@ struct AviationMapPresentationFactory {
                     coordinate: coordinate(resolved.position),
                     plannedElapsedSeconds: plannedElapsed,
                     status: status,
-                    committedETASeconds: session.committedPilotETA(targetKey: targetKey)
+                    committedETASeconds: flight.committedPilotETA(targetKey: targetKey)
                 )
             }
 
         let executionReferences = Dictionary(
-            uniqueKeysWithValues: (flight.execution.execution?.vorDmeReferences ?? []).map {
+            uniqueKeysWithValues: (flightPlan.plannedNavigation.plannedNavigation?.vorDmeReferences ?? []).map {
                 ($0.referenceID, $0)
             }
         )
         let endpointIDs = Set([activeSourceLeg.departure.id, activeSourceLeg.arrival.id])
-        let endpointReferences = try flight.vorDmeReferences
+        let endpointReferences = try flightPlan.vorDmeReferences
             .filter { endpointIDs.contains($0.waypointID) }
             .map { reference in
-                guard let execution = executionReferences[reference.id] else {
-                    throw AviationMapPresentationError.missingExecutionReference(reference.id)
+                guard let plannedNavigation = executionReferences[reference.id] else {
+                    throw AviationMapPresentationError.missingPlannedNavigationReference(reference.id)
                 }
-                guard let waypoint = flight.waypoints.first(where: { $0.id == reference.waypointID }) else {
-                    throw AviationMapPresentationError.missingExecutionReference(reference.id)
+                guard let waypoint = flightPlan.waypoints.first(where: { $0.id == reference.waypointID }) else {
+                    throw AviationMapPresentationError.missingPlannedNavigationReference(reference.id)
                 }
                 return AviationMapVORDMEReference(
                     id: reference.id,
                     waypointID: reference.waypointID,
                     waypointCoordinate: coordinate(waypoint.position),
                     stationIdentifier: reference.navigationAid.identifier,
-                    frequencyMHz: execution.frequency.value,
-                    magneticRadialFromDegrees: execution.magneticRadialFrom.value,
-                    slantRangeNauticalMiles: execution.slantRange.value
+                    frequencyMHz: plannedNavigation.frequency.value,
+                    magneticRadialFromDegrees: plannedNavigation.magneticRadialFrom.value,
+                    slantRangeNauticalMiles: plannedNavigation.slantRange.value
                 )
             }
 
         return AviationMapPresentation(
             waypoints: waypoints,
             legs: legs,
-            activeLegIndex: session.activeLegIndex,
-            nextLegPreview: legs.first { $0.index == session.activeLegIndex + 1 },
+            activeLegIndex: flight.activeLegIndex,
+            nextLegPreview: legs.first { $0.index == flight.activeLegIndex + 1 },
             endpointReferences: endpointReferences,
             plannedDurationSeconds: plannedDurationSeconds,
             minuteMarkers: AviationMapSymbology.minuteMarkers(
@@ -387,7 +387,7 @@ struct AviationMapPresentationFactory {
                 ),
                 name: activeSourceLeg.arrival.name,
                 plannedElapsedSeconds: plannedDurationSeconds,
-                committedETASeconds: session.committedPilotETA(targetKey: NavigationTimingTargetKey(
+                committedETASeconds: flight.committedPilotETA(targetKey: NavigationTimingTargetKey(
                     legID: activeSourceLeg.id,
                     kind: .destination,
                     targetID: activeSourceLeg.arrival.id
@@ -396,7 +396,7 @@ struct AviationMapPresentationFactory {
             driftReferenceArms: AviationMapGeometry.driftReferenceArms(
                 from: coordinate(activeSourceLeg.departure.position),
                 to: coordinate(activeSourceLeg.arrival.position),
-                angleDegrees: flight.parameters.driftAngle.value
+                angleDegrees: flightPlan.parameters.driftAngle.value
             )
         )
     }

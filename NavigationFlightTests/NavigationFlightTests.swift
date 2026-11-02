@@ -13,11 +13,36 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @Test func flightsHaveDistinctIdentityAndShareTheirSourceFlightPlanIdentity() throws {
+        let flightPlan = try FPLNavDecoder().decode(try representativeData())
+        let firstFlightID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
+        let secondFlightID = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+
+        let firstFlight = Flight(
+            id: firstFlightID,
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        let secondFlight = Flight(
+            id: secondFlightID,
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        #expect(firstFlight.id != secondFlight.id)
+        #expect(firstFlight.flightPlanID == flightPlan.id)
+        #expect(secondFlight.flightPlanID == flightPlan.id)
+    }
+
     @Test(arguments: [
         (-721, 359), (-360, 360), (-1, 359), (0, 360), (360, 360), (361, 1), (721, 1)
     ])
     func headingNormalization(input: Int, expected: Int) {
-        #expect(FlightSession.normalizedHeading(input) == expected)
+        #expect(Flight.normalizedHeading(input) == expected)
     }
 
     @Test func pilotHeadingHistoryAndLegLifecycleAreScoped() throws {
@@ -25,81 +50,81 @@ struct NavigationFlightTests {
         let secondLegID = UUID()
         let pointID = UUID()
         let startedAt = Date(timeIntervalSince1970: 1_000)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [firstLegID, secondLegID],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        session.openPilotHeadingEditor(baselineDegrees: 81)
-        session.adjustPilotHeading(by: 4)
-        session.commitPilotHeading()
-        session.openPilotHeadingEditor(baselineDegrees: 81)
-        session.adjustPilotHeading(by: 2)
-        session.commitPilotHeading()
-        session.openPilotHeadingEditor(baselineDegrees: 81)
-        session.adjustPilotHeading(by: 2)
+        flight.openPilotHeadingEditor(baselineDegrees: 81)
+        flight.adjustPilotHeading(by: 4)
+        flight.commitPilotHeading()
+        flight.openPilotHeadingEditor(baselineDegrees: 81)
+        flight.adjustPilotHeading(by: 2)
+        flight.commitPilotHeading()
+        flight.openPilotHeadingEditor(baselineDegrees: 81)
+        flight.adjustPilotHeading(by: 2)
 
         let pointKey = IdentificationPointKey(legID: firstLegID, identificationPointID: pointID)
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: pointKey,
             orderedActiveLegPointKeys: [pointKey],
             at: startedAt.addingTimeInterval(60)
         )
-        let afterPoint = try #require(session.pilotHeadingState(for: firstLegID))
+        let afterPoint = try #require(flight.pilotHeadingState(for: firstLegID))
         #expect(afterPoint.commits.map(\.degrees) == [85, 87])
         #expect(afterPoint.operationalDegrees == 87)
         #expect(afterPoint.draftDegrees == 89)
         #expect(afterPoint.isEditing)
 
-        try session.reachCurrentWaypoint(
+        try flight.reachCurrentWaypoint(
             orderedActiveLegPointKeys: [pointKey],
             at: startedAt.addingTimeInterval(120)
         )
-        let completed = try #require(session.pilotHeadingState(for: firstLegID))
+        let completed = try #require(flight.pilotHeadingState(for: firstLegID))
         #expect(completed.commits.map(\.degrees) == [85, 87])
         #expect(completed.operationalDegrees == 87)
         #expect(completed.draftDegrees == 87)
         #expect(!completed.isEditing)
-        #expect(session.pilotHeadingState(for: secondLegID) == nil)
+        #expect(flight.pilotHeadingState(for: secondLegID) == nil)
 
-        session.openPilotHeadingEditor(baselineDegrees: 143)
-        let successor = try #require(session.pilotHeadingState(for: secondLegID))
+        flight.openPilotHeadingEditor(baselineDegrees: 143)
+        let successor = try #require(flight.pilotHeadingState(for: secondLegID))
         #expect(successor.baselineDegrees == 143)
         #expect(successor.draftDegrees == 143)
         #expect(successor.commits.isEmpty)
     }
 
     @Test func representativeV5MapsIntoDomain() throws {
-        let flight = try FPLNavDecoder().decode(try representativeData())
+        let flightPlan = try FPLNavDecoder().decode(try representativeData())
 
-        #expect(flight.title == "Coastal training navigation")
-        #expect(flight.waypoints.map(\.name) == ["BAZRA", "Visual checkpoint"])
-        #expect(flight.legs.count == 1)
-        #expect(flight.legs[0].departure.id == flight.waypoints[0].id)
-        #expect(flight.legs[0].arrival.id == flight.waypoints[1].id)
-        #expect(flight.waypoints[0].position == WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.5))
-        #expect(flight.waypoints[1].plannedAltitude == AltitudeFeet(value: 3500))
+        #expect(flightPlan.title == "Coastal training navigation")
+        #expect(flightPlan.waypoints.map(\.name) == ["BAZRA", "Visual checkpoint"])
+        #expect(flightPlan.legs.count == 1)
+        #expect(flightPlan.legs[0].departure.id == flightPlan.waypoints[0].id)
+        #expect(flightPlan.legs[0].arrival.id == flightPlan.waypoints[1].id)
+        #expect(flightPlan.waypoints[0].position == WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.5))
+        #expect(flightPlan.waypoints[1].plannedAltitude == AltitudeFeet(value: 3500))
 
         // V5 explicitly distinguishes east-positive magnetic variation and true wind direction.
-        #expect(flight.parameters.magneticVariationEast == Degrees(value: 5))
-        #expect(flight.operationalContext.defaultWind?.directionFromTrue == Degrees(value: 270))
+        #expect(flightPlan.parameters.magneticVariationEast == Degrees(value: 5))
+        #expect(flightPlan.operationalContext.defaultWind?.directionFromTrue == Degrees(value: 270))
 
-        #expect(flight.identificationPoints[0].progress == LegProgress(fraction: 0.4))
-        #expect(flight.altitudeChanges.map(\.targetAltitude.value) == [4000, 2500, 3200])
-        #expect(flight.frequencyChanges[0].service.name == "Tel Aviv Control")
-        #expect(flight.frequencyChanges[0].frequency == FrequencyMHz(value: 120.5))
-        #expect(flight.vorDmeReferences.count == 2)
-        #expect(flight.vorDmeReferences[0].calculation == .automatic)
+        #expect(flightPlan.identificationPoints[0].progress == LegProgress(fraction: 0.4))
+        #expect(flightPlan.altitudeChanges.map(\.targetAltitude.value) == [4000, 2500, 3200])
+        #expect(flightPlan.frequencyChanges[0].service.name == "Tel Aviv Control")
+        #expect(flightPlan.frequencyChanges[0].frequency == FrequencyMHz(value: 120.5))
+        #expect(flightPlan.vorDmeReferences.count == 2)
+        #expect(flightPlan.vorDmeReferences[0].calculation == .automatic)
         #expect(
-            flight.vorDmeReferences[1].calculation
+            flightPlan.vorDmeReferences[1].calculation
                 == .manual(radial: Degrees(value: 270), distance: NauticalMiles(value: 12.4))
         )
-        #expect(flight.operationalContext.departureAerodrome?.icao == "LLHZ")
-        #expect(flight.operationalContext.arrivalAerodrome?.localCode == "LLMG")
-        #expect(flight.execution == .unavailableLegacyFormat(version: 5))
+        #expect(flightPlan.operationalContext.departureAerodrome?.icao == "LLHZ")
+        #expect(flightPlan.operationalContext.arrivalAerodrome?.localCode == "LLMG")
+        #expect(flightPlan.plannedNavigation == .unavailableLegacyFormat(version: 5))
     }
 
     @Test func documentMetadataIdentifiesV5() throws {
@@ -115,8 +140,8 @@ struct NavigationFlightTests {
         navigation["futureEditorTool"] = true
         object["navigation"] = navigation
 
-        let flight = try FPLNavDecoder().decode(try JSONSerialization.data(withJSONObject: object))
-        #expect(flight.waypoints.count == 2)
+        let flightPlan = try FPLNavDecoder().decode(try JSONSerialization.data(withJSONObject: object))
+        #expect(flightPlan.waypoints.count == 2)
     }
 
     @Test func unsupportedVersionIsTyped() throws {
@@ -152,36 +177,36 @@ struct NavigationFlightTests {
         navigation["radioFrequencyChanges"] = frequencyChanges
         object["navigation"] = navigation
 
-        let flight = try FPLNavDecoder().decode(try JSONSerialization.data(withJSONObject: object))
-        #expect(flight.altitudeChanges[0].anchor == .legProgress(LegProgress(fraction: 0.25)))
-        #expect(flight.frequencyChanges[0].progress == LegProgress(fraction: 0.25))
+        let flightPlan = try FPLNavDecoder().decode(try JSONSerialization.data(withJSONObject: object))
+        #expect(flightPlan.altitudeChanges[0].anchor == .legProgress(LegProgress(fraction: 0.25)))
+        #expect(flightPlan.frequencyChanges[0].progress == LegProgress(fraction: 0.25))
     }
 
     @Test func officialV7MapsSavedExecutionWithoutRecalculation() throws {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
-        var execution = try #require(object["execution"] as? [String: Any])
-        var legs = try #require(execution["legs"] as? [[String: Any]])
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(plannedNavigation["legs"] as? [[String: Any]])
         legs[0]["trueCourseDegrees"] = 123.456789
         legs[0]["distanceNauticalMiles"] = 9.87654321
         legs[0]["initialAltitudeFeetMsl"] = 4100
         var withWind = try #require(legs[0]["withWind"] as? [String: Any])
         withWind["trueHeadingDegrees"] = 222.25
         legs[0]["withWind"] = withWind
-        execution["legs"] = legs
-        var references = try #require(execution["vorDmeReferences"] as? [[String: Any]])
+        plannedNavigation["legs"] = legs
+        var references = try #require(plannedNavigation["vorDmeReferences"] as? [[String: Any]])
         references[0]["magneticRadialFromDegrees"] = 17.125
         references[0]["slantRangeNauticalMiles"] = 8.7654321
-        execution["vorDmeReferences"] = references
-        object["execution"] = execution
+        plannedNavigation["vorDmeReferences"] = references
+        object["execution"] = plannedNavigation
 
-        let flight = try decode(object)
-        let saved = try eligibleExecution(flight)
+        let flightPlan = try decode(object)
+        let saved = try eligiblePlannedNavigation(flightPlan)
         #expect(saved.calculationVersion == "synthetic-conformance-1")
         #expect(saved.altitudeReference == .msl)
         #expect(saved.legs[0].trueCourse.value == 123.456789)
         #expect(saved.legs[0].groundDistance.value == 9.87654321)
         #expect(saved.legs[0].initialAltitudeMsl.value == 4100)
-        #expect(flight.waypoints[0].plannedAltitude.value == 2000)
+        #expect(flightPlan.waypoints[0].plannedAltitude.value == 2000)
         #expect(saved.legs[0].withWind?.trueHeading.value == 222.25)
         #expect(saved.vorDmeReferences[0].magneticRadialFrom.value == 17.125)
         #expect(saved.vorDmeReferences[0].slantRange.value == 8.7654321)
@@ -190,47 +215,47 @@ struct NavigationFlightTests {
 
     @Test(arguments: ["editor-wind", "editor-no-wind", "editor-calm"])
     func editorV7VectorsDecode(_ name: String) throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
-        let execution = try eligibleExecution(flight)
-        #expect(execution.legs.count == 1)
-        #expect(execution.annotations.count == 5)
-        #expect(execution.vorDmeReferences.count == 2)
-        #expect(execution.legs[0].initialAltitudeMsl.value == 3000)
-        #expect(flight.waypoints[0].plannedAltitude.value == 3000)
-        #expect(flight.waypoints[1].plannedAltitude.value == 3500)
-        #expect(flight.altitudeChanges.map(\.targetAltitude.value) == [4000, 2500, 3200])
-        #expect(execution.annotations[0].position.longitudeDegrees == 34.58082289823876)
-        #expect(execution.annotations[0].noWindTimeFromLegStartSeconds == 238)
-        #expect(execution.vorDmeReferences[1].source == .manual)
-        #expect(execution.vorDmeReferences[0].slantRange.value == 20.08342967034671)
-        #expect(execution.vorDmeReferences[1].magneticRadialFrom.value == 270)
-        #expect(execution.vorDmeReferences[1].slantRange.value == 12.4)
-        #expect(execution.frequenciesByPhase[.departure]?.map(\.id) == [
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
+        let plannedNavigation = try eligiblePlannedNavigation(flightPlan)
+        #expect(plannedNavigation.legs.count == 1)
+        #expect(plannedNavigation.annotations.count == 5)
+        #expect(plannedNavigation.vorDmeReferences.count == 2)
+        #expect(plannedNavigation.legs[0].initialAltitudeMsl.value == 3000)
+        #expect(flightPlan.waypoints[0].plannedAltitude.value == 3000)
+        #expect(flightPlan.waypoints[1].plannedAltitude.value == 3500)
+        #expect(flightPlan.altitudeChanges.map(\.targetAltitude.value) == [4000, 2500, 3200])
+        #expect(plannedNavigation.annotations[0].position.longitudeDegrees == 34.58082289823876)
+        #expect(plannedNavigation.annotations[0].noWindTimeFromLegStartSeconds == 238)
+        #expect(plannedNavigation.vorDmeReferences[1].source == .manual)
+        #expect(plannedNavigation.vorDmeReferences[0].slantRange.value == 20.08342967034671)
+        #expect(plannedNavigation.vorDmeReferences[1].magneticRadialFrom.value == 270)
+        #expect(plannedNavigation.vorDmeReferences[1].slantRange.value == 12.4)
+        #expect(plannedNavigation.frequenciesByPhase[.departure]?.map(\.id) == [
             "user:handoff-override", "vor-dme:00000000-0000-4000-8000-00000000000a",
             "catalog:herzlia:secondary", "catalog:herzlia:cpt"
         ])
-        #expect(execution.frequenciesByPhase[.departure]?.first?.role == "Override")
+        #expect(plannedNavigation.frequenciesByPhase[.departure]?.first?.role == "Override")
 
         if name == "editor-no-wind" {
-            #expect(execution.defaultMode == .noWind)
-            #expect(execution.legs[0].withWind == nil)
-            #expect(execution.annotations[0].withWindTimeFromLegStartSeconds == nil)
+            #expect(plannedNavigation.defaultMode == .noWind)
+            #expect(plannedNavigation.legs[0].withWind == nil)
+            #expect(plannedNavigation.annotations[0].withWindTimeFromLegStartSeconds == nil)
         } else {
-            #expect(execution.defaultMode == .wind)
-            #expect(execution.legs[0].withWind != nil)
-            #expect(execution.annotations[0].withWindTimeFromLegStartSeconds == (name == "editor-wind" ? 222 : 238))
+            #expect(plannedNavigation.defaultMode == .wind)
+            #expect(plannedNavigation.legs[0].withWind != nil)
+            #expect(plannedNavigation.annotations[0].withWindTimeFromLegStartSeconds == (name == "editor-wind" ? 222 : 238))
         }
         if name == "editor-wind" {
-            #expect(execution.legs[0].withWind?.effectiveWind == Wind(directionFromTrue: .init(value: 250), speed: .init(value: 8)))
-            #expect(execution.legs[0].withWind?.windCorrection.value == -2.395800157284725)
+            #expect(plannedNavigation.legs[0].withWind?.effectiveWind == Wind(directionFromTrue: .init(value: 250), speed: .init(value: 8)))
+            #expect(plannedNavigation.legs[0].withWind?.windCorrection.value == -2.395800157284725)
         }
         if name == "editor-calm" {
-            #expect(execution.legs[0].withWind?.effectiveWind.speed.value == 0)
-            #expect(execution.legs[0].withWind?.trueHeading.value == execution.legs[0].trueCourse.value)
+            #expect(plannedNavigation.legs[0].withWind?.effectiveWind.speed.value == 0)
+            #expect(plannedNavigation.legs[0].withWind?.trueHeading.value == plannedNavigation.legs[0].trueCourse.value)
         }
     }
 
-    @Test func validEmptyV7IsDecodedButNotExecutionEligible() throws {
+    @Test func validEmptyV7IsDecodedButNotFlightEligible() throws {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
         var navigation = try #require(object["navigation"] as? [String: Any])
         var route = try #require(navigation["route"] as? [String: Any])
@@ -243,16 +268,16 @@ struct NavigationFlightTests {
         navigation["radioFrequencyChanges"] = []
         navigation["vorDmeReferences"] = []
         object["navigation"] = navigation
-        var execution = try #require(object["execution"] as? [String: Any])
-        execution["legs"] = []
-        execution["annotations"] = []
-        execution["vorDmeReferences"] = []
-        execution["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
-        object["execution"] = execution
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        plannedNavigation["legs"] = []
+        plannedNavigation["annotations"] = []
+        plannedNavigation["vorDmeReferences"] = []
+        plannedNavigation["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
+        object["execution"] = plannedNavigation
 
-        let flight = try decode(object)
-        #expect(!flight.execution.isExecutionEligible)
-        guard case .emptyPlan(let saved) = flight.execution else { Issue.record("Expected empty V7 execution"); return }
+        let flightPlan = try decode(object)
+        #expect(!flightPlan.plannedNavigation.isFlightEligible)
+        guard case .emptyPlan(let saved) = flightPlan.plannedNavigation else { Issue.record("Expected empty V7 execution"); return }
         #expect(saved.legs.isEmpty)
     }
 
@@ -273,10 +298,10 @@ struct NavigationFlightTests {
 
     @Test(arguments: ["editor-wind", "editor-no-wind", "editor-calm"])
     func cockpitPresentationUsesSavedModes(_ name: String) throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
-        let execution = try eligibleExecution(flight)
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))
+        let plannedNavigation = try eligiblePlannedNavigation(flightPlan)
         let adapter = CockpitPresentationAdapter()
-        let noWind = try adapter.makePresentation(flight: flight, legIndex: 0, mode: .noWind)
+        let noWind = try adapter.makePresentation(flightPlan: flightPlan, legIndex: 0, mode: .noWind)
 
         #expect(noWind.magneticCourseDegrees == 35.23764544187969)
         #expect(noWind.magneticHeadingDegrees == nil)
@@ -284,10 +309,10 @@ struct NavigationFlightTests {
         #expect(noWind.legDurationSeconds == 596)
         #expect(noWind.initialAltitudeFeetMsl == 3000)
         #expect(noWind.destinationCrossingAltitudeFeet == 3500)
-        #expect(noWind.routeEvents[0].id == execution.annotations[0].entityID)
-        #expect(noWind.routeEvents[0].entityIDs == [execution.annotations[0].entityID, execution.annotations[3].entityID])
+        #expect(noWind.routeEvents[0].id == plannedNavigation.annotations[0].entityID)
+        #expect(noWind.routeEvents[0].entityIDs == [plannedNavigation.annotations[0].entityID, plannedNavigation.annotations[3].entityID])
         #expect(noWind.routeEvents[0].kinds == [.identificationPoint, .altitudeChange])
-        #expect(noWind.routeEvents[0].position == execution.annotations[0].position)
+        #expect(noWind.routeEvents[0].position == plannedNavigation.annotations[0].position)
         #expect(noWind.routeEvents[0].timeFromLegStartSeconds == 238)
         #expect(noWind.references[0].slantRangeNauticalMiles == 20.08342967034671)
         #expect(noWind.references[1].slantRangeNauticalMiles == 12.4)
@@ -300,10 +325,10 @@ struct NavigationFlightTests {
         if name == "editor-no-wind" {
             #expect(!noWind.supportsWindMode)
             #expect(throws: CockpitPresentationError.unavailableWindMode) {
-                try adapter.makePresentation(flight: flight, legIndex: 0, mode: .wind)
+                try adapter.makePresentation(flightPlan: flightPlan, legIndex: 0, mode: .wind)
             }
         } else {
-            let wind = try adapter.makePresentation(flight: flight, legIndex: 0, mode: .wind)
+            let wind = try adapter.makePresentation(flightPlan: flightPlan, legIndex: 0, mode: .wind)
             #expect(wind.supportsWindMode)
             #expect(wind.magneticHeadingDegrees != nil)
             #expect(wind.routeEvents[0].timeFromLegStartSeconds == (name == "editor-wind" ? 222 : 238))
@@ -382,368 +407,368 @@ struct NavigationFlightTests {
     }
 
     @Test func newFlightSessionIsReadyForExpectedLegAndMode() {
-        let flightID = UUID()
+        let flightPlanID = UUID()
         let legIDs = [UUID(), UUID(), UUID()]
-        let session = FlightSession(
-            flightID: flightID,
+        let flight = Flight(
+            flightPlanID: flightPlanID,
             legIDs: legIDs,
             activeLegIndex: 2,
             executionMode: .wind
         )
 
-        #expect(session.flightID == flightID)
-        #expect(session.legIDs == legIDs)
-        #expect(session.activeLegIndex == 2)
-        #expect(session.executionMode == .wind)
-        #expect(session.legState == .ready)
-        #expect(session.legStartedAt == nil)
+        #expect(flight.flightPlanID == flightPlanID)
+        #expect(flight.legIDs == legIDs)
+        #expect(flight.activeLegIndex == 2)
+        #expect(flight.executionMode == .wind)
+        #expect(flight.legState == .ready)
+        #expect(flight.legStartedAt == nil)
     }
 
     @Test func startingLegRecordsTimestampAndDerivesElapsedTime() throws {
         let startedAt = Date(timeIntervalSince1970: 1_000)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
 
-        try session.startLeg(at: startedAt)
-        #expect(session.legState == .active)
-        #expect(session.legStartedAt == startedAt)
-        #expect(try #require(session.elapsedTime(at: startedAt.addingTimeInterval(37))) == 37)
+        try flight.startLeg(at: startedAt)
+        #expect(flight.legState == .active)
+        #expect(flight.legStartedAt == startedAt)
+        #expect(try #require(flight.elapsedTime(at: startedAt.addingTimeInterval(37))) == 37)
     }
 
     @Test func startingActiveLegDoesNotReplaceOriginalTimestamp() throws {
         let originalStart = Date(timeIntervalSince1970: 1_000)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .wind
         )
 
-        try session.startLeg(at: originalStart)
-        #expect(throws: FlightSession.TransitionError.legAlreadyStarted(0)) {
-            try session.startLeg(at: originalStart.addingTimeInterval(20))
+        try flight.startLeg(at: originalStart)
+        #expect(throws: Flight.TransitionError.legAlreadyStarted(0)) {
+            try flight.startLeg(at: originalStart.addingTimeInterval(20))
         }
-        #expect(session.legStartedAt == originalStart)
+        #expect(flight.legStartedAt == originalStart)
     }
 
-    @Test func startingLegDoesNotMutateImportedResolvedExecution() throws {
-        let flight = try FPLNavDecoder().decode(
+    @Test func startingLegDoesNotMutateImportedPlannedNavigation() throws {
+        let flightPlan = try FPLNavDecoder().decode(
             try fixtureData("editor-wind", directory: "V7/Editor")
         )
-        let originalFlight = flight
-        let originalExecution = try eligibleExecution(flight)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let originalFlight = flightPlan
+        let originalPlannedNavigation = try eligiblePlannedNavigation(flightPlan)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
-            executionMode: originalExecution.defaultMode
+            executionMode: originalPlannedNavigation.defaultMode
         )
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 1_000))
 
-        #expect(flight == originalFlight)
-        #expect(try eligibleExecution(flight) == originalExecution)
-        #expect(session.executionMode == originalExecution.defaultMode)
+        #expect(flightPlan == originalFlight)
+        #expect(try eligiblePlannedNavigation(flightPlan) == originalPlannedNavigation)
+        #expect(flight.executionMode == originalPlannedNavigation.defaultMode)
     }
 
     @Test func featureStartIsAtomicAndPreservesOriginalStartAfterDuplicateCommand() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         let originalStart = Date(timeIntervalSince1970: 1_000)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
 
         try state.startLeg(at: originalStart)
         let startedState = state
 
-        #expect(throws: FlightSession.TransitionError.legAlreadyStarted(0)) {
+        #expect(throws: Flight.TransitionError.legAlreadyStarted(0)) {
             try state.startLeg(at: originalStart.addingTimeInterval(20))
         }
         #expect(state == startedState)
-        #expect(state.session?.legTimings.count == 1)
-        #expect(state.session?.legStartedAt == originalStart)
-        #expect(state.activeLegStartChecklist?.legID == flight.legs[0].id)
+        #expect(state.flight?.legTimings.count == 1)
+        #expect(state.flight?.legStartedAt == originalStart)
+        #expect(state.activeLegStartChecklist?.legID == flightPlan.legs[0].id)
     }
 
     @Test func elapsedTimeIncludesIntervalsWithoutUITimerUpdates() throws {
         let startedAt = Date(timeIntervalSince1970: 10_000)
         let returnedToForegroundAt = startedAt.addingTimeInterval(187)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
 
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        #expect(session.elapsedTime(at: returnedToForegroundAt) == 187)
-        #expect(session.legStartedAt == startedAt)
+        #expect(flight.elapsedTime(at: returnedToForegroundAt) == 187)
+        #expect(flight.legStartedAt == startedAt)
     }
 
     @Test func automaticWaypointProgressionUsesOneAtomicTimestamp() throws {
         let legIDs = [UUID(), UUID()]
         let startedAt = Date(timeIntervalSince1970: 36_000)
         let reachedAt = Date(timeIntervalSince1970: 36_314)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: legIDs,
             activeLegIndex: 0,
             executionMode: .noWind,
             progressionPolicy: .automaticNextLeg
         )
 
-        try session.startLeg(at: startedAt)
-        try session.reachCurrentWaypoint(at: reachedAt)
+        try flight.startLeg(at: startedAt)
+        try flight.reachCurrentWaypoint(at: reachedAt)
 
-        #expect(session.activeLegIndex == 1)
-        #expect(session.legState == .active)
-        #expect(session.legTimings[0].legID == legIDs[0])
-        #expect(session.legTimings[0].reachedAt == reachedAt)
-        #expect(session.legTimings[0].actualElapsedDuration == 314)
-        #expect(session.legTimings[1].startedAt == reachedAt)
-        #expect(session.legTimings[0].reachedAt == session.legTimings[1].startedAt)
-        #expect(session.legStartedAt == reachedAt)
+        #expect(flight.activeLegIndex == 1)
+        #expect(flight.legState == .active)
+        #expect(flight.legTimings[0].legID == legIDs[0])
+        #expect(flight.legTimings[0].reachedAt == reachedAt)
+        #expect(flight.legTimings[0].actualElapsedDuration == 314)
+        #expect(flight.legTimings[1].startedAt == reachedAt)
+        #expect(flight.legTimings[0].reachedAt == flight.legTimings[1].startedAt)
+        #expect(flight.legStartedAt == reachedAt)
     }
 
     @Test func destinationIdentificationRecordsOnceWithoutChangingActiveTiming() throws {
         let startedAt = Date(timeIntervalSince1970: 100)
         let identifiedAt = Date(timeIntervalSince1970: 140)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID(), UUID()],
             activeLegIndex: 0,
             executionMode: .wind
         )
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        try session.identifyDestination(at: identifiedAt)
+        try flight.identifyDestination(at: identifiedAt)
 
-        #expect(session.destinationIdentifiedAt == identifiedAt)
-        #expect(session.legTimings[0].destinationIdentifiedAt == identifiedAt)
-        #expect(session.legStartedAt == startedAt)
-        #expect(session.elapsedTime(at: Date(timeIntervalSince1970: 175)) == 75)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legState == .active)
-        #expect(throws: FlightSession.TransitionError.destinationAlreadyIdentified(0)) {
-            try session.identifyDestination(at: Date(timeIntervalSince1970: 160))
+        #expect(flight.destinationIdentifiedAt == identifiedAt)
+        #expect(flight.legTimings[0].destinationIdentifiedAt == identifiedAt)
+        #expect(flight.legStartedAt == startedAt)
+        #expect(flight.elapsedTime(at: Date(timeIntervalSince1970: 175)) == 75)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legState == .active)
+        #expect(throws: Flight.TransitionError.destinationAlreadyIdentified(0)) {
+            try flight.identifyDestination(at: Date(timeIntervalSince1970: 160))
         }
-        #expect(session.destinationIdentifiedAt == identifiedAt)
+        #expect(flight.destinationIdentifiedAt == identifiedAt)
     }
 
     @Test func reachingWithoutIdentificationDoesNotFabricateIdentification() throws {
         let reachedAt = Date(timeIntervalSince1970: 200)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID(), UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
 
-        try session.reachCurrentWaypoint(at: reachedAt)
+        try flight.reachCurrentWaypoint(at: reachedAt)
 
-        #expect(session.legTimings[0].destinationIdentifiedAt == nil)
-        #expect(session.legTimings[0].reachedAt == reachedAt)
-        #expect(session.legTimings[1].startedAt == reachedAt)
+        #expect(flight.legTimings[0].destinationIdentifiedAt == nil)
+        #expect(flight.legTimings[0].reachedAt == reachedAt)
+        #expect(flight.legTimings[1].startedAt == reachedAt)
     }
 
     @Test func identifyThenReachPreservesDistinctObservationsAndActualETA() throws {
         let startedAt = Date(timeIntervalSince1970: 100)
         let identifiedAt = Date(timeIntervalSince1970: 140)
         let reachedAt = Date(timeIntervalSince1970: 175)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        try session.identifyDestination(at: identifiedAt)
-        try session.reachCurrentWaypoint(at: reachedAt)
+        try flight.identifyDestination(at: identifiedAt)
+        try flight.reachCurrentWaypoint(at: reachedAt)
 
-        let timing = try #require(session.legTimings.first)
+        let timing = try #require(flight.legTimings.first)
         #expect(timing.destinationIdentifiedAt == identifiedAt)
         #expect(timing.reachedAt == reachedAt)
         #expect(timing.actualElapsedDuration == 75)
-        #expect(session.legState == .completed)
-        #expect(session.legStartedAt == startedAt)
+        #expect(flight.legState == .completed)
+        #expect(flight.legStartedAt == startedAt)
     }
 
     @Test func manualWaypointProgressionWaitsForASecondStartTimestamp() throws {
         let reachedAt = Date(timeIntervalSince1970: 36_314)
         let secondStart = Date(timeIntervalSince1970: 36_400)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID(), UUID()],
             activeLegIndex: 0,
             executionMode: .wind,
             progressionPolicy: .manualNextLeg
         )
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 36_000))
-        try session.reachCurrentWaypoint(at: reachedAt)
+        try flight.startLeg(at: Date(timeIntervalSince1970: 36_000))
+        try flight.reachCurrentWaypoint(at: reachedAt)
 
-        #expect(session.activeLegIndex == 1)
-        #expect(session.legState == .ready)
-        #expect(session.legStartedAt == nil)
-        #expect(session.legTimings.count == 1)
+        #expect(flight.activeLegIndex == 1)
+        #expect(flight.legState == .ready)
+        #expect(flight.legStartedAt == nil)
+        #expect(flight.legTimings.count == 1)
 
-        try session.startLeg(at: secondStart)
-        #expect(session.legState == .active)
-        #expect(session.legStartedAt == secondStart)
+        try flight.startLeg(at: secondStart)
+        #expect(flight.legState == .active)
+        #expect(flight.legStartedAt == secondStart)
     }
 
     @Test func waypointCannotBeReachedWhileReady() {
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
 
-        #expect(throws: FlightSession.TransitionError.legNotActive) {
-            try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 100))
+        #expect(throws: Flight.TransitionError.legNotActive) {
+            try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 100))
         }
-        #expect(session.legTimings.isEmpty)
+        #expect(flight.legTimings.isEmpty)
     }
 
     @Test func duplicateFinalWaypointDoesNotOverwriteRecordedTimestamp() throws {
         let reachedAt = Date(timeIntervalSince1970: 200)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [UUID()],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
-        try session.reachCurrentWaypoint(at: reachedAt)
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
+        try flight.reachCurrentWaypoint(at: reachedAt)
 
-        #expect(throws: FlightSession.TransitionError.waypointAlreadyReached(0)) {
-            try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 300))
+        #expect(throws: Flight.TransitionError.waypointAlreadyReached(0)) {
+            try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 300))
         }
-        #expect(session.legTimings[0].reachedAt == reachedAt)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legState == .completed)
+        #expect(flight.legTimings[0].reachedAt == reachedAt)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legState == .completed)
     }
 
-    @Test func progressionDoesNotMutateImportedResolvedExecution() throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+    @Test func progressionDoesNotMutateImportedPlannedNavigation() throws {
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 200))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 200))
 
-        #expect(flight == originalFlight)
-        #expect(session.activeLegIndex == 1)
+        #expect(flightPlan == originalFlight)
+        #expect(flight.activeLegIndex == 1)
     }
 
     @Test func cockpitFeatureStateAdvancesPresentationInManualMode() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 200))
 
-        let session = try #require(state.session)
+        let flight = try #require(state.flight)
         let cockpit = try CockpitPresentationAdapter().makePresentation(
-            flight: flight,
+            flightPlan: flightPlan,
             legIndex: state.selectedLegIndex,
             mode: state.mode
         )
         let map = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
 
         #expect(state.selectedLegIndex == 1)
-        #expect(session.legState == .ready)
-        #expect(session.legStartedAt == nil)
-        #expect(cockpit.origin == flight.legs[1].departure.name)
-        #expect(cockpit.destination == flight.legs[1].arrival.name)
-        #expect(map.activeLeg?.id == flight.legs[1].id)
+        #expect(flight.legState == .ready)
+        #expect(flight.legStartedAt == nil)
+        #expect(cockpit.origin == flightPlan.legs[1].departure.name)
+        #expect(cockpit.destination == flightPlan.legs[1].arrival.name)
+        #expect(map.activeLeg?.id == flightPlan.legs[1].id)
         #expect(map.nextLegPreview == nil)
         #expect(map.readyFocusTarget == map.activeLeg?.from)
     }
 
     @Test func nextLegPreparationUsesSavedResolvedValuesAndIsAbsentOnFinalLeg() throws {
-        let flight = try twoLegFlight()
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let adapter = CockpitPresentationAdapter()
 
-        let next = try #require(try adapter.makeNextLegPreparation(flight: flight, session: session))
+        let next = try #require(try adapter.makeNextLegPreparation(flightPlan: flightPlan, flight: flight))
         #expect(next.legIndex == 1)
         #expect(next.direction == .heading(355))
         #expect(next.initialAltitudeFeetMsl == 2000)
         #expect(next.immediateAltitudeFeetMsl == nil)
         #expect(next.immediateFrequencyChange == nil)
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
-        #expect(try adapter.makeNextLegPreparation(flight: flight, session: session) == nil)
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
+        #expect(try adapter.makeNextLegPreparation(flightPlan: flightPlan, flight: flight) == nil)
     }
 
     @Test func nextLegPreparationLabelsSavedCourseWhenNoHeadingExists() throws {
-        let flight = try twoLegFlight()
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .noWind
         )
 
         let next = try #require(
-            try CockpitPresentationAdapter().makeNextLegPreparation(flight: flight, session: session)
+            try CockpitPresentationAdapter().makeNextLegPreparation(flightPlan: flightPlan, flight: flight)
         )
         #expect(next.direction == .course(355))
     }
 
     @Test func nextLegPreparationUsesExplicitSavedStartChanges() throws {
-        let flight = try twoLegFlight(withImmediateChanges: true)
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight(withImmediateChanges: true)
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
 
         let next = try #require(
-            try CockpitPresentationAdapter().makeNextLegPreparation(flight: flight, session: session)
+            try CockpitPresentationAdapter().makeNextLegPreparation(flightPlan: flightPlan, flight: flight)
         )
         #expect(next.immediateAltitudeFeetMsl == 1500)
         #expect(next.immediateFrequencyChange == .init(service: "Next Control", frequencyMHz: 120.6))
     }
 
     @Test func previousLegSummaryUsesSavedValuesAndSessionTiming() throws {
-        let flight = try summaryFlight()
-        let originalFlight = flight
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try summaryFlight()
+        let originalFlight = flightPlan
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let adapter = CockpitPresentationAdapter()
-        #expect(try adapter.makePreviousLegSummary(flight: flight, session: session) == nil)
+        #expect(try adapter.makePreviousLegSummary(flightPlan: flightPlan, flight: flight) == nil)
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_375))
-        let summary = try #require(try adapter.makePreviousLegSummary(flight: flight, session: session))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_375))
+        let summary = try #require(try adapter.makePreviousLegSummary(flightPlan: flightPlan, flight: flight))
 
         #expect(summary.plannedDurationSeconds == 382)
         #expect(summary.revisedETASeconds == nil)
@@ -755,7 +780,7 @@ struct NavigationFlightTests {
         #expect(summary.vorDme?.station == "SYN")
         #expect(summary.vorDme?.magneticRadialFromDegrees == 270)
         #expect(summary.vorDme?.slantRangeNauticalMiles == 12.4)
-        #expect(summary.targets.map(\.name) == ["IP1", flight.legs[0].arrival.name])
+        #expect(summary.targets.map(\.name) == ["IP1", flightPlan.legs[0].arrival.name])
         if case .passedWithoutReport = summary.targets[0].outcome {
             // Expected: completing the leg retains no fabricated actual ETA for an unreported point.
         } else {
@@ -765,19 +790,19 @@ struct NavigationFlightTests {
         #expect(summary.headingHistory.baselineDegrees == 355)
         #expect(summary.headingHistory.commits.isEmpty)
         #expect(summary.headingHistory.operationalDegrees == 355)
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func previousLegHistoryProjectsTargetsETACommitOrderDisclosuresAndHeadingCommits() throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
         let start = Date(timeIntervalSince1970: 10_000)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        let map = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let points = map.identificationPoints
         let first = try #require(points.first)
         let reported = try #require(points.last)
@@ -787,14 +812,14 @@ struct NavigationFlightTests {
             targetID: reported.id.identificationPointID
         )
 
-        try session.startLeg(at: start)
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: reported.plannedElapsedSeconds)
-        session.adjustPilotETA(targetKey: target, by: 5)
-        session.commitPilotETA(targetKey: target)
-        session.beginEditingPilotETA(targetKey: target)
-        session.adjustPilotETA(targetKey: target, by: 5)
-        session.commitPilotETA(targetKey: target)
-        let didShowReference = session.showPilotETACheck(
+        try flight.startLeg(at: start)
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: reported.plannedElapsedSeconds)
+        flight.adjustPilotETA(targetKey: target, by: 5)
+        flight.commitPilotETA(targetKey: target)
+        flight.beginEditingPilotETA(targetKey: target)
+        flight.adjustPilotETA(targetKey: target, by: 5)
+        flight.commitPilotETA(targetKey: target)
+        let didShowReference = flight.showPilotETACheck(
             targetKey: target,
             observationKey: first.id,
             plannedObservationElapsed: TimeInterval(first.plannedElapsedSeconds),
@@ -802,25 +827,25 @@ struct NavigationFlightTests {
             plannedTargetElapsed: TimeInterval(reported.plannedElapsedSeconds)
         )
         #expect(didShowReference)
-        session.openPilotHeadingEditor(baselineDegrees: 355)
-        session.adjustPilotHeading(by: 2)
-        session.commitPilotHeading()
-        session.openPilotHeadingEditor(baselineDegrees: 355)
-        session.adjustPilotHeading(by: 3)
-        session.commitPilotHeading()
-        try session.reachIdentificationPoint(
+        flight.openPilotHeadingEditor(baselineDegrees: 355)
+        flight.adjustPilotHeading(by: 2)
+        flight.commitPilotHeading()
+        flight.openPilotHeadingEditor(baselineDegrees: 355)
+        flight.adjustPilotHeading(by: 3)
+        flight.commitPilotHeading()
+        try flight.reachIdentificationPoint(
             key: reported.id,
             orderedActiveLegPointKeys: points.map(\.id),
             at: start.addingTimeInterval(TimeInterval(reported.plannedElapsedSeconds + 14))
         )
-        try session.reachCurrentWaypoint(
+        try flight.reachCurrentWaypoint(
             at: start.addingTimeInterval(TimeInterval(map.plannedDurationSeconds + 8))
         )
 
         let summary = try #require(
-            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+            try CockpitPresentationAdapter().makePreviousLegSummary(flightPlan: flightPlan, flight: flight)
         )
-        #expect(summary.targets.map(\.name) == points.map(\.name) + [flight.legs[0].arrival.name])
+        #expect(summary.targets.map(\.name) == points.map(\.name) + [flightPlan.legs[0].arrival.name])
         let initialRevision = IdentificationPointTimingCalculator.roundToNearestFiveSeconds(
             reported.plannedElapsedSeconds
         )
@@ -840,77 +865,77 @@ struct NavigationFlightTests {
     }
 
     @Test func previousLegSummaryUsesCompletedLegRevisedDestinationETAAsComparisonBasis() throws {
-        let flight = try summaryFlight()
-        let originalFlight = flight
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try summaryFlight()
+        let originalFlight = flightPlan
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let target = NavigationTimingTargetKey(
-            legID: flight.legs[0].id,
+            legID: flightPlan.legs[0].id,
             kind: .destination,
-            targetID: flight.legs[0].arrival.id
+            targetID: flightPlan.legs[0].arrival.id
         )
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 382)
-        for _ in 0..<4 { session.adjustPilotETA(targetKey: target, by: 5) }
-        session.commitPilotETA(targetKey: target)
-        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_407))
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: 382)
+        for _ in 0..<4 { flight.adjustPilotETA(targetKey: target, by: 5) }
+        flight.commitPilotETA(targetKey: target)
+        try flight.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_407))
 
         let summary = try #require(
-            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+            try CockpitPresentationAdapter().makePreviousLegSummary(flightPlan: flightPlan, flight: flight)
         )
         #expect(summary.plannedDurationSeconds == 382)
         #expect(summary.revisedETASeconds == 400)
         #expect(summary.actualDurationSeconds == 407)
         #expect(summary.deltaSeconds == 7)
         #expect(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds) == "+00:07")
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func previousLegSummaryOnlyExposesMostRecentlyCompletedLeg() throws {
-        let flight = try twoLegFlight()
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
-        try session.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 180))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
+        try flight.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 180))
 
         let summary = try #require(
-            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+            try CockpitPresentationAdapter().makePreviousLegSummary(flightPlan: flightPlan, flight: flight)
         )
         #expect(summary.legIndex == 1)
-        #expect(summary.origin == flight.legs[1].departure.name)
-        #expect(summary.destination == flight.legs[1].arrival.name)
+        #expect(summary.origin == flightPlan.legs[1].departure.name)
+        #expect(summary.destination == flightPlan.legs[1].arrival.name)
     }
 
     @Test func advancingToSecondLegPreservesFirstLegRevisedETAHistoricalComparison() throws {
-        let flight = try twoLegFlight()
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        let map = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let planned = map.destinationTarget.plannedElapsedSeconds
-        session.initializePilotETA(targetKey: map.destinationTarget.id, plannedElapsedSeconds: planned)
-        session.adjustPilotETA(targetKey: map.destinationTarget.id, by: 10)
-        session.commitPilotETA(targetKey: map.destinationTarget.id)
-        let revised = try #require(session.committedPilotETA(targetKey: map.destinationTarget.id))
+        flight.initializePilotETA(targetKey: map.destinationTarget.id, plannedElapsedSeconds: planned)
+        flight.adjustPilotETA(targetKey: map.destinationTarget.id, by: 10)
+        flight.commitPilotETA(targetKey: map.destinationTarget.id)
+        let revised = try #require(flight.committedPilotETA(targetKey: map.destinationTarget.id))
         let start = Date(timeIntervalSince1970: 2_000)
-        try session.startLeg(at: start)
-        try session.reachCurrentWaypoint(at: start.addingTimeInterval(TimeInterval(revised + 2)))
+        try flight.startLeg(at: start)
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(TimeInterval(revised + 2)))
 
-        #expect(session.activeLegIndex == 1)
+        #expect(flight.activeLegIndex == 1)
         let summary = try #require(
-            try CockpitPresentationAdapter().makePreviousLegSummary(flight: flight, session: session)
+            try CockpitPresentationAdapter().makePreviousLegSummary(flightPlan: flightPlan, flight: flight)
         )
         #expect(summary.legIndex == 0)
         #expect(summary.plannedDurationSeconds == planned)
@@ -919,23 +944,23 @@ struct NavigationFlightTests {
         #expect(summary.deltaSeconds == 2)
     }
 
-    @Test func startingFirstLegCreatesPendingChecklistWithoutChangingTimingOrExecution() throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
+    @Test func startingFirstLegCreatesPendingChecklistWithoutChangingTimingOrPlannedNavigation() throws {
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
         let startedAt = Date(timeIntervalSince1970: 1_000)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
 
         try state.startLeg(at: startedAt)
 
         let checklist = try #require(state.activeLegStartChecklist)
-        #expect(checklist.legID == flight.legs[0].id)
+        #expect(checklist.legID == flightPlan.legs[0].id)
         #expect(checklist.reviewState == .pending)
         #expect(checklist.presentationState == .expanded)
         #expect(checklist.phaseState == .available)
-        #expect(state.session?.legStartedAt == startedAt)
-        #expect(state.session?.elapsedTime(at: startedAt.addingTimeInterval(17)) == 17)
-        #expect(state.flight == originalFlight)
+        #expect(state.flight?.legStartedAt == startedAt)
+        #expect(state.flight?.elapsedTime(at: startedAt.addingTimeInterval(17)) == 17)
+        #expect(state.flightPlan == originalFlight)
     }
 
     @Test func builtInLegStartTemplateDefinesTzeKivunAndGamadWithoutFlightValues() throws {
@@ -983,12 +1008,12 @@ struct NavigationFlightTests {
 
     @Test(arguments: [false, true])
     func waypointIdentificationHidesChecklistWithoutChangingReviewOrTiming(wasNoted: Bool) throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
         let start = Date(timeIntervalSince1970: 100)
         let identified = Date(timeIntervalSince1970: 125)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: start)
         if wasNoted {
             state.noteLegStartChecklist()
@@ -999,32 +1024,32 @@ struct NavigationFlightTests {
         let checklist = try #require(state.activeLegStartChecklist)
         #expect(checklist.phaseState == .hiddenForPhase)
         #expect(checklist.reviewState == (wasNoted ? .noted : .pending))
-        #expect(state.session?.destinationIdentifiedAt == identified)
-        #expect(state.session?.legStartedAt == start)
-        #expect(state.session?.elapsedTime(at: Date(timeIntervalSince1970: 140)) == 40)
-        #expect(state.flight == originalFlight)
+        #expect(state.flight?.destinationIdentifiedAt == identified)
+        #expect(state.flight?.legStartedAt == start)
+        #expect(state.flight?.elapsedTime(at: Date(timeIntervalSince1970: 140)) == 40)
+        #expect(state.flightPlan == originalFlight)
         state.reopenLegStartChecklist()
         #expect(state.activeLegStartChecklist?.phaseState == .hiddenForPhase)
     }
 
     @Test func reachedNowHidesPendingChecklistWithoutFabricatingNoted() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
 
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
 
-        let firstLegChecklist = try #require(state.legStartChecklists[flight.legs[0].id])
+        let firstLegChecklist = try #require(state.legStartChecklists[flightPlan.legs[0].id])
         #expect(firstLegChecklist.phaseState == .hiddenForPhase)
         #expect(firstLegChecklist.reviewState == .pending)
         #expect(state.activeLegStartChecklist == nil)
     }
 
     @Test func previousDrawerCollapseDoesNotAcknowledgeChecklist() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
 
         state.collapseLegStartChecklist()
@@ -1035,45 +1060,45 @@ struct NavigationFlightTests {
     }
 
     @Test func automaticProgressionCreatesFreshPendingChecklistForNewLeg() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
         state.noteLegStartChecklist()
 
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
 
         let checklist = try #require(state.activeLegStartChecklist)
-        #expect(checklist.legID == flight.legs[1].id)
+        #expect(checklist.legID == flightPlan.legs[1].id)
         #expect(checklist.reviewState == .pending)
         #expect(checklist.presentationState == .expanded)
-        #expect(state.legStartChecklists[flight.legs[0].id]?.reviewState == .noted)
-        #expect(state.legStartChecklists[flight.legs[0].id]?.phaseState == .hiddenForPhase)
-        #expect(state.session?.legStartedAt == Date(timeIntervalSince1970: 140))
+        #expect(state.legStartChecklists[flightPlan.legs[0].id]?.reviewState == .noted)
+        #expect(state.legStartChecklists[flightPlan.legs[0].id]?.phaseState == .hiddenForPhase)
+        #expect(state.flight?.legStartedAt == Date(timeIntervalSince1970: 140))
     }
 
     @Test func manualProgressionWaitsUntilStartBeforeCreatingChecklist() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
         state.noteLegStartChecklist()
 
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 140))
-        #expect(state.session?.legState == .ready)
+        #expect(state.flight?.legState == .ready)
         #expect(state.activeLegStartChecklist == nil)
-        #expect(state.legStartChecklists[flight.legs[1].id] == nil)
+        #expect(state.legStartChecklists[flightPlan.legs[1].id] == nil)
 
         try state.startLeg(at: Date(timeIntervalSince1970: 150))
-        #expect(state.activeLegStartChecklist?.legID == flight.legs[1].id)
+        #expect(state.activeLegStartChecklist?.legID == flightPlan.legs[1].id)
         #expect(state.activeLegStartChecklist?.reviewState == .pending)
-        #expect(state.session?.legStartedAt == Date(timeIntervalSince1970: 150))
+        #expect(state.flight?.legStartedAt == Date(timeIntervalSince1970: 150))
     }
 
     @Test func checklistCollapseReopenAndNotedAreScopedToActiveLeg() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 100))
 
         state.collapseLegStartChecklist()
@@ -1090,27 +1115,27 @@ struct NavigationFlightTests {
     }
 
     @Test func checklistInteractionsDoNotChangeTimerOrResolvedNavigationValues() throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
         let start = Date(timeIntervalSince1970: 200)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: start)
 
         state.collapseLegStartChecklist()
         state.reopenLegStartChecklist()
         state.noteLegStartChecklist()
 
-        #expect(state.session?.legStartedAt == start)
-        #expect(state.session?.elapsedTime(at: start.addingTimeInterval(42)) == 42)
-        #expect(state.flight == originalFlight)
+        #expect(state.flight?.legStartedAt == start)
+        #expect(state.flight?.elapsedTime(at: start.addingTimeInterval(42)) == 42)
+        #expect(state.flightPlan == originalFlight)
     }
 
     @Test func checklistUsesOnlySavedDirectionAltitudeAndContractSupportedIAS() throws {
-        let flight = try twoLegFlight()
-        var noWindSession = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        var noWindSession = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .noWind
         )
@@ -1118,8 +1143,8 @@ struct NavigationFlightTests {
 
         let noWind = try #require(
             try CockpitPresentationAdapter().makeLegStartChecklist(
-                flight: flight,
-                session: noWindSession
+                flightPlan: flightPlan,
+                flight: noWindSession
             )
         )
         #expect(noWind.direction == .course(355))
@@ -1129,8 +1154,8 @@ struct NavigationFlightTests {
 
         let english = try #require(
             try CockpitPresentationAdapter().makeLegStartChecklist(
-                flight: flight,
-                session: noWindSession,
+                flightPlan: flightPlan,
+                flight: noWindSession,
                 template: .establishHeading
             )
         )
@@ -1139,26 +1164,26 @@ struct NavigationFlightTests {
         #expect(english.plannedAltitudeFeetMsl == 2000)
         #expect(english.plannedIndicatedAirspeedKnots == nil)
 
-        var windSession = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        var windSession = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         try windSession.startLeg(at: Date(timeIntervalSince1970: 100))
         let wind = try #require(
             try CockpitPresentationAdapter().makeLegStartChecklist(
-                flight: flight,
-                session: windSession
+                flightPlan: flightPlan,
+                flight: windSession
             )
         )
         #expect(wind.direction == .heading(355))
     }
 
     @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         #expect(state.selectedLegIndex == 0)
         #expect(state.mode == .wind)
 
@@ -1191,16 +1216,16 @@ struct NavigationFlightTests {
         let bundle = Bundle(for: FixtureLocator.self)
         let nested = bundle.url(forResource: "editor-wind", withExtension: "fplnav", subdirectory: "Fixtures/FPLNav/V7/Editor")
         let url = try #require(nested ?? bundle.url(forResource: "editor-wind", withExtension: "fplnav"))
-        let flight = try FPLNavFileLoader().load(url)
+        let flightPlan = try FPLNavFileLoader().load(url)
         var state = CockpitFeatureState()
-        try state.accept(flight)
-        #expect(state.flight?.title == "Synthetic Editor V7 wind handoff")
+        try state.accept(flightPlan)
+        #expect(state.flightPlan?.title == "Synthetic Editor V7 wind handoff")
     }
 
     @Test func cockpitAdapterPresentsTheSelectedResolvedLegAndOnlySumsSavedTime() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         let presentation = try CockpitPresentationAdapter().makePresentation(
-            flight: flight,
+            flightPlan: flightPlan,
             legIndex: 1,
             mode: .wind
         )
@@ -1217,75 +1242,75 @@ struct NavigationFlightTests {
     }
 
     @Test func mapPresentationUsesDomainRouteOrderAndSessionActiveLeg() throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 1,
             executionMode: .wind
         )
 
         let presentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
 
-        #expect(presentation.waypoints.map(\.name) == flight.waypoints.map(\.name))
-        #expect(presentation.legs.map(\.id) == flight.legs.map(\.id))
-        #expect(presentation.activeLegIndex == session.activeLegIndex)
-        #expect(presentation.activeLeg?.id == flight.legs[1].id)
+        #expect(presentation.waypoints.map(\.name) == flightPlan.waypoints.map(\.name))
+        #expect(presentation.legs.map(\.id) == flightPlan.legs.map(\.id))
+        #expect(presentation.activeLegIndex == flight.activeLegIndex)
+        #expect(presentation.activeLeg?.id == flightPlan.legs[1].id)
         #expect(presentation.nextLegPreview == nil)
         #expect(presentation.readyFocusTarget == presentation.activeLeg?.from)
         #expect(presentation.activeFocusTarget == presentation.activeLeg?.to)
         #expect(presentation.plannedDurationSeconds == 40)
         #expect(presentation.plannedDurationText == "00:40")
         #expect(presentation.minuteMarkers.isEmpty)
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
 
-        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 1_000))
         let activePresentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
         #expect(activePresentation == presentation)
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func mapPresentationSelectsBeginningOfFollowingLeg() throws {
-        let flight = try twoLegFlight()
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
 
         let presentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
 
-        #expect(presentation.activeLeg?.id == flight.legs[0].id)
-        #expect(presentation.nextLegPreview?.id == flight.legs[1].id)
+        #expect(presentation.activeLeg?.id == flightPlan.legs[0].id)
+        #expect(presentation.nextLegPreview?.id == flightPlan.legs[1].id)
         #expect(presentation.nextLegPreview?.from == presentation.activeLeg?.to)
-        #expect(presentation.readyFocusTarget?.latitude == flight.legs[0].departure.position.latitudeDegrees)
-        #expect(presentation.activeFocusTarget?.longitude == flight.legs[0].arrival.position.longitudeDegrees)
+        #expect(presentation.readyFocusTarget?.latitude == flightPlan.legs[0].departure.position.latitudeDegrees)
+        #expect(presentation.activeFocusTarget?.longitude == flightPlan.legs[0].arrival.position.longitudeDegrees)
     }
 
     @Test func destinationIdentificationDoesNotChangeMapPresentation() throws {
-        let flight = try twoLegFlight()
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight()
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        try session.startLeg(at: Date(timeIntervalSince1970: 100))
-        let before = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        try flight.startLeg(at: Date(timeIntervalSince1970: 100))
+        let before = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
 
-        try session.identifyDestination(at: Date(timeIntervalSince1970: 120))
-        let after = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        try flight.identifyDestination(at: Date(timeIntervalSince1970: 120))
+        let after = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
 
         #expect(after == before)
     }
@@ -1380,15 +1405,15 @@ struct NavigationFlightTests {
     }
 
     @Test func movingIdentificationLabelKeepsResolvedEllipseAnchorAndPlanUnchanged() throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
-        let originalFlight = flight
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let originalFlight = flightPlan
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let presentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let point = try #require(presentation.identificationPoints.first)
         let initial = AviationMapVisualStyle.default.defaultIdentificationPointCalloutOffset
         let moved = initial.translated(x: 85, y: 35)
@@ -1397,50 +1422,50 @@ struct NavigationFlightTests {
         #expect(moved != initial)
         #expect(point.coordinate == presentation.identificationPoints.first?.coordinate)
         #expect(point.plannedElapsedSeconds == presentation.identificationPoints.first?.plannedElapsedSeconds)
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func committedETAPropagatesToMapPresentationWithoutMutatingFlight() throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
-        let originalFlight = flight
-        let destinationID = try #require(flight.legs.first?.arrival.id)
-        let legID = try #require(flight.legs.first?.id)
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let originalFlight = flightPlan
+        let destinationID = try #require(flightPlan.legs.first?.arrival.id)
+        let legID = try #require(flightPlan.legs.first?.id)
         let targetKey = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: destinationID)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 556)
-        session.adjustPilotETA(targetKey: targetKey, by: 25)
+        flight.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 556)
+        flight.adjustPilotETA(targetKey: targetKey, by: 25)
 
-        let beforeCommit = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let beforeCommit = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         #expect(beforeCommit.destinationTarget.committedETASeconds == nil)
         #expect(beforeCommit.destinationTarget.plannedElapsedSeconds == 556)
 
-        session.commitPilotETA(targetKey: targetKey)
-        let afterCommit = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        flight.commitPilotETA(targetKey: targetKey)
+        let afterCommit = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         #expect(afterCommit.destinationTarget.committedETASeconds == 580)
         #expect(afterCommit.destinationTarget.plannedElapsedSeconds == 556)
-        #expect(flight == originalFlight)
-        #expect(session.legTimings.isEmpty)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legState == .ready)
+        #expect(flightPlan == originalFlight)
+        #expect(flight.legTimings.isEmpty)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legState == .ready)
     }
 
-    @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrResolvedExecution() throws {
-        let flight = try twoLegFlight()
-        let originalFlight = flight
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+    @Test func movingEtaCalloutOffsetDoesNotMoveDestinationOrPlannedNavigation() throws {
+        let flightPlan = try twoLegFlight()
+        let originalFlight = flightPlan
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let presentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
         let destination = try #require(presentation.activeFocusTarget)
         let initial = AviationMapVisualStyle.default.defaultEtaCalloutOffset
@@ -1448,7 +1473,7 @@ struct NavigationFlightTests {
 
         #expect(moved == AviationMapCalloutOffset(x: initial.x + 42, y: initial.y - 18))
         #expect(presentation.activeFocusTarget == destination)
-        #expect(flight == originalFlight)
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func mapMinuteMarkersOmitDurationsShorterThanOneMinute() {
@@ -1481,19 +1506,19 @@ struct NavigationFlightTests {
     }
 
     @Test func importedIdentificationPointOrderingAndResolvedLegETAArePreserved() throws {
-        let flight = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
-        let pointID = try #require(flight.identificationPoints.first?.id)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try FPLNavDecoder().decode(try fixtureData("editor-wind", directory: "V7/Editor"))
+        let pointID = try #require(flightPlan.identificationPoints.first?.id)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
-        try session.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        try flight.startLeg(at: Date(timeIntervalSince1970: 1_000))
 
-        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let presentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
 
-        #expect(presentation.identificationPoints.map(\.id.identificationPointID) == flight.identificationPoints.map(\.id))
+        #expect(presentation.identificationPoints.map(\.id.identificationPointID) == flightPlan.identificationPoints.map(\.id))
         #expect(presentation.identificationPoints.first?.id.identificationPointID == pointID)
         #expect(presentation.identificationPoints.first?.coordinate.latitude == 32.179463389700274)
         #expect(presentation.identificationPoints.first?.plannedElapsedSeconds == 222)
@@ -1508,41 +1533,41 @@ struct NavigationFlightTests {
         let startedAt = Date(timeIntervalSince1970: 36_000)
         let reachedA = startedAt.addingTimeInterval(173)
         let reachedB = startedAt.addingTimeInterval(240)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: legIDs,
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: keyA,
             orderedActiveLegPointKeys: [keyA, keyB],
             at: reachedA
         )
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: keyB,
             orderedActiveLegPointKeys: [keyA, keyB],
             at: reachedB
         )
 
-        #expect(session.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
-        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keyA) == 173)
-        #expect(session.identificationPointTiming(for: keyB)?.reachedAt == reachedB)
-        #expect(session.identificationPointTimings.count == 2)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legState == .active)
-        #expect(session.legStartedAt == startedAt)
-        #expect(session.elapsedTime(at: startedAt.addingTimeInterval(300)) == 300)
-        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(pointA)) {
-            try session.reachIdentificationPoint(
+        #expect(flight.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
+        #expect(flight.actualLegElapsedDuration(atIdentificationPoint: keyA) == 173)
+        #expect(flight.identificationPointTiming(for: keyB)?.reachedAt == reachedB)
+        #expect(flight.identificationPointTimings.count == 2)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legState == .active)
+        #expect(flight.legStartedAt == startedAt)
+        #expect(flight.elapsedTime(at: startedAt.addingTimeInterval(300)) == 300)
+        #expect(throws: Flight.TransitionError.identificationPointAlreadyReached(pointA)) {
+            try flight.reachIdentificationPoint(
                 key: keyA,
                 orderedActiveLegPointKeys: [keyA, keyB],
                 at: startedAt.addingTimeInterval(400)
             )
         }
-        #expect(session.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
+        #expect(flight.identificationPointTiming(for: keyA)?.reachedAt == reachedA)
     }
 
     @Test func reportingLaterIdentificationPointPassesEarlierFuturePointsAtomically() throws {
@@ -1557,47 +1582,47 @@ struct NavigationFlightTests {
         )
         let start = Date(timeIntervalSince1970: 50_000)
         let report = start.addingTimeInterval(208)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [legID],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: start)
-        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 200)
-        session.adjustPilotETA(targetKey: targetKey, by: 5)
-        session.commitPilotETA(targetKey: targetKey)
-        session.beginEditingPilotETA(targetKey: targetKey)
-        session.adjustPilotETA(targetKey: targetKey, by: 10)
+        try flight.startLeg(at: start)
+        flight.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 200)
+        flight.adjustPilotETA(targetKey: targetKey, by: 5)
+        flight.commitPilotETA(targetKey: targetKey)
+        flight.beginEditingPilotETA(targetKey: targetKey)
+        flight.adjustPilotETA(targetKey: targetKey, by: 10)
 
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: keys[1],
             orderedActiveLegPointKeys: keys,
             at: report
         )
 
-        #expect(session.identificationPointState(for: keys[0]) == .passedWithoutReport)
-        #expect(session.identificationPointTiming(for: keys[0])?.reachedAt == nil)
-        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[0]) == nil)
-        #expect(session.identificationPointState(for: keys[1]) == .reached(report))
-        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == 208)
-        #expect(session.identificationPointState(for: keys[2]) == .future)
-        let retainedETA = try #require(session.pilotETAState(targetKey: targetKey))
+        #expect(flight.identificationPointState(for: keys[0]) == .passedWithoutReport)
+        #expect(flight.identificationPointTiming(for: keys[0])?.reachedAt == nil)
+        #expect(flight.actualLegElapsedDuration(atIdentificationPoint: keys[0]) == nil)
+        #expect(flight.identificationPointState(for: keys[1]) == .reached(report))
+        #expect(flight.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == 208)
+        #expect(flight.identificationPointState(for: keys[2]) == .future)
+        let retainedETA = try #require(flight.pilotETAState(targetKey: targetKey))
         #expect(retainedETA.committedSeconds == 205)
         #expect(retainedETA.draftSeconds == 205)
         #expect(retainedETA.isEditing == false)
 
-        session.beginEditingPilotETA(targetKey: targetKey)
-        session.adjustPilotETA(targetKey: targetKey, by: 5)
-        #expect(session.pilotETAState(targetKey: targetKey) == retainedETA)
+        flight.beginEditingPilotETA(targetKey: targetKey)
+        flight.adjustPilotETA(targetKey: targetKey, by: 5)
+        #expect(flight.pilotETAState(targetKey: targetKey) == retainedETA)
     }
 
     @Test(arguments: [
-        FlightSession.ProgressionPolicy.automaticNextLeg,
-        FlightSession.ProgressionPolicy.manualNextLeg
+        Flight.ProgressionPolicy.automaticNextLeg,
+        Flight.ProgressionPolicy.manualNextLeg
     ])
     func destinationReachPassesEveryRemainingIdentificationPointAtomically(
-        progressionPolicy: FlightSession.ProgressionPolicy
+        progressionPolicy: Flight.ProgressionPolicy
     ) throws {
         let legIDs = [UUID(), UUID()]
         let keys = (0..<3).map { _ in
@@ -1621,51 +1646,51 @@ struct NavigationFlightTests {
         let start = Date(timeIntervalSince1970: 80_000)
         let firstReport = start.addingTimeInterval(100)
         let destinationReport = start.addingTimeInterval(300)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: legIDs,
             activeLegIndex: 0,
             executionMode: .noWind,
             progressionPolicy: progressionPolicy
         )
-        try session.startLeg(at: start)
-        try session.reachIdentificationPoint(
+        try flight.startLeg(at: start)
+        try flight.reachIdentificationPoint(
             key: keys[0],
             orderedActiveLegPointKeys: keys,
             at: firstReport
         )
-        session.initializePilotETA(targetKey: committedTarget, plannedElapsedSeconds: 200)
-        session.adjustPilotETA(targetKey: committedTarget, by: 5)
-        session.commitPilotETA(targetKey: committedTarget)
-        session.beginEditingPilotETA(targetKey: committedTarget)
-        session.adjustPilotETA(targetKey: committedTarget, by: 10)
-        session.initializePilotETA(targetKey: transientTarget, plannedElapsedSeconds: 250)
-        session.initializePilotETA(targetKey: destinationTarget, plannedElapsedSeconds: 300)
+        flight.initializePilotETA(targetKey: committedTarget, plannedElapsedSeconds: 200)
+        flight.adjustPilotETA(targetKey: committedTarget, by: 5)
+        flight.commitPilotETA(targetKey: committedTarget)
+        flight.beginEditingPilotETA(targetKey: committedTarget)
+        flight.adjustPilotETA(targetKey: committedTarget, by: 10)
+        flight.initializePilotETA(targetKey: transientTarget, plannedElapsedSeconds: 250)
+        flight.initializePilotETA(targetKey: destinationTarget, plannedElapsedSeconds: 300)
 
-        try session.reachCurrentWaypoint(
+        try flight.reachCurrentWaypoint(
             orderedActiveLegPointKeys: keys,
             at: destinationReport
         )
 
-        #expect(session.identificationPointState(for: keys[0]) == .reached(firstReport))
-        #expect(session.identificationPointState(for: keys[1]) == .passedWithoutReport)
-        #expect(session.identificationPointState(for: keys[2]) == .passedWithoutReport)
-        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == nil)
-        #expect(session.actualLegElapsedDuration(atIdentificationPoint: keys[2]) == nil)
-        #expect(session.pilotETAState(targetKey: committedTarget)?.committedSeconds == 205)
-        #expect(session.pilotETAState(targetKey: committedTarget)?.draftSeconds == 205)
-        #expect(session.pilotETAState(targetKey: committedTarget)?.isEditing == false)
-        #expect(session.pilotETAState(targetKey: transientTarget) == nil)
-        #expect(session.pilotETAState(targetKey: destinationTarget) == nil)
-        #expect(session.legTimings[0].reachedAt == destinationReport)
-        #expect(session.activeLegIndex == 1)
+        #expect(flight.identificationPointState(for: keys[0]) == .reached(firstReport))
+        #expect(flight.identificationPointState(for: keys[1]) == .passedWithoutReport)
+        #expect(flight.identificationPointState(for: keys[2]) == .passedWithoutReport)
+        #expect(flight.actualLegElapsedDuration(atIdentificationPoint: keys[1]) == nil)
+        #expect(flight.actualLegElapsedDuration(atIdentificationPoint: keys[2]) == nil)
+        #expect(flight.pilotETAState(targetKey: committedTarget)?.committedSeconds == 205)
+        #expect(flight.pilotETAState(targetKey: committedTarget)?.draftSeconds == 205)
+        #expect(flight.pilotETAState(targetKey: committedTarget)?.isEditing == false)
+        #expect(flight.pilotETAState(targetKey: transientTarget) == nil)
+        #expect(flight.pilotETAState(targetKey: destinationTarget) == nil)
+        #expect(flight.legTimings[0].reachedAt == destinationReport)
+        #expect(flight.activeLegIndex == 1)
         switch progressionPolicy {
         case .automaticNextLeg:
-            #expect(session.legState == .active)
-            #expect(session.legStartedAt == destinationReport)
+            #expect(flight.legState == .active)
+            #expect(flight.legStartedAt == destinationReport)
         case .manualNextLeg:
-            #expect(session.legState == .ready)
-            #expect(session.legStartedAt == nil)
+            #expect(flight.legState == .ready)
+            #expect(flight.legStartedAt == nil)
         }
     }
 
@@ -1676,50 +1701,50 @@ struct NavigationFlightTests {
         }
         let start = Date(timeIntervalSince1970: 90_000)
         let report = start.addingTimeInterval(240)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [legID],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: start)
+        try flight.startLeg(at: start)
 
-        try session.reachCurrentWaypoint(
+        try flight.reachCurrentWaypoint(
             orderedActiveLegPointKeys: keys,
             at: report
         )
 
-        #expect(keys.allSatisfy { session.identificationPointState(for: $0) == .passedWithoutReport })
-        #expect(session.identificationPointTimings.allSatisfy { $0.reachedAt == nil })
-        #expect(session.legState == .completed)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legTimings.count == 1)
-        #expect(session.legTimings[0].reachedAt == report)
+        #expect(keys.allSatisfy { flight.identificationPointState(for: $0) == .passedWithoutReport })
+        #expect(flight.identificationPointTimings.allSatisfy { $0.reachedAt == nil })
+        #expect(flight.legState == .completed)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legTimings.count == 1)
+        #expect(flight.legTimings[0].reachedAt == report)
     }
 
     @Test func invalidDestinationReachContextDoesNotMutateSession() throws {
         let legID = UUID()
         let start = Date(timeIntervalSince1970: 100_000)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [legID],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: start)
-        let before = session
+        try flight.startLeg(at: start)
+        let before = flight
         let wrongLegPoint = IdentificationPointKey(
             legID: UUID(),
             identificationPointID: UUID()
         )
 
-        #expect(throws: FlightSession.TransitionError.invalidIdentificationPointOrder) {
-            try session.reachCurrentWaypoint(
+        #expect(throws: Flight.TransitionError.invalidIdentificationPointOrder) {
+            try flight.reachCurrentWaypoint(
                 orderedActiveLegPointKeys: [wrongLegPoint],
                 at: start.addingTimeInterval(60)
             )
         }
-        #expect(session == before)
+        #expect(flight == before)
     }
 
     @Test func rejectedIdentificationPointReportsDoNotMutateState() throws {
@@ -1727,49 +1752,49 @@ struct NavigationFlightTests {
         let key = IdentificationPointKey(legID: legID, identificationPointID: UUID())
         let wrongLegKey = IdentificationPointKey(legID: UUID(), identificationPointID: UUID())
         let start = Date(timeIntervalSince1970: 60_000)
-        var session = FlightSession(
-            flightID: UUID(),
+        var flight = Flight(
+            flightPlanID: UUID(),
             legIDs: [legID],
             activeLegIndex: 0,
             executionMode: .noWind
         )
-        try session.startLeg(at: start)
+        try flight.startLeg(at: start)
 
-        let beforeWrongLeg = session
-        #expect(throws: FlightSession.TransitionError.identificationPointWrongLeg(wrongLegKey.identificationPointID)) {
-            try session.reachIdentificationPoint(
+        let beforeWrongLeg = flight
+        #expect(throws: Flight.TransitionError.identificationPointWrongLeg(wrongLegKey.identificationPointID)) {
+            try flight.reachIdentificationPoint(
                 key: wrongLegKey,
                 orderedActiveLegPointKeys: [wrongLegKey],
                 at: start.addingTimeInterval(10)
             )
         }
-        #expect(session == beforeWrongLeg)
+        #expect(flight == beforeWrongLeg)
 
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: key,
             orderedActiveLegPointKeys: [key],
             at: start.addingTimeInterval(20)
         )
-        let beforeDuplicate = session
-        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(key.identificationPointID)) {
-            try session.reachIdentificationPoint(
+        let beforeDuplicate = flight
+        #expect(throws: Flight.TransitionError.identificationPointAlreadyReached(key.identificationPointID)) {
+            try flight.reachIdentificationPoint(
                 key: key,
                 orderedActiveLegPointKeys: [key],
                 at: start.addingTimeInterval(30)
             )
         }
-        #expect(session == beforeDuplicate)
+        #expect(flight == beforeDuplicate)
     }
 
     @Test func featureAndMapPresentationProjectPassedReachedAndFutureOutcomes() throws {
-        let flight = try flightWithThreeIdentificationPoints()
+        let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 70_000)
         try state.startLeg(at: start)
         let before = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         #expect(before.identificationPoints.map(\.status) == [.future, .future, .future])
 
@@ -1780,8 +1805,8 @@ struct NavigationFlightTests {
         )
 
         let after = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         #expect(after.identificationPoints.map(\.status) == [
             .passedWithoutReport,
@@ -1790,23 +1815,23 @@ struct NavigationFlightTests {
         ])
         #expect(after.identificationPoints[0].operationalState.canMarkReached == false)
         #expect(after.identificationPoints[0].operationalState.canEditETA == false)
-        #expect(state.session?.actualLegElapsedDuration(
+        #expect(state.flight?.actualLegElapsedDuration(
             atIdentificationPoint: after.identificationPoints[0].id
         ) == nil)
-        #expect(state.session?.actualLegElapsedDuration(
+        #expect(state.flight?.actualLegElapsedDuration(
             atIdentificationPoint: after.identificationPoints[1].id
         ) == 150)
     }
 
     @Test func identificationPointReachUndoRestoresCompleteAtomicSnapshot() throws {
-        let flight = try flightWithThreeIdentificationPoints()
+        let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 70_000)
         try state.startLeg(at: start)
         let map = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         let etaTarget = map.destinationTarget
         state.openPilotETAEditor(target: etaTarget)
@@ -1814,7 +1839,7 @@ struct NavigationFlightTests {
         state.openPilotHeadingEditor(baselineDegrees: 81)
         state.adjustPilotHeading(by: 4)
         state.commitPilotHeading()
-        let expectedSession = try #require(state.session)
+        let expectedSession = try #require(state.flight)
         let restoration = CockpitRestoration(
             camera: AviationMapCameraState(
                 center: .init(latitude: 32.1, longitude: 34.8),
@@ -1833,25 +1858,25 @@ struct NavigationFlightTests {
             cockpitRestoration: restoration,
             at: start.addingTimeInterval(150)
         )
-        #expect(state.session?.identificationPointState(for: map.identificationPoints[0].id) == .passedWithoutReport)
+        #expect(state.flight?.identificationPointState(for: map.identificationPoints[0].id) == .passedWithoutReport)
 
         let restored = state.undoMostRecentReach(at: start.addingTimeInterval(169))
         #expect(restored == restoration)
-        #expect(state.session == expectedSession)
-        #expect(state.session?.identificationPointState(for: map.identificationPoints[0].id) == .future)
-        #expect(state.session?.identificationPointState(for: map.identificationPoints[1].id) == .future)
+        #expect(state.flight == expectedSession)
+        #expect(state.flight?.identificationPointState(for: map.identificationPoints[0].id) == .future)
+        #expect(state.flight?.identificationPointState(for: map.identificationPoints[1].id) == .future)
         #expect(state.pendingReachUndo == nil)
     }
 
     @Test func reachUndoUsesStrictWallClockDeadlineAndPassiveActionsPreserveIt() throws {
-        let flight = try flightWithThreeIdentificationPoints()
+        let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 80_000)
         try state.startLeg(at: start)
         let map = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         try state.reachIdentificationPoint(
             key: map.identificationPoints[0].id,
@@ -1869,20 +1894,20 @@ struct NavigationFlightTests {
     }
 
     @Test func rejectedReachPreservesUndoWhileSuccessfulFlightStateCommitInvalidatesIt() throws {
-        let flight = try flightWithThreeIdentificationPoints()
+        let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 90_000)
         try state.startLeg(at: start)
         let map = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         let point = map.identificationPoints[0]
         try state.reachIdentificationPoint(key: point.id, mapPresentation: map, at: start.addingTimeInterval(10))
         let beforeRejected = state
 
-        #expect(throws: FlightSession.TransitionError.identificationPointAlreadyReached(point.id.identificationPointID)) {
+        #expect(throws: Flight.TransitionError.identificationPointAlreadyReached(point.id.identificationPointID)) {
             try state.reachIdentificationPoint(key: point.id, mapPresentation: map, at: start.addingTimeInterval(11))
         }
         #expect(state == beforeRejected)
@@ -1895,23 +1920,23 @@ struct NavigationFlightTests {
     }
 
     @Test(arguments: [
-        FlightSession.ProgressionPolicy.automaticNextLeg,
-        FlightSession.ProgressionPolicy.manualNextLeg
+        Flight.ProgressionPolicy.automaticNextLeg,
+        Flight.ProgressionPolicy.manualNextLeg
     ])
     func arrivalReachUndoRestoresAtomicSnapshotAcrossProgressionPolicies(
-        progressionPolicy: FlightSession.ProgressionPolicy
+        progressionPolicy: Flight.ProgressionPolicy
     ) throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState(progressionPolicy: progressionPolicy)
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 100_000)
         let arrival = start.addingTimeInterval(300)
         try state.startLeg(at: start)
         state.noteLegStartChecklist()
 
         let map = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         state.openPilotETAEditor(target: map.destinationTarget)
         state.adjustPilotETA(targetKey: map.destinationTarget.id, by: 15)
@@ -1920,7 +1945,7 @@ struct NavigationFlightTests {
         state.adjustPilotHeading(by: 6)
         state.commitPilotHeading()
 
-        let expectedSession = try #require(state.session)
+        let expectedSession = try #require(state.flight)
         let expectedChecklists = state.legStartChecklists
         let restoration = CockpitRestoration(
             camera: AviationMapCameraState(
@@ -1936,7 +1961,7 @@ struct NavigationFlightTests {
 
         try state.reachCurrentWaypoint(cockpitRestoration: restoration, at: arrival)
 
-        let progressed = try #require(state.session)
+        let progressed = try #require(state.flight)
         #expect(state.pendingReachUndo?.kind.label == "Leg 1 arrival reached")
         #expect(progressed.activeLegIndex == 1)
         #expect(state.selectedLegIndex == 1)
@@ -1954,31 +1979,31 @@ struct NavigationFlightTests {
         let restored = state.undoMostRecentReach(at: arrival.addingTimeInterval(19))
 
         #expect(restored == restoration)
-        #expect(state.session == expectedSession)
+        #expect(state.flight == expectedSession)
         #expect(state.legStartChecklists == expectedChecklists)
         #expect(state.selectedLegIndex == 0)
-        #expect(state.session?.legState == .active)
-        #expect(state.session?.legStartedAt == start)
-        #expect(state.session?.elapsedTime(at: arrival.addingTimeInterval(19)) == 319)
+        #expect(state.flight?.legState == .active)
+        #expect(state.flight?.legStartedAt == start)
+        #expect(state.flight?.elapsedTime(at: arrival.addingTimeInterval(19)) == 319)
         #expect(state.pendingReachUndo == nil)
     }
 
     @Test func finalNavigationCompletionUndoRestoresActiveFinalLeg() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let firstStart = Date(timeIntervalSince1970: 110_000)
         let finalStart = firstStart.addingTimeInterval(200)
         try state.startLeg(at: firstStart)
         try state.reachCurrentWaypoint(at: finalStart)
         state.commitPilotHeading()
         let finalMap = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         state.openPilotETAEditor(target: finalMap.destinationTarget)
         state.adjustPilotETA(targetKey: finalMap.destinationTarget.id, by: 10)
-        let expectedSession = try #require(state.session)
+        let expectedSession = try #require(state.flight)
         let expectedChecklists = state.legStartChecklists
         let restoration = CockpitRestoration(
             camera: AviationMapCameraState(
@@ -1995,24 +2020,24 @@ struct NavigationFlightTests {
 
         try state.reachCurrentWaypoint(cockpitRestoration: restoration, at: finalArrival)
         #expect(state.pendingReachUndo?.kind.label == "Final arrival reached")
-        #expect(state.session?.legState == .completed)
-        #expect(state.session?.activeLegIndex == 1)
+        #expect(state.flight?.legState == .completed)
+        #expect(state.flight?.activeLegIndex == 1)
 
         #expect(state.undoMostRecentReach(at: finalArrival.addingTimeInterval(10)) == restoration)
-        #expect(state.session == expectedSession)
+        #expect(state.flight == expectedSession)
         #expect(state.legStartChecklists == expectedChecklists)
         #expect(state.selectedLegIndex == 1)
-        #expect(state.session?.legState == .active)
-        #expect(state.session?.legStartedAt == finalStart)
+        #expect(state.flight?.legState == .active)
+        #expect(state.flight?.legStartedAt == finalStart)
     }
 
     @Test func arrivalUndoExpiresAcrossBackgroundTimeAndLaterSuccessorActivityInvalidatesIt() throws {
-        let flight = try twoLegFlight()
+        let flightPlan = try twoLegFlight()
         let start = Date(timeIntervalSince1970: 120_000)
         let arrival = start.addingTimeInterval(300)
 
         var automatic = CockpitFeatureState()
-        try automatic.accept(flight)
+        try automatic.accept(flightPlan)
         try automatic.startLeg(at: start)
         try automatic.reachCurrentWaypoint(at: arrival)
         #expect(automatic.availableReachUndo(at: arrival.addingTimeInterval(19.999)) != nil)
@@ -2020,7 +2045,7 @@ struct NavigationFlightTests {
         #expect(automatic.undoMostRecentReach(at: arrival.addingTimeInterval(45)) == nil)
 
         var manual = CockpitFeatureState(progressionPolicy: .manualNextLeg)
-        try manual.accept(flight)
+        try manual.accept(flightPlan)
         try manual.startLeg(at: start)
         try manual.reachCurrentWaypoint(at: arrival)
         #expect(manual.pendingReachUndo != nil)
@@ -2053,30 +2078,30 @@ struct NavigationFlightTests {
             - trackNorth * (configured[1].to.longitude - midpoint.longitude)
         #expect(departureSide * arrivalSide < 0)
 
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
-        let session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .noWind
         )
         let presentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: session
+            flightPlan: flightPlan,
+            flight: flight
         )
         let activeLeg = try #require(presentation.activeLeg)
         let expected = AviationMapGeometry.driftReferenceArms(
             from: activeLeg.from,
             to: activeLeg.to,
-            angleDegrees: flight.parameters.driftAngle.value
+            angleDegrees: flightPlan.parameters.driftAngle.value
         )
         #expect(presentation.driftReferenceArms == expected)
     }
 
     @Test func driftVisibilityIsCurrentFlightPresentationState() throws {
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: false)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         #expect(state.areDriftLinesVisible)
 
         state.toggleDriftLines()
@@ -2085,19 +2110,19 @@ struct NavigationFlightTests {
         try state.reachCurrentWaypoint(at: Date(timeIntervalSince1970: 1_100))
         #expect(!state.areDriftLinesVisible)
 
-        try state.accept(flight)
+        try state.accept(flightPlan)
         #expect(state.areDriftLinesVisible)
     }
 
     @Test func timingAndReachChangesDoNotAlterActiveLegDriftGeometry() throws {
-        let flight = try flightWithThreeIdentificationPoints()
+        let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         let start = Date(timeIntervalSince1970: 2_000)
         try state.startLeg(at: start)
         let initial = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
         let target = initial.currentETATarget
         state.openPilotETAEditor(target: target)
@@ -2109,8 +2134,8 @@ struct NavigationFlightTests {
             at: start.addingTimeInterval(60)
         )
         let changed = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: try #require(state.session)
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
         )
 
         #expect(changed.driftReferenceArms == initial.driftReferenceArms)
@@ -2158,38 +2183,38 @@ struct NavigationFlightTests {
         let legID = UUID()
         let targetID = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
         let plan = 338
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
 
-        session.initializePilotETA(targetKey: targetID, plannedElapsedSeconds: plan)
-        #expect(session.pilotETAState(targetKey: targetID)?.draftSeconds == 340)
-        #expect(session.committedPilotETA(targetKey: targetID) == nil)
-        session.adjustPilotETA(targetKey: targetID, by: 5)
-        #expect(session.pilotETAState(targetKey: targetID)?.draftSeconds == 345)
-        #expect(session.committedPilotETA(targetKey: targetID) == nil)
-        session.commitPilotETA(targetKey: targetID)
-        #expect(session.committedPilotETA(targetKey: targetID) == 345)
-        #expect(session.pilotETAState(targetKey: targetID)?.isEditing == false)
-        _ = session.showPilotETACheck(
+        flight.initializePilotETA(targetKey: targetID, plannedElapsedSeconds: plan)
+        #expect(flight.pilotETAState(targetKey: targetID)?.draftSeconds == 340)
+        #expect(flight.committedPilotETA(targetKey: targetID) == nil)
+        flight.adjustPilotETA(targetKey: targetID, by: 5)
+        #expect(flight.pilotETAState(targetKey: targetID)?.draftSeconds == 345)
+        #expect(flight.committedPilotETA(targetKey: targetID) == nil)
+        flight.commitPilotETA(targetKey: targetID)
+        #expect(flight.committedPilotETA(targetKey: targetID) == 345)
+        #expect(flight.pilotETAState(targetKey: targetID)?.isEditing == false)
+        _ = flight.showPilotETACheck(
             targetKey: targetID,
             observationKey: .init(legID: legID, identificationPointID: UUID()),
             plannedObservationElapsed: 100,
             actualObservationElapsed: 101,
             plannedTargetElapsed: 338
         )
-        #expect(session.pilotETAState(targetKey: targetID)?.isCheckResultVisible == true)
-        session.beginEditingPilotETA(targetKey: targetID)
-        #expect(session.pilotETAState(targetKey: targetID)?.draftSeconds == 345)
-        #expect(session.pilotETAState(targetKey: targetID)?.isCheckResultVisible == false)
-        session.adjustPilotETA(targetKey: targetID, by: 5)
-        #expect(session.committedPilotETA(targetKey: targetID) == 345)
-        #expect(session.pilotETAState(targetKey: targetID)?.draftSeconds == 350)
-        session.commitPilotETA(targetKey: targetID)
-        #expect(session.committedPilotETA(targetKey: targetID) == 350)
+        #expect(flight.pilotETAState(targetKey: targetID)?.isCheckResultVisible == true)
+        flight.beginEditingPilotETA(targetKey: targetID)
+        #expect(flight.pilotETAState(targetKey: targetID)?.draftSeconds == 345)
+        #expect(flight.pilotETAState(targetKey: targetID)?.isCheckResultVisible == false)
+        flight.adjustPilotETA(targetKey: targetID, by: 5)
+        #expect(flight.committedPilotETA(targetKey: targetID) == 345)
+        #expect(flight.pilotETAState(targetKey: targetID)?.draftSeconds == 350)
+        flight.commitPilotETA(targetKey: targetID)
+        #expect(flight.committedPilotETA(targetKey: targetID) == 350)
 
-        var earlierSession = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var earlierSession = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
         earlierSession.initializePilotETA(targetKey: targetID, plannedElapsedSeconds: plan)
         earlierSession.adjustPilotETA(targetKey: targetID, by: -5)
@@ -2199,68 +2224,68 @@ struct NavigationFlightTests {
     }
 
     @Test func pilotETAMinimumUsesExactAndRoundedRunningTimerFloors() {
-        #expect(FlightSession.pilotETAMinimumSeconds(currentElapsedSeconds: 170) == 170)
-        #expect(FlightSession.pilotETAMinimumSeconds(currentElapsedSeconds: 172) == 175)
+        #expect(Flight.pilotETAMinimumSeconds(currentElapsedSeconds: 170) == 170)
+        #expect(Flight.pilotETAMinimumSeconds(currentElapsedSeconds: 172) == 175)
     }
 
     @Test func pilotETADecrementStopsAtCurrentRunningTimerFloor() {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
 
-        session.initializePilotETA(
+        flight.initializePilotETA(
             targetKey: target,
             plannedElapsedSeconds: 200,
             currentElapsedSeconds: 172
         )
         for _ in 0..<20 {
-            session.adjustPilotETA(targetKey: target, by: -5, currentElapsedSeconds: 172)
+            flight.adjustPilotETA(targetKey: target, by: -5, currentElapsedSeconds: 172)
         }
 
-        #expect(session.pilotETAState(targetKey: target)?.draftSeconds == 175)
+        #expect(flight.pilotETAState(targetKey: target)?.draftSeconds == 175)
     }
 
     @Test func stalePilotETADraftReturnsTypedErrorAndRemainsOpenWithoutCommit() {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        session.initializePilotETA(
+        flight.initializePilotETA(
             targetKey: target,
             plannedElapsedSeconds: 175,
             currentElapsedSeconds: 170
         )
 
-        let error = session.commitPilotETA(targetKey: target, currentElapsedSeconds: 176)
+        let error = flight.commitPilotETA(targetKey: target, currentElapsedSeconds: 176)
 
         #expect(error == .staleDraft(minimumSeconds: 180))
-        #expect(session.pilotETAState(targetKey: target)?.isEditing == true)
-        #expect(session.pilotETAState(targetKey: target)?.validationError == error)
-        #expect(session.pilotETACommitHistory(targetKey: target).isEmpty)
+        #expect(flight.pilotETAState(targetKey: target)?.isEditing == true)
+        #expect(flight.pilotETAState(targetKey: target)?.validationError == error)
+        #expect(flight.pilotETACommitHistory(targetKey: target).isEmpty)
     }
 
     @Test func repeatedPilotETACommitsRetainOrderedHistoryAndCancelPreservesIt() {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 200)
-        session.commitPilotETA(targetKey: target)
-        session.beginEditingPilotETA(targetKey: target)
-        session.adjustPilotETA(targetKey: target, by: 5)
-        session.commitPilotETA(targetKey: target)
-        session.beginEditingPilotETA(targetKey: target)
-        session.adjustPilotETA(targetKey: target, by: 5)
-        session.cancelPilotETAEditing(targetKey: target)
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: 200)
+        flight.commitPilotETA(targetKey: target)
+        flight.beginEditingPilotETA(targetKey: target)
+        flight.adjustPilotETA(targetKey: target, by: 5)
+        flight.commitPilotETA(targetKey: target)
+        flight.beginEditingPilotETA(targetKey: target)
+        flight.adjustPilotETA(targetKey: target, by: 5)
+        flight.cancelPilotETAEditing(targetKey: target)
 
-        #expect(session.pilotETACommitHistory(targetKey: target).map(\.seconds) == [200, 205])
-        #expect(session.committedPilotETA(targetKey: target) == 205)
-        #expect(session.pilotETAState(targetKey: target)?.draftSeconds == 205)
-        #expect(session.pilotETAState(targetKey: target)?.isEditing == false)
+        #expect(flight.pilotETACommitHistory(targetKey: target).map(\.seconds) == [200, 205])
+        #expect(flight.committedPilotETA(targetKey: target) == 205)
+        #expect(flight.pilotETAState(targetKey: target)?.draftSeconds == 205)
+        #expect(flight.pilotETAState(targetKey: target)?.isEditing == false)
     }
 
     @Test func destinationAndIdentificationTargetsUseTheSameCanonicalETAStateMachine() throws {
@@ -2272,31 +2297,31 @@ struct NavigationFlightTests {
             kind: .identificationPoint,
             targetID: UUID()
         )
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
 
-        session.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 256)
-        session.initializePilotETA(targetKey: identification, plannedElapsedSeconds: 190)
-        session.adjustPilotETA(targetKey: destination, by: 5)
-        session.commitPilotETA(targetKey: destination)
+        flight.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 256)
+        flight.initializePilotETA(targetKey: identification, plannedElapsedSeconds: 190)
+        flight.adjustPilotETA(targetKey: destination, by: 5)
+        flight.commitPilotETA(targetKey: destination)
 
-        #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
-        #expect(session.pilotETAState(targetKey: destination)?.committedSeconds == 260)
-        #expect(session.pilotETAState(targetKey: destination)?.checkDisclosures.isEmpty == true)
-        #expect(session.pilotETAState(targetKey: identification)?.draftSeconds == 190)
-        #expect(session.pilotETAState(targetKey: identification)?.committedSeconds == nil)
-        _ = session.showPilotETACheck(
+        #expect(flight.pilotETAState(targetKey: destination)?.draftSeconds == 260)
+        #expect(flight.pilotETAState(targetKey: destination)?.committedSeconds == 260)
+        #expect(flight.pilotETAState(targetKey: destination)?.checkDisclosures.isEmpty == true)
+        #expect(flight.pilotETAState(targetKey: identification)?.draftSeconds == 190)
+        #expect(flight.pilotETAState(targetKey: identification)?.committedSeconds == nil)
+        _ = flight.showPilotETACheck(
             targetKey: destination,
             observationKey: observation,
             plannedObservationElapsed: 100,
             actualObservationElapsed: 101,
             plannedTargetElapsed: 256
         )
-        #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == true)
-        session.beginEditingPilotETA(targetKey: destination)
-        #expect(session.pilotETAState(targetKey: destination)?.isCheckResultVisible == false)
-        #expect(session.pilotETAState(targetKey: destination)?.draftSeconds == 260)
+        #expect(flight.pilotETAState(targetKey: destination)?.isCheckResultVisible == true)
+        flight.beginEditingPilotETA(targetKey: destination)
+        #expect(flight.pilotETAState(targetKey: destination)?.isCheckResultVisible == false)
+        #expect(flight.pilotETAState(targetKey: destination)?.draftSeconds == 260)
     }
 
     @Test func unreachedIdentificationPointWithoutAmendmentKeepsReachPrimaryAndETASecondary() {
@@ -2341,88 +2366,88 @@ struct NavigationFlightTests {
             targetID: pointID
         )
         let startedAt = Date(timeIntervalSince1970: 12_000)
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID, UUID()], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID, UUID()], activeLegIndex: 0, executionMode: .noWind
         )
-        try session.startLeg(at: startedAt)
+        try flight.startLeg(at: startedAt)
 
-        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 94)
-        session.adjustPilotETA(targetKey: targetKey, by: 5)
-        session.commitPilotETA(targetKey: targetKey)
+        flight.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: 94)
+        flight.adjustPilotETA(targetKey: targetKey, by: 5)
+        flight.commitPilotETA(targetKey: targetKey)
 
-        #expect(session.committedPilotETA(targetKey: targetKey) == 100)
-        #expect(session.identificationPointTiming(for: .init(legID: legID, identificationPointID: pointID)) == nil)
-        #expect(session.legStartedAt == startedAt)
-        #expect(session.activeLegIndex == 0)
-        #expect(session.legState == .active)
+        #expect(flight.committedPilotETA(targetKey: targetKey) == 100)
+        #expect(flight.identificationPointTiming(for: .init(legID: legID, identificationPointID: pointID)) == nil)
+        #expect(flight.legStartedAt == startedAt)
+        #expect(flight.activeLegIndex == 0)
+        #expect(flight.legState == .active)
     }
 
     @Test func reachingIdentificationPointAfterETARevisionRecordsReachAndPreservesRevision() throws {
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let startedAt = Date(timeIntervalSince1970: 13_000)
         let reachedAt = startedAt.addingTimeInterval(17)
-        try session.startLeg(at: startedAt)
-        let before = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        try flight.startLeg(at: startedAt)
+        let before = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let point = try #require(before.identificationPoints.first)
         let targetKey = NavigationTimingTargetKey(
             legID: point.id.legID,
             kind: .identificationPoint,
             targetID: point.id.identificationPointID
         )
-        session.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: point.plannedElapsedSeconds)
-        session.adjustPilotETA(targetKey: targetKey, by: 5)
-        session.commitPilotETA(targetKey: targetKey)
-        let revised = try #require(session.committedPilotETA(targetKey: targetKey))
+        flight.initializePilotETA(targetKey: targetKey, plannedElapsedSeconds: point.plannedElapsedSeconds)
+        flight.adjustPilotETA(targetKey: targetKey, by: 5)
+        flight.commitPilotETA(targetKey: targetKey)
+        let revised = try #require(flight.committedPilotETA(targetKey: targetKey))
 
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: point.id,
             orderedActiveLegPointKeys: before.identificationPoints.map(\.id),
             at: reachedAt
         )
 
-        #expect(session.identificationPointTiming(for: point.id)?.reachedAt == reachedAt)
-        #expect(session.committedPilotETA(targetKey: targetKey) == revised)
-        let after = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        #expect(flight.identificationPointTiming(for: point.id)?.reachedAt == reachedAt)
+        #expect(flight.committedPilotETA(targetKey: targetKey) == revised)
+        let after = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let reachedPoint = try #require(after.identificationPoints.first)
         #expect(reachedPoint.isReached)
         #expect(reachedPoint.operationalState.canMarkReached == false)
     }
 
     @Test func legTwoIdentificationPointRevisionDoesNotImplyReachAndRemainsLegScoped() throws {
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let startedAt = Date(timeIntervalSince1970: 14_000)
-        try session.startLeg(at: startedAt)
-        try session.reachCurrentWaypoint(at: startedAt.addingTimeInterval(40))
-        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        try flight.startLeg(at: startedAt)
+        try flight.reachCurrentWaypoint(at: startedAt.addingTimeInterval(40))
+        let presentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let point = try #require(presentation.identificationPoints.first)
         let key = NavigationTimingTargetKey(
             legID: point.id.legID,
             kind: .identificationPoint,
             targetID: point.id.identificationPointID
         )
-        session.initializePilotETA(targetKey: key, plannedElapsedSeconds: point.plannedElapsedSeconds)
-        session.adjustPilotETA(targetKey: key, by: 5)
-        session.commitPilotETA(targetKey: key)
+        flight.initializePilotETA(targetKey: key, plannedElapsedSeconds: point.plannedElapsedSeconds)
+        flight.adjustPilotETA(targetKey: key, by: 5)
+        flight.commitPilotETA(targetKey: key)
 
-        let revisedPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let revisedPresentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let revisedPoint = try #require(revisedPresentation.identificationPoints.first)
-        #expect(revisedPoint.id.legID == flight.legs[1].id)
+        #expect(revisedPoint.id.legID == flightPlan.legs[1].id)
         #expect(revisedPoint.isReached == false)
         #expect(revisedPoint.operationalState.canMarkReached)
-        #expect(revisedPoint.committedETASeconds == session.committedPilotETA(targetKey: key))
-        #expect(session.identificationPointTiming(for: revisedPoint.id) == nil)
+        #expect(revisedPoint.committedETASeconds == flight.committedPilotETA(targetKey: key))
+        #expect(flight.identificationPointTiming(for: revisedPoint.id) == nil)
     }
 
     @Test func nextTargetShortcutAndDirectLookupResolveTheSameCanonicalKey() {
@@ -2453,12 +2478,12 @@ struct NavigationFlightTests {
     }
 
     @Test func directTargetEditorReusesShortcutStateAndKeepsItsObservationSource() throws {
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
         var state = CockpitFeatureState()
-        try state.accept(flight)
+        try state.accept(flightPlan)
         try state.startLeg(at: Date(timeIntervalSince1970: 10_000))
-        let session = try #require(state.session)
-        let presentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let flight = try #require(state.flight)
+        let presentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let point = try #require(presentation.identificationPoints.first)
         let target = try #require(presentation.nextETATarget(after: point.id))
         try state.reachIdentificationPoint(
@@ -2470,25 +2495,25 @@ struct NavigationFlightTests {
         state.commitPilotETA(targetKey: target.id)
         state.openPilotETAEditor(target: target)
 
-        let etaState = try #require(state.session?.pilotETAState(targetKey: target.id))
+        let etaState = try #require(state.flight?.pilotETAState(targetKey: target.id))
         #expect(etaState.checkDisclosures.isEmpty)
         #expect(etaState.isEditing == false)
         #expect(etaState.draftSeconds == etaState.committedSeconds)
     }
 
     @Test func consecutiveLegIdentificationPointStateIsIsolated() throws {
-        let flight = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
-        let originalFlight = flight
-        var session = FlightSession(
-            flightID: flight.id,
-            legIDs: flight.legs.map(\.id),
+        let flightPlan = try twoLegFlight(withIdentificationPointsOnBothLegs: true)
+        let originalFlight = flightPlan
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: 0,
             executionMode: .wind
         )
         let start = Date(timeIntervalSince1970: 40_000)
-        try session.startLeg(at: start)
+        try flight.startLeg(at: start)
 
-        let firstPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let firstPresentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let firstPoint = try #require(firstPresentation.identificationPoints.first)
         #expect(firstPresentation.identificationPoints.count == 1)
         #expect(firstPoint.name == "IP1")
@@ -2496,25 +2521,25 @@ struct NavigationFlightTests {
         let firstOffset = AviationMapCalloutOffset(x: 91, y: -63)
         let storedOffsets = [firstPoint.id: firstOffset]
 
-        try session.reachIdentificationPoint(
+        try flight.reachIdentificationPoint(
             key: firstPoint.id,
             orderedActiveLegPointKeys: firstPresentation.identificationPoints.map(\.id),
             at: start.addingTimeInterval(16)
         )
-        session.initializePilotETA(targetKey: firstTarget, plannedElapsedSeconds: 40)
-        session.adjustPilotETA(targetKey: firstTarget, by: 5)
-        session.commitPilotETA(targetKey: firstTarget)
-        _ = session.showPilotETACheck(
+        flight.initializePilotETA(targetKey: firstTarget, plannedElapsedSeconds: 40)
+        flight.adjustPilotETA(targetKey: firstTarget, by: 5)
+        flight.commitPilotETA(targetKey: firstTarget)
+        _ = flight.showPilotETACheck(
             targetKey: firstTarget,
             observationKey: firstPoint.id,
             plannedObservationElapsed: TimeInterval(firstPoint.plannedElapsedSeconds),
             actualObservationElapsed: 16,
             plannedTargetElapsed: 40
         )
-        try session.identifyDestination(at: start.addingTimeInterval(35))
-        try session.reachCurrentWaypoint(at: start.addingTimeInterval(40))
+        try flight.identifyDestination(at: start.addingTimeInterval(35))
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(40))
 
-        let secondPresentation = try AviationMapPresentationFactory().makePresentation(flight: flight, session: session)
+        let secondPresentation = try AviationMapPresentationFactory().makePresentation(flightPlan: flightPlan, flight: flight)
         let secondPoint = try #require(secondPresentation.identificationPoints.first)
         #expect(secondPresentation.identificationPoints.count == 1)
         #expect(secondPoint.name == "IP1")
@@ -2523,27 +2548,27 @@ struct NavigationFlightTests {
         #expect(secondPoint.isReached == false)
         #expect(secondPoint.committedETASeconds == nil)
         #expect(storedOffsets[secondPoint.id] == nil)
-        #expect(session.pilotETAState(targetKey: secondPresentation.destinationTarget.id) == nil)
-        #expect(session.pilotETAState(targetKey: firstTarget)?.committedSeconds == 45)
-        #expect(session.pilotETAState(targetKey: firstTarget)?.isCheckResultVisible == true)
-        #expect(session.identificationPointTiming(for: firstPoint.id) != nil)
-        #expect(session.identificationPointTiming(for: secondPoint.id) == nil)
-        #expect(Set(secondPresentation.identificationPoints.map(\.id.legID)) == [flight.legs[1].id])
-        #expect(flight == originalFlight)
+        #expect(flight.pilotETAState(targetKey: secondPresentation.destinationTarget.id) == nil)
+        #expect(flight.pilotETAState(targetKey: firstTarget)?.committedSeconds == 45)
+        #expect(flight.pilotETAState(targetKey: firstTarget)?.isCheckResultVisible == true)
+        #expect(flight.identificationPointTiming(for: firstPoint.id) != nil)
+        #expect(flight.identificationPointTiming(for: secondPoint.id) == nil)
+        #expect(Set(secondPresentation.identificationPoints.map(\.id.legID)) == [flightPlan.legs[1].id])
+        #expect(flightPlan == originalFlight)
     }
 
     @Test func checkDisclosureRoundsOnlyAfterFullPrecisionCalculationAndNeverChangesRevision() {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
         let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
-        session.adjustPilotETA(targetKey: target, by: 5)
-        session.commitPilotETA(targetKey: target)
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        flight.adjustPilotETA(targetKey: target, by: 5)
+        flight.commitPilotETA(targetKey: target)
 
-        let requested = session.showPilotETACheck(
+        let requested = flight.showPilotETACheck(
             targetKey: target,
             observationKey: observation,
             plannedObservationElapsed: 3,
@@ -2552,8 +2577,8 @@ struct NavigationFlightTests {
         )
 
         #expect(requested)
-        #expect(session.committedPilotETA(targetKey: target) == 105)
-        #expect(session.pilotETAState(targetKey: target)?.latestCheckDisclosure?.referenceSeconds == 67)
+        #expect(flight.committedPilotETA(targetKey: target) == 105)
+        #expect(flight.pilotETAState(targetKey: target)?.latestCheckDisclosure?.referenceSeconds == 67)
     }
 
     @Test func checkSelectsLatestReachedPredecessorAtRequestTime() throws {
@@ -2562,24 +2587,24 @@ struct NavigationFlightTests {
         let second = IdentificationPointKey(legID: legID, identificationPointID: UUID())
         let destination = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
         let start = Date(timeIntervalSince1970: 1_000)
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        try session.startLeg(at: start)
-        try session.reachIdentificationPoint(
+        try flight.startLeg(at: start)
+        try flight.reachIdentificationPoint(
             key: first,
             orderedActiveLegPointKeys: [first, second],
             at: start.addingTimeInterval(10)
         )
-        session.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 100)
-        session.commitPilotETA(targetKey: destination)
-        try session.reachIdentificationPoint(
+        flight.initializePilotETA(targetKey: destination, plannedElapsedSeconds: 100)
+        flight.commitPilotETA(targetKey: destination)
+        try flight.reachIdentificationPoint(
             key: second,
             orderedActiveLegPointKeys: [first, second],
             at: start.addingTimeInterval(20)
         )
 
-        #expect(session.latestEligibleTimingObservation(
+        #expect(flight.latestEligibleTimingObservation(
             before: destination,
             orderedPointKeys: [first, second]
         ) == second)
@@ -2589,37 +2614,37 @@ struct NavigationFlightTests {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
         let observation = IdentificationPointKey(legID: legID, identificationPointID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
-        session.commitPilotETA(targetKey: target)
-        #expect(session.pilotETAState(targetKey: target)?.checkDisclosures.isEmpty == true)
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        flight.commitPilotETA(targetKey: target)
+        #expect(flight.pilotETAState(targetKey: target)?.checkDisclosures.isEmpty == true)
 
-        _ = session.showPilotETACheck(
+        _ = flight.showPilotETACheck(
             targetKey: target,
             observationKey: observation,
             plannedObservationElapsed: 50,
             actualObservationElapsed: 51,
             plannedTargetElapsed: 100
         )
-        session.hidePilotETACheck(targetKey: target)
+        flight.hidePilotETACheck(targetKey: target)
 
-        #expect(session.pilotETAState(targetKey: target)?.isCheckResultVisible == false)
-        #expect(session.pilotETAState(targetKey: target)?.checkDisclosures.map(\.referenceSeconds) == [102])
+        #expect(flight.pilotETAState(targetKey: target)?.isCheckResultVisible == false)
+        #expect(flight.pilotETAState(targetKey: target)?.checkDisclosures.map(\.referenceSeconds) == [102])
     }
 
     @Test func invalidCheckTimingProducesNoPartialMutation() {
         let legID = UUID()
         let target = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())
-        var session = FlightSession(
-            flightID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
+        var flight = Flight(
+            flightPlanID: UUID(), legIDs: [legID], activeLegIndex: 0, executionMode: .noWind
         )
-        session.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
-        session.commitPilotETA(targetKey: target)
-        let before = session
+        flight.initializePilotETA(targetKey: target, plannedElapsedSeconds: 100)
+        flight.commitPilotETA(targetKey: target)
+        let before = flight
 
-        let requested = session.showPilotETACheck(
+        let requested = flight.showPilotETACheck(
             targetKey: target,
             observationKey: .init(legID: legID, identificationPointID: UUID()),
             plannedObservationElapsed: 0,
@@ -2628,7 +2653,7 @@ struct NavigationFlightTests {
         )
 
         #expect(!requested)
-        #expect(session == before)
+        #expect(flight == before)
     }
 
     @Test func proportionalReferenceAndInvalidCases() throws {
@@ -2681,18 +2706,18 @@ struct NavigationFlightTests {
         try #require(JSONSerialization.jsonObject(with: fixtureData(name, directory: directory)) as? [String: Any])
     }
 
-    private func decode(_ object: [String: Any]) throws -> NavigationFlight {
+    private func decode(_ object: [String: Any]) throws -> FlightPlan {
         try FPLNavDecoder().decode(JSONSerialization.data(withJSONObject: object))
     }
 
-    private func eligibleExecution(_ flight: NavigationFlight) throws -> NavigationExecution {
-        guard case .eligible(let execution) = flight.execution else {
+    private func eligiblePlannedNavigation(_ flightPlan: FlightPlan) throws -> PlannedNavigation {
+        guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {
             throw FPLNavV7ValidationError(path: "execution", reason: "expected eligible execution")
         }
-        return execution
+        return plannedNavigation
     }
 
-    private func emptyV7Flight() throws -> NavigationFlight {
+    private func emptyV7Flight() throws -> FlightPlan {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
         var navigation = try #require(object["navigation"] as? [String: Any])
         var route = try #require(navigation["route"] as? [String: Any])
@@ -2701,17 +2726,17 @@ struct NavigationFlightTests {
         navigation["identificationPoints"] = []; navigation["altitudeChanges"] = []
         navigation["radioFrequencyChanges"] = []; navigation["vorDmeReferences"] = []
         object["navigation"] = navigation
-        var execution = try #require(object["execution"] as? [String: Any])
-        execution["legs"] = []; execution["annotations"] = []; execution["vorDmeReferences"] = []
-        execution["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
-        object["execution"] = execution
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        plannedNavigation["legs"] = []; plannedNavigation["annotations"] = []; plannedNavigation["vorDmeReferences"] = []
+        plannedNavigation["frequenciesByPhase"] = ["departure": [], "en-route": [], "arrival": []]
+        object["execution"] = plannedNavigation
         return try decode(object)
     }
 
     private func twoLegFlight(
         withImmediateChanges: Bool = false,
         withIdentificationPointsOnBothLegs: Bool = false
-    ) throws -> NavigationFlight {
+    ) throws -> FlightPlan {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
         var navigation = try #require(object["navigation"] as? [String: Any])
         var route = try #require(navigation["route"] as? [String: Any])
@@ -2730,10 +2755,10 @@ struct NavigationFlightTests {
         second["id"] = secondID; second["departureWaypointId"] = secondWaypointID; second["arrivalWaypointId"] = thirdID
         sourceLegs.append(second); route["legs"] = sourceLegs
         navigation["route"] = route
-        var execution = try #require(object["execution"] as? [String: Any])
-        var legs = try #require(execution["legs"] as? [[String: Any]])
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(plannedNavigation["legs"] as? [[String: Any]])
         var resolved = legs[0]; resolved["legId"] = secondID
-        legs.append(resolved); execution["legs"] = legs
+        legs.append(resolved); plannedNavigation["legs"] = legs
         if withIdentificationPointsOnBothLegs {
             let pointID = "00000000-0000-4000-8000-000000000024"
             var points = try #require(navigation["identificationPoints"] as? [[String: Any]])
@@ -2743,13 +2768,13 @@ struct NavigationFlightTests {
             points.append(point)
             navigation["identificationPoints"] = points
 
-            var annotations = try #require(execution["annotations"] as? [[String: Any]])
+            var annotations = try #require(plannedNavigation["annotations"] as? [[String: Any]])
             var annotation = annotations[0]
             annotation["entityId"] = pointID
             annotation["legId"] = secondID
             annotation["position"] = ["latitude": 0.023, "longitude": 0.006]
             annotations.append(annotation)
-            execution["annotations"] = annotations
+            plannedNavigation["annotations"] = annotations
         }
         if withImmediateChanges {
             let altitudeID = "00000000-0000-4000-8000-000000000022"
@@ -2774,7 +2799,7 @@ struct NavigationFlightTests {
             navigation["radioFrequencyChanges"] = frequencyChanges
 
             let departurePosition = try #require(waypoints[1]["position"] as? [String: Any])
-            var annotations = try #require(execution["annotations"] as? [[String: Any]])
+            var annotations = try #require(plannedNavigation["annotations"] as? [[String: Any]])
             var altitudeExecution = annotations[1]
             altitudeExecution["entityId"] = altitudeID
             altitudeExecution["legId"] = secondID
@@ -2789,8 +2814,8 @@ struct NavigationFlightTests {
             frequencyExecution["noWindTimeFromLegStartSeconds"] = 0
             frequencyExecution["withWindTimeFromLegStartSeconds"] = 0
             annotations.append(frequencyExecution)
-            execution["annotations"] = annotations
-            var frequenciesByPhase = try #require(execution["frequenciesByPhase"] as? [String: Any])
+            plannedNavigation["annotations"] = annotations
+            var frequenciesByPhase = try #require(plannedNavigation["frequenciesByPhase"] as? [String: Any])
             var enRoute = try #require(frequenciesByPhase["en-route"] as? [[String: Any]])
             enRoute.append([
                 "id": "route:\(frequencyID)",
@@ -2799,21 +2824,21 @@ struct NavigationFlightTests {
                 "source": "route"
             ])
             frequenciesByPhase["en-route"] = enRoute
-            execution["frequenciesByPhase"] = frequenciesByPhase
+            plannedNavigation["frequenciesByPhase"] = frequenciesByPhase
         }
         object["navigation"] = navigation
-        object["execution"] = execution
+        object["execution"] = plannedNavigation
         return try decode(object)
     }
 
-    private func flightWithThreeIdentificationPoints() throws -> NavigationFlight {
+    private func flightWithThreeIdentificationPoints() throws -> FlightPlan {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
         var navigation = try #require(object["navigation"] as? [String: Any])
         var points = try #require(navigation["identificationPoints"] as? [[String: Any]])
         let originalPoint = try #require(points.first)
         let legID = try #require(originalPoint["legId"] as? String)
-        var execution = try #require(object["execution"] as? [String: Any])
-        var annotations = try #require(execution["annotations"] as? [[String: Any]])
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        var annotations = try #require(plannedNavigation["annotations"] as? [[String: Any]])
         let originalPointID = try #require(originalPoint["id"] as? String)
         let sourceAnnotation = try #require(annotations.first {
             $0["entityId"] as? String == originalPointID
@@ -2845,16 +2870,16 @@ struct NavigationFlightTests {
             annotations.append(annotation)
         }
         navigation["identificationPoints"] = points
-        execution["annotations"] = annotations
+        plannedNavigation["annotations"] = annotations
         object["navigation"] = navigation
-        object["execution"] = execution
+        object["execution"] = plannedNavigation
         return try decode(object)
     }
 
-    private func summaryFlight() throws -> NavigationFlight {
+    private func summaryFlight() throws -> FlightPlan {
         var object = try fixtureJSONObject("representative-v7", directory: "V7/Official")
-        var execution = try #require(object["execution"] as? [String: Any])
-        var legs = try #require(execution["legs"] as? [[String: Any]])
+        var plannedNavigation = try #require(object["execution"] as? [String: Any])
+        var legs = try #require(plannedNavigation["legs"] as? [[String: Any]])
         var leg = legs[0]
         var noWind = try #require(leg["noWind"] as? [String: Any])
         noWind["plannedDurationSeconds"] = 382
@@ -2863,8 +2888,8 @@ struct NavigationFlightTests {
         withWind["plannedDurationSeconds"] = 382
         leg["withWind"] = withWind
         legs[0] = leg
-        execution["legs"] = legs
-        object["execution"] = execution
+        plannedNavigation["legs"] = legs
+        object["execution"] = plannedNavigation
         return try decode(object)
     }
 }
@@ -2879,81 +2904,81 @@ enum V7Mutation: String, CaseIterable, CustomStringConvertible, Sendable {
 
     func apply(to object: inout [String: Any]) throws {
         var navigation = try required(object["navigation"] as? [String: Any])
-        var execution = try required(object["execution"] as? [String: Any])
+        var plannedNavigation = try required(object["execution"] as? [String: Any])
         switch self {
         case .missingLeg:
-            execution["legs"] = []
+            plannedNavigation["legs"] = []
         case .duplicateLeg:
-            var legs = try required(execution["legs"] as? [[String: Any]])
-            legs.append(legs[0]); execution["legs"] = legs
+            var legs = try required(plannedNavigation["legs"] as? [[String: Any]])
+            legs.append(legs[0]); plannedNavigation["legs"] = legs
         case .reorderedLeg:
-            try makeTwoLegPlan(navigation: &navigation, execution: &execution)
-            var legs = try required(execution["legs"] as? [[String: Any]])
-            legs.swapAt(0, 1); execution["legs"] = legs
+            try makeTwoLegPlan(navigation: &navigation, plannedNavigation: &plannedNavigation)
+            var legs = try required(plannedNavigation["legs"] as? [[String: Any]])
+            legs.swapAt(0, 1); plannedNavigation["legs"] = legs
         case .missingAnnotation:
-            var values = try required(execution["annotations"] as? [[String: Any]])
-            values.removeLast(); execution["annotations"] = values
+            var values = try required(plannedNavigation["annotations"] as? [[String: Any]])
+            values.removeLast(); plannedNavigation["annotations"] = values
         case .duplicateAnnotation:
-            var values = try required(execution["annotations"] as? [[String: Any]])
-            values[1] = values[0]; execution["annotations"] = values
+            var values = try required(plannedNavigation["annotations"] as? [[String: Any]])
+            values[1] = values[0]; plannedNavigation["annotations"] = values
         case .missingReference:
-            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
-            values.removeLast(); execution["vorDmeReferences"] = values
+            var values = try required(plannedNavigation["vorDmeReferences"] as? [[String: Any]])
+            values.removeLast(); plannedNavigation["vorDmeReferences"] = values
         case .duplicateReference:
-            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
-            values[1] = values[0]; execution["vorDmeReferences"] = values
+            var values = try required(plannedNavigation["vorDmeReferences"] as? [[String: Any]])
+            values[1] = values[0]; plannedNavigation["vorDmeReferences"] = values
         case .invalidCourse:
-            try mutateFirstLeg(&execution) { $0["trueCourseDegrees"] = 360 }
+            try mutateFirstLeg(&plannedNavigation) { $0["trueCourseDegrees"] = 360 }
         case .invalidDuration:
-            try mutateFirstLeg(&execution) { leg in
+            try mutateFirstLeg(&plannedNavigation) { leg in
                 var timing = try required(leg["noWind"] as? [String: Any]); timing["plannedDurationSeconds"] = 0; leg["noWind"] = timing
             }
         case .invalidAnnotationTime:
-            var values = try required(execution["annotations"] as? [[String: Any]])
-            values[0]["noWindTimeFromLegStartSeconds"] = 41; execution["annotations"] = values
+            var values = try required(plannedNavigation["annotations"] as? [[String: Any]])
+            values[0]["noWindTimeFromLegStartSeconds"] = 41; plannedNavigation["annotations"] = values
         case .absentWind:
-            try mutateFirstLeg(&execution) { $0.removeValue(forKey: "withWind") }
+            try mutateFirstLeg(&plannedNavigation) { $0.removeValue(forKey: "withWind") }
         case .unexpectedWind:
             var presentation = try required(navigation["presentation"] as? [String: Any])
             var log = try required(presentation["navigationLog"] as? [String: Any]); log["windEnabled"] = false
             presentation["navigationLog"] = log; navigation["presentation"] = presentation
         case .mismatchedWind:
-            try mutateFirstLeg(&execution) { leg in
+            try mutateFirstLeg(&plannedNavigation) { leg in
                 var wind = try required(leg["withWind"] as? [String: Any])
                 wind["effectiveWind"] = ["directionFromTrueDegrees": 90, "speedKnots": 1]; leg["withWind"] = wind
             }
         case .missingAutomaticElevation:
-            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
-            values[0].removeValue(forKey: "stationElevationFeetMsl"); execution["vorDmeReferences"] = values
+            var values = try required(plannedNavigation["vorDmeReferences"] as? [[String: Any]])
+            values[0].removeValue(forKey: "stationElevationFeetMsl"); plannedNavigation["vorDmeReferences"] = values
         case .inconsistentManualValues:
-            var values = try required(execution["vorDmeReferences"] as? [[String: Any]])
-            values[1]["slantRangeNauticalMiles"] = 12.5; execution["vorDmeReferences"] = values
+            var values = try required(plannedNavigation["vorDmeReferences"] as? [[String: Any]])
+            values[1]["slantRangeNauticalMiles"] = 12.5; plannedNavigation["vorDmeReferences"] = values
         case .invalidFrequency:
-            var phases = try required(execution["frequenciesByPhase"] as? [String: Any])
+            var phases = try required(plannedNavigation["frequenciesByPhase"] as? [String: Any])
             var values = try required(phases["departure"] as? [[String: Any]])
-            values[0]["frequencyMhz"] = 1000; phases["departure"] = values; execution["frequenciesByPhase"] = phases
+            values[0]["frequencyMhz"] = 1000; phases["departure"] = values; plannedNavigation["frequenciesByPhase"] = phases
         case .missingRouteFrequency:
-            var phases = try required(execution["frequenciesByPhase"] as? [String: Any]); phases["en-route"] = []; execution["frequenciesByPhase"] = phases
+            var phases = try required(plannedNavigation["frequenciesByPhase"] as? [String: Any]); phases["en-route"] = []; plannedNavigation["frequenciesByPhase"] = phases
         case .missingUserFrequency:
             var context = try required(navigation["operationalContext"] as? [String: Any])
             context["frequencyEntries"] = [["id": "required", "phase": "departure", "name": "Required", "frequencyMhz": 123.4]]
             navigation["operationalContext"] = context
         case .duplicatePhaseFrequency:
-            var phases = try required(execution["frequenciesByPhase"] as? [String: Any])
-            var values = try required(phases["departure"] as? [[String: Any]]); values.append(values[0]); phases["departure"] = values; execution["frequenciesByPhase"] = phases
+            var phases = try required(plannedNavigation["frequenciesByPhase"] as? [String: Any])
+            var values = try required(phases["departure"] as? [[String: Any]]); values.append(values[0]); phases["departure"] = values; plannedNavigation["frequenciesByPhase"] = phases
         case .unknownExecutionProperty:
-            execution["invented"] = true
+            plannedNavigation["invented"] = true
         }
         object["navigation"] = navigation
-        object["execution"] = execution
+        object["execution"] = plannedNavigation
     }
 
-    private func mutateFirstLeg(_ execution: inout [String: Any], mutation: (inout [String: Any]) throws -> Void) throws {
-        var legs = try required(execution["legs"] as? [[String: Any]])
-        try mutation(&legs[0]); execution["legs"] = legs
+    private func mutateFirstLeg(_ plannedNavigation: inout [String: Any], mutation: (inout [String: Any]) throws -> Void) throws {
+        var legs = try required(plannedNavigation["legs"] as? [[String: Any]])
+        try mutation(&legs[0]); plannedNavigation["legs"] = legs
     }
 
-    private func makeTwoLegPlan(navigation: inout [String: Any], execution: inout [String: Any]) throws {
+    private func makeTwoLegPlan(navigation: inout [String: Any], plannedNavigation: inout [String: Any]) throws {
         var route = try required(navigation["route"] as? [String: Any])
         var waypoints = try required(route["waypoints"] as? [[String: Any]])
         var third = waypoints[1]
@@ -2969,8 +2994,8 @@ enum V7Mutation: String, CaseIterable, CustomStringConvertible, Sendable {
         let secondID = "00000000-0000-4000-8000-000000000021"
         second["id"] = secondID; second["departureWaypointId"] = secondWaypointID; second["arrivalWaypointId"] = thirdID
         sourceLegs.append(second); route["legs"] = sourceLegs; navigation["route"] = route
-        var legs = try required(execution["legs"] as? [[String: Any]])
-        var resolved = legs[0]; resolved["legId"] = secondID; legs.append(resolved); execution["legs"] = legs
+        var legs = try required(plannedNavigation["legs"] as? [[String: Any]])
+        var resolved = legs[0]; resolved["legId"] = secondID; legs.append(resolved); plannedNavigation["legs"] = legs
     }
 
     private func required<T>(_ value: T?) throws -> T {

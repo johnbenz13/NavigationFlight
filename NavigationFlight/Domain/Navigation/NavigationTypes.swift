@@ -40,7 +40,7 @@ struct Wind: Equatable, Sendable {
 }
 
 struct NavigationParameters: Equatable, Sendable {
-    /// East-positive magnetic variation from the serialized flight plan.
+    /// East-positive magnetic variation from the serialized flightPlan plan.
     let magneticVariationEast: Degrees
     let defaultAltitude: AltitudeFeet
     let driftAngle: Degrees
@@ -189,7 +189,7 @@ struct PlannedTiming: Equatable, Sendable {
     let groundSpeed: Knots
 }
 
-struct WindExecution: Equatable, Sendable {
+struct PlannedWindNavigation: Equatable, Sendable {
     let timing: PlannedTiming
     let effectiveWind: Wind
     let trueHeading: Degrees
@@ -197,7 +197,7 @@ struct WindExecution: Equatable, Sendable {
     let windCorrection: Degrees
 }
 
-struct LegExecution: Identifiable, Equatable, Sendable {
+struct PlannedLegNavigation: Identifiable, Equatable, Sendable {
     var id: UUID { legID }
     let legID: UUID
     let trueCourse: Degrees
@@ -205,41 +205,41 @@ struct LegExecution: Identifiable, Equatable, Sendable {
     let groundDistance: NauticalMiles
     let initialAltitudeMsl: AltitudeFeet
     let noWind: PlannedTiming
-    let withWind: WindExecution?
+    let withWind: PlannedWindNavigation?
 }
 
-enum ExecutionAnnotationKind: String, Equatable, Sendable {
+enum PlannedNavigationAnnotationKind: String, Equatable, Sendable {
     case identificationPoint = "identification-point"
     case altitudeChange = "altitude-change"
     case radioFrequencyChange = "radio-frequency-change"
 }
 
-struct AnnotationExecution: Identifiable, Equatable, Sendable {
+struct PlannedNavigationAnnotation: Identifiable, Equatable, Sendable {
     var id: UUID { entityID }
     let entityID: UUID
-    let kind: ExecutionAnnotationKind
+    let kind: PlannedNavigationAnnotationKind
     let legID: UUID
     let position: WGS84Coordinate
     let noWindTimeFromLegStartSeconds: Int
     let withWindTimeFromLegStartSeconds: Int?
 }
 
-enum VORDMEExecutionSource: String, Equatable, Sendable {
+enum PlannedVORDMESource: String, Equatable, Sendable {
     case automatic
     case manual
 }
 
-struct VORDMEExecution: Identifiable, Equatable, Sendable {
+struct PlannedVORDMEReference: Identifiable, Equatable, Sendable {
     var id: UUID { referenceID }
     let referenceID: UUID
     let frequency: FrequencyMHz
     let stationElevationMsl: AltitudeFeet?
     let magneticRadialFrom: Degrees
     let slantRange: NauticalMiles
-    let source: VORDMEExecutionSource
+    let source: PlannedVORDMESource
 }
 
-enum ExecutionFrequencySource: String, Equatable, Sendable {
+enum PlannedFrequencySource: String, Equatable, Sendable {
     case departure
     case route
     case arrival
@@ -247,37 +247,37 @@ enum ExecutionFrequencySource: String, Equatable, Sendable {
     case user
 }
 
-struct ExecutionFrequency: Identifiable, Equatable, Sendable {
+struct PlannedFrequency: Identifiable, Equatable, Sendable {
     let id: String
     let name: String
     let role: String?
     let frequency: FrequencyMHz
-    let source: ExecutionFrequencySource
+    let source: PlannedFrequencySource
 }
 
-struct NavigationExecution: Equatable, Sendable {
+struct PlannedNavigation: Equatable, Sendable {
     let calculationVersion: String
     let altitudeReference: AltitudeReference
-    let legs: [LegExecution]
-    let annotations: [AnnotationExecution]
-    let vorDmeReferences: [VORDMEExecution]
-    let frequenciesByPhase: [FlightPhase: [ExecutionFrequency]]
+    let legs: [PlannedLegNavigation]
+    let annotations: [PlannedNavigationAnnotation]
+    let vorDmeReferences: [PlannedVORDMEReference]
+    let frequenciesByPhase: [FlightPhase: [PlannedFrequency]]
     let defaultMode: NavigationMode
 }
 
-enum NavigationExecutionAvailability: Equatable, Sendable {
+enum PlannedNavigationAvailability: Equatable, Sendable {
     case unavailableLegacyFormat(version: Int)
-    case emptyPlan(NavigationExecution)
-    case eligible(NavigationExecution)
+    case emptyPlan(PlannedNavigation)
+    case eligible(PlannedNavigation)
 
-    var execution: NavigationExecution? {
+    var plannedNavigation: PlannedNavigation? {
         switch self {
         case .unavailableLegacyFormat: nil
-        case .emptyPlan(let execution), .eligible(let execution): execution
+        case .emptyPlan(let plannedNavigation), .eligible(let plannedNavigation): plannedNavigation
         }
     }
 
-    var isExecutionEligible: Bool {
+    var isFlightEligible: Bool {
         if case .eligible = self { true } else { false }
     }
 }

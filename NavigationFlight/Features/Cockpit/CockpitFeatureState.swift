@@ -40,7 +40,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
         let kind: Kind
         let expiresAt: Date
-        let session: FlightSession
+        let flight: Flight
         let legStartChecklists: [UUID: LegStartChecklistState]
         let selectedLegIndex: Int
         let cockpitRestoration: CockpitRestoration
@@ -68,48 +68,48 @@ struct CockpitFeatureState: Equatable, Sendable {
         var phaseState: PhaseState
     }
 
-    let progressionPolicy: FlightSession.ProgressionPolicy
-    private(set) var flight: NavigationFlight?
+    let progressionPolicy: Flight.ProgressionPolicy
+    private(set) var flightPlan: FlightPlan?
     private(set) var selectedLegIndex = 0
     private(set) var mode = NavigationMode.noWind
-    private(set) var session: FlightSession?
+    private(set) var flight: Flight?
     private(set) var legStartChecklists: [UUID: LegStartChecklistState] = [:]
     private(set) var areDriftLinesVisible = true
     private(set) var pendingReachUndo: PendingReachUndo?
 
-    init(progressionPolicy: FlightSession.ProgressionPolicy = .automaticNextLeg) {
+    init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
         self.progressionPolicy = progressionPolicy
     }
 
     var canSelectPreviousLeg: Bool {
-        session?.legState == .ready && session?.legTimings.isEmpty == true && selectedLegIndex > 0
+        flight?.legState == .ready && flight?.legTimings.isEmpty == true && selectedLegIndex > 0
     }
     var canSelectNextLeg: Bool {
-        guard session?.legState == .ready,
-              session?.legTimings.isEmpty == true,
-              case .eligible(let execution)? = flight?.execution else { return false }
-        return selectedLegIndex + 1 < execution.legs.count
+        guard flight?.legState == .ready,
+              flight?.legTimings.isEmpty == true,
+              case .eligible(let plannedNavigation)? = flightPlan?.plannedNavigation else { return false }
+        return selectedLegIndex + 1 < plannedNavigation.legs.count
     }
 
     var activeLegStartChecklist: LegStartChecklistState? {
-        guard let session, session.legState == .active else { return nil }
-        return legStartChecklists[session.legIDs[session.activeLegIndex]]
+        guard let flight, flight.legState == .active else { return nil }
+        return legStartChecklists[flight.legIDs[flight.activeLegIndex]]
     }
 
-    mutating func accept(_ candidate: NavigationFlight) throws {
-        switch candidate.execution {
+    mutating func accept(_ flightPlan: FlightPlan) throws {
+        switch flightPlan.plannedNavigation {
         case .unavailableLegacyFormat(let version):
             throw CockpitPlanError.legacyPlan(version: version)
         case .emptyPlan:
             throw CockpitPlanError.emptyPlan
-        case .eligible(let execution):
-            guard !execution.legs.isEmpty else { throw CockpitPlanError.emptyPlan }
-            flight = candidate
+        case .eligible(let plannedNavigation):
+            guard !plannedNavigation.legs.isEmpty else { throw CockpitPlanError.emptyPlan }
+            self.flightPlan = flightPlan
             selectedLegIndex = 0
-            mode = execution.defaultMode
-            session = FlightSession(
-                flightID: candidate.id,
-                legIDs: candidate.legs.map(\.id),
+            mode = plannedNavigation.defaultMode
+            flight = Flight(
+                flightPlanID: flightPlan.id,
+                legIDs: flightPlan.legs.map(\.id),
                 activeLegIndex: selectedLegIndex,
                 executionMode: mode,
                 progressionPolicy: progressionPolicy
@@ -127,31 +127,31 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func selectPreviousLeg() {
         guard canSelectPreviousLeg else { return }
         let candidate = selectedLegIndex - 1
-        guard (try? session?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        guard (try? flight?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
         selectedLegIndex = candidate
     }
 
     mutating func selectNextLeg() {
         guard canSelectNextLeg else { return }
         let candidate = selectedLegIndex + 1
-        guard (try? session?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        guard (try? flight?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
         selectedLegIndex = candidate
     }
 
     mutating func selectMode(_ newMode: NavigationMode) {
-        guard session?.legState == .ready,
-              let flight, case .eligible(let execution) = flight.execution else { return }
-        if newMode == .wind && !execution.legs.allSatisfy({ $0.withWind != nil }) { return }
+        guard flight?.legState == .ready,
+              let flightPlan, case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else { return }
+        if newMode == .wind && !plannedNavigation.legs.allSatisfy({ $0.withWind != nil }) { return }
         mode = newMode
-        try? session?.selectReadyLeg(index: selectedLegIndex, mode: mode)
+        try? flight?.selectReadyLeg(index: selectedLegIndex, mode: mode)
     }
 
     mutating func startLeg(at timestamp: Date = .now) throws {
-        guard var nextSession = session else {
-            throw FlightSession.TransitionError.legNotReady
+        guard var nextFlight = flight else {
+            throw Flight.TransitionError.legNotReady
         }
-        try nextSession.startLeg(at: timestamp)
-        session = nextSession
+        try nextFlight.startLeg(at: timestamp)
+        flight = nextFlight
         createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
     }
@@ -160,38 +160,38 @@ struct CockpitFeatureState: Equatable, Sendable {
         cockpitRestoration: CockpitRestoration,
         at timestamp: Date = .now
     ) throws {
-        guard let flight, var nextSession = session else {
-            throw FlightSession.TransitionError.legNotActive
+        guard let flightPlan, var nextFlight = flight else {
+            throw Flight.TransitionError.legNotActive
         }
         let mapPresentation = try AviationMapPresentationFactory().makePresentation(
-            flight: flight,
-            session: nextSession
+            flightPlan: flightPlan,
+            flight: nextFlight
         )
         let departingLegID = activeLegStartChecklist?.legID
-        let restorationSession = nextSession
+        let restorationFlight = nextFlight
         let restorationChecklists = legStartChecklists
         let restorationLegIndex = selectedLegIndex
-        try nextSession.reachCurrentWaypoint(
+        try nextFlight.reachCurrentWaypoint(
             orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
             at: timestamp
         )
-        session = nextSession
+        flight = nextFlight
         if let departingLegID {
             hideLegStartChecklist(for: departingLegID)
         }
-        if let activeLegIndex = session?.activeLegIndex {
+        if let activeLegIndex = flight?.activeLegIndex {
             selectedLegIndex = activeLegIndex
         }
-        if session?.legState == .active {
+        if flight?.legState == .active {
             createPendingLegStartChecklistForActiveLeg()
         }
         pendingReachUndo = PendingReachUndo(
             kind: .destination(
                 legNumber: restorationLegIndex + 1,
-                isFinalLeg: restorationLegIndex == nextSession.legIDs.count - 1
+                isFinalLeg: restorationLegIndex == nextFlight.legIDs.count - 1
             ),
             expiresAt: timestamp.addingTimeInterval(20),
-            session: restorationSession,
+            flight: restorationFlight,
             legStartChecklists: restorationChecklists,
             selectedLegIndex: restorationLegIndex,
             cockpitRestoration: cockpitRestoration
@@ -203,9 +203,9 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func identifyDestination(at timestamp: Date = .now) throws {
-        guard var nextSession = session else { throw FlightSession.TransitionError.legNotActive }
-        try nextSession.identifyDestination(at: timestamp)
-        session = nextSession
+        guard var nextFlight = flight else { throw Flight.TransitionError.legNotActive }
+        try nextFlight.identifyDestination(at: timestamp)
+        flight = nextFlight
         hideActiveLegStartChecklistForPhase()
         pendingReachUndo = nil
     }
@@ -216,23 +216,23 @@ struct CockpitFeatureState: Equatable, Sendable {
         cockpitRestoration: CockpitRestoration = .empty,
         at timestamp: Date = .now
     ) throws {
-        guard var nextSession = session else {
-            throw FlightSession.TransitionError.legNotActive
+        guard var nextFlight = flight else {
+            throw Flight.TransitionError.legNotActive
         }
         let orderedPoints = mapPresentation.identificationPoints
-        let restorationSession = nextSession
+        let restorationFlight = nextFlight
         let restorationChecklists = legStartChecklists
         let restorationLegIndex = selectedLegIndex
-        try nextSession.reachIdentificationPoint(
+        try nextFlight.reachIdentificationPoint(
             key: key,
             orderedActiveLegPointKeys: orderedPoints.map(\.id),
             at: timestamp
         )
         guard let selectedIndex = orderedPoints.firstIndex(where: { $0.id == key }) else {
-            throw FlightSession.TransitionError.invalidIdentificationPointOrder
+            throw Flight.TransitionError.invalidIdentificationPointOrder
         }
         let nextTarget = orderedPoints[(selectedIndex + 1)...]
-            .first(where: { nextSession.identificationPointState(for: $0.id) == .future })
+            .first(where: { nextFlight.identificationPointState(for: $0.id) == .future })
             .map { point in
                 AviationMapETATarget(
                     id: NavigationTimingTargetKey(
@@ -245,16 +245,16 @@ struct CockpitFeatureState: Equatable, Sendable {
                     committedETASeconds: point.committedETASeconds
                 )
             } ?? mapPresentation.destinationTarget
-        nextSession.initializePilotETA(
+        nextFlight.initializePilotETA(
             targetKey: nextTarget.id,
             plannedElapsedSeconds: nextTarget.plannedElapsedSeconds
         )
-        session = nextSession
+        flight = nextFlight
         let name = orderedPoints[selectedIndex].name
         pendingReachUndo = PendingReachUndo(
             kind: .identificationPoint(name),
             expiresAt: timestamp.addingTimeInterval(20),
-            session: restorationSession,
+            flight: restorationFlight,
             legStartChecklists: restorationChecklists,
             selectedLegIndex: restorationLegIndex,
             cockpitRestoration: cockpitRestoration
@@ -268,7 +268,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func undoMostRecentReach(at now: Date = .now) -> CockpitRestoration? {
         guard let undo = availableReachUndo(at: now) else { return nil }
-        session = undo.session
+        flight = undo.flight
         legStartChecklists = undo.legStartChecklists
         selectedLegIndex = undo.selectedLegIndex
         pendingReachUndo = nil
@@ -277,7 +277,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func openPilotETAEditor(target: AviationMapETATarget) {
         let elapsedSeconds = currentLegElapsedSeconds()
-        session?.initializePilotETA(
+        flight?.initializePilotETA(
             targetKey: target.id,
             plannedElapsedSeconds: target.plannedElapsedSeconds,
             currentElapsedSeconds: elapsedSeconds
@@ -286,7 +286,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func adjustPilotETA(targetKey: NavigationTimingTargetKey, by deltaSeconds: Int) {
         let elapsedSeconds = currentLegElapsedSeconds()
-        session?.adjustPilotETA(
+        flight?.adjustPilotETA(
             targetKey: targetKey,
             by: deltaSeconds,
             currentElapsedSeconds: elapsedSeconds
@@ -295,72 +295,72 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func commitPilotETA(targetKey: NavigationTimingTargetKey) {
         let elapsedSeconds = currentLegElapsedSeconds()
-        let previousSession = session
-        session?.commitPilotETA(
+        let previousSession = flight
+        flight?.commitPilotETA(
             targetKey: targetKey,
             currentElapsedSeconds: elapsedSeconds
         )
-        if session != previousSession { pendingReachUndo = nil }
+        if flight != previousSession { pendingReachUndo = nil }
     }
 
     mutating func beginEditingPilotETA(targetKey: NavigationTimingTargetKey) {
         let elapsedSeconds = currentLegElapsedSeconds()
-        session?.beginEditingPilotETA(
+        flight?.beginEditingPilotETA(
             targetKey: targetKey,
             currentElapsedSeconds: elapsedSeconds
         )
     }
 
     mutating func cancelPilotETAEditing(targetKey: NavigationTimingTargetKey) {
-        session?.cancelPilotETAEditing(targetKey: targetKey)
+        flight?.cancelPilotETAEditing(targetKey: targetKey)
     }
 
     mutating func showPilotETACheck(
         targetKey: NavigationTimingTargetKey,
         mapPresentation: AviationMapPresentation
     ) {
-        guard var nextSession = session,
+        guard var nextFlight = flight,
               let target = mapPresentation.timingTarget(for: targetKey),
-              let observationKey = nextSession.latestEligibleTimingObservation(
+              let observationKey = nextFlight.latestEligibleTimingObservation(
                 before: targetKey,
                 orderedPointKeys: mapPresentation.identificationPoints.map(\.id)
               ),
               let observation = mapPresentation.identificationPoints.first(where: { $0.id == observationKey }),
-              let actual = nextSession.actualLegElapsedDuration(atIdentificationPoint: observation.id),
-              nextSession.showPilotETACheck(
+              let actual = nextFlight.actualLegElapsedDuration(atIdentificationPoint: observation.id),
+              nextFlight.showPilotETACheck(
                 targetKey: targetKey,
                 observationKey: observation.id,
                 plannedObservationElapsed: TimeInterval(observation.plannedElapsedSeconds),
                 actualObservationElapsed: actual,
                 plannedTargetElapsed: TimeInterval(target.plannedElapsedSeconds)
               ) else { return }
-        session = nextSession
+        flight = nextFlight
     }
 
     mutating func hidePilotETACheck(targetKey: NavigationTimingTargetKey) {
-        session?.hidePilotETACheck(targetKey: targetKey)
+        flight?.hidePilotETACheck(targetKey: targetKey)
     }
 
     mutating func openPilotHeadingEditor(baselineDegrees: Int) {
-        session?.openPilotHeadingEditor(baselineDegrees: baselineDegrees)
+        flight?.openPilotHeadingEditor(baselineDegrees: baselineDegrees)
     }
 
     mutating func adjustPilotHeading(by deltaDegrees: Int) {
-        session?.adjustPilotHeading(by: deltaDegrees)
+        flight?.adjustPilotHeading(by: deltaDegrees)
     }
 
     mutating func commitPilotHeading() {
-        let previousSession = session
-        session?.commitPilotHeading()
-        if session != previousSession { pendingReachUndo = nil }
+        let previousSession = flight
+        flight?.commitPilotHeading()
+        if flight != previousSession { pendingReachUndo = nil }
     }
 
     mutating func cancelPilotHeadingEditing() {
-        session?.cancelPilotHeadingEditing()
+        flight?.cancelPilotHeadingEditing()
     }
 
     private func currentLegElapsedSeconds(at timestamp: Date = .now) -> Int {
-        session?.elapsedTime(at: timestamp).map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
+        flight?.elapsedTime(at: timestamp).map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
     }
 
     mutating func cancelImport() {
@@ -396,8 +396,8 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     private mutating func createPendingLegStartChecklistForActiveLeg() {
-        guard let session, session.legState == .active else { return }
-        let legID = session.legIDs[session.activeLegIndex]
+        guard let flight, flight.legState == .active else { return }
+        let legID = flight.legIDs[flight.activeLegIndex]
         guard legStartChecklists[legID] == nil else { return }
         legStartChecklists[legID] = LegStartChecklistState(
             legID: legID,
@@ -410,8 +410,8 @@ struct CockpitFeatureState: Equatable, Sendable {
     private mutating func updateActiveChecklist(
         _ update: (inout LegStartChecklistState) -> Void
     ) {
-        guard let session, session.legState == .active else { return }
-        let legID = session.legIDs[session.activeLegIndex]
+        guard let flight, flight.legState == .active else { return }
+        let legID = flight.legIDs[flight.activeLegIndex]
         guard var checklist = legStartChecklists[legID] else { return }
         update(&checklist)
         legStartChecklists[legID] = checklist
@@ -419,7 +419,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 }
 
 struct FPLNavFileLoader: Sendable {
-    func load(_ url: URL) throws -> NavigationFlight {
+    func load(_ url: URL) throws -> FlightPlan {
         guard url.pathExtension.lowercased() == "fplnav" else {
             throw CockpitPlanError.malformedPlan("Select a file with the .fplnav extension.")
         }

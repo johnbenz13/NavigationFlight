@@ -14,7 +14,7 @@ struct FPLNavDecoder: Sendable {
         let formatVersion: Int
     }
 
-    func decode(_ data: Data) throws -> NavigationFlight {
+    func decode(_ data: Data) throws -> FlightPlan {
         let decoder = Self.makeJSONDecoder()
         let metadata: Metadata
 

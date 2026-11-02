@@ -1,49 +1,85 @@
 # NavigationFlight Glossary
 
-## Navigation plan
+NavigationFlight supports preparing for and executing visual-navigation flights
+while preserving the pilot as the navigation authority.
 
-A prepared route and its navigation information, imported into the app for use in Cockpit. The Flights destination presents navigation plans, rather than records of previous flight sessions.
+## Core flight concepts
 
-## Flights
+**NavigationFlight**:
+The application for executing navigation flights. It is the product name, not a
+domain entity.
 
-The app's offline library of imported navigation plans available to load in Cockpit.
+**App section**:
+One of the application's top-level areas, such as Cockpit, Flight Plans, or
+Settings, independent of whether the interface presents it as a tab or sidebar
+item.
+_Avoid_: Destination
 
-## Cockpit
+**Flight Plan**:
+The complete preparation for a Flight, including its route, map information,
+headings, speeds, altitudes, radio information, and resolved planning data. A
+`.fplnav` file contains one Flight Plan.
+_Avoid_: Navigation plan, NavigationFlight
 
-The app's operational destination for flying a loaded navigation plan.
+**Flight Plans**:
+The application's offline library and app section containing imported Flight
+Plans available to inspect and load in Cockpit.
+_Avoid_: Flights, Flight library
 
-## Flight session
+**Flight**:
+One actual execution of a Flight Plan, created when the pilot explicitly loads
+or restarts that plan and retained through its ready, active, and completed
+states. Separate loads or restarts create distinct Flights.
+_Avoid_: Flight session
 
-A single execution of a navigation plan, including the pilot's recorded progress, timing, and revisions.
+**Flights**:
+The collection of actual Flight instances across their ready, active, completed,
+or aborted states. It is reserved for a future app section and does not refer to
+the Flight Plans library.
 
-## Manual-navigation primacy
+**Planned navigation**:
+The resolved headings, speeds, timings, annotations, radio information, and
+related planning values contained in a Flight Plan.
+_Avoid_: Execution data
 
-During normal flight, the pilot is the navigation authority. The pilot starts each leg, identifies and reports reaching navigation targets, performs navigation calculations, and decides which heading and timing values to use. The app may present recorded observations and provide an explicitly requested cross-check, but it does not silently perform or replace these pilot actions.
+**Cockpit**:
+The application's operational destination for executing the currently loaded
+Flight.
 
-## Navigation target
+## Manual navigation
 
-An identification point or arrival waypoint toward which the pilot is navigating within a leg.
+**Manual-navigation primacy**:
+The pilot remains the navigation authority during a Flight; the application
+records pilot actions and presents explicitly requested cross-checks without
+silently replacing those actions.
 
-## Pilot-reported position fix
+**Navigation target**:
+An identification point or arrival waypoint toward which the pilot is navigating
+within a leg.
 
-The resolved map position of an identification point or waypoint that the pilot reports reaching. The app treats this report as the pilot's asserted position for manual-navigation purposes, but it is not independently verified and must not be described as a GPS-confirmed aircraft position.
+**Pilot-reported position fix**:
+The resolved map position of an identification point or waypoint that the pilot
+reports reaching. It is the pilot's asserted position, not a GPS-confirmed
+aircraft position.
 
-## Passed without report
+**Passed without report**:
+The historical state of an identification point preceding a later
+pilot-reported position fix that was never itself reported reached. It has no
+Actual ETA and its revisions can no longer be edited.
 
-The historical state of an identification point that precedes a later pilot-reported position fix but was never itself reported reached. A passed-without-report point has no Actual ETA and its revisions can no longer be edited.
+**Drift lines**:
+Optional dashed reference lines drawn from a leg's endpoints using the configured
+drift angle. They support manual heading calculation and do not represent an
+actual or GPS-derived track.
 
-## Drift lines
+**Revised ETA**:
+The pilot's updated estimate of elapsed time from the start of the current leg
+to a navigation target.
 
-Optional dashed reference lines drawn from a leg's endpoints using the configured drift angle. They are graphical aids for the pilot's manual heading calculation and do not represent the aircraft's actual or GPS-derived track.
+**Revised Heading**:
+The pilot's updated heading for regaining or maintaining the intended track.
 
-## Revised ETA
-
-The pilot's updated estimate of elapsed time from the start of the current leg to a navigation target. The pilot calculates and commits this value using observed progress, including the difference between Planned ETA and Actual ETA at a reached identification point.
-
-## Revised Heading
-
-The pilot's updated heading for regaining or maintaining the intended track. The pilot calculates and commits this value from observed drift and the planned navigation information.
-
-## Reference result
-
-An app-computed value revealed only when the pilot explicitly requests a cross-check after committing their own result. A Reference result never overwrites or automatically applies a pilot-authored revision.
+**Reference result**:
+An application-computed value revealed only when the pilot explicitly requests
+a cross-check after committing a result. It never overwrites or automatically
+applies a pilot-authored revision.

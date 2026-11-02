@@ -24,11 +24,63 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    func testEmptyStateOffersPlanImport() throws {
+    func testFreshLaunchShellRoutesBetweenFixedAppSections() throws {
         let app = XCUIApplication()
         app.launch()
-        XCTAssertTrue(app.staticTexts["No Navigation Plan"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["open-plan"].isEnabled)
+
+        let cockpitTab = tab(named: "Cockpit", in: app)
+        let flightPlansTab = tab(named: "Flight Plans", in: app)
+        let settingsTab = tab(named: "Settings", in: app)
+        XCTAssertTrue(cockpitTab.waitForExistence(timeout: 5))
+        XCTAssertTrue(flightPlansTab.exists)
+        XCTAssertTrue(settingsTab.exists)
+        XCTAssertLessThan(cockpitTab.frame.minX, flightPlansTab.frame.minX)
+        XCTAssertLessThan(flightPlansTab.frame.minX, settingsTab.frame.minX)
+        XCTAssertTrue(flightPlansTab.isSelected)
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
+
+        cockpitTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(cockpitTab.isSelected)
+        let chooseFlightPlan = app.buttons["Choose a Flight Plan"]
+        XCTAssertTrue(chooseFlightPlan.waitForExistence(timeout: 2))
+        chooseFlightPlan.tap()
+        XCTAssertTrue(flightPlansTab.isSelected)
+
+        settingsTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.staticTexts["Settings will be available here. No functional settings or inactive future app sections."].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testFreshLaunchShowsEmptyFlightPlans() throws {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Add a prepared .fplnav plan from Navigation Editor. Saved Flight Plans remain available offline."].exists)
+    }
+
+    @MainActor
+    func testTabRoundTripAndRotationPreserveActiveFlight() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        app.buttons["start-leg"].tap()
+        let timer = app.descendants(matching: .any)["cockpit-time"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 2))
+        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+
+        let flightPlansTab = tab(named: "Flight Plans", in: app)
+        flightPlansTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 2))
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 2))
+        XCUIDevice.shared.orientation = .portrait
+
+        let cockpitTab = tab(named: "Cockpit", in: app)
+        XCTAssertTrue(cockpitTab.waitForExistence(timeout: 2))
+        cockpitTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(timer.waitForExistence(timeout: 2))
+        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+        XCTAssertTrue(app.buttons["reached-now"].isEnabled)
+
     }
 
     @MainActor
@@ -413,5 +465,10 @@ final class NavigationFlightUITests: XCTestCase {
         let repository = sourceFile.deletingLastPathComponent().deletingLastPathComponent()
         let fixture = repository.appending(path: "NavigationFlightTests/Fixtures/FPLNav/\(directory)/\(name).fplnav")
         return try Data(contentsOf: fixture)
+    }
+
+    private func tab(named label: String, in app: XCUIApplication) -> XCUIElement {
+        let matches = app.buttons.matching(NSPredicate(format: "label == %@", label))
+        return matches.element(boundBy: max(matches.count - 1, 0))
     }
 }

@@ -12,9 +12,14 @@ struct CockpitFeatureView: View {
     @State private var presentedError: PresentedError?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
+    private let onIntent: (CockpitFeatureIntent) -> Void
 
-    init(state: Binding<CockpitFeatureState>) {
+    init(
+        state: Binding<CockpitFeatureState>,
+        onIntent: @escaping (CockpitFeatureIntent) -> Void
+    ) {
         _state = state
+        self.onIntent = onIntent
     }
 
     var body: some View {
@@ -123,19 +128,20 @@ struct CockpitFeatureView: View {
             }
         } else {
             ContentUnavailableView {
-                Label("No Navigation Plan", systemImage: "map")
+                Label("Choose a Flight Plan to begin", systemImage: "airplane")
             } description: {
-                Text("Open a prepared V7 .fplnav plan to inspect its saved execution data.")
+                Text("No Flight Plan is loaded. Import remains a Flight Plans responsibility.")
             } actions: {
                 Button {
-                    isImporterPresented = true
+                    onIntent(.chooseFlightPlan)
                 } label: {
-                    Label("Open Plan", systemImage: "folder")
+                    Label("Choose a Flight Plan", systemImage: "folder")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .accessibilityIdentifier("open-plan")
+                .accessibilityIdentifier("choose-flight-plan")
             }
+            .accessibilityIdentifier("empty-cockpit")
         }
     }
 

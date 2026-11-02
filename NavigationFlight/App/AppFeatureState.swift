@@ -28,6 +28,13 @@ struct AppFeatureState: Equatable, Sendable {
         selectedAppSection = section
     }
 
+    mutating func handleCockpitIntent(_ intent: CockpitFeatureIntent) {
+        switch intent {
+        case .chooseFlightPlan:
+            selectAppSection(.flightPlans)
+        }
+    }
+
     mutating func updateCockpit(_ cockpit: CockpitFeatureState) {
         self.cockpit = cockpit
     }
@@ -114,6 +121,10 @@ struct AppFeatureState: Equatable, Sendable {
         pendingFlightChange = pending
         return .confirmationRequired(pending)
     }
+}
+
+enum CockpitFeatureIntent: Equatable, Sendable {
+    case chooseFlightPlan
 }
 
 enum AppFeatureError: Error, Equatable, Sendable {

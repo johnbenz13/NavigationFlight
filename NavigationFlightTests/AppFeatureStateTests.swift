@@ -43,6 +43,19 @@ struct AppFeatureStateTests {
         #expect(state.cockpit.flight?.legStartedAt == Date(timeIntervalSince1970: 1_000))
     }
 
+    @Test("Choosing a Flight Plan from empty Cockpit changes only app selection")
+    func chooseFlightPlanIntentPreservesChildState() {
+        var state = AppFeatureState(selectedAppSection: .cockpit)
+        let originalCockpit = state.cockpit
+        let originalFlightPlans = state.flightPlans
+
+        state.handleCockpitIntent(.chooseFlightPlan)
+
+        #expect(state.selectedAppSection == .flightPlans)
+        #expect(state.cockpit == originalCockpit)
+        #expect(state.flightPlans == originalFlightPlans)
+    }
+
     @Test("Loading without protected work creates the injected ready Flight")
     func loadWithoutProtectedWork() throws {
         let plan = try flightPlan()

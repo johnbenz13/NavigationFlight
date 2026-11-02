@@ -8,7 +8,7 @@ struct CockpitPresentationData: Equatable, Sendable {
         let frequencyMHz: Double
         let magneticRadialFromDegrees: Double
         let slantRangeNauticalMiles: Double
-        let source: VORDMEExecutionSource
+        let source: PlannedVORDMESource
     }
 
     struct Frequency: Identifiable, Equatable, Sendable {
@@ -17,7 +17,7 @@ struct CockpitPresentationData: Equatable, Sendable {
         let role: String?
         let service: String
         let frequencyMHz: Double
-        let source: ExecutionFrequencySource
+        let source: PlannedFrequencySource
     }
 
     struct DisplayFrequency: Identifiable, Equatable, Sendable {
@@ -26,13 +26,13 @@ struct CockpitPresentationData: Equatable, Sendable {
         let service: String
         let serviceType: String
         let frequencyMHz: Double
-        let source: ExecutionFrequencySource
+        let source: PlannedFrequencySource
     }
 
     struct RouteEvent: Identifiable, Equatable, Sendable {
         let id: UUID
         let entityIDs: [UUID]
-        let kinds: [ExecutionAnnotationKind]
+        let kinds: [PlannedNavigationAnnotationKind]
         let normalizedX: Double
         let normalizedY: Double
         let position: WGS84Coordinate
@@ -67,7 +67,7 @@ struct CockpitPresentationData: Equatable, Sendable {
 }
 
 enum CockpitPresentationError: Error, Equatable, Sendable {
-    case unavailableExecution
+    case unavailablePlannedNavigation
     case invalidLegIndex(Int)
     case unavailableWindMode
     case missingSourceLeg(UUID)
@@ -304,18 +304,18 @@ struct LegStartChecklistPresentation: Equatable, Sendable {
 
 struct CockpitPresentationAdapter: Sendable {
     func makeLegStartChecklist(
-        flight: NavigationFlight,
-        session: FlightSession,
+        flightPlan: FlightPlan,
+        flight: Flight,
         template: LegStartChecklistTemplate = .tzeKivun
     ) throws -> LegStartChecklistPresentation? {
-        guard session.legState == .active,
-              flight.legs.indices.contains(session.activeLegIndex),
-              case .eligible(let execution) = flight.execution,
-              execution.legs.indices.contains(session.activeLegIndex) else { return nil }
+        guard flight.legState == .active,
+              flightPlan.legs.indices.contains(flight.activeLegIndex),
+              case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
+              plannedNavigation.legs.indices.contains(flight.activeLegIndex) else { return nil }
 
-        let resolvedLeg = execution.legs[session.activeLegIndex]
+        let resolvedLeg = plannedNavigation.legs[flight.activeLegIndex]
         let direction: LegStartChecklistPresentation.Direction
-        switch session.executionMode {
+        switch flight.executionMode {
         case .wind:
             guard let wind = resolvedLeg.withWind else {
                 throw CockpitPresentationError.unavailableWindMode
@@ -326,7 +326,7 @@ struct CockpitPresentationAdapter: Sendable {
         }
 
         return LegStartChecklistPresentation(
-            legID: flight.legs[session.activeLegIndex].id,
+            legID: flightPlan.legs[flight.activeLegIndex].id,
             template: try template.validated(),
             direction: direction,
             plannedAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
@@ -335,20 +335,20 @@ struct CockpitPresentationAdapter: Sendable {
     }
 
     func makeNextLegPreparation(
-        flight: NavigationFlight,
-        session: FlightSession
+        flightPlan: FlightPlan,
+        flight: Flight
     ) throws -> NextLegPreparation? {
-        let nextIndex = session.activeLegIndex + 1
-        guard flight.legs.indices.contains(nextIndex) else { return nil }
-        guard case .eligible(let execution) = flight.execution,
-              execution.legs.indices.contains(nextIndex) else {
-            throw CockpitPresentationError.unavailableExecution
+        let nextIndex = flight.activeLegIndex + 1
+        guard flightPlan.legs.indices.contains(nextIndex) else { return nil }
+        guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
+              plannedNavigation.legs.indices.contains(nextIndex) else {
+            throw CockpitPresentationError.unavailablePlannedNavigation
         }
 
-        let sourceLeg = flight.legs[nextIndex]
-        let resolvedLeg = execution.legs[nextIndex]
+        let sourceLeg = flightPlan.legs[nextIndex]
+        let resolvedLeg = plannedNavigation.legs[nextIndex]
         let direction: NextLegPreparation.Direction
-        switch session.executionMode {
+        switch flight.executionMode {
         case .wind:
             guard let wind = resolvedLeg.withWind else {
                 throw CockpitPresentationError.unavailableWindMode
@@ -358,7 +358,7 @@ struct CockpitPresentationAdapter: Sendable {
             direction = .course(resolvedLeg.magneticCourse.value)
         }
 
-        let immediateAltitude = flight.altitudeChanges.first { change in
+        let immediateAltitude = flightPlan.altitudeChanges.first { change in
             guard change.legID == sourceLeg.id else { return false }
             return switch change.anchor {
             case .waypoint(let waypointID): waypointID == sourceLeg.departure.id
@@ -366,7 +366,7 @@ struct CockpitPresentationAdapter: Sendable {
             case .identificationPoint: false
             }
         }?.targetAltitude.value
-        let immediateFrequency = flight.frequencyChanges.first {
+        let immediateFrequency = flightPlan.frequencyChanges.first {
             $0.legID == sourceLeg.id && $0.progress.fraction == 0
         }.map {
             NextLegPreparation.FrequencyChange(
@@ -385,21 +385,21 @@ struct CockpitPresentationAdapter: Sendable {
     }
 
     func makePreviousLegSummary(
-        flight: NavigationFlight,
-        session: FlightSession
+        flightPlan: FlightPlan,
+        flight: Flight
     ) throws -> PreviousLegSummary? {
-        guard let timing = session.legTimings.last(where: { $0.reachedAt != nil }),
+        guard let timing = flight.legTimings.last(where: { $0.reachedAt != nil }),
               let reachedAt = timing.reachedAt,
-              flight.legs.indices.contains(timing.legIndex),
-              case .eligible(let execution) = flight.execution,
-              execution.legs.indices.contains(timing.legIndex) else {
+              flightPlan.legs.indices.contains(timing.legIndex),
+              case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
+              plannedNavigation.legs.indices.contains(timing.legIndex) else {
             return nil
         }
-        let sourceLeg = flight.legs[timing.legIndex]
-        let resolvedLeg = execution.legs[timing.legIndex]
+        let sourceLeg = flightPlan.legs[timing.legIndex]
+        let resolvedLeg = plannedNavigation.legs[timing.legIndex]
         let plannedDuration: Int
         let heading: Double?
-        switch session.executionMode {
+        switch flight.executionMode {
         case .noWind:
             plannedDuration = resolvedLeg.noWind.durationSeconds
             heading = nil
@@ -416,10 +416,10 @@ struct CockpitPresentationAdapter: Sendable {
             kind: .destination,
             targetID: sourceLeg.arrival.id
         )
-        let revisedETA = session.committedPilotETA(targetKey: destinationTargetKey)
+        let revisedETA = flight.committedPilotETA(targetKey: destinationTargetKey)
 
-        let annotationsByID = Dictionary(uniqueKeysWithValues: execution.annotations.map { ($0.entityID, $0) })
-        let identificationTargets = try flight.identificationPoints
+        let annotationsByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
+        let identificationTargets = try flightPlan.identificationPoints
             .filter { $0.legID == timing.legID }
             .enumerated()
             .map { offset, point -> PreviousLegSummary.Target in
@@ -429,7 +429,7 @@ struct CockpitPresentationAdapter: Sendable {
                     throw CockpitPresentationError.missingSourceLeg(point.id)
                 }
                 let plannedETA: Int
-                switch session.executionMode {
+                switch flight.executionMode {
                 case .noWind:
                     plannedETA = annotation.noWindTimeFromLegStartSeconds
                 case .wind:
@@ -443,9 +443,9 @@ struct CockpitPresentationAdapter: Sendable {
                     kind: .identificationPoint,
                     targetID: point.id
                 )
-                let etaState = session.pilotETAStatesByTargetKey[targetKey]
+                let etaState = flight.pilotETAStatesByTargetKey[targetKey]
                 let expectation = etaState?.committedSeconds ?? plannedETA
-                let pointTiming = session.identificationPointTimings.first {
+                let pointTiming = flight.identificationPointTimings.first {
                     $0.legID == timing.legID && $0.identificationPointID == point.id
                 }
                 let outcome: PreviousLegSummary.Target.Outcome
@@ -467,7 +467,7 @@ struct CockpitPresentationAdapter: Sendable {
                     outcome: outcome
                 )
             }
-        let destinationETAState = session.pilotETAStatesByTargetKey[destinationTargetKey]
+        let destinationETAState = flight.pilotETAStatesByTargetKey[destinationTargetKey]
         let destinationTarget = PreviousLegSummary.Target(
             id: destinationTargetKey,
             name: sourceLeg.arrival.name,
@@ -479,16 +479,16 @@ struct CockpitPresentationAdapter: Sendable {
                 differenceSeconds: actualDuration - (destinationETAState?.committedSeconds ?? plannedDuration)
             )
         )
-        let baselineDegrees = FlightSession.normalizedHeading(
+        let baselineDegrees = Flight.normalizedHeading(
             Int((heading ?? resolvedLeg.magneticCourse.value).rounded())
         )
-        let headingState = session.pilotHeadingStatesByLegID[timing.legID]
+        let headingState = flight.pilotHeadingStatesByLegID[timing.legID]
         let headingCommits = headingState?.commits.map(\.degrees) ?? []
 
         let acceptedReferences = Dictionary(
-            uniqueKeysWithValues: execution.vorDmeReferences.map { ($0.referenceID, $0) }
+            uniqueKeysWithValues: plannedNavigation.vorDmeReferences.map { ($0.referenceID, $0) }
         )
-        let sourceReference = flight.vorDmeReferences.first {
+        let sourceReference = flightPlan.vorDmeReferences.first {
             $0.waypointID == sourceLeg.arrival.id && acceptedReferences[$0.id] != nil
         }
         let vorDme = sourceReference.flatMap { source -> PreviousLegSummary.VORDME? in
@@ -522,19 +522,19 @@ struct CockpitPresentationAdapter: Sendable {
     }
 
     func makePresentation(
-        flight: NavigationFlight,
+        flightPlan: FlightPlan,
         legIndex: Int,
         mode: NavigationMode
     ) throws -> CockpitPresentationData {
-        guard case .eligible(let execution) = flight.execution else {
-            throw CockpitPresentationError.unavailableExecution
+        guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {
+            throw CockpitPresentationError.unavailablePlannedNavigation
         }
-        guard execution.legs.indices.contains(legIndex), flight.legs.indices.contains(legIndex) else {
+        guard plannedNavigation.legs.indices.contains(legIndex), flightPlan.legs.indices.contains(legIndex) else {
             throw CockpitPresentationError.invalidLegIndex(legIndex)
         }
 
-        let leg = execution.legs[legIndex]
-        let sourceLeg = flight.legs[legIndex]
+        let leg = plannedNavigation.legs[legIndex]
+        let sourceLeg = flightPlan.legs[legIndex]
         let timing: PlannedTiming
         let heading: Double?
         switch mode {
@@ -547,7 +547,7 @@ struct CockpitPresentationAdapter: Sendable {
             heading = wind.magneticHeading.value
         }
 
-        let cumulative = try execution.legs.prefix(through: legIndex).reduce(0) { total, candidate in
+        let cumulative = try plannedNavigation.legs.prefix(through: legIndex).reduce(0) { total, candidate in
             switch mode {
             case .noWind:
                 return total + candidate.noWind.durationSeconds
@@ -557,9 +557,9 @@ struct CockpitPresentationAdapter: Sendable {
             }
         }
 
-        let sourceReferences = Dictionary(uniqueKeysWithValues: flight.vorDmeReferences.map { ($0.id, $0) })
+        let sourceReferences = Dictionary(uniqueKeysWithValues: flightPlan.vorDmeReferences.map { ($0.id, $0) })
         let endpointIDs = [sourceLeg.departure.id: sourceLeg.departure.name, sourceLeg.arrival.id: sourceLeg.arrival.name]
-        let references = execution.vorDmeReferences.compactMap { resolved -> CockpitPresentationData.PlannedReference? in
+        let references = plannedNavigation.vorDmeReferences.compactMap { resolved -> CockpitPresentationData.PlannedReference? in
             guard let source = sourceReferences[resolved.referenceID],
                   let endpointName = endpointIDs[source.waypointID] else { return nil }
             return CockpitPresentationData.PlannedReference(
@@ -574,7 +574,7 @@ struct CockpitPresentationAdapter: Sendable {
         }
 
         let frequencies = Dictionary(uniqueKeysWithValues: FlightPhase.allCases.map { phase in
-            (phase, (execution.frequenciesByPhase[phase] ?? []).map {
+            (phase, (plannedNavigation.frequenciesByPhase[phase] ?? []).map {
                 CockpitPresentationData.Frequency(
                     id: $0.id,
                     phase: phase,
@@ -588,10 +588,10 @@ struct CockpitPresentationAdapter: Sendable {
 
         let displayFrequencies = makeDisplayFrequencies(from: frequencies)
 
-        let sourcePoints = Dictionary(uniqueKeysWithValues: flight.identificationPoints.map { ($0.id, $0) })
-        let altitudeChanges = Dictionary(uniqueKeysWithValues: flight.altitudeChanges.map { ($0.id, $0) })
-        let frequencyChanges = Dictionary(uniqueKeysWithValues: flight.frequencyChanges.map { ($0.id, $0) })
-        let annotations = execution.annotations.filter { $0.legID == leg.legID }
+        let sourcePoints = Dictionary(uniqueKeysWithValues: flightPlan.identificationPoints.map { ($0.id, $0) })
+        let altitudeChanges = Dictionary(uniqueKeysWithValues: flightPlan.altitudeChanges.map { ($0.id, $0) })
+        let frequencyChanges = Dictionary(uniqueKeysWithValues: flightPlan.frequencyChanges.map { ($0.id, $0) })
+        let annotations = plannedNavigation.annotations.filter { $0.legID == leg.legID }
         let positions = [sourceLeg.departure.position, sourceLeg.arrival.position] + annotations.map(\.position)
         let projected = project(
             positions: positions,
@@ -636,8 +636,8 @@ struct CockpitPresentationAdapter: Sendable {
         let routeEvents = groupCoincidentEvents(individualEvents)
 
         return .init(
-            planTitle: flight.title,
-            legPosition: "Leg \(legIndex + 1) of \(execution.legs.count)",
+            planTitle: flightPlan.title,
+            legPosition: "Leg \(legIndex + 1) of \(plannedNavigation.legs.count)",
             origin: sourceLeg.departure.name,
             destination: sourceLeg.arrival.name,
             originNormalizedX: projected[0].0,
@@ -654,7 +654,7 @@ struct CockpitPresentationAdapter: Sendable {
             cumulativeDurationSeconds: cumulative,
             initialAltitudeFeetMsl: leg.initialAltitudeMsl.value,
             mode: mode,
-            supportsWindMode: execution.legs.allSatisfy { $0.withWind != nil },
+            supportsWindMode: plannedNavigation.legs.allSatisfy { $0.withWind != nil },
             references: references,
             frequencies: frequencies,
             displayFrequencies: displayFrequencies,

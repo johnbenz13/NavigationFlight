@@ -2,7 +2,7 @@
 
 Status: read-only reverse engineering of the implementation as of 2026-10-23.
 
-This document describes the technical contract implemented by `CockpitPresentationAdapter.swift`. It records current behavior rather than proposing a redesign. The composing SwiftUI container is documented in [`CockpitFeatureView` Technical Specification](COCKPIT-FEATURE-VIEW.md), the owned feature model in [`CockpitFeatureState` Technical Specification](COCKPIT-FEATURE-STATE.md), and runtime flight progression in [`FlightSession` Technical Specification](FLIGHT-SESSION.md).
+This document describes the technical contract implemented by `CockpitPresentationAdapter.swift`. It records current behavior rather than proposing a redesign. The composing SwiftUI container is documented in [`CockpitFeatureView` Technical Specification](COCKPIT-FEATURE-VIEW.md), the owned feature model in [`CockpitFeatureState` Technical Specification](COCKPIT-FEATURE-STATE.md), and runtime flight progression in [`Flight` Technical Specification](FLIGHT.md).
 
 ## Responsibility and scope
 
@@ -26,8 +26,8 @@ It does not mutate the flight or session, calculate new navigation solutions, ad
 
 ```mermaid
 flowchart LR
-    Flight[NavigationFlight] --> Adapter[CockpitPresentationAdapter]
-    Session[FlightSession] --> Adapter
+    FlightPlan[FlightPlan] --> Adapter[CockpitPresentationAdapter]
+    Session[Flight] --> Adapter
     Adapter --> Primary[CockpitPresentationData]
     Adapter --> Next[NextLegPreparation?]
     Adapter --> Previous[PreviousLegSummary?]
@@ -45,9 +45,9 @@ The adapter combines two distinct sources:
 
 | Source | Information used |
 | --- | --- |
-| `NavigationFlight` | Plan title, source legs and waypoints, source annotations, source VOR/DME references, altitude changes, and frequency changes |
+| `FlightPlan` | Plan title, source legs and waypoints, source annotations, source VOR/DME references, altitude changes, and frequency changes |
 | Eligible execution payload | Resolved legs, timings, headings, courses, distances, accepted VOR/DME values, phase frequencies, and resolved annotations |
-| `FlightSession` | Active leg index, execution mode, completed-leg timing, and committed pilot ETA |
+| `Flight` | Active leg index, execution mode, completed-leg timing, and committed pilot ETA |
 
 The source flight and eligible execution are assumed to describe the same plan. Joins are performed by saved UUIDs and, for selected legs, parallel array indices.
 
@@ -76,7 +76,7 @@ Nested values preserve stable source identities:
 
 ### `NextLegPreparation`
 
-This optional value describes the leg immediately after `session.activeLegIndex`. It contains the next leg index, its saved heading or course, its saved initial altitude, and optional changes that take effect exactly at leg start.
+This optional value describes the leg immediately after `flight.activeLegIndex`. It contains the next leg index, its saved heading or course, its saved initial altitude, and optional changes that take effect exactly at leg start.
 
 ### `PreviousLegSummary`
 
@@ -190,7 +190,7 @@ No tolerance is applied to coordinates or time. Events at the same coordinate bu
 
 ## Next-leg preparation
 
-`makeNextLegPreparation(flight:session:)` targets `session.activeLegIndex + 1`.
+`makeNextLegPreparation(flight:flight:)` targets `flight.activeLegIndex + 1`.
 
 - If that index does not exist in the source flight, it returns `nil`; this is the normal final-leg result.
 - If the source leg exists but eligible execution data or the matching resolved leg does not, it throws `unavailableExecution`.
@@ -207,7 +207,7 @@ The resolved leg's `initialAltitudeMsl` is always returned separately, even when
 
 ## Previous-leg summary
 
-`makePreviousLegSummary(flight:session:)` searches `session.legTimings` from the end and selects the last entry whose `reachedAt` is non-`nil`. It returns `nil` when no completed timing exists or when the corresponding source/execution records are unavailable.
+`makePreviousLegSummary(flight:flight:)` searches `flight.legTimings` from the end and selects the last entry whose `reachedAt` is non-`nil`. It returns `nil` when no completed timing exists or when the corresponding source/execution records are unavailable.
 
 Planned duration and optional heading come from the session's current execution mode. Actual duration is:
 
@@ -225,7 +225,7 @@ The optional VOR/DME summary uses the first source reference attached to the arr
 
 ## Active-leg checklist projection
 
-`makeLegStartChecklist(flight:session:)` returns `nil` unless all of these conditions hold:
+`makeLegStartChecklist(flight:flight:)` returns `nil` unless all of these conditions hold:
 
 - the session leg state is `.active`;
 - the active index exists in the source flight;

@@ -6,7 +6,7 @@ struct FPLNavV7ValidationError: Error, Equatable, Sendable {
 }
 
 struct FPLNavV7Mapper {
-    func map(_ source: FPLNavV7DTO) throws -> NavigationFlight {
+    func map(_ source: FPLNavV7DTO) throws -> FlightPlan {
         guard source.format == "fpl-navigation-project", source.formatVersion == 7 else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)
         }
@@ -26,8 +26,8 @@ struct FPLNavV7Mapper {
             )
         )
         let base = try FPLNavV5Mapper().map(legacy)
-        let execution = try mapExecution(source, base: base)
-        return NavigationFlight(
+        let plannedNavigation = try mapExecution(source, base: base)
+        return FlightPlan(
             id: base.id,
             title: base.title,
             createdAt: base.createdAt,
@@ -40,11 +40,13 @@ struct FPLNavV7Mapper {
             frequencyChanges: base.frequencyChanges,
             vorDmeReferences: base.vorDmeReferences,
             operationalContext: base.operationalContext,
-            execution: execution.legs.isEmpty ? .emptyPlan(execution) : .eligible(execution)
+            plannedNavigation: plannedNavigation.legs.isEmpty
+                ? .emptyPlan(plannedNavigation)
+                : .eligible(plannedNavigation)
         )
     }
 
-    private func mapExecution(_ source: FPLNavV7DTO, base: NavigationFlight) throws -> NavigationExecution {
+    private func mapExecution(_ source: FPLNavV7DTO, base: FlightPlan) throws -> PlannedNavigation {
         try validateConsumedSource(source)
         let execution = source.execution
         try require(!execution.calculationVersion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -54,7 +56,7 @@ struct FPLNavV7Mapper {
                     "execution.legs", "must contain every source leg exactly once")
 
         var legIDs = Set<UUID>()
-        var mappedLegs: [LegExecution] = []
+        var mappedLegs: [PlannedLegNavigation] = []
         for (index, leg) in execution.legs.enumerated() {
             let path = "execution.legs[\(index)]"
             try require(legIDs.insert(leg.legId).inserted, path + ".legId", "is duplicated")
@@ -69,7 +71,7 @@ struct FPLNavV7Mapper {
             let windEnabled = source.navigation.presentation.navigationLog.windEnabled
             try require(windEnabled == (leg.withWind != nil), path + ".withWind",
                         "must be present exactly when wind planning is enabled")
-            let mappedWind: WindExecution?
+            let mappedWind: PlannedWindNavigation?
             if let wind = leg.withWind {
                 try timing(.init(plannedDurationSeconds: wind.plannedDurationSeconds,
                                  plannedGroundSpeedKnots: wind.plannedGroundSpeedKnots), path + ".withWind")
@@ -84,7 +86,7 @@ struct FPLNavV7Mapper {
                 try require(expected.directionFromTrueDegrees == wind.effectiveWind.directionFromTrueDegrees &&
                             expected.speedKnots == wind.effectiveWind.speedKnots,
                             path + ".withWind.effectiveWind", "must match leg override or project default")
-                mappedWind = WindExecution(
+                mappedWind = PlannedWindNavigation(
                     timing: .init(durationSeconds: wind.plannedDurationSeconds,
                                   groundSpeed: .init(value: wind.plannedGroundSpeedKnots)),
                     effectiveWind: mapWind(wind.effectiveWind),
@@ -107,10 +109,10 @@ struct FPLNavV7Mapper {
             ))
         }
 
-        var sourceAnnotations: [UUID: (ExecutionAnnotationKind, UUID)] = [:]
-        for item in source.navigation.identificationPoints.map({ ($0.id, ExecutionAnnotationKind.identificationPoint, $0.legId) }) +
-            source.navigation.altitudeChanges.map({ ($0.id, ExecutionAnnotationKind.altitudeChange, $0.legId) }) +
-            source.navigation.radioFrequencyChanges.map({ ($0.id, ExecutionAnnotationKind.radioFrequencyChange, $0.legId) }) {
+        var sourceAnnotations: [UUID: (PlannedNavigationAnnotationKind, UUID)] = [:]
+        for item in source.navigation.identificationPoints.map({ ($0.id, PlannedNavigationAnnotationKind.identificationPoint, $0.legId) }) +
+            source.navigation.altitudeChanges.map({ ($0.id, PlannedNavigationAnnotationKind.altitudeChange, $0.legId) }) +
+            source.navigation.radioFrequencyChanges.map({ ($0.id, PlannedNavigationAnnotationKind.radioFrequencyChange, $0.legId) }) {
             try require(sourceAnnotations.updateValue((item.1, item.2), forKey: item.0) == nil,
                         "navigation annotations", "source entity IDs must be unique across annotation kinds")
         }
@@ -121,7 +123,7 @@ struct FPLNavV7Mapper {
         let annotations = try execution.annotations.enumerated().map { index, annotation in
             let path = "execution.annotations[\(index)]"
             try require(annotationIDs.insert(annotation.entityId).inserted, path + ".entityId", "is duplicated")
-            guard let kind = ExecutionAnnotationKind(rawValue: annotation.kind),
+            guard let kind = PlannedNavigationAnnotationKind(rawValue: annotation.kind),
                   let expected = sourceAnnotations[annotation.entityId],
                   expected.0 == kind, expected.1 == annotation.legId else {
                 throw error(path + ".entityId", "must match a source entity, kind, and leg")
@@ -135,7 +137,7 @@ struct FPLNavV7Mapper {
             if let time = annotation.withWindTimeFromLegStartSeconds, let wind = leg.withWind {
                 try boundedTime(time, maximum: wind.timing.durationSeconds, path: path + ".withWindTimeFromLegStartSeconds")
             }
-            return AnnotationExecution(entityID: annotation.entityId, kind: kind, legID: annotation.legId,
+            return PlannedNavigationAnnotation(entityID: annotation.entityId, kind: kind, legID: annotation.legId,
                                        position: mapCoordinate(annotation.position),
                                        noWindTimeFromLegStartSeconds: annotation.noWindTimeFromLegStartSeconds,
                                        withWindTimeFromLegStartSeconds: annotation.withWindTimeFromLegStartSeconds)
@@ -149,7 +151,7 @@ struct FPLNavV7Mapper {
             let path = "execution.vorDmeReferences[\(index)]"
             try require(referenceIDs.insert(reference.referenceId).inserted, path + ".referenceId", "is duplicated")
             guard let sourceReference = sourceReferences[reference.referenceId],
-                  let mode = VORDMEExecutionSource(rawValue: reference.source),
+                  let mode = PlannedVORDMESource(rawValue: reference.source),
                   sourceReference.calculation.mode == reference.source else {
                 throw error(path + ".referenceId", "must match an accepted reference and calculation mode")
             }
@@ -164,7 +166,7 @@ struct FPLNavV7Mapper {
                             sourceReference.calculation.distanceNm == reference.slantRangeNauticalMiles,
                             path, "manual radial and pilot-provided slant range must remain unchanged")
             }
-            return VORDMEExecution(referenceID: reference.referenceId,
+            return PlannedVORDMEReference(referenceID: reference.referenceId,
                                    frequency: .init(value: reference.frequencyMhz),
                                    stationElevationMsl: reference.stationElevationFeetMsl.map(AltitudeFeet.init),
                                    magneticRadialFrom: .init(value: reference.magneticRadialFromDegrees),
@@ -176,7 +178,7 @@ struct FPLNavV7Mapper {
             (.enRoute, execution.frequenciesByPhase.enRoute),
             (.arrival, execution.frequenciesByPhase.arrival)
         ]
-        let frequencies: [FlightPhase: [ExecutionFrequency]] = try phaseSources.reduce(into: [:]) { result, pair in
+        let frequencies: [FlightPhase: [PlannedFrequency]] = try phaseSources.reduce(into: [:]) { result, pair in
             var ids = Set<String>()
             result[pair.0] = try pair.1.enumerated().map { index, frequency in
                 let path = "execution.frequenciesByPhase.\(pair.0.rawValue)[\(index)]"
@@ -185,20 +187,20 @@ struct FPLNavV7Mapper {
                             path + ".name", "must contain 1...100 non-whitespace characters")
                 if let role = frequency.role { try require(!role.isEmpty, path + ".role", "must be nonempty") }
                 try positiveMaximum(frequency.frequencyMhz, maximum: 999.999, path + ".frequencyMhz")
-                guard let source = ExecutionFrequencySource(rawValue: frequency.source) else { throw error(path + ".source", "is unsupported") }
+                guard let source = PlannedFrequencySource(rawValue: frequency.source) else { throw error(path + ".source", "is unsupported") }
                 return .init(id: frequency.id, name: frequency.name, role: frequency.role,
                              frequency: .init(value: frequency.frequencyMhz), source: source)
             }
         }
         try validateRequiredFrequencies(source, frequencies: frequencies)
 
-        return NavigationExecution(calculationVersion: execution.calculationVersion, altitudeReference: .msl,
+        return PlannedNavigation(calculationVersion: execution.calculationVersion, altitudeReference: .msl,
                                    legs: mappedLegs, annotations: annotations, vorDmeReferences: references,
                                    frequenciesByPhase: frequencies,
                                    defaultMode: source.navigation.presentation.navigationLog.windEnabled ? .wind : .noWind)
     }
 
-    private func validateRequiredFrequencies(_ source: FPLNavV7DTO, frequencies: [FlightPhase: [ExecutionFrequency]]) throws {
+    private func validateRequiredFrequencies(_ source: FPLNavV7DTO, frequencies: [FlightPhase: [PlannedFrequency]]) throws {
         let enRoute = frequencies[.enRoute] ?? []
         for change in source.navigation.radioFrequencyChanges {
             try require(enRoute.contains { $0.id == "route:\(change.id.uuidString.lowercased())" && $0.source == .route &&

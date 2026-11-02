@@ -107,18 +107,16 @@ library. No active-Flight value is read from disk.
 
 ### Terminology migration boundary
 
-The first implementation ticket renames domain concepts before adding library
-behavior:
+The terminology migration establishes these canonical domain concepts before
+library behavior is added:
 
-| Current name | Canonical name |
+| Concept | Canonical representation |
 | --- | --- |
-| `NavigationFlight` | `FlightPlan` |
-| `FlightSession` | `Flight` |
-| `NavigationExecution` | `PlannedNavigation` |
-| `NavigationExecutionAvailability` | `PlannedNavigationAvailability` |
-| `LegExecution` | `PlannedLegNavigation` |
-| properties named `flight` that contain imported preparation | `flightPlan` |
-| `FlightSession.flightID` containing the imported project ID | distinct `Flight.id` and `FlightPlan.id` |
+| Imported preparation aggregate | `FlightPlan` |
+| Actual execution aggregate | `Flight` |
+| Mapped planned-navigation values | `PlannedNavigation`, `PlannedNavigationAvailability`, and `PlannedLegNavigation` |
+| Imported preparation properties and parameters | `flightPlan` |
+| Actual execution identity and source relationship | distinct `Flight.id` and `Flight.flightPlanID` values |
 
 The FPLNav v5 and v7 DTOs retain their external field and type names, including
 `execution`, because those names describe published wire contracts. Mappers
@@ -187,7 +185,7 @@ struct Flight: Equatable, Sendable, Identifiable {
 }
 ```
 
-The current `FlightSession.flightID` is actually populated with a Flight Plan ID.
+`Flight.id` identifies the actual Flight, while `Flight.flightPlanID` retains the source Flight Plan relationship.
 The migration replaces it with distinct `Flight.id` and `FlightPlan.id` values;
 tests inject both identifiers so repeated executions of one Flight Plan remain
 deterministic and distinguishable.
@@ -468,17 +466,17 @@ the repository ticket workflow.
 
 ### Code terminology audit
 
-The migration ticket owns these current naming problems:
+The terminology audit establishes this implemented boundary:
 
-| Current location | Finding | Required correction |
-| --- | --- | --- |
-| `Domain/Flight/NavigationFlight.swift` | `NavigationFlight` is the imported preparation aggregate, not an executed Flight. | Rename the type and file to `FlightPlan`; keep `NavigationFlight` only as the product/module name. |
-| `Domain/Flight/FlightSession.swift` | `FlightSession` is the actual execution aggregate, and its `flightID` currently contains the imported project ID. | Rename the type and file to `Flight`; add a distinct Flight UUID and rename the relationship to the source Flight Plan. |
-| `Domain/Navigation/NavigationTypes.swift` | `NavigationExecution`, `NavigationExecutionAvailability`, `LegExecution`, and related names describe planned values as execution. | Rename mapped domain values to `PlannedNavigation`, `PlannedNavigationAvailability`, `PlannedLegNavigation`, and corresponding planned-navigation names. |
-| `Features/Cockpit/CockpitFeatureState.swift` | The `flight` property and `accept(_:)` candidate are Flight Plans, while the `session` property is the Flight. | Rename stored properties, parameters, commands, and errors to expose `flightPlan` and `flight` accurately. |
-| Cockpit/map presentation adapters | Parameters named `flight` receive the imported Flight Plan. | Rename parameters and local values to `flightPlan`; keep actual runtime values named `flight`. |
-| FPLNav DTOs and strict JSON validation | `execution` is part of the published v5/v7 wire contract. | Retain wire names inside versioned DTO and validation boundaries; translate them in mappers. |
-| Tests and technical documentation | Helpers and assertions use `flight` for decoded Flight Plans and `session` for Flights. | Rename fixtures/helpers and update documentation without changing behavior; add assertions for distinct Flight and Flight Plan IDs. |
+| Location | Canonical contract |
+| --- | --- |
+| `Domain/Flight/FlightPlan.swift` | `FlightPlan` is the imported preparation aggregate. |
+| `Domain/Flight/Flight.swift` | `Flight` is the actual execution aggregate with a distinct UUID and a `flightPlanID` relationship. |
+| `Domain/Navigation/NavigationTypes.swift` | Mapped values use planned-navigation vocabulary. |
+| `Features/Cockpit/CockpitFeatureState.swift` | `flightPlan` stores the imported preparation and `flight` stores runtime execution. |
+| Cockpit/map presentation adapters | Parameters and locals distinguish `flightPlan` from `flight`. |
+| FPLNav DTOs and strict JSON validation | `execution` remains published v5/v7 wire vocabulary and is translated by mappers. |
+| Tests and technical documentation | Helpers and assertions use canonical terminology and verify distinct Flight and Flight Plan identities. |
 
 The audit found no reason to rename the application target, Swift module,
 repository, or `NavigationFlightApp`; those identify the product rather than a

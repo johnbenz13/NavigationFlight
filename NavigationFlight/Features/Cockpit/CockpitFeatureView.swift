@@ -14,7 +14,7 @@ struct CockpitFeatureView: View {
     private let adapter = CockpitPresentationAdapter()
 
     init() {
-        let progressionPolicy: FlightSession.ProgressionPolicy
+        let progressionPolicy: Flight.ProgressionPolicy
 #if DEBUG
         progressionPolicy = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] == "manual"
             ? .manualNextLeg
@@ -26,8 +26,8 @@ struct CockpitFeatureView: View {
 #if DEBUG
         if let encoded = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
            let data = Data(base64Encoded: encoded),
-           let flight = try? FPLNavDecoder().decode(data) {
-            try? initialState.accept(flight)
+           let flightPlan = try? FPLNavDecoder().decode(data) {
+            try? initialState.accept(flightPlan)
         }
 #endif
         _state = State(initialValue: initialState)
@@ -55,29 +55,29 @@ struct CockpitFeatureView: View {
 
     @ViewBuilder
     private var content: some View {
-        if let flight = state.flight,
-           let session = state.session,
+        if let flightPlan = state.flightPlan,
+           let flight = state.flight,
            let presentation = try? adapter.makePresentation(
-               flight: flight,
+               flightPlan: flightPlan,
                legIndex: state.selectedLegIndex,
                mode: state.mode
            ) {
             if isCockpitPresented {
                 if let mapPresentation = try? AviationMapPresentationFactory().makePresentation(
-                    flight: flight,
-                    session: session
+                    flightPlan: flightPlan,
+                    flight: flight
                 ) {
                     let nextLegPreparation = try? adapter.makeNextLegPreparation(
-                        flight: flight,
-                        session: session
+                        flightPlan: flightPlan,
+                        flight: flight
                     )
                     let previousLegSummary = try? adapter.makePreviousLegSummary(
-                        flight: flight,
-                        session: session
+                        flightPlan: flightPlan,
+                        flight: flight
                     )
                     let legStartChecklist = try? adapter.makeLegStartChecklist(
-                        flight: flight,
-                        session: session
+                        flightPlan: flightPlan,
+                        flight: flight
                     )
                     CockpitView(
                         data: presentation,
@@ -86,7 +86,7 @@ struct CockpitFeatureView: View {
                         previousLegSummary: previousLegSummary,
                         legStartChecklist: legStartChecklist,
                         checklistState: state.activeLegStartChecklist,
-                        session: session,
+                        flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
                         pendingReachUndo: state.pendingReachUndo,
                         onStartLeg: startLeg,

@@ -55,11 +55,11 @@ NavigationFlightApp
 
 `Domain/Flight` defines the flight aggregate and runtime flight behavior:
 
-- [`NavigationFlight`](../NavigationFlight/Domain/Flight/NavigationFlight.swift) is the imported plan aggregate, including its route, operational context, and execution availability.
-- [`FlightSession`](../NavigationFlight/Domain/Flight/FlightSession.swift) records runtime progress such as the active leg, leg state, timestamps, identification-point timing, and pilot ETA state.
+- [`FlightPlan`](../NavigationFlight/Domain/Flight/FlightPlan.swift) is the imported plan aggregate, including its route, operational context, and execution availability.
+- [`Flight`](../NavigationFlight/Domain/Flight/Flight.swift) records runtime progress such as the active leg, leg state, timestamps, identification-point timing, and pilot ETA state.
 - [`IdentificationPointTimingCalculator`](../NavigationFlight/Domain/Flight/IdentificationPointTimingCalculator.swift) contains timing calculations used by the session behavior.
 
-Imported plan data and runtime state remain distinct: `NavigationFlight` contains the mapped plan, while `FlightSession` records activity performed during use of that plan.
+Imported plan data and runtime state remain distinct: `FlightPlan` contains the mapped plan, while `Flight` records activity performed during use of that plan.
 
 ### Data / FPLNav
 
@@ -68,11 +68,11 @@ Imported plan data and runtime state remain distinct: `NavigationFlight` contain
 - [`FPLNavV5DTO`](../NavigationFlight/Data/FPLNav/V5/FPLNavV5DTO.swift) and [`FPLNavV5Mapper`](../NavigationFlight/Data/FPLNav/V5/FPLNavV5Mapper.swift).
 - [`FPLNavV7DTO`](../NavigationFlight/Data/FPLNav/V7/FPLNavV7DTO.swift) and [`FPLNavV7Mapper`](../NavigationFlight/Data/FPLNav/V7/FPLNavV7Mapper.swift).
 
-The decoder recognizes versions 5 and 7. Version 5 maps into a `NavigationFlight` whose execution is unavailable for the cockpit. Version 7 maps source navigation and saved execution data, with nonempty eligible plans available to the Cockpit feature. Feature and domain code consume `NavigationFlight` rather than versioned DTOs.
+The decoder recognizes versions 5 and 7. Version 5 maps into a `FlightPlan` whose execution is unavailable for the cockpit. Version 7 maps source navigation and saved execution data, with nonempty eligible plans available to the Cockpit feature. Feature and domain code consume `FlightPlan` rather than versioned DTOs.
 
 ### Map
 
-[`AviationMapPresentation`](../NavigationFlight/Map/AviationMapPresentation.swift) contains map-specific display values. `AviationMapPresentationFactory` derives them from a `NavigationFlight` and `FlightSession`. [`AviationMapVisualStyle`](../NavigationFlight/Map/AviationMapVisualStyle.swift) contains visual parameters used by the map.
+[`AviationMapPresentation`](../NavigationFlight/Map/AviationMapPresentation.swift) contains map-specific display values. `AviationMapPresentationFactory` derives them from a `FlightPlan` and `Flight`. [`AviationMapVisualStyle`](../NavigationFlight/Map/AviationMapVisualStyle.swift) contains visual parameters used by the map.
 
 [`OfflineAviationMapView`](../NavigationFlight/Map/OfflineAviationMapView.swift) is a SwiftUI [`UIViewRepresentable`](https://developer.apple.com/documentation/swiftui/uiviewrepresentable) bridge to MapLibre Native. Its nested coordinator implements MapLibre delegate communication and transfers updates through SwiftUI bindings and callbacks. `AviationMapResourceProviding` and `BundledAviationMapResourceProvider` locate the bundled style and map resources.
 
@@ -94,23 +94,23 @@ The current code separates state by lifetime and responsibility:
 
 | State category | Owner | Examples |
 |---|---|---|
-| Runtime domain state | `FlightSession` | Active leg, leg state, recorded times, identification points, pilot ETA |
+| Runtime domain state | `Flight` | Active leg, leg state, recorded times, identification points, pilot ETA |
 | Feature state | `CockpitFeatureState` | Loaded flight, selected leg, navigation mode, checklist state |
 | Transient presentation state | SwiftUI views | Importer and alert visibility, drawers, map camera, focus, selected callouts |
 
-`CockpitFeatureState` and `FlightSession` are value types whose stored state is changed through mutating operations. Their externally readable mutable properties use `private(set)`.
+`CockpitFeatureState` and `Flight` are value types whose stored state is changed through mutating operations. Their externally readable mutable properties use `private(set)`.
 
 SwiftUI views use [`@State`](https://developer.apple.com/documentation/swiftui/state) for feature-owned and transient presentation values. The code does not use `ObservableObject` or a separate ViewModel type.
 
 ### Models
 
-`NavigationFlight` is the domain aggregate produced by import. The types in `NavigationTypes.swift` model navigation concepts and saved execution values. `FlightSession` models runtime flight activity.
+`FlightPlan` is the domain aggregate produced by import. The types in `NavigationTypes.swift` model navigation concepts and saved execution values. `Flight` models runtime flight activity.
 
 `CockpitPresentationData` and related types in [`CockpitPresentationAdapter.swift`](../NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift) are cockpit-oriented projections. `AviationMapPresentation` and its related types are map-oriented projections. Many domain, state, and presentation values conform to [`Sendable`](https://developer.apple.com/documentation/swift/sendable) and `Equatable`.
 
 ### Presentation adapters
 
-`CockpitPresentationAdapter` derives cockpit display values from `NavigationFlight`, the selected leg and mode, and `FlightSession` where runtime information is required. `AviationMapPresentationFactory` derives map display values from `NavigationFlight` and `FlightSession`.
+`CockpitPresentationAdapter` derives cockpit display values from `FlightPlan`, the selected leg and mode, and `Flight` where runtime information is required. `AviationMapPresentationFactory` derives map display values from `FlightPlan` and `Flight`.
 
 The adapters and factories return values to their callers; they do not observe or own the source state.
 
@@ -151,12 +151,12 @@ flowchart LR
     Decoder --> V7DTO[FPLNavV7DTO]
     V5DTO --> V5Mapper[FPLNavV5Mapper]
     V7DTO --> V7Mapper[FPLNavV7Mapper]
-    V5Mapper --> Flight[NavigationFlight]
+    V5Mapper --> FlightPlan[FlightPlan]
     V7Mapper --> Flight
     Flight --> FeatureState[CockpitFeatureState]
 ```
 
-Version selection is contained within `FPLNavDecoder`. Both version paths produce the same `NavigationFlight` domain type, so downstream feature code does not switch on the wire-format version.
+Version selection is contained within `FPLNavDecoder`. Both version paths produce the same `FlightPlan` domain type, so downstream feature code does not switch on the wire-format version.
 
 ### Runtime interaction and rendering flow
 
@@ -165,10 +165,10 @@ flowchart TD
     Input[User interaction] --> Child[PlanInspectionView or CockpitView]
     Child -->|Action closure| FeatureView[CockpitFeatureView]
     FeatureView --> FeatureState[CockpitFeatureState]
-    FeatureState --> Session[FlightSession]
-    FeatureState -->|NavigationFlight and selection| CockpitAdapter[CockpitPresentationAdapter]
+    FeatureState --> Session[Flight]
+    FeatureState -->|FlightPlan and selection| CockpitAdapter[CockpitPresentationAdapter]
     Session --> CockpitAdapter
-    FeatureState -->|NavigationFlight| MapFactory[AviationMapPresentationFactory]
+    FeatureState -->|FlightPlan| MapFactory[AviationMapPresentationFactory]
     Session --> MapFactory
     CockpitAdapter --> Child
     MapFactory --> MapView[OfflineAviationMapView]
@@ -190,7 +190,7 @@ The tests cover:
 
 - FPLNav v5 and v7 decoding, mapping, validation, and typed failures.
 - Preservation of saved execution values during import and runtime activity.
-- `FlightSession` state transitions and timing behavior using explicit timestamps.
+- `Flight` state transitions and timing behavior using explicit timestamps.
 - `CockpitFeatureState` transitions and checklist state.
 - Cockpit presentation transformations.
 - Map presentation, visual values, timing targets, and geometry.

@@ -36,7 +36,7 @@ The implementation extends the current architecture rather than introducing a ne
 flowchart TD
     Input[Pilot action] --> View[CockpitView]
     View -->|typed intent| Feature[CockpitFeatureState]
-    Feature -->|validated command| Session[FlightSession]
+    Feature -->|validated command| Session[Flight]
     Feature --> Checklist[Checklist feature state]
     Session --> CockpitAdapter[CockpitPresentationAdapter]
     Session --> MapFactory[AviationMapPresentationFactory]
@@ -50,7 +50,7 @@ The modules and their interfaces are:
 
 | Module | Interface responsibility | Implementation hidden behind the interface |
 | --- | --- | --- |
-| `FlightSession` | Accept explicit flight commands and expose immutable runtime facts and histories. | Target ordering, eligibility, ETA and heading lifecycles, reach transitions, historical records, and domain validation. |
+| `Flight` | Accept explicit flight commands and expose immutable runtime facts and histories. | Target ordering, eligibility, ETA and heading lifecycles, reach transitions, historical records, and domain validation. |
 | `CockpitFeatureState` | Coordinate feature-wide commands that may affect more than the session. | Atomic reach/undo snapshots, checklist restoration, drift-line preference, and loaded-plan lookup needed to validate domain commands. |
 | `IdentificationPointTimingCalculator` | Return deterministic timing and signed-difference results. | Full-precision proportional calculation and display rounding. |
 | `DriftLineGeometry` | Derive two map polylines from resolved leg endpoints and imported drift angle. | Great-circle/local projection math, intersection, and degenerate-input handling. |
@@ -64,13 +64,13 @@ These are in-process modules. No new protocol seam is needed: there is one produ
 
 | State | Owner | Lifetime |
 | --- | --- | --- |
-| Imported plan, resolved target order, planned values, coordinates, drift angle, and VOR/DME | `NavigationFlight` and navigation domain values | Loaded plan; immutable |
-| Leg lifecycle, observations, target outcomes, ETA revisions/check disclosures, heading revisions, and completed history | `FlightSession` | Current in-memory flight |
+| Imported plan, resolved target order, planned values, coordinates, drift angle, and VOR/DME | `FlightPlan` and navigation domain values | Loaded plan; immutable |
+| Leg lifecycle, observations, target outcomes, ETA revisions/check disclosures, heading revisions, and completed history | `Flight` | Current in-memory flight |
 | Progression policy, selected checklist template, checklist state, drift-line visibility, and pending undo transaction | `CockpitFeatureState` | Current in-memory feature session |
 | Selected callout, expanded editor/panel, callout offsets, and current camera | `CockpitView` | Current cockpit view identity |
 | Map annotations, callout data, console values, and history rows | Presentation values | Re-derived snapshots |
 
-Domain facts must not be inferred from view state. In particular, selecting a callout, focusing the map, expanding history, or moving a label cannot mutate `FlightSession` or invalidate undo.
+Domain facts must not be inferred from view state. In particular, selecting a callout, focusing the map, expanding history, or moving a label cannot mutate `Flight` or invalidate undo.
 
 ## Canonical identifiers and target order
 
@@ -90,7 +90,7 @@ struct NavigationTargetDescriptor: Equatable, Sendable {
 }
 ```
 
-Identification points retain imported order after mapping validation. The destination is always the final descriptor. `CockpitFeatureState` supplies this immutable list to commands that need plan context; `FlightSession` does not reach back into `NavigationFlight` or duplicate imported coordinates.
+Identification points retain imported order after mapping validation. The destination is always the final descriptor. `CockpitFeatureState` supplies this immutable list to commands that need plan context; `Flight` does not reach back into `FlightPlan` or duplicate imported coordinates.
 
 All target-relative rules use `sequenceIndex`, not collection insertion order or elapsed-time comparison. This keeps eligibility deterministic when planned times are equal or imperfect.
 
@@ -107,7 +107,7 @@ The fixture [`editor-no-wind.fplnav`](../../NavigationFlightTests/Fixtures/FPLNa
 | `execution.annotations` entry for `...0005` | `...0005` | Resolved IP position and no-wind Planned ETA `238` seconds (`03:58`) from leg start. |
 | `execution.legs[0]` | leg `...0004` | Resolved no-wind leg duration `596` seconds (`09:56`), which is the arrival waypoint's Planned ETA. |
 
-The decoder and V7 mapper join those records by UUID. They produce a `NavigationFlight` whose active leg has immutable planned data. For this leg, the ordered runtime target projection is conceptually:
+The decoder and V7 mapper join those records by UUID. They produce a `FlightPlan` whose active leg has immutable planned data. For this leg, the ordered runtime target projection is conceptually:
 
 ```text
 Leg ...0004: BAZRA (...0002) → Visual checkpoint (...0003)
@@ -229,7 +229,7 @@ struct HeadingEditorState: Equatable, Sendable {
 }
 ```
 
-The imported baseline remains in `NavigationFlight`. The adapter selects planned magnetic heading in planned-wind mode or magnetic course in no-wind mode. The session stores draft and commit history by leg ID.
+The imported baseline remains in `FlightPlan`. The adapter selects planned magnetic heading in planned-wind mode or magnetic course in no-wind mode. The session stores draft and commit history by leg ID.
 
 Degrees use a domain normalization helper whose interface accepts any signed integer and returns `1...360`; zero and multiples of 360 display as `360°`. Adjustment is one degree. Opening begins from the latest commit or imported baseline. Commit appends history and makes the latest commit operational. Identification-point reach preserves both the current commit and open draft. Arrival reach discards only the completed leg's draft; commits remain historical and never carry to the successor.
 
@@ -252,7 +252,7 @@ Completed history is derived from immutable plan data plus retained session reco
 
 ## Atomic reach undo
 
-Undo crosses the session/checklist/map seam, so `CockpitFeatureState` owns the transaction even though `FlightSession` owns the reach behavior.
+Undo crosses the session/checklist/map seam, so `CockpitFeatureState` owns the transaction even though `Flight` owns the reach behavior.
 
 ```swift
 struct PendingReachUndo: Equatable, Sendable {
@@ -267,13 +267,13 @@ struct PendingReachUndo: Equatable, Sendable {
 }
 
 struct ReachRestoration: Equatable, Sendable {
-    let session: FlightSession
+    let flight: Flight
     let checklistState: CockpitFeatureState.LegStartChecklistState?
     let cockpitRestoration: CockpitRestoration
 }
 ```
 
-The restoration exists for a concrete mistake-recovery case: the pilot is viewing leg A, reports its arrival reached, and the app immediately selects leg B and rotates/focuses the map onto leg B. If the pilot taps **Undo**, restoring only `FlightSession` would put leg A back in the instruments while the map still showed leg B. The transaction must therefore restore session, checklist, selected callout/editor effects caused by the reach, and the map together.
+The restoration exists for a concrete mistake-recovery case: the pilot is viewing leg A, reports its arrival reached, and the app immediately selects leg B and rotates/focuses the map onto leg B. If the pilot taps **Undo**, restoring only `Flight` would put leg A back in the instruments while the map still showed leg B. The transaction must therefore restore session, checklist, selected callout/editor effects caused by the reach, and the map together.
 
 “Semantic map restoration” means storing an intent such as “focus leg A in canonical track-up” instead of the exact pre-reach camera center, zoom, bearing, and pitch. That is sufficient only when the map was already in canonical leg focus. It is not sufficient when the pilot had panned or rotated leg A before the mistaken arrival, because invariant 119 requires the pre-transition map orientation to return.
 
@@ -453,7 +453,7 @@ Use size class and available width, not only `width > height`, to choose compact
 
 ## Error handling and atomicity
 
-Extend `FlightSession.TransitionError` with typed cases for wrong-leg targets, non-future targets, unavailable checks, missing plan context, and invalid heading/ETA commands. Feature commands propagate errors to `CockpitFeatureView`; production code must not silently discard operational errors with `try?`.
+Extend `Flight.TransitionError` with typed cases for wrong-leg targets, non-future targets, unavailable checks, missing plan context, and invalid heading/ETA commands. Feature commands propagate errors to `CockpitFeatureView`; production code must not silently discard operational errors with `try?`.
 
 Expected unavailable actions are represented in presentation and omitted or disabled with explanatory accessibility text. Unexpected invariant failures present a non-destructive error. In either case, validation precedes mutation and the previous snapshot remains intact.
 
@@ -463,7 +463,7 @@ Expected implementation changes are intentionally localized:
 
 | Path | Change |
 | --- | --- |
-| `NavigationFlight/Domain/Flight/FlightSession.swift` | Target outcomes, ETA/heading state and history, reach results, validation, and query interfaces. |
+| `NavigationFlight/Domain/Flight/Flight.swift` | Target outcomes, ETA/heading state and history, reach results, validation, and query interfaces. |
 | `NavigationFlight/Domain/Flight/IdentificationPointTimingCalculator.swift` | Dynamic observation selection support, exact Reference ETA, signed differences, and rounding. |
 | `NavigationFlight/Domain/Flight/DriftLineGeometry.swift` | New pure drift-line geometry module. |
 | `NavigationFlight/Domain/Flight/ChecklistTemplate.swift` | New template, variable, context, validation, and rendering types. |
@@ -549,7 +549,7 @@ Use Swift Testing for deterministic domain and presentation coverage and XCUIAut
 
 | Spec area | Primary implementation | Primary verification |
 | --- | --- | --- |
-| Invariants 1–18 | `FlightSession`, `CockpitFeatureState` | lifecycle, ordering, and atomic transition tests |
+| Invariants 1–18 | `Flight`, `CockpitFeatureState` | lifecycle, ordering, and atomic transition tests |
 | Invariants 19–44 | ETA state/history and timing calculator | editor, commit, observation-selection, and disclosure tests |
 | Invariants 45–54 | `DriftLineGeometry`, map presentation | geometry and visibility tests |
 | Invariants 55–68 | heading state/history | normalization and lifecycle tests |

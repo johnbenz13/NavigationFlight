@@ -2,7 +2,7 @@
 
 ## Scope
 
-`CockpitView` is the cockpit screen's presentation layer. It does not own the flight plan or mutate `FlightSession` directly. It receives immutable presentation/session snapshots and intent callbacks from `CockpitFeatureView`, then composes the map, overlays, metrics, and progression controls.
+`CockpitView` is the cockpit screen's presentation layer. It does not own the flight plan or mutate `Flight` directly. It receives immutable presentation/session snapshots and intent callbacks from `CockpitFeatureView`, then composes the map, overlays, metrics, and progression controls.
 
 This document describes:
 
@@ -118,7 +118,7 @@ The initializer boundary has three categories of input.
 
 | Input | Role |
 | --- | --- |
-| `session: FlightSession` | The current execution snapshot. Its leg state selects the main progression control; timestamps drive timers; destination identification gates next-leg preparation; pilot-ETA and reached-point records populate map interaction contexts. |
+| `flight: Flight` | The current execution snapshot. Its leg state selects the main progression control; timestamps drive timers; destination identification gates next-leg preparation; pilot-ETA and reached-point records populate map interaction contexts. |
 | `checklistState: CockpitFeatureState.LegStartChecklistState?` | The checklist's availability, expanded/collapsed presentation, and noted/unnoted review state. This lives in `CockpitFeatureState`, so it survives rebuilding or temporarily removing `CockpitView` while the containing feature retains its identity. |
 
 These are value inputs, not bindings. `CockpitView` cannot assign through them. When `CockpitFeatureState` changes, `CockpitFeatureView` derives fresh values and SwiftUI reevaluates `CockpitView` with the new snapshot.
@@ -185,7 +185,7 @@ SwiftUI reevaluates CockpitFeatureView and CockpitView
 | Plan Inspection | None | `onShowPlanInspection()` | Sets `isCockpitPresented = false` in `CockpitFeatureView` |
 | Change map focus, drag a callout, open/close a drawer, or open Charts | Mutates only local `@State` | None | No feature-state change |
 
-There is no `@Binding` to `FlightSession`. Operational mutations remain behind `CockpitFeatureState` commands, so the parent remains the single source of truth.
+There is no `@Binding` to `Flight`. Operational mutations remain behind `CockpitFeatureState` commands, so the parent remains the single source of truth.
 
 ## SwiftUI concepts used here
 

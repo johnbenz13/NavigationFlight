@@ -4,7 +4,6 @@ struct IdentificationPointKey: Hashable, Sendable {
     let legID: UUID
     let identificationPointID: UUID
 }
-
 struct NavigationTimingTargetKey: Hashable, Sendable {
     enum Kind: Hashable, Sendable {
         case identificationPoint
@@ -16,7 +15,7 @@ struct NavigationTimingTargetKey: Hashable, Sendable {
     let targetID: UUID
 }
 
-struct FlightSession: Equatable, Sendable {
+struct Flight: Equatable, Sendable {
     enum ProgressionPolicy: Equatable, Sendable {
         case automaticNextLeg
         case manualNextLeg
@@ -156,7 +155,8 @@ struct FlightSession: Equatable, Sendable {
         case staleDraft(minimumSeconds: Int)
     }
 
-    let flightID: UUID
+    let id: UUID
+    let flightPlanID: UUID
     let legIDs: [UUID]
     let progressionPolicy: ProgressionPolicy
     private(set) var activeLegIndex: Int
@@ -176,14 +176,16 @@ struct FlightSession: Equatable, Sendable {
     }
 
     init(
-        flightID: UUID,
+        id: UUID = UUID(),
+        flightPlanID: UUID,
         legIDs: [UUID],
         activeLegIndex: Int,
         executionMode: NavigationMode,
         progressionPolicy: ProgressionPolicy = .automaticNextLeg
     ) {
         precondition(legIDs.indices.contains(activeLegIndex), "Active leg index must be in the plan")
-        self.flightID = flightID
+        self.id = id
+        self.flightPlanID = flightPlanID
         self.legIDs = legIDs
         self.activeLegIndex = activeLegIndex
         self.executionMode = executionMode

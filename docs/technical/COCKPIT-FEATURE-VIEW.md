@@ -2,7 +2,7 @@
 
 Status: read-only reverse engineering of the implementation as of 2026-10-23.
 
-This document describes the technical contract implemented by `CockpitFeatureView`. It records current behavior rather than proposing a redesign. The owned feature model is documented separately in [`CockpitFeatureState` Technical Specification](COCKPIT-FEATURE-STATE.md), and the delegated runtime state machine is covered by [`FlightSession` Technical Specification](FLIGHT-SESSION.md).
+This document describes the technical contract implemented by `CockpitFeatureView`. It records current behavior rather than proposing a redesign. The owned feature model is documented separately in [`CockpitFeatureState` Technical Specification](COCKPIT-FEATURE-STATE.md), and the delegated runtime state machine is covered by [`Flight` Technical Specification](FLIGHT.md).
 
 ## Responsibility and scope
 
@@ -27,9 +27,9 @@ flowchart TD
     Root[RootView] --> FeatureView[CockpitFeatureView]
     FeatureView -->|owns with @State| FeatureState[CockpitFeatureState]
     FeatureView -->|loads selected URL| Loader[FPLNavFileLoader]
-    Loader -->|decoded NavigationFlight| FeatureState
+    Loader -->|decoded FlightPlan| FeatureState
     FeatureView -->|flight + selected index + mode| Adapter[CockpitPresentationAdapter]
-    FeatureView -->|flight + session| MapFactory[AviationMapPresentationFactory]
+    FeatureView -->|flightPlan + flight| MapFactory[AviationMapPresentationFactory]
     FeatureView -->|values + callbacks| Inspection[PlanInspectionView]
     FeatureView -->|values + callbacks| Cockpit[CockpitView]
     Inspection -->|user actions| FeatureView
@@ -47,7 +47,7 @@ The child views receive value snapshots and callback closures. They do not recei
 | SwiftUI `View`, `@State`, `@ViewBuilder`, modifiers, and controls | Declarative rendering, local state retention, importer and alert presentation | Framework-managed |
 | `UniformTypeIdentifiers.UTType` | Defines the `.fplnav` content type accepted by the importer | Static extension |
 | `CockpitFeatureState` | Canonical mutable feature and runtime state | Owned in `@State` |
-| `FPLNavFileLoader` | Converts a selected file URL into `NavigationFlight` | Immutable helper owned by the view value |
+| `FPLNavFileLoader` | Converts a selected file URL into `FlightPlan` | Immutable helper owned by the view value |
 | `CockpitPresentationAdapter` | Builds primary cockpit data and optional runtime panels | Immutable helper owned by the view value |
 | `AviationMapPresentationFactory` | Builds runtime-sensitive map presentation | Constructed during cockpit rendering |
 | `PlanInspectionView` | Renders accepted-plan inspection and pre-flight controls | Child view value |

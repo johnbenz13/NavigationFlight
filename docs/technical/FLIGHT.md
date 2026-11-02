@@ -1,12 +1,12 @@
-# `FlightSession` Technical Specification
+# `Flight` Technical Specification
 
 Status: read-only reverse engineering of the implementation as of 2026-10-22.
 
-This document describes the technical contract implemented by `FlightSession`. It records observed behavior rather than proposing a redesign. Product behavior for the automatic and manual handoff policies is specified separately in [Progression Policy — As-Is Product Specification](../features/PROGRESSION-POLICY_SPEC.md). The system context is described in the [architecture overview](../architecture.md).
+This document describes the technical contract implemented by `Flight`. It records observed behavior rather than proposing a redesign. Product behavior for the automatic and manual handoff policies is specified separately in [Progression Policy — As-Is Product Specification](../features/PROGRESSION-POLICY_SPEC.md). The system context is described in the [architecture overview](../architecture.md).
 
 ## Responsibility and scope
 
-`FlightSession` is the in-memory runtime domain module for executing one imported `NavigationFlight`. It owns:
+`Flight` is the in-memory runtime domain module for executing one imported `FlightPlan`. It owns:
 
 - the current leg and navigation mode;
 - the ready, active, and completed leg lifecycle;
@@ -24,8 +24,8 @@ The module is a value type (`struct`) with internal visibility. It is `Equatable
 
 ```mermaid
 flowchart LR
-    Plan[NavigationFlight] --> Feature[CockpitFeatureState]
-    Feature -->|constructs and commands| Session[FlightSession]
+    Plan[FlightPlan] --> Feature[CockpitFeatureState]
+    Feature -->|constructs and commands| Session[Flight]
     Session -->|runtime snapshots| Feature
     Session --> Cockpit[CockpitPresentationAdapter]
     Session --> Map[AviationMapPresentationFactory]
@@ -39,18 +39,19 @@ flowchart LR
 
 | Type | Identity represented | Technical purpose |
 | --- | --- | --- |
-| `flightID` | Imported flight UUID | Associates the session with a plan; no method revalidates it |
+| `id` | Actual Flight UUID | Distinguishes each execution, including multiple Flights created from one Flight Plan |
+| `flightPlanID` | Source Flight Plan UUID | Preserves the relationship to the imported preparation |
 | [`legIDs`](../FPLNAV-V7-INTEGRATION.md#runtime-boundary) | Ordered route-leg UUIDs | Defines valid leg indices and maps the active index to a leg identity |
 | `IdentificationPointKey` | Leg UUID plus identification-point UUID | Prevents point identities from colliding across legs |
 | `NavigationTimingTargetKey` | Leg UUID, target kind, and target UUID | Keys canonical pilot ETA state for an identification point or destination |
 
-`NavigationTimingTargetKey.Kind` distinguishes `.identificationPoint` from `.destination`. The session treats keys as opaque values except that an identification-point reach key must reference the active leg. Target kind and target membership are not otherwise validated by `FlightSession`.
+`NavigationTimingTargetKey.Kind` distinguishes `.identificationPoint` from `.destination`. The session treats keys as opaque values except that an identification-point reach key must reference the active leg. Target kind and target membership are not otherwise validated by `Flight`.
 
-The FPLNav v7 integration contract documents the imported execution's exact leg order and one-to-one source relationships. It does not define `flightID`, `IdentificationPointKey`, or `NavigationTimingTargetKey`; those are Swift domain/session identities and therefore have no corresponding key definition to link in that document.
+The FPLNav v7 integration contract documents the imported planned navigation's exact leg order and one-to-one source relationships. It does not define `Flight.id`, `IdentificationPointKey`, or `NavigationTimingTargetKey`; those are Swift runtime identities and therefore have no corresponding key definition to link in that document. `flightPlanID` stores the decoded `FlightPlan.id` relationship.
 
 ## Construction contract
 
-The initializer requires a flight ID, an ordered nonempty-in-practice leg-ID collection, an active index, an execution mode, and an optional progression policy. The policy defaults to `.automaticNextLeg`.
+The initializer accepts an injectable Flight `id`, requires the source `flightPlanID`, an ordered nonempty-in-practice leg-ID collection, an active index, an execution mode, and an optional progression policy. The Flight ID defaults to a newly generated UUID for production callers, while tests can inject deterministic UUIDs. The policy defaults to `.automaticNextLeg`.
 
 Construction enforces only one condition directly: `activeLegIndex` must be a valid index in `legIDs`. Violation triggers a precondition failure rather than a typed error. A new session starts with:
 
@@ -168,13 +169,13 @@ This makes the outgoing reach and automatic successor start one atomic timing bo
 
 The following conditions are relied upon but are not enforced by this module:
 
-- `flightID` and `legIDs` describe the same imported flight.
+- `flightPlanID` and `legIDs` describe the same imported flight.
 - Leg IDs are unique and ordered consistently with route and execution arrays.
 - Identification-point and ETA target IDs exist in the imported plan and match their declared kind.
 - Planned elapsed values belong to the correct leg, target, and execution mode.
 - Timestamps for distinct observations are chronologically meaningful beyond being no earlier than leg start. For example, a reach may be earlier than a previously recorded destination-identification timestamp without rejection.
 - The feature synchronizes its selected leg with `activeLegIndex` after progression.
-- The owner retains the mutated value; `FlightSession` has no observation or reference semantics.
+- The owner retains the mutated value; `Flight` has no observation or reference semantics.
 
 These are integration contracts, not necessarily product defects.
 
@@ -182,9 +183,9 @@ These are integration contracts, not necessarily product defects.
 
 The module depends only on Foundation value types, `NavigationMode`, and `IdentificationPointTimingCalculator`. It accepts timestamps rather than reading `Date.now`, which keeps timing transitions deterministic and directly testable.
 
-`IdentificationPointTimingCalculator` is a stateless internal calculation module. `FlightSession` directly uses it only to round initial ETA drafts. Reference ETA calculation and display-second rounding are consumed by presentation code. There is no replaceable adapter at this seam because only one implementation exists and the calculations are pure.
+`IdentificationPointTimingCalculator` is a stateless internal calculation module. `Flight` directly uses it only to round initial ETA drafts. Reference ETA calculation and display-second rounding are consumed by presentation code. There is no replaceable adapter at this seam because only one implementation exists and the calculations are pure.
 
-The external seam is the `FlightSession` value and its command/query interface. It has substantial depth: callers provide small commands while the implementation preserves lifecycle, progression, history, and ETA-state invariants.
+The external seam is the `Flight` value and its command/query interface. It has substantial depth: callers provide small commands while the implementation preserves lifecycle, progression, history, and ETA-state invariants.
 
 ## Consumers and observable consequences
 
@@ -196,7 +197,7 @@ The external seam is the `FlightSession` value and its command/query interface. 
 | [`CockpitView`](../../NavigationFlight/Features/Cockpit/CockpitView.swift) | Leg state and ETA state snapshot | Selects controls and overlays; sends actions upward through closures |
 | [`OfflineAviationMapView`](../../NavigationFlight/Map/OfflineAviationMapView.swift) | Leg state plus derived presentation | Changes map focus/interaction behavior without mutating the session |
 
-Checklist state is deliberately outside `FlightSession`. As a result, progression is only the domain transition; `CockpitFeatureState` supplies the related UI workflow transition after the session command succeeds.
+Checklist state is deliberately outside `Flight`. As a result, progression is only the domain transition; `CockpitFeatureState` supplies the related UI workflow transition after the session command succeeds.
 
 ## Product-to-technical traceability
 
@@ -213,7 +214,7 @@ Checklist state is deliberately outside `FlightSession`. As a result, progressio
 | Automatic/manual handoff | Immutable `ProgressionPolicy` consulted only for a non-final successful reach |
 | Navigation complete | `legState == .completed` on the final active index |
 
-The progression product requirements map directly to the `reachCurrentWaypoint` algorithm. Other `FlightSession` behavior—especially identification-point timing and pilot ETA editing—belongs to broader future cockpit or flight-execution product specifications.
+The progression product requirements map directly to the `reachCurrentWaypoint` algorithm. Other `Flight` behavior—especially identification-point timing and pilot ETA editing—belongs to broader future cockpit or flight-execution product specifications.
 
 ## Lifetime and persistence
 
@@ -241,7 +242,7 @@ The UI action paths are additionally exercised by `NavigationFlightUITests.swift
 
 ## Source trace
 
-- [`FlightSession.swift`](../../NavigationFlight/Domain/Flight/FlightSession.swift) — primary implementation.
+- [`Flight.swift`](../../NavigationFlight/Domain/Flight/Flight.swift) — primary implementation.
 - [`IdentificationPointTimingCalculator.swift`](../../NavigationFlight/Domain/Flight/IdentificationPointTimingCalculator.swift) — rounding and reference timing calculations.
 - [`CockpitFeatureState.swift`](../../NavigationFlight/Features/Cockpit/CockpitFeatureState.swift) — production ownership and mutation adapter.
 - [`CockpitPresentationAdapter.swift`](../../NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift) — cockpit projections.

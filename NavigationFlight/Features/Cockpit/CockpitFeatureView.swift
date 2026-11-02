@@ -6,31 +6,15 @@ extension UTType {
 }
 
 struct CockpitFeatureView: View {
-    @State private var state = CockpitFeatureState()
+    @Binding private var state: CockpitFeatureState
     @State private var isImporterPresented = false
     @State private var isCockpitPresented = false
     @State private var presentedError: PresentedError?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
 
-    init() {
-        let progressionPolicy: Flight.ProgressionPolicy
-#if DEBUG
-        progressionPolicy = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] == "manual"
-            ? .manualNextLeg
-            : .automaticNextLeg
-#else
-        progressionPolicy = .automaticNextLeg
-#endif
-        var initialState = CockpitFeatureState(progressionPolicy: progressionPolicy)
-#if DEBUG
-        if let encoded = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
-           let data = Data(base64Encoded: encoded),
-           let flightPlan = try? FPLNavDecoder().decode(data) {
-            try? initialState.accept(flightPlan)
-        }
-#endif
-        _state = State(initialValue: initialState)
+    init(state: Binding<CockpitFeatureState>) {
+        _state = state
     }
 
     var body: some View {

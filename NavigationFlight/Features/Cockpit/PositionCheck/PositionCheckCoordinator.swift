@@ -15,17 +15,20 @@ final class PositionCheckCoordinator {
 
     private let now: @MainActor () -> Duration
     private let sleepUntil: @Sendable (Duration) async throws -> Void
+    private let timing: PositionCheckTiming
     private var deadlineTask: Task<Void, Never>?
 
     init(
         now: @escaping @MainActor () -> Duration,
-        sleepUntil: @escaping @Sendable (Duration) async throws -> Void
+        sleepUntil: @escaping @Sendable (Duration) async throws -> Void,
+        timing: PositionCheckTiming = .standard
     ) {
         self.now = now
         self.sleepUntil = sleepUntil
+        self.timing = timing
     }
 
-    convenience init() {
+    convenience init(timing: PositionCheckTiming = .standard) {
         let clock = ContinuousClock()
         let origin = clock.now
         self.init(
@@ -35,13 +38,14 @@ final class PositionCheckCoordinator {
                 if deadline > elapsed {
                     try await clock.sleep(for: deadline - elapsed)
                 }
-            }
+            },
+            timing: timing
         )
     }
 
     @discardableResult
     func send(_ intent: PositionCheckIntent) -> PositionCheckEffect {
-        let transition = state.transition(intent, now: now())
+        let transition = state.transition(intent, now: now(), timing: timing)
         state = transition.state
         remainingSeconds = state.activeSession.map { remainingSeconds(until: $0.deadline) }
         apply(transition.effect)

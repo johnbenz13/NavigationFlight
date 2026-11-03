@@ -1,5 +1,15 @@
 import Foundation
 
+nonisolated struct PositionCheckTiming: Equatable, Sendable {
+    static let standard = PositionCheckTiming(
+        acquisitionDuration: .seconds(10),
+        disclosureDuration: .seconds(10)
+    )
+
+    let acquisitionDuration: Duration
+    let disclosureDuration: Duration
+}
+
 nonisolated struct PositionCheckProjection: Equatable, Sendable {
     let coordinate: WGS84Coordinate
     let horizontalAccuracyMeters: Double
@@ -63,11 +73,15 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
         return session
     }
 
-    func transition(_ intent: PositionCheckIntent, now: Duration) -> PositionCheckTransition {
+    func transition(
+        _ intent: PositionCheckIntent,
+        now: Duration,
+        timing: PositionCheckTiming = .standard
+    ) -> PositionCheckTransition {
         switch intent {
         case .holdCompleted(let availability, let restoration),
              .restartHoldCompleted(let availability, let restoration):
-            return start(availability: availability, restoration: restoration, now: now)
+            return start(availability: availability, restoration: restoration, now: now, timing: timing)
         case .cancel:
             guard case .acquiring = self else { return .unchanged(self) }
             return PositionCheckTransition(state: .idle, effect: .cancelDeadline)
@@ -79,7 +93,12 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
             case .acquiring(let request):
                 switch availability {
                 case .ready(let sample):
-                    return activate(sample: sample, restoration: request.restoration, now: now)
+                    return activate(
+                        sample: sample,
+                        restoration: request.restoration,
+                        now: now,
+                        timing: timing
+                    )
                 case .acquiring:
                     return .unchanged(self)
                 case .unavailable, .permissionRequired:
@@ -132,15 +151,16 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
     private func start(
         availability: LocationAvailability,
         restoration: CockpitRestoration,
-        now: Duration
+        now: Duration,
+        timing: PositionCheckTiming
     ) -> PositionCheckTransition {
         switch availability {
         case .ready(let sample):
-            return activate(sample: sample, restoration: restoration, now: now)
+            return activate(sample: sample, restoration: restoration, now: now, timing: timing)
         case .acquiring, .unavailable:
             let request = Request(
                 generation: Generation(),
-                deadline: now + .seconds(10),
+                deadline: now + timing.acquisitionDuration,
                 restoration: restoration
             )
             return PositionCheckTransition(
@@ -155,11 +175,12 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
     private func activate(
         sample: AircraftLocationSample,
         restoration: CockpitRestoration,
-        now: Duration
+        now: Duration,
+        timing: PositionCheckTiming
     ) -> PositionCheckTransition {
         let session = Session(
             generation: Generation(),
-            deadline: now + .seconds(10),
+            deadline: now + timing.disclosureDuration,
             projection: PositionCheckProjection(sample: sample),
             restoration: restoration
         )

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PositionCheckRecoveryGuidanceView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let recovery: PositionCheckPresentation.Recovery
 
     var body: some View {
@@ -13,7 +14,7 @@ struct PositionCheckRecoveryGuidanceView: View {
             case .positionOnly:
                 explanation(title: "POSITION ONLY", detail: "Position available — recovery guidance unavailable.", color: .blue)
             case .noSensibleIntercept(let detail):
-                explanation(title: "NO SENSIBLE INTERCEPT", detail: detail, color: .orange)
+                explanation(title: "NO SENSIBLE INTERCEPT", detail: detail, color: accessibleOrange)
             case .extremeDisplacement:
                 explanation(
                     title: "OUTSIDE RECOVERY RANGE",
@@ -29,17 +30,24 @@ struct PositionCheckRecoveryGuidanceView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("REJOIN ACTIVE LEG")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(.orange)
-            HStack(spacing: 28) {
-                metric(title: "SUGGESTED COURSE", value: course)
-                metric(title: "REJOIN IN", value: time)
+                .foregroundStyle(accessibleOrange)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 28) {
+                    metric(title: "SUGGESTED COURSE", value: course)
+                    metric(title: "REJOIN IN", value: time)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    metric(title: "SUGGESTED COURSE", value: course)
+                    metric(title: "REJOIN IN", value: time)
+                }
             }
             Text("Apply wind correction")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .padding(14)
-        .frame(width: 284, alignment: .leading)
+        .frame(width: dynamicTypeSize.isAccessibilitySize ? nil : 284, alignment: .leading)
+        .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? 360 : nil, alignment: .leading)
         .frame(minHeight: 118, alignment: .leading)
         .background(.background, in: RoundedRectangle(cornerRadius: 16))
         .overlay { RoundedRectangle(cornerRadius: 16).stroke(.orange, lineWidth: 1.5) }
@@ -64,5 +72,9 @@ struct PositionCheckRecoveryGuidanceView: View {
         .background(.background.opacity(0.94), in: RoundedRectangle(cornerRadius: 14))
         .overlay { RoundedRectangle(cornerRadius: 14).stroke(color, lineWidth: 1.5) }
         .accessibilityElement(children: .combine)
+    }
+
+    private var accessibleOrange: Color {
+        Color(red: 154 / 255, green: 74 / 255, blue: 0)
     }
 }

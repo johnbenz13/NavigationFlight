@@ -14,7 +14,8 @@ struct CockpitFeatureView: View {
     @State private var isCockpitPresented = false
     @State private var presentedError: PresentedError?
     @State private var locationAvailability: LocationAvailability = .acquiring
-    @State private var positionCheckCoordinator = PositionCheckCoordinator()
+    @State private var positionCheckCoordinator: PositionCheckCoordinator
+    @State private var pendingPositionCheckAcceptanceFeedback = false
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
     private let presentationRequestID: UUID?
@@ -26,12 +27,14 @@ struct CockpitFeatureView: View {
         state: Binding<CockpitFeatureState>,
         presentationRequestID: UUID? = nil,
         locationService: AircraftLocationService,
+        positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
         self.presentationRequestID = presentationRequestID
         self.locationService = locationService
+        _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
         self.onIntent = onIntent
     }
@@ -194,6 +197,17 @@ struct CockpitFeatureView: View {
                         onToggleDriftLines: { state.toggleDriftLines() },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
+                    .onChange(of: positionCheck) { previous, current in
+                        let feedback = PositionCheckFeedbackPolicy().feedback(
+                            previous: previous,
+                            current: current,
+                            activationAccepted: pendingPositionCheckAcceptanceFeedback
+                        )
+                        pendingPositionCheckAcceptanceFeedback = false
+                        if let announcement = feedback.announcement {
+                            UIAccessibility.post(notification: .announcement, argument: announcement)
+                        }
+                    }
                 }
             } else {
                 PlanInspectionView(
@@ -269,7 +283,11 @@ struct CockpitFeatureView: View {
             let intent: PositionCheckIntent = positionCheckCoordinator.state.activeSession == nil
                 ? .holdCompleted(availability: locationAvailability, restoration: restoration)
                 : .restartHoldCompleted(availability: locationAvailability, restoration: restoration)
-            positionCheckCoordinator.send(intent)
+            let effect = positionCheckCoordinator.send(intent)
+            if case .scheduleDeadline = effect {
+                pendingPositionCheckAcceptanceFeedback = true
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
         case .cancel:
             positionCheckCoordinator.send(.cancel)
         case .end:

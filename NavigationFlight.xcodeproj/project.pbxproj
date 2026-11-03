@@ -56,6 +56,11 @@
 			path = NavigationFlightUITests;
 			sourceTree = "<group>";
 		};
+		52EC649B309A4AF40029813A /* fixtures */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = fixtures;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +86,7 @@
 		5269A1D6307A4CC2009CD5A1 = {
 			isa = PBXGroup;
 			children = (
+				52EC649B309A4AF40029813A /* fixtures */,
 				52B0614D30874A4700B840D6 /* AGENTS.md */,
 				52B0615030874A4700B840D6 /* README.md */,
 				5269A1E1307A4CC2009CD5A1 /* NavigationFlight */,

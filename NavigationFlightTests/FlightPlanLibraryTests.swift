@@ -28,6 +28,59 @@ struct FlightPlanLibraryTests {
         )])
     }
 
+    @Test("Disk persistence preserves fractional revision timestamps")
+    func diskPersistencePreservesFractionalRevisionTimestamp() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "NavigationFlight-FractionalRevision-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let sourceData = try changing(
+            fixtureData(),
+            modifiedAtText: "2026-10-18T10:11:12.345Z"
+        )
+        let decoded = try FPLNavDecoder().decode(sourceData)
+        let library = FlightPlanLibrary(store: DiskFlightPlanStore(rootDirectory: root))
+
+        let proposal = try await library.prepareImport(sourceData, importedAt: .now)
+        _ = try await library.commit(proposal)
+
+        let plans = try await library.plans()
+        #expect(plans.count == 1)
+        #expect(plans.first?.flightPlan.modifiedAt == decoded.modifiedAt)
+    }
+
+    @Test("Library reads legacy metadata that truncated fractional revision timestamps")
+    func readsLegacyTruncatedRevisionTimestamp() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "NavigationFlight-LegacyFractionalRevision-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let sourceData = try changing(
+            fixtureData(),
+            modifiedAtText: "2026-10-18T10:11:12.345Z"
+        )
+        let decoded = try FPLNavDecoder().decode(sourceData)
+        let recordDirectory = root.appending(path: decoded.id.uuidString.lowercased(), directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: recordDirectory, withIntermediateDirectories: true)
+        try sourceData.write(to: recordDirectory.appending(path: "plan.fplnav"))
+        let legacyMetadata: [String: Any] = [
+            "id": decoded.id.uuidString.lowercased(),
+            "modifiedAt": "2026-10-18T10:11:12Z",
+            "importedAt": "2026-11-03T04:00:00Z",
+            "storageSchemaVersion": 1
+        ]
+        try JSONSerialization.data(withJSONObject: legacyMetadata, options: [.sortedKeys])
+            .write(to: recordDirectory.appending(path: "metadata.json"))
+        let library = FlightPlanLibrary(store: DiskFlightPlanStore(rootDirectory: root))
+
+        let plans = try await library.plans()
+        let proposal = try await library.prepareImport(sourceData, importedAt: .now)
+
+        #expect(plans.map(\.flightPlan.modifiedAt) == [decoded.modifiedAt])
+        guard case .sameRevision = proposal else {
+            Issue.record("Expected the legacy record to be recognized as the same revision")
+            return
+        }
+    }
+
     @Test("Same revision neither writes nor refreshes its import date")
     func sameRevisionDoesNotWrite() async throws {
         let sourceData = try fixtureData()
@@ -188,6 +241,14 @@ struct FlightPlanLibraryTests {
         if let id { project["id"] = id.uuidString.lowercased() }
         if let title { project["title"] = title }
         if let modifiedAt { project["modifiedAt"] = ISO8601DateFormatter().string(from: modifiedAt) }
+        object["project"] = project
+        return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+    }
+
+    private func changing(_ data: Data, modifiedAtText: String) throws -> Data {
+        var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var project = try #require(object["project"] as? [String: Any])
+        project["modifiedAt"] = modifiedAtText
         object["project"] = project
         return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
     }

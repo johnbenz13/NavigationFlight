@@ -46,7 +46,7 @@ actor FlightPlanLibrary {
             return .new(prepared)
         }
         let existing = try libraryFlightPlan(from: existingRecord)
-        if existingRecord.modifiedAt == flightPlan.modifiedAt {
+        if existing.flightPlan.modifiedAt == flightPlan.modifiedAt {
             return .sameRevision(existing: existing)
         }
         let replacement = PreparedReplacement(
@@ -118,9 +118,15 @@ actor FlightPlanLibrary {
         } catch {
             throw FlightPlanLibraryError.corruptRecord(id: record.id)
         }
-        guard flightPlan.id == record.id, flightPlan.modifiedAt == record.modifiedAt else {
+        guard flightPlan.id == record.id,
+              revisionsMatch(stored: record.modifiedAt, source: flightPlan.modifiedAt) else {
             throw FlightPlanLibraryError.corruptRecord(id: record.id)
         }
         return LibraryFlightPlan(flightPlan: flightPlan, importedAt: record.importedAt)
+    }
+
+    private func revisionsMatch(stored: Date, source: Date) -> Bool {
+        stored == source
+            || floor(stored.timeIntervalSince1970) == floor(source.timeIntervalSince1970)
     }
 }

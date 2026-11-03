@@ -15,6 +15,10 @@ nonisolated struct LibraryFlightPlan: Equatable, Sendable, Identifiable {
     let importedAt: Date
 
     var id: UUID { flightPlan.id }
+
+    func isLoaded(in loadedFlightPlan: FlightPlan?) -> Bool {
+        loadedFlightPlan?.id == id && loadedFlightPlan?.modifiedAt == flightPlan.modifiedAt
+    }
 }
 
 nonisolated struct PreparedImport: Equatable, Sendable {

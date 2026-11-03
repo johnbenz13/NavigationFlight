@@ -302,6 +302,142 @@ struct AppFeatureStateTests {
         #expect(state.isLoading == false)
     }
 
+    @Test("New import proposal requests commit of the exact proposal")
+    func newImportProposalRequestsCommit() throws {
+        let requestID = try #require(UUID(uuidString: "88888888-8888-8888-8888-888888888888"))
+        let proposalID = try #require(UUID(uuidString: "99999999-9999-9999-9999-999999999999"))
+        let plan = try flightPlan()
+        let importedAt = Date(timeIntervalSince1970: 2_000_000_000)
+        let prepared = PreparedImport(
+            record: StoredFlightPlan(
+                id: plan.id,
+                modifiedAt: plan.modifiedAt,
+                importedAt: importedAt,
+                sourceData: Data("fixture".utf8),
+                storageSchemaVersion: StoredFlightPlan.currentStorageSchemaVersion
+            ),
+            flightPlan: plan
+        )
+        let proposal = ImportProposal.new(prepared)
+        var state = FlightPlansFeatureState()
+
+        let didBegin = state.beginImport(requestID: requestID)
+        #expect(didBegin)
+        let decision = state.completeImportPreparation(
+            requestID: requestID,
+            proposalID: proposalID,
+            proposal: proposal
+        )
+
+        #expect(decision == .commit(proposalID: proposalID))
+        #expect(state.pendingImport == PendingFlightPlanImport(id: proposalID, proposal: proposal))
+        #expect(state.records.isEmpty)
+        #expect(state.inFlightRequestID == nil)
+    }
+
+    @Test("Same revision reports already imported without commit or row mutation")
+    func sameRevisionDoesNotCommit() throws {
+        let requestID = UUID()
+        let proposalID = UUID()
+        let existing = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        var state = FlightPlansFeatureState()
+        state.beginLoading(requestID: UUID())
+        let loadID = try #require(state.inFlightRequestID)
+        _ = state.completeLoading(requestID: loadID, records: [existing], error: nil)
+        _ = state.beginImport(requestID: requestID)
+
+        let decision = state.completeImportPreparation(
+            requestID: requestID,
+            proposalID: proposalID,
+            proposal: .sameRevision(existing: existing)
+        )
+
+        #expect(decision == .some(.none))
+        #expect(state.pendingImport == nil)
+        #expect(state.records == [existing])
+        #expect(state.presentation == .alreadyImported(title: existing.flightPlan.title))
+    }
+
+    @Test("Loaded badge requires matching Flight Plan identity and revision")
+    func loadedBadgeMatchesIdentityAndRevision() throws {
+        let plan = try flightPlan()
+        let record = LibraryFlightPlan(flightPlan: plan, importedAt: .distantPast)
+        let differentRevision = FlightPlan(
+            id: plan.id,
+            title: plan.title,
+            createdAt: plan.createdAt,
+            modifiedAt: plan.modifiedAt.addingTimeInterval(1),
+            parameters: plan.parameters,
+            waypoints: plan.waypoints,
+            legs: plan.legs,
+            identificationPoints: plan.identificationPoints,
+            altitudeChanges: plan.altitudeChanges,
+            frequencyChanges: plan.frequencyChanges,
+            vorDmeReferences: plan.vorDmeReferences,
+            operationalContext: plan.operationalContext,
+            plannedNavigation: plan.plannedNavigation
+        )
+
+        #expect(record.isLoaded(in: plan))
+        #expect(record.isLoaded(in: differentRevision) == false)
+        #expect(record.isLoaded(in: nil) == false)
+    }
+
+    @Test("Newer and older replacements wait for explicit confirmation")
+    func replacementsWaitForConfirmation() throws {
+        let plan = try flightPlan()
+        let prepared = PreparedImport(
+            record: StoredFlightPlan(
+                id: plan.id,
+                modifiedAt: plan.modifiedAt,
+                importedAt: .now,
+                sourceData: Data(),
+                storageSchemaVersion: StoredFlightPlan.currentStorageSchemaVersion
+            ),
+            flightPlan: plan
+        )
+        let replacement = PreparedReplacement(
+            candidate: prepared,
+            expectedModifiedAt: plan.modifiedAt.addingTimeInterval(-1)
+        )
+
+        for proposal in [ImportProposal.replaceNewer(replacement), .replaceOlder(replacement)] {
+            var state = FlightPlansFeatureState()
+            let requestID = UUID()
+            let proposalID = UUID()
+            _ = state.beginImport(requestID: requestID)
+
+            let decision = state.completeImportPreparation(
+                requestID: requestID,
+                proposalID: proposalID,
+                proposal: proposal
+            )
+
+            #expect(decision == .confirmation(proposalID: proposalID))
+            #expect(state.pendingImport?.proposal == proposal)
+            #expect(state.inFlightRequestID == nil)
+        }
+    }
+
+    @Test("Import failure preserves the last successful list and rejects stale completion")
+    func importFailurePreservesRecords() throws {
+        let existing = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        var state = FlightPlansFeatureState()
+        let loadID = UUID()
+        state.beginLoading(requestID: loadID)
+        _ = state.completeLoading(requestID: loadID, records: [existing], error: nil)
+        let requestID = UUID()
+        _ = state.beginImport(requestID: requestID)
+
+        let staleCompletion = state.failImport(requestID: UUID(), failure: .storageFailure)
+        #expect(staleCompletion == false)
+        #expect(state.inFlightRequestID == requestID)
+        let acceptedCompletion = state.failImport(requestID: requestID, failure: .storageFailure)
+        #expect(acceptedCompletion)
+        #expect(state.records == [existing])
+        #expect(state.presentation == .failure(.storageFailure))
+    }
+
     private func flightPlan() throws -> FlightPlan {
         let bundle = Bundle(for: AppFeatureFixtureLocator.self)
         let nested = bundle.url(

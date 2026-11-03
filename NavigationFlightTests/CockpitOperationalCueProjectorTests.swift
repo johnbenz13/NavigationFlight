@@ -151,6 +151,106 @@ struct CockpitOperationalCueProjectorTests {
         ])
     }
 
+    @Test("Next leg initial altitude is previewed and becomes current on progression")
+    func nextLegInitialAltitudeIsPreviewedAndBecomesCurrent() throws {
+        let source = try twoLegFixtureWithImmediateChanges()
+        let secondLegID = source.legs[1].id
+        let planned = try #require(source.plannedNavigation.plannedNavigation)
+        let removedAltitudeIDs = Set(source.altitudeChanges.lazy.filter { $0.legID == secondLegID }.map(\.id))
+        let removedFrequencyIDs = Set(source.frequencyChanges.lazy.filter { $0.legID == secondLegID }.map(\.id))
+        var plannedLegs = planned.legs
+        let second = plannedLegs[1]
+        plannedLegs[1] = PlannedLegNavigation(
+            legID: second.legID,
+            trueCourse: second.trueCourse,
+            magneticCourse: second.magneticCourse,
+            groundDistance: second.groundDistance,
+            initialAltitudeMsl: AltitudeFeet(value: 3_500),
+            noWind: second.noWind,
+            withWind: second.withWind
+        )
+        var frequenciesByPhase = planned.frequenciesByPhase
+        let enRouteFrequencies: [PlannedFrequency] = frequenciesByPhase[.enRoute] ?? []
+        frequenciesByPhase[.enRoute] = enRouteFrequencies.filter { frequency in
+            removedFrequencyIDs.contains { id in
+                frequency.id == "route:\(id.uuidString.lowercased())"
+            } == false
+        }
+        let flightPlan = FlightPlan(
+            id: source.id,
+            title: source.title,
+            createdAt: source.createdAt,
+            modifiedAt: source.modifiedAt,
+            parameters: source.parameters,
+            waypoints: source.waypoints,
+            legs: source.legs,
+            identificationPoints: source.identificationPoints,
+            altitudeChanges: source.altitudeChanges.filter { removedAltitudeIDs.contains($0.id) == false },
+            frequencyChanges: source.frequencyChanges.filter { removedFrequencyIDs.contains($0.id) == false },
+            vorDmeReferences: source.vorDmeReferences,
+            operationalContext: source.operationalContext,
+            plannedNavigation: .eligible(PlannedNavigation(
+                calculationVersion: planned.calculationVersion,
+                altitudeReference: planned.altitudeReference,
+                legs: plannedLegs,
+                annotations: planned.annotations.filter {
+                    removedAltitudeIDs.contains($0.entityID) == false &&
+                    removedFrequencyIDs.contains($0.entityID) == false
+                },
+                vorDmeReferences: planned.vorDmeReferences,
+                frequenciesByPhase: frequenciesByPhase,
+                defaultMode: planned.defaultMode
+            ))
+        )
+        let start = Date(timeIntervalSince1970: 4_500)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+        let projector = CockpitOperationalCueProjector()
+
+        let precedingLeg = try projector.project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(41)
+        )
+        #expect(precedingLeg.currentAltitude == AltitudeFeet(value: 2_500))
+        #expect(precedingLeg.nextAltitude == .init(target: .init(value: 3_500), direction: .up))
+
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(42))
+        let nextLeg = try projector.project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(43)
+        )
+        #expect(nextLeg.currentAltitude == AltitudeFeet(value: 3_500))
+    }
+
+    @Test("Next-leg time-zero altitude takes precedence over its initial altitude")
+    func nextLegTimeZeroAltitudeTakesPrecedenceOverInitialAltitude() throws {
+        let flightPlan = try twoLegFixtureWithImmediateChanges()
+        let start = Date(timeIntervalSince1970: 4_700)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(41)
+        )
+
+        #expect(state.currentAltitude == AltitudeFeet(value: 2_500))
+        #expect(state.nextAltitude == .init(target: .init(value: 1_500), direction: .up))
+    }
+
     @Test("Selected navigation mode controls annotation timing")
     func selectedNavigationModeControlsTiming() throws {
         let flightPlan = try mutatedFixtureFlightPlan { object in

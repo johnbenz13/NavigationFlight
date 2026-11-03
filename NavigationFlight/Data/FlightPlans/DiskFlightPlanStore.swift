@@ -2,6 +2,7 @@ import Foundation
 
 actor DiskFlightPlanStore: FlightPlanStore {
     typealias BeforeInstall = @Sendable (URL) throws -> Void
+    typealias BeforeRemove = @Sendable (UUID) throws -> Void
 
     private struct Metadata: Codable {
         let id: UUID
@@ -13,15 +14,18 @@ actor DiskFlightPlanStore: FlightPlanStore {
     private let rootDirectory: URL
     private let fileManager: FileManager
     private let beforeInstall: BeforeInstall
+    private let beforeRemove: BeforeRemove
 
     init(
         rootDirectory: URL,
         fileManager: FileManager = .default,
-        beforeInstall: @escaping BeforeInstall = { _ in }
+        beforeInstall: @escaping BeforeInstall = { _ in },
+        beforeRemove: @escaping BeforeRemove = { _ in }
     ) {
         self.rootDirectory = rootDirectory
         self.fileManager = fileManager
         self.beforeInstall = beforeInstall
+        self.beforeRemove = beforeRemove
     }
 
     func records() throws -> [StoredFlightPlan] {
@@ -88,6 +92,7 @@ actor DiskFlightPlanStore: FlightPlanStore {
     func remove(id: UUID) throws {
         let directory = recordDirectory(id: id)
         do {
+            try beforeRemove(id)
             if fileManager.fileExists(atPath: directory.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: directory)
             }

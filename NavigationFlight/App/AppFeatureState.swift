@@ -31,11 +31,8 @@ struct AppFeatureState: Equatable, Sendable {
         selectedAppSection = section
     }
 
-    mutating func handleCockpitIntent(_ intent: CockpitFeatureIntent) {
-        switch intent {
-        case .chooseFlightPlan:
-            selectAppSection(.flightPlans)
-        }
+    mutating func chooseFlightPlanFromCockpit() {
+        selectAppSection(.flightPlans)
     }
 
     mutating func updateCockpit(_ cockpit: CockpitFeatureState) {
@@ -138,6 +135,7 @@ struct AppFeatureState: Equatable, Sendable {
 
 enum CockpitFeatureIntent: Equatable, Sendable {
     case chooseFlightPlan
+    case restartFlight
 }
 
 enum FlightPlansFeatureIntent: Equatable, Sendable {
@@ -172,6 +170,8 @@ struct FlightPlansFeatureState: Equatable, Sendable {
     private(set) var selectedRecordID: UUID?
     private(set) var inFlightRequestID: UUID?
     private(set) var pendingImport: PendingFlightPlanImport?
+    private(set) var pendingRemoval: PendingFlightPlanRemoval?
+    private(set) var activeRemoval: ActiveFlightPlanRemoval?
     private(set) var presentation: FlightPlansPresentation?
     private(set) var error: FlightPlanLibraryError?
 
@@ -287,11 +287,95 @@ struct FlightPlansFeatureState: Equatable, Sendable {
     mutating func selectRecord(id: UUID) {
         selectedRecordID = id
     }
+
+    @discardableResult
+    mutating func requestRemoval(
+        recordID: UUID,
+        loadedFlightPlanID: UUID?,
+        confirmationID: UUID = UUID()
+    ) -> Bool {
+        guard inFlightRequestID == nil,
+              pendingRemoval == nil,
+              records.contains(where: { $0.id == recordID }) else { return false }
+        pendingRemoval = PendingFlightPlanRemoval(
+            id: confirmationID,
+            recordID: recordID,
+            isLoadedFlightPlan: loadedFlightPlanID == recordID
+        )
+        return true
+    }
+
+    @discardableResult
+    mutating func cancelPendingRemoval(confirmationID: UUID) -> Bool {
+        guard pendingRemoval?.id == confirmationID, inFlightRequestID == nil else { return false }
+        pendingRemoval = nil
+        return true
+    }
+
+    mutating func beginRemoval(confirmationID: UUID, requestID: UUID) -> UUID? {
+        guard inFlightRequestID == nil,
+              let pendingRemoval,
+              pendingRemoval.id == confirmationID else { return nil }
+        inFlightRequestID = requestID
+        activeRemoval = ActiveFlightPlanRemoval(
+            requestID: requestID,
+            recordID: pendingRemoval.recordID
+        )
+        self.pendingRemoval = nil
+        presentation = nil
+        error = nil
+        return pendingRemoval.recordID
+    }
+
+    @discardableResult
+    mutating func completeRemoval(
+        requestID: UUID,
+        recordID: UUID,
+        records: [LibraryFlightPlan]
+    ) -> Bool {
+        guard inFlightRequestID == requestID,
+              activeRemoval == ActiveFlightPlanRemoval(
+                requestID: requestID,
+                recordID: recordID
+              ) else { return false }
+        self.records = records
+        if selectedRecordID == recordID {
+            selectedRecordID = nil
+        }
+        inFlightRequestID = nil
+        activeRemoval = nil
+        error = nil
+        return true
+    }
+
+    @discardableResult
+    mutating func failRemoval(requestID: UUID, recordID: UUID) -> Bool {
+        guard inFlightRequestID == requestID,
+              activeRemoval == ActiveFlightPlanRemoval(
+                requestID: requestID,
+                recordID: recordID
+              ) else { return false }
+        inFlightRequestID = nil
+        activeRemoval = nil
+        presentation = .removalFailure
+        return true
+    }
 }
 
 struct PendingFlightPlanImport: Equatable, Sendable, Identifiable {
     let id: UUID
     let proposal: ImportProposal
+}
+
+struct PendingFlightPlanRemoval: Equatable, Sendable, Identifiable {
+    let id: UUID
+    let recordID: UUID
+    let isLoadedFlightPlan: Bool
+}
+
+struct ActiveFlightPlanRemoval: Equatable, Sendable {
+    let requestID: UUID
+    let recordID: UUID
 }
 
 enum FlightPlanImportDecision: Equatable, Sendable {
@@ -305,6 +389,7 @@ enum FlightPlansPresentation: Equatable, Sendable {
     case imported(title: String)
     case failure(FlightPlansFailure)
     case flightChangeFailure
+    case removalFailure
 }
 
 enum FlightPlansFailure: Equatable, Sendable {

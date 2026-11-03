@@ -264,6 +264,84 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testRemovalCancellationAndSuccess() throws {
+        let data = try oneLegPlanData()
+        let app = launchFlightPlans(seedData: [data])
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        let remove = app.buttons["remove-flight-plan"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 2))
+        remove.tap()
+        let confirmation = app.alerts["Remove saved plan?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["Cancel"].tap()
+        let removeAfterCancellation = app.buttons["remove-flight-plan"]
+        XCTAssertTrue(removeAfterCancellation.waitForExistence(timeout: 5))
+
+        removeAfterCancellation.tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        confirmation.buttons["Remove"].tap()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch.exists)
+    }
+
+    @MainActor
+    func testLoadedPlanRemovalPreservesCockpitInspectionAndRestart() throws {
+        let data = try oneLegPlanData()
+        let app = launchFlightPlans(seedData: [data], loadedPlanData: data)
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["remove-flight-plan"].tap()
+
+        let confirmation = app.alerts["Remove from Flight Plans?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        XCTAssertTrue(confirmation.staticTexts[
+            "Only the library copy will be removed. The current Flight remains usable until replacement or app closure."
+        ].exists)
+        confirmation.buttons["Remove"].tap()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 5))
+
+        tab(named: "Cockpit", in: app).tap()
+        XCTAssertTrue(app.navigationBars["Plan Inspection"].waitForExistence(timeout: 3))
+        let restart = app.buttons["restart-flight"]
+        XCTAssertTrue(restart.waitForExistence(timeout: 3))
+        restart.tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        tab(named: "Flight Plans", in: app).tap()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testRemovalFailurePreservesRecordAndInspection() throws {
+        let data = try oneLegPlanData()
+        let app = launchFlightPlans(seedData: [data], removalFailure: true)
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["remove-flight-plan"].tap()
+        app.alerts["Remove saved plan?"].buttons["Remove"].tap()
+
+        let failure = app.alerts["Couldn’t remove plan"]
+        XCTAssertTrue(failure.waitForExistence(timeout: 3))
+        XCTAssertTrue(failure.staticTexts[
+            "The Flight Plan remains saved. This inspection and the current Flight are unchanged."
+        ].exists)
+        failure.buttons["Done"].tap()
+        XCTAssertTrue(app.buttons["remove-flight-plan"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
     func testAddPickerCancellationPreservesEmptyLibrary() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -704,7 +782,8 @@ final class NavigationFlightUITests: XCTestCase {
         storageFailure: Bool = false,
         loadedPlanData: Data? = nil,
         protectLoadedFlight: Bool = false,
-        failFlightChange: Bool = false
+        failFlightChange: Bool = false,
+        removalFailure: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -727,6 +806,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if failFlightChange {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] = "1"
+        }
+        if removalFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_REMOVAL_FAILURE"] = "1"
         }
         app.launch()
         return app

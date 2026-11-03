@@ -14,6 +14,7 @@ struct FlightPlansFeatureView: View {
     @State private var navigationPath: [UUID] = []
     @State private var scrollPosition: UUID?
     @State private var isFileImporterPresented = false
+    @State private var hasLoadedLibrary = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -48,7 +49,24 @@ struct FlightPlansFeatureView: View {
                         record: record,
                         loadedFlightPlan: loadedFlightPlan,
                         isActionDisabled: state.inFlightRequestID != nil,
-                        onIntent: onIntent
+                        onIntent: onIntent,
+                        onRemove: { recordID in
+                            state.requestRemoval(
+                                recordID: recordID,
+                                loadedFlightPlanID: loadedFlightPlan?.id
+                            )
+                        },
+                        pendingRemoval: state.pendingRemoval,
+                        isRemovalFailurePresented: state.presentation == .removalFailure,
+                        onConfirmRemoval: { confirmationID in
+                            Task { await remove(confirmationID: confirmationID) }
+                        },
+                        onCancelRemoval: { confirmationID in
+                            state.cancelPendingRemoval(confirmationID: confirmationID)
+                        },
+                        onDismissRemovalFailure: {
+                            state.dismissPresentation()
+                        }
                     )
                 } else {
                     ContentUnavailableView("Flight Plan unavailable", systemImage: "folder.badge.questionmark")
@@ -62,12 +80,12 @@ struct FlightPlansFeatureView: View {
                 Task { await importFlightPlan(from: url) }
             }
             .task {
-                if state.records.isEmpty {
-                    await installDebugSeedIfNeeded()
-                    await refresh()
-                    if let debugImportData {
-                        await importFlightPlan(data: debugImportData)
-                    }
+                guard hasLoadedLibrary == false else { return }
+                hasLoadedLibrary = true
+                await installDebugSeedIfNeeded()
+                await refresh()
+                if let debugImportData {
+                    await importFlightPlan(data: debugImportData)
                 }
             }
             .alert(replacementTitle, isPresented: replacementPresented) {
@@ -181,6 +199,28 @@ struct FlightPlansFeatureView: View {
         }
     }
 
+    private func remove(confirmationID: UUID) async {
+        let requestID = UUID()
+        guard let recordID = state.beginRemoval(
+            confirmationID: confirmationID,
+            requestID: requestID
+        ) else { return }
+        do {
+            try await library.remove(id: recordID)
+            let records = try await library.plans()
+            let completed = state.completeRemoval(
+                requestID: requestID,
+                recordID: recordID,
+                records: records
+            )
+            if completed, state.selectedRecordID == nil {
+                navigationPath.removeAll()
+            }
+        } catch {
+            state.failRemoval(requestID: requestID, recordID: recordID)
+        }
+    }
+
     private func failure(for error: FlightPlanLibraryError) -> FlightPlansFailure {
         switch error {
         case .invalidFlightPlan, .corruptRecord, .sameRevisionCannotBeCommitted:
@@ -226,7 +266,7 @@ struct FlightPlansFeatureView: View {
         Binding(
             get: {
                 guard let presentation = state.presentation else { return false }
-                return presentation != .flightChangeFailure
+                return presentation != .flightChangeFailure && presentation != .removalFailure
             },
             set: { if !$0 { state.dismissPresentation() } }
         )
@@ -239,6 +279,7 @@ struct FlightPlansFeatureView: View {
         case .failure(.storageFailure): "Plan wasn’t saved"
         case .failure: "Couldn’t add this plan"
         case .flightChangeFailure: "Couldn’t load this Flight Plan"
+        case .removalFailure: "Couldn’t remove plan"
         case nil: ""
         }
     }
@@ -253,6 +294,7 @@ struct FlightPlansFeatureView: View {
         case .failure(.storageFailure): "The Flight Plan could not be saved. Existing data is unchanged."
         case .failure(.libraryUnavailable): "Flight Plans is temporarily unavailable. Existing data is unchanged."
         case .flightChangeFailure: "The current Flight and this inspection are unchanged."
+        case .removalFailure: "The Flight Plan remains saved. This inspection and the current Flight are unchanged."
         case nil: ""
         }
     }
@@ -263,6 +305,12 @@ private struct FlightPlanInspectionView: View {
     let loadedFlightPlan: FlightPlan?
     let isActionDisabled: Bool
     let onIntent: (FlightPlansFeatureIntent) -> Void
+    let onRemove: (UUID) -> Void
+    let pendingRemoval: PendingFlightPlanRemoval?
+    let isRemovalFailurePresented: Bool
+    let onConfirmRemoval: (UUID) -> Void
+    let onCancelRemoval: (UUID) -> Void
+    let onDismissRemovalFailure: () -> Void
 
     private var presentation: FlightPlanInspectionPresentation {
         FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedFlightPlan)
@@ -339,10 +387,66 @@ private struct FlightPlanInspectionView: View {
                     }
                 }
             }
+
+            Section("Flight Plan Actions") {
+                Button("Remove from Flight Plans…", role: .destructive) {
+                    onRemove(record.id)
+                }
+                .disabled(isActionDisabled)
+                .accessibilityIdentifier("remove-flight-plan")
+
+                Text("Removes only the saved library copy.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle(record.flightPlan.title)
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("flight-plan-inspection")
+        .alert(removalAlertTitle, isPresented: removalAlertPresented) {
+            if let confirmationID = pendingRemoval?.id {
+                Button("Remove", role: .destructive) {
+                    onConfirmRemoval(confirmationID)
+                }
+                Button("Cancel", role: .cancel) {
+                    onCancelRemoval(confirmationID)
+                }
+            } else {
+                Button("Done", action: onDismissRemovalFailure)
+            }
+        } message: {
+            Text(removalAlertMessage)
+        }
+    }
+
+    private var removalAlertPresented: Binding<Bool> {
+        Binding(
+            get: { pendingRemoval?.recordID == record.id || isRemovalFailurePresented },
+            set: { isPresented in
+                if isPresented == false, isRemovalFailurePresented {
+                    onDismissRemovalFailure()
+                }
+            }
+        )
+    }
+
+    private var removalAlertTitle: String {
+        if isRemovalFailurePresented {
+            return "Couldn’t remove plan"
+        }
+        return pendingRemoval?.isLoadedFlightPlan == true
+            ? "Remove from Flight Plans?"
+            : "Remove saved plan?"
+    }
+
+    private var removalAlertMessage: String {
+        if isRemovalFailurePresented {
+            return "The Flight Plan remains saved. This inspection and the current Flight are unchanged."
+        }
+        if pendingRemoval?.isLoadedFlightPlan == true {
+            return "Only the library copy will be removed. The current Flight remains usable until replacement or app closure."
+        }
+        return "This removes the saved library copy. The current Flight, if any, remains unchanged."
     }
 
     private func perform(_ action: FlightPlanInspectionPresentation.Action) {

@@ -23,6 +23,7 @@ struct RootView: View {
             libraryDirectory = defaultLibraryDirectory
         }
         let shouldFailStorage = environment["NAVIGATION_FLIGHT_UI_TEST_STORAGE_FAILURE"] == "1"
+        let shouldFailRemoval = environment["NAVIGATION_FLIGHT_UI_TEST_REMOVAL_FAILURE"] == "1"
         debugLibrarySeedData = environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS"]?
             .split(separator: ",")
             .compactMap { Data(base64Encoded: String($0)) } ?? []
@@ -42,6 +43,11 @@ struct RootView: View {
             beforeInstall: { _ in
                 if shouldFailStorage {
                     throw FlightPlanStoreError.operationFailed(id: nil)
+                }
+            },
+            beforeRemove: { id in
+                if shouldFailRemoval {
+                    throw FlightPlanStoreError.operationFailed(id: id)
                 }
             }
         )
@@ -93,7 +99,7 @@ struct RootView: View {
                         set: { appState.updateCockpit($0) }
                     ),
                     presentationRequestID: appState.cockpitPresentationRequestID,
-                    onIntent: { appState.handleCockpitIntent($0) }
+                    onIntent: handleCockpitIntent
                 )
             }
 
@@ -170,6 +176,21 @@ struct RootView: View {
             var flightPlans = appState.flightPlans
             flightPlans.presentFlightChangeFailure()
             appState.updateFlightPlans(flightPlans)
+        }
+    }
+
+    private func handleCockpitIntent(_ intent: CockpitFeatureIntent) {
+        switch intent {
+        case .chooseFlightPlan:
+            appState.chooseFlightPlanFromCockpit()
+        case .restartFlight:
+            do {
+                _ = try appState.restartFlight(flightID: UUID())
+            } catch {
+                var flightPlans = appState.flightPlans
+                flightPlans.presentFlightChangeFailure()
+                appState.updateFlightPlans(flightPlans)
+            }
         }
     }
 

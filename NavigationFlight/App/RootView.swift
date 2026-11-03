@@ -6,6 +6,7 @@ struct RootView: View {
     private let flightPlanFileReader = FlightPlanFileReader()
     private let debugLibrarySeedData: [Data]
     private let debugImportData: Data?
+    private let debugShouldFailFlightChange: Bool
 
     init() {
         let defaultLibraryDirectory = FileManager.default.urls(
@@ -27,10 +28,12 @@ struct RootView: View {
             .compactMap { Data(base64Encoded: String($0)) } ?? []
         debugImportData = environment["NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN"]
             .flatMap { Data(base64Encoded: $0) }
+        debugShouldFailFlightChange = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] == "1"
 #else
         libraryDirectory = defaultLibraryDirectory
         debugLibrarySeedData = []
         debugImportData = nil
+        debugShouldFailFlightChange = false
 #endif
         let store: any FlightPlanStore
 #if DEBUG
@@ -69,6 +72,9 @@ struct RootView: View {
            let data = Data(base64Encoded: encoded),
            let flightPlan = try? FPLNavDecoder().decode(data) {
             try? cockpit.accept(flightPlan)
+            if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT"] == "1" {
+                try? cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
+            }
             selectedAppSection = .flightPlans
         }
 #endif
@@ -86,6 +92,7 @@ struct RootView: View {
                         get: { appState.cockpit },
                         set: { appState.updateCockpit($0) }
                     ),
+                    presentationRequestID: appState.cockpitPresentationRequestID,
                     onIntent: { appState.handleCockpitIntent($0) }
                 )
             }
@@ -100,7 +107,8 @@ struct RootView: View {
                     fileReader: flightPlanFileReader,
                     loadedFlightPlan: appState.cockpit.flightPlan,
                     debugSeedData: debugLibrarySeedData,
-                    debugImportData: debugImportData
+                    debugImportData: debugImportData,
+                    onIntent: handleFlightPlansIntent
                 )
             }
 
@@ -109,6 +117,27 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .alert(flightChangeConfirmationTitle, isPresented: flightChangeConfirmationPresented) {
+            Button(flightChangeConfirmationAction, role: .destructive) {
+                guard let id = appState.pendingFlightChange?.id else { return }
+                appState.confirmPendingFlightChange(id: id)
+            }
+            Button("Cancel", role: .cancel) {
+                guard let id = appState.pendingFlightChange?.id else { return }
+                appState.cancelPendingFlightChange(id: id)
+            }
+        } message: {
+            Text(flightChangeConfirmationMessage)
+        }
+        .alert("Couldn’t load this Flight Plan", isPresented: flightChangeFailurePresented) {
+            Button("Done") {
+                var flightPlans = appState.flightPlans
+                flightPlans.dismissPresentation()
+                appState.updateFlightPlans(flightPlans)
+            }
+        } message: {
+            Text("The current Flight and this inspection are unchanged.")
+        }
     }
 
     private var appSectionSelection: Binding<AppFeatureState.AppSection> {
@@ -116,5 +145,61 @@ struct RootView: View {
             get: { appState.selectedAppSection },
             set: { appState.selectAppSection($0) }
         )
+    }
+
+    private func handleFlightPlansIntent(_ intent: FlightPlansFeatureIntent) {
+        if debugShouldFailFlightChange, intent != .returnToCockpit {
+            var flightPlans = appState.flightPlans
+            flightPlans.presentFlightChangeFailure()
+            appState.updateFlightPlans(flightPlans)
+            return
+        }
+
+        do {
+            switch intent {
+            case .loadInCockpit(let record):
+                _ = try appState.loadFlightPlan(record, flightID: UUID())
+            case .returnToCockpit:
+                appState.returnToCockpit()
+            case .loadUpdatedPlan(let record):
+                _ = try appState.loadUpdatedFlightPlan(record, flightID: UUID())
+            case .restartFlight:
+                _ = try appState.restartFlight(flightID: UUID())
+            }
+        } catch {
+            var flightPlans = appState.flightPlans
+            flightPlans.presentFlightChangeFailure()
+            appState.updateFlightPlans(flightPlans)
+        }
+    }
+
+    private var flightChangeConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: { appState.pendingFlightChange != nil },
+            set: { _ in }
+        )
+    }
+
+    private var flightChangeConfirmationTitle: String {
+        appState.pendingFlightChange?.kind == .restart
+            ? "Restart this Flight?"
+            : "End current Flight?"
+    }
+
+    private var flightChangeFailurePresented: Binding<Bool> {
+        Binding(
+            get: { appState.flightPlans.presentation == .flightChangeFailure },
+            set: { _ in }
+        )
+    }
+
+    private var flightChangeConfirmationAction: String {
+        appState.pendingFlightChange?.kind == .restart ? "Restart" : "End & Load"
+    }
+
+    private var flightChangeConfirmationMessage: String {
+        appState.pendingFlightChange?.kind == .restart
+            ? "Recorded progress and pilot edits will be discarded."
+            : "Loading this Flight Plan ends the current Flight and discards recorded progress and pilot edits."
     }
 }

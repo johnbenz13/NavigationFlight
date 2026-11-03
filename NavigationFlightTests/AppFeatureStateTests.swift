@@ -216,6 +216,35 @@ struct AppFeatureStateTests {
         #expect(state.selectedAppSection == selection)
     }
 
+    @Test("Duplicate Flight change requests cannot replace the pending decision")
+    func duplicateFlightChangePreservesPendingDecision() throws {
+        let originalPlan = try flightPlan()
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(originalPlan)
+        try cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        var state = AppFeatureState(selectedAppSection: .flightPlans, cockpit: cockpit)
+        let firstPendingID = try #require(UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001"))
+        let secondPendingID = try #require(UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000002"))
+        let firstFlightID = try #require(UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000001"))
+        let secondFlightID = try #require(UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000002"))
+        let firstRecord = LibraryFlightPlan(flightPlan: originalPlan, importedAt: .distantPast)
+        let secondRecord = LibraryFlightPlan(
+            flightPlan: copy(originalPlan, id: UUID()),
+            importedAt: .distantPast
+        )
+
+        _ = try state.loadFlightPlan(firstRecord, flightID: firstFlightID, pendingID: firstPendingID)
+        let duplicateDecision = try state.loadFlightPlan(
+            secondRecord,
+            flightID: secondFlightID,
+            pendingID: secondPendingID
+        )
+
+        #expect(duplicateDecision == .confirmationRequired(try #require(state.pendingFlightChange)))
+        #expect(state.pendingFlightChange?.id == firstPendingID)
+        #expect(state.pendingFlightChange?.candidateCockpit.flight?.id == firstFlightID)
+    }
+
     @Test("Validation failure preserves the exact current state")
     func validationFailurePreservesState() throws {
         let plan = try flightPlan()
@@ -302,6 +331,37 @@ struct AppFeatureStateTests {
         #expect(state.isLoading == false)
     }
 
+    @Test("Inspection selection resolves from the last successful records by stable ID")
+    func inspectionSelectionResolvesFromRecords() throws {
+        let record = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        var state = FlightPlansFeatureState()
+        let requestID = UUID()
+        state.beginLoading(requestID: requestID)
+        _ = state.completeLoading(requestID: requestID, records: [record], error: nil)
+
+        state.selectRecord(id: record.id)
+
+        #expect(state.selectedRecordID == record.id)
+        #expect(state.selectedRecord == record)
+    }
+
+    @Test("Successful refresh clears an inspection removed from the library")
+    func refreshClearsRemovedInspection() throws {
+        let record = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        var state = FlightPlansFeatureState()
+        let initialRequestID = UUID()
+        state.beginLoading(requestID: initialRequestID)
+        _ = state.completeLoading(requestID: initialRequestID, records: [record], error: nil)
+        state.selectRecord(id: record.id)
+
+        let refreshRequestID = UUID()
+        state.beginLoading(requestID: refreshRequestID)
+        _ = state.completeLoading(requestID: refreshRequestID, records: [], error: nil)
+
+        #expect(state.selectedRecordID == nil)
+        #expect(state.selectedRecord == nil)
+    }
+
     @Test("New import proposal requests commit of the exact proposal")
     func newImportProposalRequestsCommit() throws {
         let requestID = try #require(UUID(uuidString: "88888888-8888-8888-8888-888888888888"))
@@ -381,6 +441,76 @@ struct AppFeatureStateTests {
         #expect(record.isLoaded(in: plan))
         #expect(record.isLoaded(in: differentRevision) == false)
         #expect(record.isLoaded(in: nil) == false)
+    }
+
+    @Test("Inspection with no loaded Flight offers only Load in Cockpit")
+    func inspectionWithoutLoadedFlight() throws {
+        let record = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+
+        let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: nil)
+
+        #expect(presentation.primaryAction == .loadInCockpit)
+        #expect(presentation.secondaryActions.isEmpty)
+    }
+
+    @Test("Inspection of the loaded revision offers return and restart")
+    func inspectionOfLoadedRevision() throws {
+        let plan = try flightPlan()
+        let record = LibraryFlightPlan(flightPlan: plan, importedAt: .distantPast)
+
+        let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: plan)
+
+        #expect(presentation.primaryAction == .returnToCockpit)
+        #expect(presentation.secondaryActions == [.restartFlight])
+    }
+
+    @Test("Inspection of a saved update offers return, update, and restart")
+    func inspectionOfSavedUpdate() throws {
+        let loadedPlan = try flightPlan()
+        let savedPlan = copy(
+            loadedPlan,
+            modifiedAt: loadedPlan.modifiedAt.addingTimeInterval(60)
+        )
+        let record = LibraryFlightPlan(flightPlan: savedPlan, importedAt: .distantPast)
+
+        let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedPlan)
+
+        #expect(presentation.primaryAction == .returnToCockpit)
+        #expect(presentation.secondaryActions == [.loadUpdatedPlan, .restartFlight])
+    }
+
+    @Test("Inspection of a different Flight Plan offers only Load in Cockpit")
+    func inspectionOfDifferentPlan() throws {
+        let loadedPlan = try flightPlan()
+        let inspectedPlan = copy(loadedPlan, id: UUID())
+        let record = LibraryFlightPlan(flightPlan: inspectedPlan, importedAt: .distantPast)
+
+        let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedPlan)
+
+        #expect(presentation.primaryAction == .loadInCockpit)
+        #expect(presentation.secondaryActions.isEmpty)
+    }
+
+    @Test("Restart pins the loaded snapshot while update loads the saved revision")
+    func restartAndUpdateUseDistinctSnapshots() throws {
+        let loadedPlan = try flightPlan()
+        let savedUpdate = copy(
+            loadedPlan,
+            modifiedAt: loadedPlan.modifiedAt.addingTimeInterval(60)
+        )
+        let updateRecord = LibraryFlightPlan(flightPlan: savedUpdate, importedAt: .distantPast)
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(loadedPlan)
+        var restartState = AppFeatureState(selectedAppSection: .flightPlans, cockpit: cockpit)
+        var updateState = restartState
+
+        _ = try restartState.restartFlight(flightID: UUID())
+        _ = try updateState.loadUpdatedFlightPlan(updateRecord, flightID: UUID())
+
+        #expect(restartState.cockpit.flightPlan == loadedPlan)
+        #expect(updateState.cockpit.flightPlan == savedUpdate)
+        #expect(restartState.cockpit.flight?.legStartedAt == nil)
+        #expect(updateState.cockpit.flight?.legStartedAt == nil)
     }
 
     @Test("Newer and older replacements wait for explicit confirmation")
@@ -475,6 +605,28 @@ struct AppFeatureStateTests {
             vorDmeReferences: plan.vorDmeReferences,
             operationalContext: plan.operationalContext,
             plannedNavigation: .eligible(twoLegPlanned)
+        )
+    }
+
+    private func copy(
+        _ plan: FlightPlan,
+        id: UUID? = nil,
+        modifiedAt: Date? = nil
+    ) -> FlightPlan {
+        FlightPlan(
+            id: id ?? plan.id,
+            title: plan.title,
+            createdAt: plan.createdAt,
+            modifiedAt: modifiedAt ?? plan.modifiedAt,
+            parameters: plan.parameters,
+            waypoints: plan.waypoints,
+            legs: plan.legs,
+            identificationPoints: plan.identificationPoints,
+            altitudeChanges: plan.altitudeChanges,
+            frequencyChanges: plan.frequencyChanges,
+            vorDmeReferences: plan.vorDmeReferences,
+            operationalContext: plan.operationalContext,
+            plannedNavigation: plan.plannedNavigation
         )
     }
 }

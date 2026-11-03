@@ -11,17 +11,20 @@ struct AppFeatureState: Equatable, Sendable {
     private(set) var cockpit: CockpitFeatureState
     private(set) var flightPlans: FlightPlansFeatureState
     private(set) var pendingFlightChange: PendingFlightChange?
+    private(set) var cockpitPresentationRequestID: UUID?
 
     init(
         selectedAppSection: AppSection = .flightPlans,
         cockpit: CockpitFeatureState = CockpitFeatureState(),
         flightPlans: FlightPlansFeatureState = FlightPlansFeatureState(),
-        pendingFlightChange: PendingFlightChange? = nil
+        pendingFlightChange: PendingFlightChange? = nil,
+        cockpitPresentationRequestID: UUID? = nil
     ) {
         self.selectedAppSection = selectedAppSection
         self.cockpit = cockpit
         self.flightPlans = flightPlans
         self.pendingFlightChange = pendingFlightChange
+        self.cockpitPresentationRequestID = cockpitPresentationRequestID
     }
 
     mutating func selectAppSection(_ section: AppSection) {
@@ -97,6 +100,7 @@ struct AppFeatureState: Equatable, Sendable {
         }
         cockpit = pendingFlightChange.candidateCockpit
         selectedAppSection = .cockpit
+        cockpitPresentationRequestID = cockpit.flight?.id
         self.pendingFlightChange = nil
         return true
     }
@@ -107,12 +111,17 @@ struct AppFeatureState: Equatable, Sendable {
         flightID: UUID,
         pendingID: UUID
     ) throws -> LoadFlightPlanDecision {
+        if let pendingFlightChange {
+            return .confirmationRequired(pendingFlightChange)
+        }
+
         var candidate = CockpitFeatureState(progressionPolicy: cockpit.progressionPolicy)
         try candidate.accept(snapshot, flightID: flightID)
 
         guard cockpit.hasProtectedPilotWork else {
             cockpit = candidate
             selectedAppSection = .cockpit
+            cockpitPresentationRequestID = flightID
             pendingFlightChange = nil
             return .loaded
         }
@@ -129,6 +138,13 @@ struct AppFeatureState: Equatable, Sendable {
 
 enum CockpitFeatureIntent: Equatable, Sendable {
     case chooseFlightPlan
+}
+
+enum FlightPlansFeatureIntent: Equatable, Sendable {
+    case loadInCockpit(LibraryFlightPlan)
+    case returnToCockpit
+    case loadUpdatedPlan(LibraryFlightPlan)
+    case restartFlight
 }
 
 enum AppFeatureError: Error, Equatable, Sendable {
@@ -163,6 +179,11 @@ struct FlightPlansFeatureState: Equatable, Sendable {
         inFlightRequestID != nil
     }
 
+    var selectedRecord: LibraryFlightPlan? {
+        guard let selectedRecordID else { return nil }
+        return records.first { $0.id == selectedRecordID }
+    }
+
     mutating func beginLoading(requestID: UUID) {
         inFlightRequestID = requestID
         error = nil
@@ -178,6 +199,9 @@ struct FlightPlansFeatureState: Equatable, Sendable {
         inFlightRequestID = nil
         if let records {
             self.records = records
+            if let selectedRecordID, records.contains(where: { $0.id == selectedRecordID }) == false {
+                self.selectedRecordID = nil
+            }
             self.error = nil
         } else {
             self.error = error
@@ -256,6 +280,10 @@ struct FlightPlansFeatureState: Equatable, Sendable {
         presentation = nil
     }
 
+    mutating func presentFlightChangeFailure() {
+        presentation = .flightChangeFailure
+    }
+
     mutating func selectRecord(id: UUID) {
         selectedRecordID = id
     }
@@ -276,6 +304,7 @@ enum FlightPlansPresentation: Equatable, Sendable {
     case alreadyImported(title: String)
     case imported(title: String)
     case failure(FlightPlansFailure)
+    case flightChangeFailure
 }
 
 enum FlightPlansFailure: Equatable, Sendable {

@@ -38,6 +38,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertLessThan(flightPlansTab.frame.minX, settingsTab.frame.minX)
         XCTAssertTrue(flightPlansTab.isSelected)
         XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
+        XCTAssertTrue(app.buttons["add-flight-plan"].exists)
 
         cockpitTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(cockpitTab.isSelected)
@@ -53,9 +54,104 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     func testFreshLaunchShowsEmptyFlightPlans() throws {
         let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launch()
         XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Add a prepared .fplnav plan from Navigation Editor. Saved Flight Plans remain available offline."].exists)
+        XCTAssertTrue(app.buttons["add-flight-plan"].exists)
+    }
+
+    @MainActor
+    func testPopulatedFlightPlansShowsRowHierarchyAndLoadedRevisionBadge() throws {
+        let data = try oneLegPlanData()
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let project = try XCTUnwrap(object["project"] as? [String: Any])
+        let title = try XCTUnwrap(project["title"] as? String)
+        let id = try XCTUnwrap(project["id"] as? String)
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS"] = data.base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN"] = data.base64EncodedString()
+        app.launch()
+
+        let row = app.buttons["flight-plan-row-\(id.uppercased())"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains(title))
+        XCTAssertTrue(row.label.contains("Loaded in Cockpit"))
+        XCTAssertTrue(app.staticTexts["Most recently imported"].exists)
+        XCTAssertTrue(app.buttons["add-flight-plan"].exists)
+    }
+
+    @MainActor
+    func testAddPickerCancellationPreservesEmptyLibrary() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launch()
+        let add = app.buttons["add-flight-plan"]
+        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        add.tap()
+
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        cancel.tap()
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["Couldn’t add this plan"].exists)
+    }
+
+    @MainActor
+    func testNewAndSameRevisionImportOutcomes() throws {
+        let data = try oneLegPlanData()
+        let title = try projectTitle(in: data)
+        var app = launchFlightPlans(importData: data)
+        XCTAssertTrue(app.alerts["Flight Plan added"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts["Flight Plan added"].staticTexts[title].exists || app.alerts["Flight Plan added"].exists)
+        app.alerts["Flight Plan added"].buttons["Done"].tap()
+        XCTAssertEqual(
+            app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'" )).count,
+            1
+        )
+
+        app.terminate()
+        app = launchFlightPlans(seedData: [data], importData: data)
+        XCTAssertTrue(app.alerts["Already imported"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'" )).count, 1)
+    }
+
+    @MainActor
+    func testNewerReplacementConfirmsAndDoesNotDuplicate() throws {
+        let original = try oneLegPlanData()
+        let newer = try changingRevision(in: original, by: 60)
+        let app = launchFlightPlans(seedData: [original], importData: newer)
+        let confirmation = app.alerts["Replace saved plan?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 10))
+        confirmation.buttons["Replace"].tap()
+        XCTAssertTrue(app.alerts["Flight Plan added"].waitForExistence(timeout: 5))
+        app.alerts["Flight Plan added"].buttons["Done"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'" )).count, 1)
+    }
+
+    @MainActor
+    func testOlderReplacementWarnsAndCancellationPreservesSavedCopy() throws {
+        let original = try oneLegPlanData()
+        let older = try changingRevision(in: original, by: -60)
+        let app = launchFlightPlans(seedData: [original], importData: older)
+        let confirmation = app.alerts["Replace with older revision?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        confirmation.buttons["Cancel"].tap()
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'" )).count, 1)
+        XCTAssertFalse(app.alerts["Flight Plan added"].exists)
+    }
+
+    @MainActor
+    func testInvalidInputAndPersistenceFailureShowNoFalseSuccess() throws {
+        var app = launchFlightPlans(importData: Data("invalid".utf8))
+        XCTAssertTrue(app.alerts["Couldn’t add this plan"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
+
+        app.terminate()
+        app = launchFlightPlans(importData: try oneLegPlanData(), storageFailure: true)
+        XCTAssertTrue(app.alerts["Plan wasn’t saved"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
     }
 
     @MainActor
@@ -419,6 +515,46 @@ final class NavigationFlightUITests: XCTestCase {
         }
         object["execution"] = execution
         return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func launchFlightPlans(
+        seedData: [Data] = [],
+        importData: Data? = nil,
+        storageFailure: Bool = false
+    ) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        if seedData.isEmpty == false {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS"] = seedData
+                .map { $0.base64EncodedString() }
+                .joined(separator: ",")
+        }
+        if let importData {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN"] = importData.base64EncodedString()
+        }
+        if storageFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_STORAGE_FAILURE"] = "1"
+        }
+        app.launch()
+        return app
+    }
+
+    private func projectTitle(in data: Data) throws -> String {
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let project = try XCTUnwrap(object["project"] as? [String: Any])
+        return try XCTUnwrap(project["title"] as? String)
+    }
+
+    private func changingRevision(in data: Data, by interval: TimeInterval) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var project = try XCTUnwrap(object["project"] as? [String: Any])
+        let value = try XCTUnwrap(project["modifiedAt"] as? String)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let modifiedAt = try XCTUnwrap(formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value))
+        project["modifiedAt"] = formatter.string(from: modifiedAt.addingTimeInterval(interval))
+        object["project"] = project
+        return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
     }
 
     private func twoLegPlanData() throws -> Data {

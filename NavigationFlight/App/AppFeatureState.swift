@@ -39,6 +39,10 @@ struct AppFeatureState: Equatable, Sendable {
         self.cockpit = cockpit
     }
 
+    mutating func updateFlightPlans(_ flightPlans: FlightPlansFeatureState) {
+        self.flightPlans = flightPlans
+    }
+
     mutating func loadFlightPlan(
         _ snapshot: LibraryFlightPlan,
         flightID: UUID,
@@ -149,15 +153,18 @@ struct PendingFlightChange: Equatable, Sendable, Identifiable {
 
 struct FlightPlansFeatureState: Equatable, Sendable {
     private(set) var records: [LibraryFlightPlan] = []
-    private(set) var loadingRequestID: UUID?
+    private(set) var selectedRecordID: UUID?
+    private(set) var inFlightRequestID: UUID?
+    private(set) var pendingImport: PendingFlightPlanImport?
+    private(set) var presentation: FlightPlansPresentation?
     private(set) var error: FlightPlanLibraryError?
 
     var isLoading: Bool {
-        loadingRequestID != nil
+        inFlightRequestID != nil
     }
 
     mutating func beginLoading(requestID: UUID) {
-        loadingRequestID = requestID
+        inFlightRequestID = requestID
         error = nil
     }
 
@@ -167,8 +174,8 @@ struct FlightPlansFeatureState: Equatable, Sendable {
         records: [LibraryFlightPlan]?,
         error: FlightPlanLibraryError?
     ) -> Bool {
-        guard loadingRequestID == requestID else { return false }
-        loadingRequestID = nil
+        guard inFlightRequestID == requestID else { return false }
+        inFlightRequestID = nil
         if let records {
             self.records = records
             self.error = nil
@@ -176,5 +183,118 @@ struct FlightPlansFeatureState: Equatable, Sendable {
             self.error = error
         }
         return true
+    }
+
+    @discardableResult
+    mutating func beginImport(requestID: UUID) -> Bool {
+        guard inFlightRequestID == nil else { return false }
+        inFlightRequestID = requestID
+        error = nil
+        presentation = nil
+        return true
+    }
+
+    mutating func completeImportPreparation(
+        requestID: UUID,
+        proposalID: UUID,
+        proposal: ImportProposal
+    ) -> FlightPlanImportDecision? {
+        guard inFlightRequestID == requestID else { return nil }
+        inFlightRequestID = nil
+        switch proposal {
+        case .new:
+            pendingImport = PendingFlightPlanImport(id: proposalID, proposal: proposal)
+            return .commit(proposalID: proposalID)
+        case .sameRevision(let existing):
+            pendingImport = nil
+            presentation = .alreadyImported(title: existing.flightPlan.title)
+            return .some(.none)
+        case .replaceNewer, .replaceOlder:
+            pendingImport = PendingFlightPlanImport(id: proposalID, proposal: proposal)
+            return .confirmation(proposalID: proposalID)
+        }
+    }
+
+    mutating func beginCommit(proposalID: UUID, requestID: UUID) -> ImportProposal? {
+        guard inFlightRequestID == nil, pendingImport?.id == proposalID else { return nil }
+        inFlightRequestID = requestID
+        return pendingImport?.proposal
+    }
+
+    @discardableResult
+    mutating func completeCommit(
+        requestID: UUID,
+        proposalID: UUID,
+        records: [LibraryFlightPlan]
+    ) -> Bool {
+        guard inFlightRequestID == requestID, pendingImport?.id == proposalID else { return false }
+        let title = pendingImport?.proposal.candidateTitle ?? "Flight Plan"
+        self.records = records
+        inFlightRequestID = nil
+        pendingImport = nil
+        presentation = .imported(title: title)
+        return true
+    }
+
+    @discardableResult
+    mutating func failImport(requestID: UUID, failure: FlightPlansFailure) -> Bool {
+        guard inFlightRequestID == requestID else { return false }
+        inFlightRequestID = nil
+        pendingImport = nil
+        presentation = .failure(failure)
+        return true
+    }
+
+    @discardableResult
+    mutating func cancelPendingImport(proposalID: UUID) -> Bool {
+        guard pendingImport?.id == proposalID, inFlightRequestID == nil else { return false }
+        pendingImport = nil
+        return true
+    }
+
+    mutating func dismissPresentation() {
+        presentation = nil
+    }
+
+    mutating func selectRecord(id: UUID) {
+        selectedRecordID = id
+    }
+}
+
+struct PendingFlightPlanImport: Equatable, Sendable, Identifiable {
+    let id: UUID
+    let proposal: ImportProposal
+}
+
+enum FlightPlanImportDecision: Equatable, Sendable {
+    case commit(proposalID: UUID)
+    case confirmation(proposalID: UUID)
+    case none
+}
+
+enum FlightPlansPresentation: Equatable, Sendable {
+    case alreadyImported(title: String)
+    case imported(title: String)
+    case failure(FlightPlansFailure)
+}
+
+enum FlightPlansFailure: Equatable, Sendable {
+    case unreadableFile
+    case invalidFlightPlan
+    case staleProposal
+    case storageFailure
+    case libraryUnavailable
+}
+
+private extension ImportProposal {
+    var candidateTitle: String {
+        switch self {
+        case .new(let prepared):
+            prepared.flightPlan.title
+        case .sameRevision(let existing):
+            existing.flightPlan.title
+        case .replaceNewer(let replacement), .replaceOlder(let replacement):
+            replacement.candidate.flightPlan.title
+        }
     }
 }

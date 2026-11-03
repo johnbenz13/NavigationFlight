@@ -25,7 +25,7 @@ actor DiskFlightPlanStore: FlightPlanStore {
     }
 
     func records() throws -> [StoredFlightPlan] {
-        guard fileManager.fileExists(atPath: rootDirectory.path()) else { return [] }
+        guard fileManager.fileExists(atPath: rootDirectory.path(percentEncoded: false)) else { return [] }
         let directories: [URL]
         do {
             directories = try fileManager.contentsOfDirectory(
@@ -45,7 +45,7 @@ actor DiskFlightPlanStore: FlightPlanStore {
     func replace(_ record: StoredFlightPlan, expecting expectedModifiedAt: Date?) throws {
         let destination = recordDirectory(id: record.id)
         let existingRevision: Date?
-        if fileManager.fileExists(atPath: destination.path()) {
+        if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
             existingRevision = try readMetadata(at: destination, fallbackID: record.id).modifiedAt
         } else {
             existingRevision = nil
@@ -71,7 +71,7 @@ actor DiskFlightPlanStore: FlightPlanStore {
             try writeAndSynchronize(try Self.encoder.encode(metadata), to: temporary.appending(path: "metadata.json"))
             try beforeInstall(temporary)
 
-            if fileManager.fileExists(atPath: destination.path()) {
+            if fileManager.fileExists(atPath: destination.path(percentEncoded: false)) {
                 _ = try fileManager.replaceItemAt(destination, withItemAt: temporary)
             } else {
                 try fileManager.moveItem(at: temporary, to: destination)
@@ -88,10 +88,10 @@ actor DiskFlightPlanStore: FlightPlanStore {
     func remove(id: UUID) throws {
         let directory = recordDirectory(id: id)
         do {
-            if fileManager.fileExists(atPath: directory.path()) {
+            if fileManager.fileExists(atPath: directory.path(percentEncoded: false)) {
                 try fileManager.removeItem(at: directory)
             }
-            guard !fileManager.fileExists(atPath: directory.path()) else {
+            guard !fileManager.fileExists(atPath: directory.path(percentEncoded: false)) else {
                 throw FlightPlanStoreError.operationFailed(id: id)
             }
         } catch let error as FlightPlanStoreError {
@@ -148,14 +148,50 @@ actor DiskFlightPlanStore: FlightPlanStore {
 
     nonisolated private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer()
+            try container.encode(iso8601String(from: date, includingFractionalSeconds: true))
+        }
         encoder.outputFormatting = [.sortedKeys]
         return encoder
     }
 
     nonisolated private static var decoder: JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            if let date = iso8601Date(from: value, includingFractionalSeconds: true)
+                ?? iso8601Date(from: value, includingFractionalSeconds: false) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Expected an ISO 8601 date."
+            )
+        }
         return decoder
+    }
+
+    nonisolated private static func iso8601String(
+        from date: Date,
+        includingFractionalSeconds: Bool
+    ) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = includingFractionalSeconds
+            ? [.withInternetDateTime, .withFractionalSeconds]
+            : [.withInternetDateTime]
+        return formatter.string(from: date)
+    }
+
+    nonisolated private static func iso8601Date(
+        from value: String,
+        includingFractionalSeconds: Bool
+    ) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = includingFractionalSeconds
+            ? [.withInternetDateTime, .withFractionalSeconds]
+            : [.withInternetDateTime]
+        return formatter.date(from: value)
     }
 }

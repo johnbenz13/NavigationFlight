@@ -25,6 +25,22 @@ struct DiskFlightPlanStoreTests {
         #expect(metadata["storageSchemaVersion"] as? Int == 1)
     }
 
+    @Test("First import creates a missing library root and installs the record")
+    func firstImportCreatesMissingRoot() async throws {
+        let parent = try temporaryRoot()
+        defer { try? FileManager.default.removeItem(at: parent) }
+        let root = parent.appending(path: "Library/Application Support/FlightPlans", directoryHint: .isDirectory)
+        let record = try sampleRecord()
+        let store = DiskFlightPlanStore(rootDirectory: root)
+
+        try await store.replace(record, expecting: nil)
+
+        let destination = root.appending(path: record.id.uuidString.lowercased(), directoryHint: .isDirectory)
+        #expect(FileManager.default.fileExists(atPath: destination.path(percentEncoded: false)))
+        #expect(try destination.resourceValues(forKeys: [.isHiddenKey]).isHidden == false)
+        #expect(try await store.records() == [record])
+    }
+
     @Test("A failed replacement preserves the prior record and cleans temporary artifacts")
     func failedReplacementPreservesRecord() async throws {
         let root = try temporaryRoot()

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @State private var appState: AppFeatureState
+    @State private var idleTimerCoordinator: IdleTimerCoordinator
     private let flightPlanLibrary: FlightPlanLibrary
     private let flightPlanFileReader = FlightPlanFileReader()
     private let debugLibrarySeedData: [Data]
@@ -118,6 +119,9 @@ struct RootView: View {
             initialAppState.presentPositionCheckPermissionEducation()
         }
         _appState = State(initialValue: initialAppState)
+        _idleTimerCoordinator = State(
+            initialValue: IdleTimerCoordinator(controller: UIApplicationIdleTimerController())
+        )
     }
 
     var body: some View {
@@ -156,6 +160,15 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .onAppear {
+            synchronizeIdleTimer()
+        }
+        .onChange(of: appState.cockpit.isAcceptedFlightInProgress) { _, _ in
+            synchronizeIdleTimer()
+        }
+        .onDisappear {
+            idleTimerCoordinator.teardown()
+        }
         .alert(flightChangeConfirmationTitle, isPresented: flightChangeConfirmationPresented) {
             Button(flightChangeConfirmationAction, role: .destructive) {
                 guard let id = appState.pendingFlightChange?.id else { return }
@@ -188,6 +201,12 @@ struct RootView: View {
         Binding(
             get: { appState.selectedAppSection },
             set: { appState.selectAppSection($0) }
+        )
+    }
+
+    private func synchronizeIdleTimer() {
+        idleTimerCoordinator.synchronize(
+            isAcceptedFlightInProgress: appState.cockpit.isAcceptedFlightInProgress
         )
     }
 

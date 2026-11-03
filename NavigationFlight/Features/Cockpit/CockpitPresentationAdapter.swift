@@ -302,7 +302,96 @@ struct LegStartChecklistPresentation: Equatable, Sendable {
     let plannedIndicatedAirspeedKnots: Double?
 }
 
+struct PositionCheckPresentation: Equatable, Sendable {
+    enum Status: Equatable, Sendable {
+        case ready
+        case acquiring
+        case unavailable
+        case permissionRequired
+    }
+
+    let status: Status
+    let statusLabel: String
+    let title: String
+    let detail: String
+    let explanation: String
+    let remedy: String
+    let systemImage: String
+    let isHoldEligible: Bool
+}
+
 struct CockpitPresentationAdapter: Sendable {
+    func makePositionCheckPresentation(
+        for availability: LocationAvailability
+    ) -> PositionCheckPresentation {
+        switch availability {
+        case .ready:
+            return PositionCheckPresentation(
+                status: .ready,
+                statusLabel: "READY",
+                title: "Position Check",
+                detail: "GPS Ready · Hold 1 sec",
+                explanation: "A recent, accurate GPS position is available.",
+                remedy: "Hold for approximately one second",
+                systemImage: "location.shield.fill",
+                isHoldEligible: true
+            )
+        case .acquiring:
+            return PositionCheckPresentation(
+                status: .acquiring,
+                statusLabel: "ACQUIRING",
+                title: "Position Check",
+                detail: "Acquiring GPS…",
+                explanation: "Waiting for a recent, accurate GPS position.",
+                remedy: "Continue navigating manually",
+                systemImage: "location.circle",
+                isHoldEligible: false
+            )
+        case .unavailable(let reason):
+            return PositionCheckPresentation(
+                status: .unavailable,
+                statusLabel: "UNAVAILABLE",
+                title: "Position Check",
+                detail: "GPS unavailable · Signal or accuracy insufficient",
+                explanation: unavailableExplanation(for: reason),
+                remedy: "Try again",
+                systemImage: "location.slash",
+                isHoldEligible: false
+            )
+        case .permissionRequired(let reason):
+            return PositionCheckPresentation(
+                status: .permissionRequired,
+                statusLabel: "PERMISSION REQUIRED",
+                title: "Position Check",
+                detail: "Location permission required; manual navigation remains available",
+                explanation: permissionExplanation(for: reason),
+                remedy: reason == .notDetermined ? "Allow Location" : "Open Settings",
+                systemImage: "location.slash.fill",
+                isHoldEligible: false
+            )
+        }
+    }
+
+    private func unavailableExplanation(for reason: LocationUnavailabilityReason) -> String {
+        switch reason {
+        case .servicesDisabled: "Location Services are disabled"
+        case .signalLost: "GPS signal is temporarily unavailable"
+        case .stale: "The latest GPS position is stale"
+        case .invalidAccuracy: "GPS reported invalid accuracy"
+        case .insufficientAccuracy: "GPS accuracy is insufficient"
+        case .outOfOrder: "An older GPS position was ignored"
+        case .sourceFailure: "GPS is unavailable"
+        }
+    }
+
+    private func permissionExplanation(for reason: LocationPermissionReason) -> String {
+        switch reason {
+        case .notDetermined: "Allow While Using the App to prepare Position Check."
+        case .denied: "Location permission was denied."
+        case .restricted: "Location permission is restricted on this device."
+        }
+    }
+
     func makeLegStartChecklist(
         flightPlan: FlightPlan,
         flight: Flight,

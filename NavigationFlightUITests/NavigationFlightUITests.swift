@@ -743,6 +743,50 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPositionCheckPermissionEducationCanContinueManually() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = try oneLegPlanData().base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION"] = "1"
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"] = "permission-required"
+        app.launch()
+
+        XCTAssertTrue(app.descendants(matching: .any)["position-check-permission-education"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Allow Location for Position Check"].exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'ten seconds'")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'No GPS track'")).firstMatch.exists)
+        app.buttons["position-check-not-now"].tap()
+
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testPositionCheckReadinessFixturesPreserveManualNavigationAndHideGPSValues() throws {
+        let fixtures = [
+            ("ready", "READY"),
+            ("acquiring", "ACQUIRING"),
+            ("unavailable", "UNAVAILABLE"),
+            ("permission-required", "PERMISSION REQUIRED")
+        ]
+
+        for (fixture, status) in fixtures {
+            let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: fixture)
+            app.buttons["start-leg"].tap()
+
+            let control = app.descendants(matching: .any)["position-check-control"]
+            XCTAssertTrue(control.waitForExistence(timeout: 3), "Missing \(status) fixture")
+            XCTAssertTrue(control.label.contains(status))
+            XCTAssertTrue(control.label.contains("Position Check"))
+            XCTAssertFalse(control.label.contains("32."))
+            XCTAssertFalse(control.label.localizedCaseInsensitiveContains("metres"))
+            XCTAssertFalse(control.label.localizedCaseInsensitiveContains("accuracy 50"))
+            XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+            XCTAssertTrue(app.buttons["reached-now"].exists)
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
@@ -754,7 +798,8 @@ final class NavigationFlightUITests: XCTestCase {
     private func launchCockpit(
         planData: Data,
         progressionPolicy: String? = nil,
-        preferredContentSizeCategory: String? = nil
+        preferredContentSizeCategory: String? = nil,
+        positionCheckState: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -764,6 +809,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if let preferredContentSizeCategory {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSizeCategory]
+        }
+        if let positionCheckState {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"] = positionCheckState
         }
         app.launch()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))

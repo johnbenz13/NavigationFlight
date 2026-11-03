@@ -1,0 +1,73 @@
+import CoreLocation
+import Foundation
+
+nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSource, @unchecked Sendable {
+    private let locationManager = CLLocationManager()
+
+    func updates() -> AsyncThrowingStream<LocationSourceEvent, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let authorization = await authorizationEvent()
+                    guard authorization == .whenInUse else {
+                        continuation.yield(.authorization(authorization))
+                        continuation.finish()
+                        return
+                    }
+                    for try await update in CLLocationUpdate.liveUpdates(.airborne) {
+                        if Task.isCancelled { break }
+                        if update.authorizationDeniedGlobally {
+                            continuation.yield(.servicesDisabled)
+                        } else if update.authorizationDenied {
+                            let authorization = await authorizationEvent()
+                            continuation.yield(.authorization(authorization))
+                        } else if let location = update.location {
+                            continuation.yield(
+                                .sample(Self.sample(from: location), receivedAt: .now)
+                            )
+                        } else {
+                            continuation.yield(.signalLost)
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    func requestWhenInUseAuthorization() async {
+        await MainActor.run {
+            locationManager.requestWhenInUseAuthorization()
+        }
+    }
+
+    private func authorizationEvent() async -> LocationAuthorization {
+        await MainActor.run {
+            switch locationManager.authorizationStatus {
+            case .notDetermined: .notDetermined
+            case .restricted: .restricted
+            case .denied: .denied
+            case .authorizedAlways, .authorizedWhenInUse, .authorized: .whenInUse
+            @unknown default: .denied
+            }
+        }
+    }
+
+    private static func sample(from location: CLLocation) -> AircraftLocationSample {
+        AircraftLocationSample(
+            coordinate: WGS84Coordinate(
+                latitudeDegrees: location.coordinate.latitude,
+                longitudeDegrees: location.coordinate.longitude
+            ),
+            observedAt: location.timestamp,
+            horizontalAccuracyMeters: location.horizontalAccuracy,
+            trueCourseDegrees: location.course >= 0 ? location.course : nil,
+            courseAccuracyDegrees: location.courseAccuracy >= 0 ? location.courseAccuracy : nil,
+            groundSpeedMetersPerSecond: location.speed >= 0 ? location.speed : nil,
+            speedAccuracyMetersPerSecond: location.speedAccuracy >= 0 ? location.speedAccuracy : nil
+        )
+    }
+}

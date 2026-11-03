@@ -54,7 +54,10 @@ struct DiskFlightPlanStoreTests {
             sourceData: Data("replacement".utf8),
             storageSchemaVersion: 1
         )
-        let failing = DiskFlightPlanStore(rootDirectory: root) { _ in throw TestFailure.expected }
+        let failing = DiskFlightPlanStore(
+            rootDirectory: root,
+            beforeInstall: { _ in throw TestFailure.expected }
+        )
 
         await #expect(throws: FlightPlanStoreError.operationFailed(id: original.id)) {
             try await failing.replace(replacement, expecting: original.modifiedAt)

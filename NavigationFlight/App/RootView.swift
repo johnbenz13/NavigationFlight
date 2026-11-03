@@ -7,6 +7,8 @@ struct RootView: View {
     private let debugLibrarySeedData: [Data]
     private let debugImportData: Data?
     private let debugShouldFailFlightChange: Bool
+    private let locationService: AircraftLocationService
+    private let shouldPresentPositionCheckEducation: Bool
 
     init() {
         let defaultLibraryDirectory = FileManager.default.urls(
@@ -30,11 +32,19 @@ struct RootView: View {
         debugImportData = environment["NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN"]
             .flatMap { Data(base64Encoded: $0) }
         debugShouldFailFlightChange = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] == "1"
+        shouldPresentPositionCheckEducation = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION"] == "1"
+        if let fixture = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"] {
+            locationService = AircraftLocationService(source: FixtureAircraftLocationSource.make(state: fixture))
+        } else {
+            locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
+        }
 #else
         libraryDirectory = defaultLibraryDirectory
         debugLibrarySeedData = []
         debugImportData = nil
         debugShouldFailFlightChange = false
+        shouldPresentPositionCheckEducation = true
+        locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
 #endif
         let store: any FlightPlanStore
 #if DEBUG
@@ -84,10 +94,14 @@ struct RootView: View {
             selectedAppSection = .flightPlans
         }
 #endif
-        _appState = State(initialValue: AppFeatureState(
+        var initialAppState = AppFeatureState(
             selectedAppSection: selectedAppSection,
             cockpit: cockpit
-        ))
+        )
+        if shouldPresentPositionCheckEducation, cockpit.flight != nil {
+            initialAppState.presentPositionCheckPermissionEducation()
+        }
+        _appState = State(initialValue: initialAppState)
     }
 
     var body: some View {
@@ -99,6 +113,8 @@ struct RootView: View {
                         set: { appState.updateCockpit($0) }
                     ),
                     presentationRequestID: appState.cockpitPresentationRequestID,
+                    locationService: locationService,
+                    isSectionSelected: appState.selectedAppSection == .cockpit,
                     onIntent: handleCockpitIntent
                 )
             }
@@ -126,7 +142,9 @@ struct RootView: View {
         .alert(flightChangeConfirmationTitle, isPresented: flightChangeConfirmationPresented) {
             Button(flightChangeConfirmationAction, role: .destructive) {
                 guard let id = appState.pendingFlightChange?.id else { return }
-                appState.confirmPendingFlightChange(id: id)
+                if appState.confirmPendingFlightChange(id: id), shouldPresentPositionCheckEducation {
+                    appState.presentPositionCheckPermissionEducation()
+                }
             }
             Button("Cancel", role: .cancel) {
                 guard let id = appState.pendingFlightChange?.id else { return }
@@ -143,6 +161,9 @@ struct RootView: View {
             }
         } message: {
             Text("The current Flight and this inspection are unchanged.")
+        }
+        .fullScreenCover(isPresented: positionCheckEducationPresented) {
+            PositionCheckPermissionEducationView(onIntent: handlePositionCheckPermissionIntent)
         }
     }
 
@@ -164,11 +185,13 @@ struct RootView: View {
         do {
             switch intent {
             case .loadInCockpit(let record):
-                _ = try appState.loadFlightPlan(record, flightID: UUID())
+                let decision = try appState.loadFlightPlan(record, flightID: UUID())
+                presentPositionCheckEducationIfLoaded(decision)
             case .returnToCockpit:
                 appState.returnToCockpit()
             case .loadUpdatedPlan(let record):
-                _ = try appState.loadUpdatedFlightPlan(record, flightID: UUID())
+                let decision = try appState.loadUpdatedFlightPlan(record, flightID: UUID())
+                presentPositionCheckEducationIfLoaded(decision)
             case .restartFlight:
                 _ = try appState.restartFlight(flightID: UUID())
             }
@@ -191,6 +214,28 @@ struct RootView: View {
                 flightPlans.presentFlightChangeFailure()
                 appState.updateFlightPlans(flightPlans)
             }
+        }
+    }
+
+    private var positionCheckEducationPresented: Binding<Bool> {
+        Binding(
+            get: { appState.positionCheckPermissionEducation == .presented },
+            set: { _ in }
+        )
+    }
+
+    private func presentPositionCheckEducationIfLoaded(_ decision: LoadFlightPlanDecision) {
+        guard shouldPresentPositionCheckEducation, decision == .loaded else { return }
+        appState.presentPositionCheckPermissionEducation()
+    }
+
+    private func handlePositionCheckPermissionIntent(_ intent: PositionCheckPermissionIntent) {
+        guard let effect = appState.handlePositionCheckPermissionIntent(intent) else { return }
+        switch effect {
+        case .requestWhenInUseAuthorization:
+            Task { await locationService.requestWhenInUseAuthorization() }
+        case .openSystemSettings:
+            break
         }
     }
 

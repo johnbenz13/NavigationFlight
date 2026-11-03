@@ -12,19 +12,22 @@ struct AppFeatureState: Equatable, Sendable {
     private(set) var flightPlans: FlightPlansFeatureState
     private(set) var pendingFlightChange: PendingFlightChange?
     private(set) var cockpitPresentationRequestID: UUID?
+    private(set) var positionCheckPermissionEducation: PositionCheckPermissionEducationState
 
     init(
         selectedAppSection: AppSection = .flightPlans,
         cockpit: CockpitFeatureState = CockpitFeatureState(),
         flightPlans: FlightPlansFeatureState = FlightPlansFeatureState(),
         pendingFlightChange: PendingFlightChange? = nil,
-        cockpitPresentationRequestID: UUID? = nil
+        cockpitPresentationRequestID: UUID? = nil,
+        positionCheckPermissionEducation: PositionCheckPermissionEducationState = .notPresented
     ) {
         self.selectedAppSection = selectedAppSection
         self.cockpit = cockpit
         self.flightPlans = flightPlans
         self.pendingFlightChange = pendingFlightChange
         self.cockpitPresentationRequestID = cockpitPresentationRequestID
+        self.positionCheckPermissionEducation = positionCheckPermissionEducation
     }
 
     mutating func selectAppSection(_ section: AppSection) {
@@ -83,6 +86,26 @@ struct AppFeatureState: Equatable, Sendable {
         selectedAppSection = .cockpit
     }
 
+    mutating func presentPositionCheckPermissionEducation() {
+        guard positionCheckPermissionEducation == .notPresented else { return }
+        positionCheckPermissionEducation = .presented
+    }
+
+    mutating func handlePositionCheckPermissionIntent(
+        _ intent: PositionCheckPermissionIntent
+    ) -> PositionCheckPermissionEffect? {
+        switch intent {
+        case .requestWhenInUse:
+            positionCheckPermissionEducation = .completed
+            return .requestWhenInUseAuthorization
+        case .continueManually:
+            positionCheckPermissionEducation = .completed
+            return nil
+        case .openSettings:
+            return .openSystemSettings
+        }
+    }
+
     @discardableResult
     mutating func cancelPendingFlightChange(id: UUID) -> Bool {
         guard pendingFlightChange?.id == id else { return false }
@@ -136,6 +159,23 @@ struct AppFeatureState: Equatable, Sendable {
 enum CockpitFeatureIntent: Equatable, Sendable {
     case chooseFlightPlan
     case restartFlight
+}
+
+enum PositionCheckPermissionEducationState: Equatable, Sendable {
+    case notPresented
+    case presented
+    case completed
+}
+
+enum PositionCheckPermissionIntent: Equatable, Sendable {
+    case requestWhenInUse
+    case continueManually
+    case openSettings
+}
+
+enum PositionCheckPermissionEffect: Equatable, Sendable {
+    case requestWhenInUseAuthorization
+    case openSystemSettings
 }
 
 enum FlightPlansFeatureIntent: Equatable, Sendable {

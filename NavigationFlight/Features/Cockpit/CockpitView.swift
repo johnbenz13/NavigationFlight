@@ -167,6 +167,8 @@ struct CockpitView: View {
     let flight: Flight
     let areDriftLinesVisible: Bool
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
+    var positionCheck: PositionCheckPresentation? = nil
+    var onPositionCheckAction: (PositionCheckControlAction) -> Void = { _ in }
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: (CockpitRestoration) -> Void
@@ -618,7 +620,7 @@ struct CockpitView: View {
                     readyFrequencyRow
                 }
 
-                waypointReachedButton
+                positionCheckAndProgressionControls
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
@@ -1014,8 +1016,8 @@ struct CockpitView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                waypointReachedButton
-                    .frame(maxWidth: 350)
+                positionCheckAndProgressionControls
+                    .frame(maxWidth: 520)
             }
         case .completed:
             HStack(spacing: 24) {
@@ -1032,7 +1034,7 @@ struct CockpitView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                waypointReachedButton
+                positionCheckAndProgressionControls
                     .frame(maxWidth: 350)
             }
         }
@@ -1098,7 +1100,7 @@ struct CockpitView: View {
                 frequencyColumn
                     .frame(minHeight: 130)
                 Divider()
-                waypointReachedButton
+                positionCheckAndProgressionControls
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 20)
@@ -1273,6 +1275,32 @@ struct CockpitView: View {
                     in: RoundedRectangle(cornerRadius: 10)
                 )
                 .accessibilityIdentifier("navigation-complete")
+        }
+    }
+
+    @ViewBuilder
+    private var positionCheckAndProgressionControls: some View {
+        if flight.legState == .active, let positionCheck {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 12) {
+                    PositionCheckControl(
+                        presentation: positionCheck,
+                        onAction: onPositionCheckAction
+                    )
+                    .frame(minWidth: 174)
+                    waypointReachedButton
+                        .frame(minWidth: 204)
+                }
+                VStack(spacing: 10) {
+                    PositionCheckControl(
+                        presentation: positionCheck,
+                        onAction: onPositionCheckAction
+                    )
+                    waypointReachedButton
+                }
+            }
+        } else {
+            waypointReachedButton
         }
     }
 

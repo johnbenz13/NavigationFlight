@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 extension UTType {
@@ -6,22 +7,31 @@ extension UTType {
 }
 
 struct CockpitFeatureView: View {
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
     @Binding private var state: CockpitFeatureState
     @State private var isImporterPresented = false
     @State private var isCockpitPresented = false
     @State private var presentedError: PresentedError?
+    @State private var locationAvailability: LocationAvailability = .acquiring
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
     private let presentationRequestID: UUID?
+    private let locationService: AircraftLocationService
+    private let isSectionSelected: Bool
     private let onIntent: (CockpitFeatureIntent) -> Void
 
     init(
         state: Binding<CockpitFeatureState>,
         presentationRequestID: UUID? = nil,
+        locationService: AircraftLocationService,
+        isSectionSelected: Bool,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
         self.presentationRequestID = presentationRequestID
+        self.locationService = locationService
+        self.isSectionSelected = isSectionSelected
         self.onIntent = onIntent
     }
 
@@ -47,6 +57,19 @@ struct CockpitFeatureView: View {
                     message: Text(error.message),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+            .task(id: shouldMonitorLocation) {
+                guard shouldMonitorLocation else {
+                    await locationService.stopMonitoring()
+                    return
+                }
+                let updates = await locationService.availabilityUpdates()
+                await locationService.startMonitoring()
+                for await availability in updates {
+                    if Task.isCancelled { break }
+                    locationAvailability = availability
+                }
+                await locationService.stopMonitoring()
             }
     }
 
@@ -86,6 +109,8 @@ struct CockpitFeatureView: View {
                         flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
                         pendingReachUndo: state.pendingReachUndo,
+                        positionCheck: adapter.makePositionCheckPresentation(for: locationAvailability),
+                        onPositionCheckAction: handlePositionCheckAction,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { restoration in
@@ -175,6 +200,31 @@ struct CockpitFeatureView: View {
             try state.startLeg(at: .now)
         } catch {
             presentedError = .init(title: "Couldn’t Start Leg", message: error.localizedDescription)
+        }
+    }
+
+    private var shouldMonitorLocation: Bool {
+        PositionCheckMonitoringScope.shouldMonitor(
+            sectionSelected: isSectionSelected,
+            cockpitPresented: isCockpitPresented,
+            hasFlight: state.flight != nil,
+            sceneActive: scenePhase == .active
+        )
+    }
+
+    private func handlePositionCheckAction(_ action: PositionCheckControlAction) {
+        switch action {
+        case .retry:
+            Task {
+                await locationService.stopMonitoring()
+                await locationService.startMonitoring()
+            }
+        case .requestPermission:
+            Task { await locationService.requestWhenInUseAuthorization() }
+        case .openSettings:
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                openURL(url)
+            }
         }
     }
 }

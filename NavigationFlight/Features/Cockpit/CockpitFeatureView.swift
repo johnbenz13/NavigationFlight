@@ -12,18 +12,26 @@ struct CockpitFeatureView: View {
     @State private var presentedError: PresentedError?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
+    private let presentationRequestID: UUID?
     private let onIntent: (CockpitFeatureIntent) -> Void
 
     init(
         state: Binding<CockpitFeatureState>,
+        presentationRequestID: UUID? = nil,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
+        self.presentationRequestID = presentationRequestID
         self.onIntent = onIntent
     }
 
     var body: some View {
         content
+            .onChange(of: presentationRequestID, initial: true) { _, newValue in
+                if newValue != nil {
+                    isCockpitPresented = true
+                }
+            }
             .fileImporter(
                 isPresented: $isImporterPresented,
                 allowedContentTypes: [.fplnav],

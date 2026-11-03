@@ -9,8 +9,9 @@ struct FlightPlansFeatureView: View {
     let loadedFlightPlan: FlightPlan?
     let debugSeedData: [Data]
     let debugImportData: Data?
+    let onIntent: (FlightPlansFeatureIntent) -> Void
 
-    @State private var navigationPath = NavigationPath()
+    @State private var navigationPath: [UUID] = []
     @State private var scrollPosition: UUID?
     @State private var isFileImporterPresented = false
 
@@ -24,7 +25,10 @@ struct FlightPlansFeatureView: View {
                         records: state.records,
                         loadedFlightPlan: loadedFlightPlan,
                         scrollPosition: $scrollPosition,
-                        onSelect: { state.selectRecord(id: $0) }
+                        onSelect: { id in
+                            state.selectRecord(id: id)
+                            navigationPath.append(id)
+                        }
                     )
                 }
             }
@@ -36,6 +40,18 @@ struct FlightPlansFeatureView: View {
                         .disabled(state.inFlightRequestID != nil)
                         .accessibilityLabel("Add Flight Plan")
                         .accessibilityIdentifier("add-flight-plan")
+                }
+            }
+            .navigationDestination(for: UUID.self) { id in
+                if let record = state.records.first(where: { $0.id == id }) {
+                    FlightPlanInspectionView(
+                        record: record,
+                        loadedFlightPlan: loadedFlightPlan,
+                        isActionDisabled: state.inFlightRequestID != nil,
+                        onIntent: onIntent
+                    )
+                } else {
+                    ContentUnavailableView("Flight Plan unavailable", systemImage: "folder.badge.questionmark")
                 }
             }
             .fileImporter(
@@ -70,6 +86,11 @@ struct FlightPlansFeatureView: View {
                 Button("Done") { state.dismissPresentation() }
             } message: {
                 Text(presentationMessage)
+            }
+            .onChange(of: state.selectedRecordID) { _, selectedRecordID in
+                if selectedRecordID == nil {
+                    navigationPath.removeAll()
+                }
             }
         }
     }
@@ -203,7 +224,10 @@ struct FlightPlansFeatureView: View {
 
     private var presentationPresented: Binding<Bool> {
         Binding(
-            get: { state.presentation != nil },
+            get: {
+                guard let presentation = state.presentation else { return false }
+                return presentation != .flightChangeFailure
+            },
             set: { if !$0 { state.dismissPresentation() } }
         )
     }
@@ -214,6 +238,7 @@ struct FlightPlansFeatureView: View {
         case .imported: "Flight Plan added"
         case .failure(.storageFailure): "Plan wasn’t saved"
         case .failure: "Couldn’t add this plan"
+        case .flightChangeFailure: "Couldn’t load this Flight Plan"
         case nil: ""
         }
     }
@@ -227,7 +252,87 @@ struct FlightPlansFeatureView: View {
         case .failure(.staleProposal): "The saved Flight Plan changed before replacement. Choose the file again."
         case .failure(.storageFailure): "The Flight Plan could not be saved. Existing data is unchanged."
         case .failure(.libraryUnavailable): "Flight Plans is temporarily unavailable. Existing data is unchanged."
+        case .flightChangeFailure: "The current Flight and this inspection are unchanged."
         case nil: ""
+        }
+    }
+}
+
+private struct FlightPlanInspectionView: View {
+    let record: LibraryFlightPlan
+    let loadedFlightPlan: FlightPlan?
+    let isActionDisabled: Bool
+    let onIntent: (FlightPlansFeatureIntent) -> Void
+
+    private var presentation: FlightPlanInspectionPresentation {
+        FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedFlightPlan)
+    }
+
+    var body: some View {
+        List {
+            Section("Route") {
+                LabeledContent("Departure", value: record.flightPlan.waypoints.first?.name ?? "—")
+                LabeledContent("Destination", value: record.flightPlan.waypoints.last?.name ?? "—")
+            }
+
+            Section("Flight Plan") {
+                LabeledContent("Revision") {
+                    Text(record.flightPlan.modifiedAt, format: .dateTime)
+                }
+                LabeledContent("Imported") {
+                    Text(record.importedAt, format: .dateTime)
+                }
+            }
+
+            Section {
+                Button {
+                    perform(presentation.primaryAction)
+                } label: {
+                    Text(presentation.primaryAction.label)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isActionDisabled)
+                .accessibilityIdentifier(identifier(for: presentation.primaryAction))
+
+                ForEach(presentation.secondaryActions, id: \.self) { action in
+                    Button {
+                        perform(action)
+                    } label: {
+                        Text(action.label)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .disabled(isActionDisabled)
+                    .accessibilityIdentifier(identifier(for: action))
+                }
+            } footer: {
+                Text("Loading or restarting creates a fresh Flight. Leg timing remains stopped until you start it in Cockpit.")
+            }
+        }
+        .navigationTitle(record.flightPlan.title)
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("flight-plan-inspection")
+    }
+
+    private func perform(_ action: FlightPlanInspectionPresentation.Action) {
+        switch action {
+        case .loadInCockpit:
+            onIntent(.loadInCockpit(record))
+        case .returnToCockpit:
+            onIntent(.returnToCockpit)
+        case .loadUpdatedPlan:
+            onIntent(.loadUpdatedPlan(record))
+        case .restartFlight:
+            onIntent(.restartFlight)
+        }
+    }
+
+    private func identifier(for action: FlightPlanInspectionPresentation.Action) -> String {
+        switch action {
+        case .loadInCockpit: "load-in-cockpit"
+        case .returnToCockpit: "return-to-cockpit"
+        case .loadUpdatedPlan: "load-updated-plan"
+        case .restartFlight: "restart-flight"
         }
     }
 }

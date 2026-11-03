@@ -83,6 +83,180 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testListInspectionLoadCreatesReadyFlightInCockpit() throws {
+        let data = try oneLegPlanData()
+        let title = try projectTitle(in: data)
+        let app = launchFlightPlans(seedData: [data])
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+
+        row.tap()
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 2))
+        let load = app.buttons["load-in-cockpit"]
+        XCTAssertTrue(load.exists)
+
+        load.tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["cockpit-time"].label.contains("Running"))
+    }
+
+    @MainActor
+    func testReturnToCockpitAndBackRetainsInspection() throws {
+        let data = try oneLegPlanData()
+        let title = try projectTitle(in: data)
+        let app = launchFlightPlans(seedData: [data], loadedPlanData: data)
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        let returnButton = app.buttons["return-to-cockpit"]
+        XCTAssertTrue(returnButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["restart-flight"].exists)
+        returnButton.tap()
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+
+        tab(named: "Flight Plans", in: app).tap()
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["return-to-cockpit"].exists)
+    }
+
+    @MainActor
+    func testRestartKeepsLoadedSnapshotAndLoadUpdatedPlanAdoptsSavedRevision() throws {
+        let loaded = try oneLegPlanData()
+        let savedUpdate = try changingRevision(in: loaded, by: 60)
+        let app = launchFlightPlans(seedData: [savedUpdate], loadedPlanData: loaded)
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        XCTAssertTrue(app.buttons["load-updated-plan"].waitForExistence(timeout: 2))
+        app.buttons["restart-flight"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+
+        tab(named: "Flight Plans", in: app).tap()
+        XCTAssertTrue(app.buttons["load-updated-plan"].waitForExistence(timeout: 2))
+        app.buttons["load-updated-plan"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+
+        tab(named: "Flight Plans", in: app).tap()
+        XCTAssertTrue(app.buttons["restart-flight"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.buttons["load-updated-plan"].exists)
+    }
+
+    @MainActor
+    func testProtectedLoadCancellationAndConfirmationPreserveThenReplaceFlight() throws {
+        let loaded = try oneLegPlanData()
+        let anotherPlan = try changingIdentity(in: loaded)
+        let app = launchFlightPlans(
+            seedData: [anotherPlan],
+            loadedPlanData: loaded,
+            protectLoadedFlight: true
+        )
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["load-in-cockpit"].tap()
+
+        let confirmation = app.alerts["End current Flight?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["load-in-cockpit"].waitForExistence(timeout: 2))
+
+        app.buttons["load-in-cockpit"].tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["End & Load"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["cockpit-time"].label.contains("Running"))
+    }
+
+    @MainActor
+    func testProtectedRestartRequiresConfirmationAndCancellationPreservesInspection() throws {
+        let data = try oneLegPlanData()
+        let app = launchFlightPlans(
+            seedData: [data],
+            loadedPlanData: data,
+            protectLoadedFlight: true
+        )
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["restart-flight"].tap()
+
+        let confirmation = app.alerts["Restart this Flight?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["restart-flight"].waitForExistence(timeout: 2))
+
+        app.buttons["restart-flight"].tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["Restart"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["cockpit-time"].label.contains("Running"))
+    }
+
+    @MainActor
+    func testProtectedUpdatedPlanRequiresConfirmation() throws {
+        let loaded = try oneLegPlanData()
+        let savedUpdate = try changingRevision(in: loaded, by: 60)
+        let app = launchFlightPlans(
+            seedData: [savedUpdate],
+            loadedPlanData: loaded,
+            protectLoadedFlight: true
+        )
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["load-updated-plan"].tap()
+
+        let confirmation = app.alerts["End current Flight?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["Cancel"].tap()
+        XCTAssertTrue(app.buttons["load-updated-plan"].waitForExistence(timeout: 2))
+
+        app.buttons["load-updated-plan"].tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["End & Load"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testFailedLoadPreservesOriginalFlightAndInspection() throws {
+        let loaded = try oneLegPlanData()
+        let anotherPlan = try changingIdentity(in: loaded)
+        let app = launchFlightPlans(
+            seedData: [anotherPlan],
+            loadedPlanData: loaded,
+            failFlightChange: true
+        )
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["load-in-cockpit"].tap()
+
+        let error = app.alerts["Couldn’t load this Flight Plan"]
+        XCTAssertTrue(error.waitForExistence(timeout: 3))
+        error.buttons["Done"].tap()
+        XCTAssertTrue(app.buttons["load-in-cockpit"].waitForExistence(timeout: 2))
+
+        tab(named: "Cockpit", in: app).tap()
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
     func testAddPickerCancellationPreservesEmptyLibrary() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -520,7 +694,10 @@ final class NavigationFlightUITests: XCTestCase {
     private func launchFlightPlans(
         seedData: [Data] = [],
         importData: Data? = nil,
-        storageFailure: Bool = false
+        storageFailure: Bool = false,
+        loadedPlanData: Data? = nil,
+        protectLoadedFlight: Bool = false,
+        failFlightChange: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -534,6 +711,15 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if storageFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_STORAGE_FAILURE"] = "1"
+        }
+        if let loadedPlanData {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN"] = loadedPlanData.base64EncodedString()
+        }
+        if protectLoadedFlight {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT"] = "1"
+        }
+        if failFlightChange {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] = "1"
         }
         app.launch()
         return app
@@ -553,6 +739,15 @@ final class NavigationFlightUITests: XCTestCase {
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let modifiedAt = try XCTUnwrap(formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value))
         project["modifiedAt"] = formatter.string(from: modifiedAt.addingTimeInterval(interval))
+        object["project"] = project
+        return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+    }
+
+    private func changingIdentity(in data: Data) throws -> Data {
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var project = try XCTUnwrap(object["project"] as? [String: Any])
+        project["id"] = UUID().uuidString
+        project["title"] = "Alternate Flight Plan"
         object["project"] = project
         return try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
     }

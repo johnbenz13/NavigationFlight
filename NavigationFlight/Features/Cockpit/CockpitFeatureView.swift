@@ -44,12 +44,27 @@ struct CockpitFeatureView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background {
+                if phase != .active {
                     positionCheckCoordinator.send(.sceneBecameInactive)
+                }
+            }
+            .onChange(of: state.flight?.id) { oldValue, newValue in
+                if oldValue != nil, oldValue != newValue {
+                    positionCheckCoordinator.send(.activeFlightLost)
                 }
             }
             .onChange(of: state.flight?.activeLegIndex) { _, _ in
                 positionCheckCoordinator.send(.activeLegChanged)
+            }
+            .onChange(of: state.flight?.legState) { _, legState in
+                if legState != .active {
+                    positionCheckCoordinator.send(.activeFlightLost)
+                }
+            }
+            .onChange(of: isSectionSelected) { _, selected in
+                if !selected {
+                    positionCheckCoordinator.send(.cockpitDismissed)
+                }
             }
             .onChange(of: isCockpitPresented) { _, presented in
                 if !presented {
@@ -141,6 +156,8 @@ struct CockpitFeatureView: View {
                         areDriftLinesVisible: state.areDriftLinesVisible,
                         pendingReachUndo: state.pendingReachUndo,
                         positionCheck: positionCheck,
+                        positionCheckMapRestoration: positionCheckCoordinator.pendingMapRestoration,
+                        onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         onPositionCheckAction: handlePositionCheckAction,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
@@ -268,6 +285,8 @@ struct CockpitFeatureView: View {
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 openURL(url)
             }
+        case .dismiss:
+            positionCheckCoordinator.send(.dismissFailure)
         }
     }
 

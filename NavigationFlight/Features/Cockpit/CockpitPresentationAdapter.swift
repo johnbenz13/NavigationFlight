@@ -317,6 +317,7 @@ struct PositionCheckPresentation: Equatable, Sendable {
         case permissionRequired
         case requesting
         case active
+        case signalLost
     }
 
     let status: Status
@@ -375,17 +376,41 @@ struct CockpitPresentationAdapter: Sendable {
                 disclosedPosition: session.projection,
                 recovery: makeRecoveryPresentation(recoveryOutcome)
             )
-        case .transientFailure:
-            return PositionCheckPresentation(
-                status: .unavailable,
-                statusLabel: "UNAVAILABLE",
-                title: "Position Check",
-                detail: "GPS acquisition timed out",
-                explanation: "No usable GPS position arrived within ten seconds.",
-                remedy: "Hold again when needed",
-                systemImage: "location.slash",
-                isHoldEligible: true
-            )
+        case .transientFailure(let failure):
+            switch failure {
+            case .signalLost:
+                return PositionCheckPresentation(
+                    status: .signalLost,
+                    statusLabel: "GPS LOST",
+                    title: "GPS signal lost",
+                    detail: "Position and guidance cleared; cockpit context restored",
+                    explanation: "The app never shows a stale GPS position.",
+                    remedy: "Dismiss",
+                    systemImage: "location.slash",
+                    isHoldEligible: false
+                )
+            case .acquisitionTimedOut:
+                return PositionCheckPresentation(
+                    status: .unavailable,
+                    statusLabel: "UNAVAILABLE",
+                    title: "Position Check",
+                    detail: "GPS acquisition timed out",
+                    explanation: "No usable GPS position arrived within ten seconds.",
+                    remedy: "Hold again when needed",
+                    systemImage: "location.slash",
+                    isHoldEligible: true
+                )
+            case .servicesDisabled:
+                return makePositionCheckPresentation(for: .unavailable(.servicesDisabled))
+            case .staleFix:
+                return makePositionCheckPresentation(for: .unavailable(.stale))
+            case .poorAccuracy:
+                return makePositionCheckPresentation(for: .unavailable(.insufficientAccuracy))
+            case .sourceFailure:
+                return makePositionCheckPresentation(for: .unavailable(.sourceFailure))
+            case .permissionRevoked(let reason):
+                return makePositionCheckPresentation(for: .permissionRequired(reason))
+            }
         case .idle:
             return makePositionCheckPresentation(for: availability)
         }

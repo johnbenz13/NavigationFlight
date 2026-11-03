@@ -168,6 +168,8 @@ struct CockpitView: View {
     let areDriftLinesVisible: Bool
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
     var positionCheck: PositionCheckPresentation? = nil
+    var positionCheckMapRestoration: PositionCheckMapRestorationCommand? = nil
+    var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) -> Void = { _, _ in }
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
@@ -306,14 +308,18 @@ struct CockpitView: View {
                         intercept: newValue.interceptCoordinate
                     )
                 )
-            } else if oldValue != nil, newValue == nil, let restoration = positionCheckRestoration {
-                preservedMapCamera = restoration.camera
-                isMapCameraUserControlled = restoration.isCameraUserControlled
-                selectedMapCallout = restoration.selectedCallout
-                mapFocusRequest = restoration.focusRequest
-                mapIdentity = UUID()
-                positionCheckRestoration = nil
             }
+        }
+        .onChange(of: positionCheckMapRestoration, initial: true) { _, command in
+            guard let command else { return }
+            let restoration = command.restoration
+            preservedMapCamera = restoration.camera
+            isMapCameraUserControlled = restoration.isCameraUserControlled
+            selectedMapCallout = restoration.selectedCallout
+            mapFocusRequest = restoration.focusRequest
+            mapIdentity = UUID()
+            positionCheckRestoration = nil
+            onPositionCheckMapRestored(command.id)
         }
     }
 

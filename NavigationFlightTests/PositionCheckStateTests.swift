@@ -95,6 +95,97 @@ struct PositionCheckStateTests {
         #expect(ended.effect == .endDisclosure(restoration: restoration))
     }
 
+    @Test("Signal loss clears disclosure and restores map context before explaining the loss")
+    func signalLossFailsClosed() throws {
+        let restoration = CockpitRestoration(
+            camera: AviationMapCameraState(
+                center: AviationMapCoordinate(latitude: 32.1, longitude: 34.8),
+                zoomLevel: 9,
+                direction: 17,
+                pitch: 2
+            ),
+            isCameraUserControlled: true,
+            selectedCallout: nil,
+            focusRequest: AviationMapFocusRequest(mode: .overview)
+        )
+        let active = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .ready(sample()), restoration: restoration),
+            now: .zero
+        ).state
+
+        let degraded = active.transition(
+            .locationAvailabilityChanged(.unavailable(.signalLost)),
+            now: .seconds(2)
+        )
+
+        #expect(degraded.state == .transientFailure(.signalLost))
+        #expect(degraded.state.activeSession == nil)
+        #expect(degraded.effect == .endDisclosure(restoration: restoration))
+    }
+
+    @Test("Every unusable availability fails closed with its structured cause")
+    func everyUnusableAvailabilityFailsClosed() throws {
+        let cases: [(LocationAvailability, PositionCheckState.Failure)] = [
+            (.acquiring, .signalLost),
+            (.unavailable(.servicesDisabled), .servicesDisabled),
+            (.unavailable(.stale), .staleFix),
+            (.unavailable(.invalidAccuracy), .poorAccuracy),
+            (.unavailable(.insufficientAccuracy), .poorAccuracy),
+            (.unavailable(.outOfOrder), .staleFix),
+            (.unavailable(.sourceFailure), .sourceFailure),
+            (.permissionRequired(.denied), .permissionRevoked(.denied)),
+            (.permissionRequired(.restricted), .permissionRevoked(.restricted))
+        ]
+
+        for (availability, expectedFailure) in cases {
+            let active = PositionCheckState.idle.transition(
+                .holdCompleted(availability: .ready(sample()), restoration: .empty),
+                now: .zero
+            ).state
+
+            let degraded = active.transition(
+                .locationAvailabilityChanged(availability),
+                now: .seconds(2)
+            )
+
+            #expect(degraded.state == .transientFailure(expectedFailure))
+            #expect(degraded.state.activeSession == nil)
+            #expect(degraded.effect == .endDisclosure(restoration: .empty))
+        }
+    }
+
+    @Test("Acquisition degradation cancels its deadline and exposes the structured cause")
+    func acquisitionDegradationCancelsDeadline() throws {
+        let acquiring = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .acquiring, restoration: .empty),
+            now: .zero
+        ).state
+
+        let degraded = acquiring.transition(
+            .locationAvailabilityChanged(.permissionRequired(.denied)),
+            now: .seconds(2)
+        )
+
+        #expect(degraded.state == .transientFailure(.permissionRevoked(.denied)))
+        #expect(degraded.effect == .cancelDeadline)
+    }
+
+    @Test("Inactive scene and flight loss terminate acquisition and disclosure")
+    func lifecycleLossTerminatesEverySession() throws {
+        let acquiring = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .acquiring, restoration: .empty),
+            now: .zero
+        ).state
+        let active = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .ready(sample()), restoration: .empty),
+            now: .zero
+        ).state
+
+        #expect(acquiring.transition(.sceneBecameInactive, now: .seconds(1)).state == .idle)
+        #expect(active.transition(.activeFlightLost, now: .seconds(1)).state == .idle)
+        #expect(active.transition(.activeFlightLost, now: .seconds(1)).effect == .endDisclosure(restoration: .empty))
+    }
+
     private func sample() -> AircraftLocationSample {
         AircraftLocationSample(
             coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),

@@ -493,6 +493,43 @@ struct NavigationFlightTests {
         #expect(state.activeLegStartChecklist?.legID == flightPlan.legs[0].id)
     }
 
+    @Test func positionCheckLifecycleNeverMutatesFlightContracts() throws {
+        let flightPlan = try twoLegFlight()
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(flightPlan)
+        try cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        let authoritativeFlight = try #require(cockpit.flight)
+        let sample = AircraftLocationSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
+            observedAt: Date(timeIntervalSince1970: 1_001),
+            horizontalAccuracyMeters: 35,
+            trueCourseDegrees: 72,
+            courseAccuracyDegrees: 5,
+            groundSpeedMetersPerSecond: 40,
+            speedAccuracyMetersPerSecond: 1
+        )
+
+        let active = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .ready(sample), restoration: .empty),
+            now: .zero
+        ).state
+        _ = active.transition(
+            .locationAvailabilityChanged(.unavailable(.signalLost)),
+            now: .seconds(2)
+        )
+        let acquiring = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .acquiring, restoration: .empty),
+            now: .seconds(3)
+        ).state
+        let request = try #require(acquiring.acquisitionRequest)
+        _ = acquiring.transition(.deadlineReached(request.generation), now: .seconds(13))
+        _ = active.transition(.end, now: .seconds(4))
+
+        #expect(cockpit.flight == authoritativeFlight)
+        #expect(cockpit.flight?.activeLegIndex == 0)
+        #expect(cockpit.flight?.legStartedAt == Date(timeIntervalSince1970: 1_000))
+    }
+
     @Test func elapsedTimeIncludesIntervalsWithoutUITimerUpdates() throws {
         let startedAt = Date(timeIntervalSince1970: 10_000)
         let returnedToForegroundAt = startedAt.addingTimeInterval(187)

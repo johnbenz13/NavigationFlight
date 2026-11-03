@@ -7,6 +7,7 @@ enum PositionCheckControlAction: Equatable, Sendable {
     case retry
     case requestPermission
     case openSettings
+    case dismiss
 }
 
 struct PositionCheckControl: View {
@@ -93,6 +94,8 @@ struct PositionCheckControl: View {
             .retry
         case .permissionRequired:
             presentation.remedy == "Allow Location" ? .requestPermission : .openSettings
+        case .signalLost:
+            .dismiss
         }
     }
 
@@ -102,7 +105,7 @@ struct PositionCheckControl: View {
             Color(red: 22 / 255, green: 143 / 255, blue: 71 / 255)
         case .acquiring, .requesting:
             Color(red: 10 / 255, green: 102 / 255, blue: 232 / 255)
-        case .unavailable, .permissionRequired:
+        case .unavailable, .permissionRequired, .signalLost:
             Color(red: 196 / 255, green: 75 / 255, blue: 66 / 255)
         case .active:
             holdColor

@@ -1,11 +1,17 @@
 import Foundation
 import Observation
 
+nonisolated struct PositionCheckMapRestorationCommand: Equatable, Sendable {
+    let id: UUID
+    let restoration: CockpitRestoration
+}
+
 @MainActor
 @Observable
 final class PositionCheckCoordinator {
     private(set) var state: PositionCheckState = .idle
     private(set) var remainingSeconds: Int?
+    private(set) var pendingMapRestoration: PositionCheckMapRestorationCommand?
 
     private let now: @MainActor () -> Duration
     private let sleepUntil: @Sendable (Duration) async throws -> Void
@@ -64,16 +70,30 @@ final class PositionCheckCoordinator {
         )
     }
 
+    func acknowledgeMapRestoration(id: UUID) {
+        guard pendingMapRestoration?.id == id else { return }
+        pendingMapRestoration = nil
+    }
+
     private func apply(_ effect: PositionCheckEffect) {
         switch effect {
         case .none:
             break
-        case .cancelDeadline, .endDisclosure:
+        case .cancelDeadline:
             deadlineTask?.cancel()
             deadlineTask = nil
             remainingSeconds = nil
+        case .endDisclosure(let restoration):
+            deadlineTask?.cancel()
+            deadlineTask = nil
+            remainingSeconds = nil
+            pendingMapRestoration = PositionCheckMapRestorationCommand(
+                id: UUID(),
+                restoration: restoration
+            )
         case .scheduleDeadline(let generation, let deadline):
             deadlineTask?.cancel()
+            pendingMapRestoration = nil
             deadlineTask = Task { [weak self, sleepUntil] in
                 do {
                     while let self, self.now() < deadline {

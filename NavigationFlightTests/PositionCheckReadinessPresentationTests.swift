@@ -59,4 +59,21 @@ struct PositionCheckReadinessPresentationTests {
         #expect(denied.explanation != restricted.explanation)
         #expect(denied.detail.contains("manual navigation remains available"))
     }
+
+    @Test("Signal loss presentation contains no disclosed values and offers dismissal")
+    func signalLossPresentation() {
+        let presentation = CockpitPresentationAdapter().makePositionCheckPresentation(
+            for: .unavailable(.signalLost),
+            state: .transientFailure(.signalLost),
+            remainingSeconds: nil
+        )
+
+        #expect(presentation.status == .signalLost)
+        #expect(presentation.statusLabel == "GPS LOST")
+        #expect(presentation.title == "GPS signal lost")
+        #expect(presentation.detail == "Position and guidance cleared; cockpit context restored")
+        #expect(presentation.remedy == "Dismiss")
+        #expect(presentation.disclosedPosition == nil)
+        #expect(presentation.recovery == nil)
+    }
 }

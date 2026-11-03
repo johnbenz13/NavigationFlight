@@ -168,7 +168,7 @@ struct CockpitView: View {
     let areDriftLinesVisible: Bool
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
     var positionCheck: PositionCheckPresentation? = nil
-    var onPositionCheckAction: (PositionCheckControlAction) -> Void = { _ in }
+    var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) -> Void = { _, _ in }
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: (CockpitRestoration) -> Void
@@ -207,6 +207,7 @@ struct CockpitView: View {
     @State private var showsCompactFrequencies = false
     @State private var isCompactMapChromeVisible = true
     @State private var compactMapChromeVisibilityID = 0
+    @State private var positionCheckRestoration: CockpitRestoration?
 
     var body: some View {
         GeometryReader { geometry in
@@ -294,6 +295,20 @@ struct CockpitView: View {
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
+        }
+        .onChange(of: mapPresentation.gpsDisclosureOverlay) { oldValue, newValue in
+            if let newValue, oldValue == nil {
+                selectedMapCallout = nil
+                isMapCameraUserControlled = false
+                mapFocusRequest = AviationMapFocusRequest(mode: .timingTarget(newValue.coordinate))
+            } else if oldValue != nil, newValue == nil, let restoration = positionCheckRestoration {
+                preservedMapCamera = restoration.camera
+                isMapCameraUserControlled = restoration.isCameraUserControlled
+                selectedMapCallout = restoration.selectedCallout
+                mapFocusRequest = restoration.focusRequest
+                mapIdentity = UUID()
+                positionCheckRestoration = nil
+            }
         }
     }
 
@@ -1281,11 +1296,22 @@ struct CockpitView: View {
     @ViewBuilder
     private var positionCheckAndProgressionControls: some View {
         if flight.legState == .active, let positionCheck {
-            ViewThatFits(in: .horizontal) {
+            if horizontalSizeClass == .compact {
+                HStack(alignment: .top, spacing: 10) {
+                    PositionCheckControl(
+                        presentation: positionCheck,
+                        onAction: handlePositionCheckAction
+                    )
+                    .frame(maxWidth: .infinity)
+                    waypointReachedButton
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 12) {
                     PositionCheckControl(
                         presentation: positionCheck,
-                        onAction: onPositionCheckAction
+                        onAction: handlePositionCheckAction
                     )
                     .frame(minWidth: 174)
                     waypointReachedButton
@@ -1294,9 +1320,10 @@ struct CockpitView: View {
                 VStack(spacing: 10) {
                     PositionCheckControl(
                         presentation: positionCheck,
-                        onAction: onPositionCheckAction
+                        onAction: handlePositionCheckAction
                     )
                     waypointReachedButton
+                }
                 }
             }
         } else {
@@ -1433,6 +1460,13 @@ struct CockpitView: View {
             selectedCallout: selectedMapCallout,
             focusRequest: mapFocusRequest
         )
+    }
+
+    private func handlePositionCheckAction(_ action: PositionCheckControlAction) {
+        if action == .holdCompleted, positionCheckRestoration == nil {
+            positionCheckRestoration = cockpitRestoration
+        }
+        onPositionCheckAction(action, positionCheckRestoration ?? cockpitRestoration)
     }
 
     private func restoreReach(at now: Date) {

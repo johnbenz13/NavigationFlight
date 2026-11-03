@@ -14,6 +14,7 @@ struct CockpitFeatureView: View {
     @State private var isCockpitPresented = false
     @State private var presentedError: PresentedError?
     @State private var locationAvailability: LocationAvailability = .acquiring
+    @State private var positionCheckCoordinator = PositionCheckCoordinator()
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
     private let presentationRequestID: UUID?
@@ -42,6 +43,19 @@ struct CockpitFeatureView: View {
                     isCockpitPresented = true
                 }
             }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background {
+                    positionCheckCoordinator.send(.sceneBecameInactive)
+                }
+            }
+            .onChange(of: state.flight?.activeLegIndex) { _, _ in
+                positionCheckCoordinator.send(.activeLegChanged)
+            }
+            .onChange(of: isCockpitPresented) { _, presented in
+                if !presented {
+                    positionCheckCoordinator.send(.cockpitDismissed)
+                }
+            }
             .fileImporter(
                 isPresented: $isImporterPresented,
                 allowedContentTypes: [.fplnav],
@@ -68,6 +82,7 @@ struct CockpitFeatureView: View {
                 for await availability in updates {
                     if Task.isCancelled { break }
                     locationAvailability = availability
+                    positionCheckCoordinator.send(.locationAvailabilityChanged(availability))
                 }
                 await locationService.stopMonitoring()
             }
@@ -99,9 +114,17 @@ struct CockpitFeatureView: View {
                         flightPlan: flightPlan,
                         flight: flight
                     )
+                    let positionCheck = adapter.makePositionCheckPresentation(
+                        for: locationAvailability,
+                        state: positionCheckCoordinator.state,
+                        remainingSeconds: positionCheckCoordinator.remainingSeconds
+                    )
                     CockpitView(
                         data: presentation,
-                        mapPresentation: mapPresentation,
+                        mapPresentation: addingGPSDisclosure(
+                            mapPresentation,
+                            disclosing: positionCheck.disclosedPosition
+                        ),
                         nextLegPreparation: nextLegPreparation,
                         previousLegSummary: previousLegSummary,
                         legStartChecklist: legStartChecklist,
@@ -109,7 +132,7 @@ struct CockpitFeatureView: View {
                         flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
                         pendingReachUndo: state.pendingReachUndo,
-                        positionCheck: adapter.makePositionCheckPresentation(for: locationAvailability),
+                        positionCheck: positionCheck,
                         onPositionCheckAction: handlePositionCheckAction,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
@@ -212,8 +235,20 @@ struct CockpitFeatureView: View {
         )
     }
 
-    private func handlePositionCheckAction(_ action: PositionCheckControlAction) {
+    private func handlePositionCheckAction(
+        _ action: PositionCheckControlAction,
+        restoration: CockpitRestoration
+    ) {
         switch action {
+        case .holdCompleted:
+            let intent: PositionCheckIntent = positionCheckCoordinator.state.activeSession == nil
+                ? .holdCompleted(availability: locationAvailability, restoration: restoration)
+                : .restartHoldCompleted(availability: locationAvailability, restoration: restoration)
+            positionCheckCoordinator.send(intent)
+        case .cancel:
+            positionCheckCoordinator.send(.cancel)
+        case .end:
+            positionCheckCoordinator.send(.end)
         case .retry:
             Task {
                 await locationService.stopMonitoring()
@@ -226,6 +261,15 @@ struct CockpitFeatureView: View {
                 openURL(url)
             }
         }
+    }
+
+    private func addingGPSDisclosure(
+        _ presentation: AviationMapPresentation,
+        disclosing projection: PositionCheckProjection?
+    ) -> AviationMapPresentation {
+        var result = presentation
+        result.gpsDisclosureOverlay = projection.map(GPSDisclosureOverlay.init)
+        return result
     }
 }
 

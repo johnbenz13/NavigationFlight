@@ -12,6 +12,59 @@ struct AviationMapCameraState: Equatable, Sendable {
     let pitch: Double
 }
 
+nonisolated struct GPSDisclosureOverlay: Equatable, Sendable {
+    enum Marker: Equatable, Sendable {
+        case neutral
+        case directional(trueCourseDegrees: Double)
+    }
+
+    let coordinate: AviationMapCoordinate
+    let accuracyRadiusMeters: Double
+    let marker: Marker
+
+    init(projection: PositionCheckProjection) {
+        coordinate = AviationMapCoordinate(
+            latitude: projection.coordinate.latitudeDegrees,
+            longitude: projection.coordinate.longitudeDegrees
+        )
+        accuracyRadiusMeters = projection.horizontalAccuracyMeters
+        marker = projection.trueCourseDegrees.map(Marker.directional) ?? .neutral
+    }
+}
+
+nonisolated enum GPSDisclosureMapContract {
+    static let accuracySourceID = "position-check-accuracy-source"
+    static let accuracyLayerID = "position-check-accuracy-layer"
+    static let markerSourceID = "position-check-marker-source"
+    static let markerLayerID = "position-check-marker-layer"
+
+    static func accuracyRing(
+        for overlay: GPSDisclosureOverlay,
+        vertexCount: Int = 48
+    ) -> [AviationMapCoordinate] {
+        guard overlay.accuracyRadiusMeters > 0, vertexCount >= 3 else { return [] }
+        let earthRadius = 6_371_000.0
+        let latitude = overlay.coordinate.latitude * .pi / 180
+        let longitude = overlay.coordinate.longitude * .pi / 180
+        let angularDistance = overlay.accuracyRadiusMeters / earthRadius
+        return (0...vertexCount).map { index in
+            let bearing = 2 * Double.pi * Double(index) / Double(vertexCount)
+            let ringLatitude = asin(
+                sin(latitude) * cos(angularDistance)
+                    + cos(latitude) * sin(angularDistance) * cos(bearing)
+            )
+            let ringLongitude = longitude + atan2(
+                sin(bearing) * sin(angularDistance) * cos(latitude),
+                cos(angularDistance) - sin(latitude) * sin(ringLatitude)
+            )
+            return AviationMapCoordinate(
+                latitude: ringLatitude * 180 / .pi,
+                longitude: ringLongitude * 180 / .pi
+            )
+        }
+    }
+}
+
 struct AviationMapWaypoint: Identifiable, Equatable, Sendable {
     enum Role: String, Equatable, Sendable {
         case route
@@ -167,6 +220,7 @@ struct AviationMapTimingTargetContext: Equatable, Sendable {
 }
 
 struct AviationMapPresentation: Equatable, Sendable {
+    var gpsDisclosureOverlay: GPSDisclosureOverlay? = nil
     let waypoints: [AviationMapWaypoint]
     let legs: [AviationMapLeg]
     let activeLegIndex: Int

@@ -787,6 +787,79 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPositionCheckRequiresCompletedHoldAndCanEndEarly() throws {
+        let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "ready")
+        app.buttons["start-leg"].tap()
+        let control = app.descendants(matching: .any)["position-check-control"]
+        XCTAssertTrue(control.waitForExistence(timeout: 3))
+
+        control.tap()
+        XCTAssertTrue(control.label.contains("READY"))
+        XCTAssertFalse(control.label.contains("ACTIVE"))
+
+        control.press(forDuration: 1.1)
+        XCTAssertTrue(
+            NSPredicate(format: "label CONTAINS 'ACTIVE'").evaluate(with: control),
+            "Completed hold should start the bounded disclosure"
+        )
+        XCTAssertTrue(control.label.contains("Position Check"))
+        XCTAssertTrue(control.label.contains("Tap to end"))
+        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+
+        control.tap()
+        let ended = NSPredicate(format: "NOT (label CONTAINS 'ACTIVE')")
+        expectation(for: ended, evaluatedWith: control)
+        waitForExpectations(timeout: 2)
+    }
+
+    @MainActor
+    func testPositionCheckAcquisitionCanBeCancelled() throws {
+        let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "acquiring")
+        app.buttons["start-leg"].tap()
+        let control = app.descendants(matching: .any)["position-check-control"]
+        XCTAssertTrue(control.waitForExistence(timeout: 3))
+
+        control.press(forDuration: 1.1)
+        XCTAssertTrue(control.label.contains("ACQUIRING"))
+        XCTAssertTrue(control.label.contains("Acquiring GPS"))
+        XCTAssertTrue(control.label.contains("timer has not started"))
+
+        control.tap()
+        let cancelled = NSPredicate(format: "NOT (label CONTAINS 'timer has not started')")
+        expectation(for: cancelled, evaluatedWith: control)
+        waitForExpectations(timeout: 2)
+        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+    }
+
+    @MainActor
+    func testPositionCheckDisclosureAndAcquisitionExpireWithoutRetainingGPS() throws {
+        let activeApp = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "ready")
+        activeApp.buttons["start-leg"].tap()
+        let activeControl = activeApp.descendants(matching: .any)["position-check-control"]
+        XCTAssertTrue(activeControl.waitForExistence(timeout: 3))
+        activeControl.press(forDuration: 1.1)
+        XCTAssertTrue(activeControl.label.contains("ACTIVE"))
+        XCTAssertTrue(
+            activeControl.waitForNonExistence(timeout: 12)
+                || NSPredicate(format: "NOT (label CONTAINS 'ACTIVE')").evaluate(with: activeControl)
+        )
+        XCTAssertFalse(activeControl.label.localizedCaseInsensitiveContains("accuracy"))
+        activeApp.terminate()
+
+        let acquiringApp = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "acquiring")
+        acquiringApp.buttons["start-leg"].tap()
+        let acquiringControl = acquiringApp.descendants(matching: .any)["position-check-control"]
+        XCTAssertTrue(acquiringControl.waitForExistence(timeout: 3))
+        acquiringControl.press(forDuration: 1.1)
+        XCTAssertTrue(acquiringControl.label.contains("timer has not started"))
+        let timedOut = NSPredicate(format: "label CONTAINS 'timed out'")
+        expectation(for: timedOut, evaluatedWith: acquiringControl)
+        waitForExpectations(timeout: 12)
+        XCTAssertFalse(acquiringControl.label.localizedCaseInsensitiveContains("latitude"))
+        XCTAssertTrue(acquiringApp.buttons["waypoint-identified"].exists)
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {

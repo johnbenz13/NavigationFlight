@@ -1,6 +1,9 @@
 import SwiftUI
 
 enum PositionCheckControlAction: Equatable, Sendable {
+    case holdCompleted
+    case cancel
+    case end
     case retry
     case requestPermission
     case openSettings
@@ -8,13 +11,41 @@ enum PositionCheckControlAction: Equatable, Sendable {
 
 struct PositionCheckControl: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var isHolding = false
 
     let presentation: PositionCheckPresentation
     let onAction: (PositionCheckControlAction) -> Void
 
     var body: some View {
         Group {
-            if let action {
+            if presentation.status == .ready || presentation.status == .acquiring {
+                content
+                    .overlay(alignment: .bottomLeading) {
+                        GeometryReader { geometry in
+                            Capsule()
+                                .fill(holdColor)
+                                .frame(width: isHolding ? geometry.size.width : 0, height: 4)
+                                .animation(.linear(duration: 1), value: isHolding)
+                        }
+                        .frame(height: 4)
+                    }
+                    .onLongPressGesture(minimumDuration: 1, maximumDistance: 0) {
+                        onAction(.holdCompleted)
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    } onPressingChanged: { pressing in
+                        isHolding = pressing
+                    }
+            } else if presentation.status == .active {
+                Button { onAction(.end) } label: { content }
+                    .buttonStyle(.plain)
+                    .highPriorityGesture(
+                        LongPressGesture(minimumDuration: 1, maximumDistance: 0)
+                            .onEnded { _ in
+                                onAction(.holdCompleted)
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            }
+                    )
+            } else if let action {
                 Button { onAction(action) } label: { content }
                     .buttonStyle(.plain)
             } else {
@@ -54,6 +85,10 @@ struct PositionCheckControl: View {
         switch presentation.status {
         case .ready, .acquiring:
             nil
+        case .requesting:
+            .cancel
+        case .active:
+            .end
         case .unavailable:
             .retry
         case .permissionRequired:
@@ -65,10 +100,12 @@ struct PositionCheckControl: View {
         switch presentation.status {
         case .ready:
             Color(red: 22 / 255, green: 143 / 255, blue: 71 / 255)
-        case .acquiring:
+        case .acquiring, .requesting:
             Color(red: 10 / 255, green: 102 / 255, blue: 232 / 255)
         case .unavailable, .permissionRequired:
             Color(red: 196 / 255, green: 75 / 255, blue: 66 / 255)
+        case .active:
+            holdColor
         }
     }
 
@@ -76,5 +113,9 @@ struct PositionCheckControl: View {
         presentation.status == .ready
             ? Color(red: 255 / 255, green: 138 / 255, blue: 0)
             : statusColor
+    }
+
+    private var holdColor: Color {
+        Color(red: 255 / 255, green: 138 / 255, blue: 0)
     }
 }

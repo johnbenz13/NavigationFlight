@@ -202,6 +202,12 @@ struct OfflineAviationMapView: UIViewRepresentable {
             static let minuteMarkSource = "active-leg-minute-mark-source"
             static let minuteMarkCasingLayer = "active-leg-minute-mark-casing-layer"
             static let minuteMarkLayer = "active-leg-minute-mark-layer"
+            static let gpsAccuracySource = GPSDisclosureMapContract.accuracySourceID
+            static let gpsAccuracyLayer = GPSDisclosureMapContract.accuracyLayerID
+            static let gpsMarkerSource = GPSDisclosureMapContract.markerSourceID
+            static let gpsMarkerLayer = GPSDisclosureMapContract.markerLayerID
+            static let gpsNeutralLayer = "position-check-neutral-marker-layer"
+            static let gpsVisualHaloLayer = "position-check-visual-halo-layer"
         }
 
         private var presentation: AviationMapPresentation
@@ -320,6 +326,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             addDriftReferences(to: style)
             addWaypoints(to: style)
             addMinuteMarks(to: style)
+            addGPSDisclosure(to: style)
             updateEndpointAnnotations(on: mapView)
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
@@ -661,8 +668,82 @@ struct OfflineAviationMapView: UIViewRepresentable {
             (style.source(withIdentifier: Identifier.waypointSource) as? MLNShapeSource)?.shape = waypointShape()
             (style.source(withIdentifier: Identifier.minuteMarkSource) as? MLNShapeSource)?.shape = minuteMarkShape()
             (style.source(withIdentifier: Identifier.driftReferenceSource) as? MLNShapeSource)?.shape = driftReferenceShape()
+            (style.source(withIdentifier: Identifier.gpsAccuracySource) as? MLNShapeSource)?.shape = gpsAccuracyShape()
+            (style.source(withIdentifier: Identifier.gpsMarkerSource) as? MLNShapeSource)?.shape = gpsMarkerShape()
             (style.layer(withIdentifier: Identifier.activeLayer) as? MLNLineStyleLayer)?.predicate =
                 NSPredicate(format: "legIndex == %d", presentation.activeLegIndex)
+        }
+
+        private func addGPSDisclosure(to style: MLNStyle) {
+            let accuracySource = MLNShapeSource(
+                identifier: Identifier.gpsAccuracySource,
+                shape: gpsAccuracyShape(),
+                options: nil
+            )
+            style.addSource(accuracySource)
+            let accuracyLayer = MLNFillStyleLayer(identifier: Identifier.gpsAccuracyLayer, source: accuracySource)
+            accuracyLayer.fillColor = NSExpression(forConstantValue: UIColor.systemBlue)
+            accuracyLayer.fillOpacity = NSExpression(forConstantValue: 0.14)
+            accuracyLayer.fillOutlineColor = NSExpression(forConstantValue: UIColor.systemBlue.withAlphaComponent(0.5))
+            style.addLayer(accuracyLayer)
+
+            let markerSource = MLNShapeSource(
+                identifier: Identifier.gpsMarkerSource,
+                shape: gpsMarkerShape(),
+                options: nil
+            )
+            style.addSource(markerSource)
+            let visualHalo = MLNCircleStyleLayer(identifier: Identifier.gpsVisualHaloLayer, source: markerSource)
+            visualHalo.circleRadius = NSExpression(forConstantValue: 24)
+            visualHalo.circleColor = NSExpression(forConstantValue: UIColor.systemBlue)
+            visualHalo.circleOpacity = NSExpression(forConstantValue: 0.1)
+            visualHalo.circleStrokeColor = NSExpression(forConstantValue: UIColor.systemBlue)
+            visualHalo.circleStrokeOpacity = NSExpression(forConstantValue: 0.45)
+            visualHalo.circleStrokeWidth = NSExpression(forConstantValue: 1.5)
+            style.addLayer(visualHalo)
+            if let aircraft = UIImage(systemName: "airplane")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal),
+               let neutral = UIImage(systemName: "location.fill")?.withTintColor(.systemBlue, renderingMode: .alwaysOriginal) {
+                style.setImage(aircraft, forName: "position-check-aircraft")
+                style.setImage(neutral, forName: "position-check-neutral")
+            }
+            let directional = MLNSymbolStyleLayer(identifier: Identifier.gpsMarkerLayer, source: markerSource)
+            directional.predicate = NSPredicate(format: "directional == YES")
+            directional.iconImageName = NSExpression(forConstantValue: "position-check-aircraft")
+            directional.iconRotation = NSExpression(forKeyPath: "course")
+            directional.iconRotationAlignment = NSExpression(forConstantValue: "map")
+            directional.iconAllowsOverlap = NSExpression(forConstantValue: true)
+            style.addLayer(directional)
+
+            let neutral = MLNSymbolStyleLayer(identifier: Identifier.gpsNeutralLayer, source: markerSource)
+            neutral.predicate = NSPredicate(format: "directional == NO")
+            neutral.iconImageName = NSExpression(forConstantValue: "position-check-neutral")
+            neutral.iconAllowsOverlap = NSExpression(forConstantValue: true)
+            style.addLayer(neutral)
+        }
+
+        private func gpsMarkerShape() -> MLNShapeCollectionFeature {
+            guard let overlay = presentation.gpsDisclosureOverlay else {
+                return MLNShapeCollectionFeature(shapes: [])
+            }
+            let feature = MLNPointFeature()
+            feature.coordinate = coordinate(overlay.coordinate)
+            switch overlay.marker {
+            case .neutral:
+                feature.attributes = ["directional": false]
+            case .directional(let course):
+                feature.attributes = ["directional": true, "course": course]
+            }
+            return MLNShapeCollectionFeature(shapes: [feature])
+        }
+
+        private func gpsAccuracyShape() -> MLNShapeCollectionFeature {
+            guard let overlay = presentation.gpsDisclosureOverlay else {
+                return MLNShapeCollectionFeature(shapes: [])
+            }
+            var coordinates = GPSDisclosureMapContract.accuracyRing(for: overlay).map(coordinate)
+            guard coordinates.count >= 4 else { return MLNShapeCollectionFeature(shapes: []) }
+            let polygon = MLNPolygonFeature(coordinates: &coordinates, count: UInt(coordinates.count))
+            return MLNShapeCollectionFeature(shapes: [polygon])
         }
 
         private func routeShape() -> MLNShapeCollectionFeature {

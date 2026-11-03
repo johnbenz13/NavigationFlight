@@ -13,6 +13,10 @@ struct AviationMapCameraState: Equatable, Sendable {
 }
 
 nonisolated struct GPSDisclosureOverlay: Equatable, Sendable {
+    struct RecoverySegment: Equatable, Sendable {
+        let from: AviationMapCoordinate
+        let to: AviationMapCoordinate
+    }
     enum Marker: Equatable, Sendable {
         case neutral
         case directional(trueCourseDegrees: Double)
@@ -21,14 +25,31 @@ nonisolated struct GPSDisclosureOverlay: Equatable, Sendable {
     let coordinate: AviationMapCoordinate
     let accuracyRadiusMeters: Double
     let marker: Marker
+    let recoverySegment: RecoverySegment?
+    let interceptCoordinate: AviationMapCoordinate?
 
     init(projection: PositionCheckProjection) {
+        self.init(projection: projection, recoveryOutcome: nil)
+    }
+
+    init(projection: PositionCheckProjection, recoveryOutcome: ActiveLegRecoveryOutcome?) {
         coordinate = AviationMapCoordinate(
             latitude: projection.coordinate.latitudeDegrees,
             longitude: projection.coordinate.longitudeDegrees
         )
         accuracyRadiusMeters = projection.horizontalAccuracyMeters
         marker = projection.trueCourseDegrees.map(Marker.directional) ?? .neutral
+        if case .guidance(let guidance) = recoveryOutcome {
+            let intercept = AviationMapCoordinate(
+                latitude: guidance.interceptCoordinate.latitudeDegrees,
+                longitude: guidance.interceptCoordinate.longitudeDegrees
+            )
+            recoverySegment = RecoverySegment(from: coordinate, to: intercept)
+            interceptCoordinate = intercept
+        } else {
+            recoverySegment = nil
+            interceptCoordinate = nil
+        }
     }
 }
 
@@ -37,6 +58,10 @@ nonisolated enum GPSDisclosureMapContract {
     static let accuracyLayerID = "position-check-accuracy-layer"
     static let markerSourceID = "position-check-marker-source"
     static let markerLayerID = "position-check-marker-layer"
+    static let recoverySourceID = "position-check-recovery-source"
+    static let recoveryLayerID = "position-check-recovery-layer"
+    static let interceptSourceID = "position-check-intercept-source"
+    static let interceptLayerID = "position-check-intercept-layer"
 
     static func accuracyRing(
         for overlay: GPSDisclosureOverlay,

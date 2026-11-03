@@ -300,7 +300,12 @@ struct CockpitView: View {
             if let newValue, oldValue == nil {
                 selectedMapCallout = nil
                 isMapCameraUserControlled = false
-                mapFocusRequest = AviationMapFocusRequest(mode: .timingTarget(newValue.coordinate))
+                mapFocusRequest = AviationMapFocusRequest(
+                    mode: .positionCheck(
+                        aircraft: newValue.coordinate,
+                        intercept: newValue.interceptCoordinate
+                    )
+                )
             } else if oldValue != nil, newValue == nil, let restoration = positionCheckRestoration {
                 preservedMapCamera = restoration.camera
                 isMapCameraUserControlled = restoration.isCameraUserControlled
@@ -349,6 +354,13 @@ struct CockpitView: View {
                     .accessibilitySortPriority(81)
                 legHeader
                     .accessibilitySortPriority(100)
+            }
+            if let recovery = positionCheck?.recovery {
+                PositionCheckRecoveryGuidanceView(recovery: recovery)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
+                    .padding(.top, horizontalSizeClass == .compact ? 58 : 80)
+                    .accessibilitySortPriority(85)
             }
             NextLegPreparationOverlay(
                 preparation: flight.destinationIdentifiedAt == nil ? nil : nextLegPreparation,
@@ -576,6 +588,7 @@ struct CockpitView: View {
         case .waypoint: "focus-waypoint"
         case .overview: "route-overview"
         case .timingTarget: "focus-timing-target"
+        case .positionCheck: "focus-position-check"
         }
     }
 

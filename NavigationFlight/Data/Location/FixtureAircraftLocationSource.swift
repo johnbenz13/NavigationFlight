@@ -15,15 +15,23 @@ nonisolated struct FixtureAircraftLocationSource: AircraftLocationSource {
     static func make(state: String) -> FixtureAircraftLocationSource {
         let now = Date.now
         switch state {
-        case "ready":
+        case "ready", "recovery-available", "on-track", "position-only", "no-sensible-intercept", "extreme-displacement":
+            let values: (latitude: Double, longitude: Double, speed: Double?) = switch state {
+            case "recovery-available": (0.008, 0.006, 50)
+            case "on-track": (0.008, 0.001, 50)
+            case "position-only": (0.008, 0.006, nil)
+            case "no-sensible-intercept": (0.02, 0.001, 50)
+            case "extreme-displacement": (0.008, 0.25, 50)
+            default: (32, 34.8, 20)
+            }
             return FixtureAircraftLocationSource(event: .sample(
                 AircraftLocationSample(
-                    coordinate: WGS84Coordinate(latitudeDegrees: 32, longitudeDegrees: 34.8),
+                    coordinate: WGS84Coordinate(latitudeDegrees: values.latitude, longitudeDegrees: values.longitude),
                     observedAt: now,
                     horizontalAccuracyMeters: 50,
                     trueCourseDegrees: 90,
                     courseAccuracyDegrees: 10,
-                    groundSpeedMetersPerSecond: 20,
+                    groundSpeedMetersPerSecond: values.speed,
                     speedAccuracyMetersPerSecond: 1
                 ),
                 receivedAt: now

@@ -813,6 +813,30 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPositionCheckRecoveryOutcomeFixtures() throws {
+        let fixtures = [
+            ("recovery-available", "Rejoin active leg"),
+            ("on-track", "ON TRACK"),
+            ("position-only", "POSITION ONLY"),
+            ("no-sensible-intercept", "NO SENSIBLE INTERCEPT"),
+            ("extreme-displacement", "OUTSIDE RECOVERY RANGE")
+        ]
+
+        for (fixture, expectedText) in fixtures {
+            let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: fixture)
+            app.buttons["start-leg"].tap()
+            let control = app.descendants(matching: .any)["position-check-control"]
+            XCTAssertTrue(control.waitForExistence(timeout: 3))
+            control.press(forDuration: 1.1)
+            let recovery = app.descendants(matching: .any)["position-check-recovery"]
+            XCTAssertTrue(recovery.waitForExistence(timeout: 3), "Missing recovery presentation for \(fixture)")
+            XCTAssertTrue(recovery.label.contains(expectedText), "Unexpected recovery presentation for \(fixture): \(recovery.label)")
+            XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testPositionCheckAcquisitionCanBeCancelled() throws {
         let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "acquiring")
         app.buttons["start-leg"].tap()

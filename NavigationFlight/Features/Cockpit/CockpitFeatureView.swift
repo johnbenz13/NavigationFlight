@@ -117,13 +117,21 @@ struct CockpitFeatureView: View {
                     let positionCheck = adapter.makePositionCheckPresentation(
                         for: locationAvailability,
                         state: positionCheckCoordinator.state,
-                        remainingSeconds: positionCheckCoordinator.remainingSeconds
+                        remainingSeconds: positionCheckCoordinator.remainingSeconds,
+                        recoveryOutcome: recoveryOutcome(
+                            mapPresentation: mapPresentation,
+                            magneticCourseDegrees: presentation.magneticCourseDegrees
+                        )
                     )
                     CockpitView(
                         data: presentation,
                         mapPresentation: addingGPSDisclosure(
                             mapPresentation,
-                            disclosing: positionCheck.disclosedPosition
+                            disclosing: positionCheck.disclosedPosition,
+                            recoveryOutcome: recoveryOutcome(
+                                mapPresentation: mapPresentation,
+                                magneticCourseDegrees: presentation.magneticCourseDegrees
+                            )
                         ),
                         nextLegPreparation: nextLegPreparation,
                         previousLegSummary: previousLegSummary,
@@ -265,11 +273,23 @@ struct CockpitFeatureView: View {
 
     private func addingGPSDisclosure(
         _ presentation: AviationMapPresentation,
-        disclosing projection: PositionCheckProjection?
+        disclosing projection: PositionCheckProjection?,
+        recoveryOutcome: ActiveLegRecoveryOutcome?
     ) -> AviationMapPresentation {
         var result = presentation
-        result.gpsDisclosureOverlay = projection.map(GPSDisclosureOverlay.init)
+        result.gpsDisclosureOverlay = projection.map { GPSDisclosureOverlay(projection: $0, recoveryOutcome: recoveryOutcome) }
         return result
+    }
+
+    private func recoveryOutcome(
+        mapPresentation: AviationMapPresentation,
+        magneticCourseDegrees: Double
+    ) -> ActiveLegRecoveryOutcome? {
+        positionCheckCoordinator.recoveryOutcome(
+            for: locationAvailability,
+            activeLeg: mapPresentation.activeLeg,
+            importedMagneticCourseDegrees: magneticCourseDegrees
+        )
     }
 }
 

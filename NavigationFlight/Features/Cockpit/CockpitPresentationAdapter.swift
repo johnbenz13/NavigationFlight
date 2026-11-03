@@ -303,6 +303,13 @@ struct LegStartChecklistPresentation: Equatable, Sendable {
 }
 
 struct PositionCheckPresentation: Equatable, Sendable {
+    enum Recovery: Equatable, Sendable {
+        case onTrack
+        case guidance(course: String, time: String, distance: String)
+        case positionOnly
+        case noSensibleIntercept(String)
+        case extremeDisplacement
+    }
     enum Status: Equatable, Sendable {
         case ready
         case acquiring
@@ -321,13 +328,15 @@ struct PositionCheckPresentation: Equatable, Sendable {
     let systemImage: String
     let isHoldEligible: Bool
     var disclosedPosition: PositionCheckProjection? = nil
+    var recovery: Recovery? = nil
 }
 
 struct CockpitPresentationAdapter: Sendable {
     func makePositionCheckPresentation(
         for availability: LocationAvailability,
         state: PositionCheckState,
-        remainingSeconds: Int?
+        remainingSeconds: Int?,
+        recoveryOutcome: ActiveLegRecoveryOutcome? = nil
     ) -> PositionCheckPresentation {
         switch state {
         case .acquiring:
@@ -342,6 +351,18 @@ struct CockpitPresentationAdapter: Sendable {
                 isHoldEligible: true
             )
         case .active(let session):
+            guard case .ready = availability else {
+                return PositionCheckPresentation(
+                    status: .active,
+                    statusLabel: "ACTIVE",
+                    title: "Position Check · \(remainingSeconds ?? 10)s",
+                    detail: "GPS signal lost",
+                    explanation: "GPS signal lost; stale overlays were cleared.",
+                    remedy: "Tap to end",
+                    systemImage: "location.slash",
+                    isHoldEligible: true
+                )
+            }
             return PositionCheckPresentation(
                 status: .active,
                 statusLabel: "ACTIVE",
@@ -351,7 +372,8 @@ struct CockpitPresentationAdapter: Sendable {
                 remedy: "Tap to end",
                 systemImage: "location.fill",
                 isHoldEligible: true,
-                disclosedPosition: session.projection
+                disclosedPosition: session.projection,
+                recovery: makeRecoveryPresentation(recoveryOutcome)
             )
         case .transientFailure:
             return PositionCheckPresentation(
@@ -366,6 +388,33 @@ struct CockpitPresentationAdapter: Sendable {
             )
         case .idle:
             return makePositionCheckPresentation(for: availability)
+        }
+    }
+
+    func makeRecoveryPresentation(_ outcome: ActiveLegRecoveryOutcome?) -> PositionCheckPresentation.Recovery? {
+        switch outcome {
+        case .onTrack:
+            return .onTrack
+        case .guidance(let guidance):
+            let roundedCourse = Int(guidance.magneticCourseDegrees.rounded()) % 360
+            let course = String(format: "%03d", roundedCourse)
+            let seconds = Int((guidance.rejoinTimeSeconds / 10).rounded() * 10)
+            return .guidance(
+                course: "\(course)°M",
+                time: "~\(seconds / 60):\(String(format: "%02d", seconds % 60))",
+                distance: "\(guidance.distanceNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+            )
+        case .unavailable(.insufficientMovementQuality), .unavailable(.insufficientPositionQuality),
+             .unavailable(.noActiveLeg):
+            return .positionOnly
+        case .unavailable(.activeLegPassed):
+            return .noSensibleIntercept("Active leg passed — review flight plan")
+        case .unavailable(.insufficientRemainingLeg):
+            return .noSensibleIntercept("No sensible forward intercept remains")
+        case .unavailable(.extremeDisplacement):
+            return .extremeDisplacement
+        case nil:
+            return nil
         }
     }
 

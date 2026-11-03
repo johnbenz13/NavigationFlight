@@ -30,10 +30,23 @@ struct AviationMapPositionDisclosureTests {
             GPSDisclosureMapContract.accuracySourceID,
             GPSDisclosureMapContract.accuracyLayerID,
             GPSDisclosureMapContract.markerSourceID,
-            GPSDisclosureMapContract.markerLayerID
+            GPSDisclosureMapContract.markerLayerID,
+            GPSDisclosureMapContract.recoverySourceID,
+            GPSDisclosureMapContract.recoveryLayerID,
+            GPSDisclosureMapContract.interceptSourceID,
+            GPSDisclosureMapContract.interceptLayerID
         ]
         #expect(Set(identifiers).count == identifiers.count)
         #expect(identifiers.allSatisfy { $0.hasPrefix("position-check-") })
+    }
+
+    @Test("Recovery camera requests retain both aircraft and intercept coordinates")
+    func recoveryCameraRequest() {
+        let aircraft = AviationMapCoordinate(latitude: 32.1, longitude: 34.8)
+        let intercept = AviationMapCoordinate(latitude: 32.2, longitude: 34.9)
+        let request = AviationMapFocusRequest(mode: .positionCheck(aircraft: aircraft, intercept: intercept))
+
+        #expect(request.mode == .positionCheck(aircraft: aircraft, intercept: intercept))
     }
 
     private func projection(course: Double?) -> PositionCheckProjection {

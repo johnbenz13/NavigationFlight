@@ -42,6 +42,28 @@ final class PositionCheckCoordinator {
         return transition.effect
     }
 
+    func recoveryOutcome(
+        for availability: LocationAvailability,
+        activeLeg: AviationMapLeg?,
+        importedMagneticCourseDegrees: Double
+    ) -> ActiveLegRecoveryOutcome? {
+        guard state.activeSession != nil,
+              case .ready(let sample) = availability,
+              let activeLeg else { return nil }
+        return ActiveLegRecoveryCalculator().calculate(
+            sample: sample,
+            legStart: WGS84Coordinate(
+                latitudeDegrees: activeLeg.from.latitude,
+                longitudeDegrees: activeLeg.from.longitude
+            ),
+            legEnd: WGS84Coordinate(
+                latitudeDegrees: activeLeg.to.latitude,
+                longitudeDegrees: activeLeg.to.longitude
+            ),
+            importedMagneticCourseDegrees: importedMagneticCourseDegrees
+        )
+    }
+
     private func apply(_ effect: PositionCheckEffect) {
         switch effect {
         case .none:

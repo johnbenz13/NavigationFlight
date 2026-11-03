@@ -8,6 +8,7 @@ enum AviationMapFocusMode: Equatable, Sendable {
     case waypoint
     case overview
     case timingTarget(AviationMapCoordinate)
+    case positionCheck(aircraft: AviationMapCoordinate, intercept: AviationMapCoordinate?)
 }
 
 struct AviationMapFocusRequest: Equatable, Sendable {
@@ -208,6 +209,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
             static let gpsMarkerLayer = GPSDisclosureMapContract.markerLayerID
             static let gpsNeutralLayer = "position-check-neutral-marker-layer"
             static let gpsVisualHaloLayer = "position-check-visual-halo-layer"
+            static let gpsRecoverySource = GPSDisclosureMapContract.recoverySourceID
+            static let gpsRecoveryLayer = GPSDisclosureMapContract.recoveryLayerID
+            static let gpsInterceptSource = GPSDisclosureMapContract.interceptSourceID
+            static let gpsInterceptLayer = GPSDisclosureMapContract.interceptLayerID
         }
 
         private var presentation: AviationMapPresentation
@@ -548,6 +553,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     focusOverview(on: mapView)
                 case .timingTarget(let coordinate):
                     focusTimingTarget(coordinate, on: mapView)
+                case .positionCheck(let aircraft, let intercept):
+                    focusPositionCheck(aircraft: aircraft, intercept: intercept, on: mapView)
                 }
             }
             lastFocusRequest = focusRequest
@@ -670,11 +677,39 @@ struct OfflineAviationMapView: UIViewRepresentable {
             (style.source(withIdentifier: Identifier.driftReferenceSource) as? MLNShapeSource)?.shape = driftReferenceShape()
             (style.source(withIdentifier: Identifier.gpsAccuracySource) as? MLNShapeSource)?.shape = gpsAccuracyShape()
             (style.source(withIdentifier: Identifier.gpsMarkerSource) as? MLNShapeSource)?.shape = gpsMarkerShape()
+            (style.source(withIdentifier: Identifier.gpsRecoverySource) as? MLNShapeSource)?.shape = gpsRecoveryShape()
+            (style.source(withIdentifier: Identifier.gpsInterceptSource) as? MLNShapeSource)?.shape = gpsInterceptShape()
             (style.layer(withIdentifier: Identifier.activeLayer) as? MLNLineStyleLayer)?.predicate =
                 NSPredicate(format: "legIndex == %d", presentation.activeLegIndex)
         }
 
         private func addGPSDisclosure(to style: MLNStyle) {
+            let recoverySource = MLNShapeSource(
+                identifier: Identifier.gpsRecoverySource,
+                shape: gpsRecoveryShape(),
+                options: nil
+            )
+            style.addSource(recoverySource)
+            let recoveryLayer = MLNLineStyleLayer(identifier: Identifier.gpsRecoveryLayer, source: recoverySource)
+            recoveryLayer.lineColor = NSExpression(forConstantValue: UIColor.systemOrange)
+            recoveryLayer.lineWidth = NSExpression(forConstantValue: 3)
+            recoveryLayer.lineDashPattern = NSExpression(forConstantValue: [2, 2])
+            recoveryLayer.lineCap = NSExpression(forConstantValue: "round")
+            style.addLayer(recoveryLayer)
+
+            let interceptSource = MLNShapeSource(
+                identifier: Identifier.gpsInterceptSource,
+                shape: gpsInterceptShape(),
+                options: nil
+            )
+            style.addSource(interceptSource)
+            let interceptLayer = MLNCircleStyleLayer(identifier: Identifier.gpsInterceptLayer, source: interceptSource)
+            interceptLayer.circleRadius = NSExpression(forConstantValue: 8)
+            interceptLayer.circleColor = NSExpression(forConstantValue: UIColor.systemBackground)
+            interceptLayer.circleStrokeColor = NSExpression(forConstantValue: UIColor.systemOrange)
+            interceptLayer.circleStrokeWidth = NSExpression(forConstantValue: 3)
+            style.addLayer(interceptLayer)
+
             let accuracySource = MLNShapeSource(
                 identifier: Identifier.gpsAccuracySource,
                 shape: gpsAccuracyShape(),
@@ -744,6 +779,22 @@ struct OfflineAviationMapView: UIViewRepresentable {
             guard coordinates.count >= 4 else { return MLNShapeCollectionFeature(shapes: []) }
             let polygon = MLNPolygonFeature(coordinates: &coordinates, count: UInt(coordinates.count))
             return MLNShapeCollectionFeature(shapes: [polygon])
+        }
+
+        private func gpsRecoveryShape() -> MLNShapeCollectionFeature {
+            guard let segment = presentation.gpsDisclosureOverlay?.recoverySegment else {
+                return MLNShapeCollectionFeature(shapes: [])
+            }
+            return MLNShapeCollectionFeature(shapes: [lineFeature(from: segment.from, to: segment.to, attributes: [:])])
+        }
+
+        private func gpsInterceptShape() -> MLNShapeCollectionFeature {
+            guard let intercept = presentation.gpsDisclosureOverlay?.interceptCoordinate else {
+                return MLNShapeCollectionFeature(shapes: [])
+            }
+            let feature = MLNPointFeature()
+            feature.coordinate = coordinate(intercept)
+            return MLNShapeCollectionFeature(shapes: [feature])
         }
 
         private func routeShape() -> MLNShapeCollectionFeature {
@@ -883,6 +934,20 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 coordinate(target),
                 zoomLevel: mapView.zoomLevel,
                 direction: mapView.direction,
+                animated: !reducesMotion
+            )
+        }
+
+        private func focusPositionCheck(
+            aircraft: AviationMapCoordinate,
+            intercept: AviationMapCoordinate?,
+            on mapView: MLNMapView
+        ) {
+            publishCameraOwnership(isUserControlled: false)
+            fit(
+                [aircraft, intercept].compactMap { $0 },
+                on: mapView,
+                padding: UIEdgeInsets(top: 150, left: 90, bottom: 130, right: 110),
                 animated: !reducesMotion
             )
         }

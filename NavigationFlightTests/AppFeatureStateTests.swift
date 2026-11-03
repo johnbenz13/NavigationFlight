@@ -449,19 +449,33 @@ struct AppFeatureStateTests {
 
         let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: nil)
 
-        #expect(presentation.primaryAction == .loadInCockpit)
-        #expect(presentation.secondaryActions.isEmpty)
+        #expect(presentation.primaryAction.action == .loadInCockpit)
+        #expect(presentation.updateActions.isEmpty)
+        #expect(presentation.flightActions.isEmpty)
     }
 
-    @Test("Inspection of the loaded revision offers return and restart")
+    @Test("Inspection of the loaded revision presents continuation and destructive restart separately")
     func inspectionOfLoadedRevision() throws {
         let plan = try flightPlan()
         let record = LibraryFlightPlan(flightPlan: plan, importedAt: .distantPast)
 
         let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: plan)
 
-        #expect(presentation.primaryAction == .returnToCockpit)
-        #expect(presentation.secondaryActions == [.restartFlight])
+        #expect(presentation.primaryAction.action == .returnToCockpit)
+        #expect(presentation.primaryAction.label == "Continue to Cockpit")
+        #expect(
+            presentation.primaryAction.consequence ==
+                "Keeps the current Flight and returns to the cockpit without changing timing or progress."
+        )
+        #expect(presentation.updateActions.isEmpty)
+        #expect(presentation.flightActions.count == 1)
+        #expect(presentation.flightActions.first?.action == .restartFlight)
+        #expect(presentation.flightActions.first?.label == "Restart Flight…")
+        #expect(presentation.flightActions.first?.role == .destructive)
+        #expect(
+            presentation.flightActions.first?.consequence ==
+                "Creates a new ready Flight from this Flight Plan. Existing progress or edits require confirmation."
+        )
     }
 
     @Test("Inspection of a saved update offers return, update, and restart")
@@ -475,8 +489,14 @@ struct AppFeatureStateTests {
 
         let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedPlan)
 
-        #expect(presentation.primaryAction == .returnToCockpit)
-        #expect(presentation.secondaryActions == [.loadUpdatedPlan, .restartFlight])
+        #expect(presentation.primaryAction.action == .returnToCockpit)
+        #expect(presentation.primaryAction.label == "Continue to Cockpit")
+        #expect(presentation.updateActions.map(\.action) == [.loadUpdatedPlan])
+        #expect(presentation.updateActions.first?.label == "Load Updated Plan")
+        #expect(presentation.updateActions.first?.role == .standard)
+        #expect(presentation.flightActionsTitle == "Flight Actions")
+        #expect(presentation.flightActions.map(\.action) == [.restartFlight])
+        #expect(presentation.flightActions.first?.role == .destructive)
     }
 
     @Test("Inspection of a different Flight Plan offers only Load in Cockpit")
@@ -487,8 +507,9 @@ struct AppFeatureStateTests {
 
         let presentation = FlightPlanInspectionPresentation(inspected: record, loadedFlightPlan: loadedPlan)
 
-        #expect(presentation.primaryAction == .loadInCockpit)
-        #expect(presentation.secondaryActions.isEmpty)
+        #expect(presentation.primaryAction.action == .loadInCockpit)
+        #expect(presentation.updateActions.isEmpty)
+        #expect(presentation.flightActions.isEmpty)
     }
 
     @Test("Restart pins the loaded snapshot while update loads the saved revision")

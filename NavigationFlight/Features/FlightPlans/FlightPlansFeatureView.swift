@@ -285,28 +285,59 @@ private struct FlightPlanInspectionView: View {
             }
 
             Section {
-                Button {
-                    perform(presentation.primaryAction)
-                } label: {
-                    Text(presentation.primaryAction.label)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isActionDisabled)
-                .accessibilityIdentifier(identifier(for: presentation.primaryAction))
-
-                ForEach(presentation.secondaryActions, id: \.self) { action in
+                VStack(alignment: .leading, spacing: 10) {
                     Button {
-                        perform(action)
+                        perform(presentation.primaryAction.action)
                     } label: {
-                        Text(action.label)
+                        Text(presentation.primaryAction.label)
+                            .frame(maxWidth: .infinity, minHeight: 34)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isActionDisabled)
+                    .accessibilityIdentifier(identifier(for: presentation.primaryAction.action))
+
+                    if let consequence = presentation.primaryAction.consequence {
+                        Text(consequence)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("continue-to-cockpit-consequence")
+                    }
+                }
+
+                ForEach(presentation.updateActions, id: \.action) { presentedAction in
+                    Button {
+                        perform(presentedAction.action)
+                    } label: {
+                        Text(presentedAction.label)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .disabled(isActionDisabled)
-                    .accessibilityIdentifier(identifier(for: action))
+                    .accessibilityIdentifier(identifier(for: presentedAction.action))
                 }
-            } footer: {
-                Text("Loading or restarting creates a fresh Flight. Leg timing remains stopped until you start it in Cockpit.")
+            }
+
+            if presentation.flightActions.isEmpty == false {
+                Section(presentation.flightActionsTitle) {
+                    ForEach(presentation.flightActions, id: \.action) { presentedAction in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button(role: presentedAction.role == .destructive ? .destructive : nil) {
+                                perform(presentedAction.action)
+                            } label: {
+                                Text(presentedAction.label)
+                                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                            }
+                            .disabled(isActionDisabled)
+                            .accessibilityIdentifier(identifier(for: presentedAction.action))
+
+                            if let consequence = presentedAction.consequence {
+                                Text(consequence)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .accessibilityIdentifier("restart-flight-consequence")
+                            }
+                        }
+                    }
+                }
             }
         }
         .navigationTitle(record.flightPlan.title)

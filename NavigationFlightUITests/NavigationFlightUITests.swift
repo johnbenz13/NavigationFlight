@@ -115,7 +115,11 @@ final class NavigationFlightUITests: XCTestCase {
 
         let returnButton = app.buttons["return-to-cockpit"]
         XCTAssertTrue(returnButton.waitForExistence(timeout: 2))
-        XCTAssertTrue(app.buttons["restart-flight"].exists)
+        XCTAssertEqual(returnButton.label, "Continue to Cockpit")
+        XCTAssertTrue(app.staticTexts["Keeps the current Flight and returns to the cockpit without changing timing or progress."].exists)
+        XCTAssertTrue(app.staticTexts["Flight Actions"].exists)
+        XCTAssertEqual(app.buttons["restart-flight"].label, "Restart Flight…")
+        XCTAssertTrue(app.staticTexts["Creates a new ready Flight from this Flight Plan. Existing progress or edits require confirmation."].exists)
         returnButton.tap()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
 
@@ -136,6 +140,9 @@ final class NavigationFlightUITests: XCTestCase {
         row.tap()
 
         XCTAssertTrue(app.buttons["load-updated-plan"].waitForExistence(timeout: 2))
+        XCTAssertEqual(app.buttons["return-to-cockpit"].label, "Continue to Cockpit")
+        XCTAssertTrue(app.staticTexts["Flight Actions"].exists)
+        XCTAssertEqual(app.buttons["restart-flight"].label, "Restart Flight…")
         app.buttons["restart-flight"].tap()
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
 

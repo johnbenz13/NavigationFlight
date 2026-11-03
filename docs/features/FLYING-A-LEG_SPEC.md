@@ -116,6 +116,7 @@ The first release does not:
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
 - Product-spec status: `approved` by John — 2026-10-25
 - Design status: `approved · Iteration 08 ETA timer-floor states` by John — 2026-10-25
+- Cross-feature pre-flight review authority: [App Navigation and Flight Plans Library · Iteration 04](https://www.figma.com/design/FDSRcz1yl7bkSoziKvGzQ1?node-id=41-76), approved by John — 2026-11-03. It owns the loaded-Flight-Plan review action hierarchy and replaces the legacy `PlanInspectionView` presentation without changing the cockpit-ready or explicit-start invariants below.
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
     - Iteration 03 — Ready to Start; and
@@ -168,9 +169,9 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 ### Leg lifecycle
 
-1. Importing and inspecting a flight plan does not begin a flight timer or make an observation on behalf of the pilot.
+1. Importing or reviewing a Flight Plan does not begin a Flight timer or make an observation on behalf of the pilot. The canonical pre-flight review is the Flight Plans inspection defined by the App Navigation and Flight Plans Library specification; the cockpit does not maintain a second legacy `PlanInspectionView` presentation.
 
-2. The pilot can select a starting leg and an available calculation mode only before timing begins, subject to the existing plan-eligibility rules.
+2. The pilot can select a starting leg and an available calculation mode only before timing begins, subject to the existing plan-eligibility rules. Replacing the legacy inspection presentation must not remove these capabilities; they remain available through the canonical pre-flight review or the ready Cockpit state.
 
 3. Entering the cockpit leaves the selected leg ready. The pilot must explicitly choose **Start Leg** before the leg becomes active.
 

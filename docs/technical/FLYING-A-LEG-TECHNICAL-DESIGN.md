@@ -32,6 +32,14 @@ Durable active-flight persistence, GPS-derived behavior, a heading cross-check, 
 
 The implementation extends the current architecture rather than introducing a new state-management layer.
 
+The canonical pre-flight review lives in `FlightPlansFeatureView` as defined by
+the App Navigation and Flight Plans Library technical design. `CockpitFeatureView`
+does not retain a parallel `PlanInspectionView` branch. Before timing begins,
+starting-leg and calculation-mode commands continue to target
+`CockpitFeatureState`; the canonical review or ready Cockpit may expose those typed
+intents without moving their eligibility rules into SwiftUI. The Cockpit plan-review
+intent selects the loaded Flight Plan's retained Flight Plans inspection.
+
 ```mermaid
 flowchart TD
     Input[Pilot action] --> View[CockpitView]

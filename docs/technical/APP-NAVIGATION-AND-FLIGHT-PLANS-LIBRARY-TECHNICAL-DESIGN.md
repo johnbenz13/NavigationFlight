@@ -329,14 +329,22 @@ loaded snapshot:
 | Relationship | Primary and secondary operations |
 | --- | --- |
 | No loaded Flight | `Load in Cockpit` |
-| Inspected ID/revision equals loaded snapshot | `Return to Cockpit`, plus `Restart Flight` |
-| Inspected ID equals loaded ID but revision differs | `Return to Cockpit`, `Load Updated Plan`, plus restart of the loaded version |
+| Inspected ID/revision equals loaded snapshot | `Continue to Cockpit`, plus destructive `Restart Flight…` |
+| Inspected ID equals loaded ID but revision differs | `Continue to Cockpit`, `Load Updated Plan`, plus destructive restart of the loaded version |
 | Different ID | `Load in Cockpit` |
 
-`Return to Cockpit` changes only the selected app section. `Load Updated Plan`
+`Continue to Cockpit` changes only the selected app section. `Load Updated Plan`
 uses the normal loading command with the saved snapshot. `Restart Flight` uses
 the Cockpit's loaded snapshot even if the library record is newer or absent. It
 uses the same protected-work confirmation path as replacement.
+
+The presentation projection groups operations by consequence instead of returning
+one undifferentiated secondary-action array. The primary continuation action has
+preservation copy. Restart appears in a separate Flight Actions group with a
+destructive role, an ellipsis that communicates the possible confirmation step,
+and copy describing the new ready Flight. These are presentation semantics only;
+the existing typed commands and protected-work decision remain the behavioral
+interface.
 
 ## Protected pilot work
 
@@ -392,6 +400,13 @@ from Flight Plans. It reads selected security-scoped bytes through a small file-
 helper, then passes `Data` to `FlightPlanLibrary`. The library never retains or
 persists a provider URL or security-scoped token.
 
+`FlightPlanInspectionView` is the single pre-flight review presentation for both
+saved-library inspection and the loaded Flight Plan. It renders relationship-derived
+actions and preserved pre-flight configuration through typed presentation values.
+The legacy Cockpit `PlanInspectionView` branch is removed; Cockpit renders its
+empty or operational/ready state, and its plan-inspection intent selects the
+corresponding Flight Plans inspection without duplicating review UI or state.
+
 The existing `FPLNavFileLoader` responsibilities split as follows:
 
 - security-scoped file access and extension checking move to a Flight Plans import
@@ -446,7 +461,7 @@ The interface is the test surface.
 - every protected-work category requires confirmation;
 - every presentation-only category does not require confirmation;
 - cancellation preserves the exact existing Cockpit state;
-- returning to Cockpit does not create a Flight;
+- continuing to Cockpit does not create a Flight;
 - updating the saved copy does not change the loaded snapshot;
 - loading an update follows the replacement rules;
 - restart uses the loaded revision, including after library removal; and
@@ -461,6 +476,12 @@ preservation, active timing across tab changes, and the approved iPad portrait,
 iPad landscape, and iPhone portrait adaptations. Each UI ticket must capture and
 compare simulator screenshots with its exact approved Figma references under
 the repository ticket workflow.
+
+For pre-flight review, assert the approved hierarchy and copy separately from
+command outcomes: Continue to Cockpit is primary and preserves identity and state;
+Restart Flight… is isolated in Flight Actions, exposed as destructive, and follows
+the protected-work confirmation path. Verify that Cockpit plan inspection routes
+to the retained Flight Plans inspection and that no legacy review branch remains.
 
 ## Implementation sequence
 
@@ -504,10 +525,14 @@ issue, feature branch, and—only when requested—pull request.
 6. **Inspection, loading, updating, and restart**
    - relationship-derived actions, protected-work confirmations, cross-tab
      transitions, and retained Flight Plans inspection.
-7. **Removal and loaded-Flight-Plan continuity**
+7. **Canonical pre-flight review action hierarchy**
+   - Continue to Cockpit preservation semantics, destructive restart grouping and
+     consequence copy, Cockpit-to-Flight-Plans review routing, and removal of the
+     legacy duplicate inspection presentation.
+8. **Removal and loaded-Flight-Plan continuity**
    - normal and loaded-Flight-Plan confirmations, failure handling,
      empty-after-removal, loaded-Flight-Plan inspection, and restart after removal.
-8. **Adaptive and accessibility conformance**
+9. **Adaptive and accessibility conformance**
    - complete approved state matrix, Dynamic Type, VoiceOver, orientation/window
      resizing, visual comparison, and remaining UI automation.
 

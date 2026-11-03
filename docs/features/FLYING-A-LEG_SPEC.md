@@ -55,8 +55,9 @@ The first release does not:
 - derive or display a wind direction, wind speed, headwind, tailwind, or crosswind;
 - calculate a Reference Heading;
 - recommend or automatically apply a heading;
-- track the aircraft with GPS during normal navigation;
-- reveal a live aircraft position;
+- reveal GPS-derived position during normal navigation except through the
+  deliberate, time-bounded Position Check defined by
+  [Position Check](POSITION-CHECK_SPEC.md);
 - detect that the pilot is lost;
 - implement automatic safety mode;
 - provide unrestricted editing of historical flight events; or
@@ -417,7 +418,7 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 99. An identification point's **Reached** action is available only from that identification point's open callout. The lower cockpit console does not provide an identification-point reach action.
 
-100. The map provides distinct controls for focusing the active leg, focusing the applicable waypoint, showing the route overview, and opening plan inspection. It does not present a current-aircraft-position control while the product has no live aircraft-position source.
+100. The map provides distinct controls for focusing the active leg, focusing the applicable waypoint, showing the route overview, and opening plan inspection. When the Position Check capability is present, its deliberate, time-bounded control is provided separately in the lower cockpit console as defined by [Position Check](POSITION-CHECK_SPEC.md); it is not another map-focus control and does not change the meaning of any pilot-reported position fix.
 
 101. Magnetic reference is communicated as part of the label for each applicable heading, course, or radial value. The cockpit does not present a standalone **Magnetic** control or status chip.
 
@@ -512,13 +513,13 @@ The following behaviors remain governed by the existing progression-policy speci
 
 This feature adds the requirement that arrival-reach effects remain atomically reversible during the 20-second undo window. After that window closes—or after a later flight-state action closes it early—the progression result becomes final for the first-release product.
 
-## Future safety architecture
+## GPS safety architecture
 
-GPS assistance is intentionally deferred until the complete manual-navigation experience is implemented and tested.
+Manual, time-bounded GPS disclosure and active-leg recovery guidance are defined
+by [Position Check](POSITION-CHECK_SPEC.md). The following automatic safety
+behaviors remain deferred until the manual-navigation experience and Position
+Check have been implemented and tested:
 
-A future product specification may define:
-
-- an explicit pilot request to reveal GPS position when lost;
 - automatic detection that the aircraft is dangerously off track;
 - entry into a visibly distinct safety mode;
 - guidance while safety mode is active; and
@@ -532,7 +533,9 @@ That future design must preserve these constraints:
 4. Safety automation must be visibly active whenever it influences the pilot's navigation.
 5. Adding GPS later must not change the meaning of historical non-GPS observations.
 
-The future GPS behavior creates no first-release acceptance requirement beyond maintaining a product boundary that does not falsely imply GPS verification.
+Future automatic GPS intervention creates no Position Check acceptance
+requirement beyond preserving the explicit boundary between a pilot-requested
+check and a visibly active, opt-in automatic safety mode.
 
 ## Acceptance scenarios
 

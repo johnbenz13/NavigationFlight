@@ -308,6 +308,8 @@ struct PositionCheckPresentation: Equatable, Sendable {
         case acquiring
         case unavailable
         case permissionRequired
+        case requesting
+        case active
     }
 
     let status: Status
@@ -318,9 +320,55 @@ struct PositionCheckPresentation: Equatable, Sendable {
     let remedy: String
     let systemImage: String
     let isHoldEligible: Bool
+    var disclosedPosition: PositionCheckProjection? = nil
 }
 
 struct CockpitPresentationAdapter: Sendable {
+    func makePositionCheckPresentation(
+        for availability: LocationAvailability,
+        state: PositionCheckState,
+        remainingSeconds: Int?
+    ) -> PositionCheckPresentation {
+        switch state {
+        case .acquiring:
+            return PositionCheckPresentation(
+                status: .requesting,
+                statusLabel: "ACQUIRING",
+                title: "Acquiring GPS…",
+                detail: "Disclosure timer has not started",
+                explanation: "Waiting up to ten seconds for a usable GPS position.",
+                remedy: "Cancel",
+                systemImage: "location.circle",
+                isHoldEligible: true
+            )
+        case .active(let session):
+            return PositionCheckPresentation(
+                status: .active,
+                statusLabel: "ACTIVE",
+                title: "Position Check · \(remainingSeconds ?? 10)s",
+                detail: "Tap to end",
+                explanation: "Position is temporarily visible.",
+                remedy: "Tap to end",
+                systemImage: "location.fill",
+                isHoldEligible: true,
+                disclosedPosition: session.projection
+            )
+        case .transientFailure:
+            return PositionCheckPresentation(
+                status: .unavailable,
+                statusLabel: "UNAVAILABLE",
+                title: "Position Check",
+                detail: "GPS acquisition timed out",
+                explanation: "No usable GPS position arrived within ten seconds.",
+                remedy: "Hold again when needed",
+                systemImage: "location.slash",
+                isHoldEligible: true
+            )
+        case .idle:
+            return makePositionCheckPresentation(for: availability)
+        }
+    }
+
     func makePositionCheckPresentation(
         for availability: LocationAvailability
     ) -> PositionCheckPresentation {

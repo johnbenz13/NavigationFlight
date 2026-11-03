@@ -40,6 +40,12 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
 
     enum Failure: Equatable, Sendable {
         case acquisitionTimedOut
+        case signalLost
+        case servicesDisabled
+        case staleFix
+        case poorAccuracy
+        case sourceFailure
+        case permissionRevoked(LocationPermissionReason)
     }
 
     case idle
@@ -65,23 +71,40 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
         case .cancel:
             guard case .acquiring = self else { return .unchanged(self) }
             return PositionCheckTransition(state: .idle, effect: .cancelDeadline)
-        case .locationAvailabilityChanged(.ready(let sample)):
+        case .dismissFailure:
+            guard case .transientFailure = self else { return .unchanged(self) }
+            return PositionCheckTransition(state: .idle, effect: .none)
+        case .locationAvailabilityChanged(let availability):
             switch self {
             case .acquiring(let request):
-                return activate(sample: sample, restoration: request.restoration, now: now)
+                switch availability {
+                case .ready(let sample):
+                    return activate(sample: sample, restoration: request.restoration, now: now)
+                case .acquiring:
+                    return .unchanged(self)
+                case .unavailable, .permissionRequired:
+                    return PositionCheckTransition(
+                        state: .transientFailure(Self.failure(for: availability)),
+                        effect: .cancelDeadline
+                    )
+                }
             case .active(let session):
-                let updated = Session(
-                    generation: session.generation,
-                    deadline: session.deadline,
-                    projection: PositionCheckProjection(sample: sample),
-                    restoration: session.restoration
+                if case .ready(let sample) = availability {
+                    let updated = Session(
+                        generation: session.generation,
+                        deadline: session.deadline,
+                        projection: PositionCheckProjection(sample: sample),
+                        restoration: session.restoration
+                    )
+                    return PositionCheckTransition(state: .active(updated), effect: .none)
+                }
+                return PositionCheckTransition(
+                    state: .transientFailure(Self.failure(for: availability)),
+                    effect: .endDisclosure(restoration: session.restoration)
                 )
-                return PositionCheckTransition(state: .active(updated), effect: .none)
             default:
                 return .unchanged(self)
             }
-        case .locationAvailabilityChanged:
-            return .unchanged(self)
         case .deadlineReached(let generation):
             switch self {
             case .acquiring(let request) where request.generation == generation:
@@ -91,7 +114,7 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
             default:
                 return .unchanged(self)
             }
-        case .activeLegChanged, .sceneBecameInactive, .cockpitDismissed:
+        case .activeLegChanged, .activeFlightLost, .sceneBecameInactive, .cockpitDismissed:
             switch self {
             case .active(let session):
                 return PositionCheckTransition(state: .idle, effect: .endDisclosure(restoration: session.restoration))
@@ -145,15 +168,36 @@ nonisolated enum PositionCheckState: Equatable, Sendable {
             effect: .scheduleDeadline(generation: session.generation, deadline: session.deadline)
         )
     }
+
+    private static func failure(for availability: LocationAvailability) -> Failure {
+        switch availability {
+        case .ready:
+            preconditionFailure("A ready sample is not a failure")
+        case .acquiring, .unavailable(.signalLost):
+            return .signalLost
+        case .unavailable(.servicesDisabled):
+            return .servicesDisabled
+        case .unavailable(.stale), .unavailable(.outOfOrder):
+            return .staleFix
+        case .unavailable(.invalidAccuracy), .unavailable(.insufficientAccuracy):
+            return .poorAccuracy
+        case .unavailable(.sourceFailure):
+            return .sourceFailure
+        case .permissionRequired(let reason):
+            return .permissionRevoked(reason)
+        }
+    }
 }
 
 nonisolated enum PositionCheckIntent: Equatable, Sendable {
     case holdCompleted(availability: LocationAvailability, restoration: CockpitRestoration)
     case cancel
+    case dismissFailure
     case restartHoldCompleted(availability: LocationAvailability, restoration: CockpitRestoration)
     case locationAvailabilityChanged(LocationAvailability)
     case deadlineReached(PositionCheckState.Generation)
     case activeLegChanged
+    case activeFlightLost
     case sceneBecameInactive
     case cockpitDismissed
     case end

@@ -49,6 +49,22 @@ struct PositionCheckCoordinatorTests {
         #expect(second.state.activeSession != nil)
     }
 
+    @Test("Map restoration is requested once and only its matching acknowledgement clears it")
+    func mapRestorationAcknowledgementIsGenerationBound() throws {
+        let clock = ManualPositionCheckClock()
+        let coordinator = makeCoordinator(clock: clock)
+        coordinator.send(.holdCompleted(availability: .ready(sample()), restoration: .empty))
+
+        coordinator.send(.locationAvailabilityChanged(.unavailable(.signalLost)))
+
+        let command = try #require(coordinator.pendingMapRestoration)
+        #expect(command.restoration == .empty)
+        coordinator.acknowledgeMapRestoration(id: UUID())
+        #expect(coordinator.pendingMapRestoration == command)
+        coordinator.acknowledgeMapRestoration(id: command.id)
+        #expect(coordinator.pendingMapRestoration == nil)
+    }
+
     private func makeCoordinator(clock: ManualPositionCheckClock) -> PositionCheckCoordinator {
         PositionCheckCoordinator(
             now: { clock.now },

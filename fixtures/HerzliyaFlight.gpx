@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1"
+     creator="NavigationFlight"
+     xmlns="http://www.topografix.com/GPX/1/1">
+
+  <wpt lat="32.1800" lon="34.8340">
+    <ele>200</ele>
+    <time>2026-11-03T10:00:00Z</time>
+  </wpt>
+
+  <wpt lat="32.2300" lon="34.8100">
+    <ele>500</ele>
+    <time>2026-11-03T10:02:00Z</time>
+  </wpt>
+
+  <wpt lat="32.3000" lon="34.8050">
+    <ele>700</ele>
+    <time>2026-11-03T10:05:00Z</time>
+  </wpt>
+
+  <wpt lat="32.3800" lon="34.8300">
+    <ele>800</ele>
+    <time>2026-11-03T10:08:00Z</time>
+  </wpt>
+
+</gpx>
+

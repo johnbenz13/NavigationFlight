@@ -52,7 +52,8 @@ This release does not:
 - Permission, failure, and Dynamic Type presentations:
   [Iteration 03 · Edge Presentations](https://www.figma.com/design/hllTgfGTAG4cEXyqiDesSu?node-id=18-6)
 - Review cover: [Position Check review status](https://www.figma.com/design/hllTgfGTAG4cEXyqiDesSu?node-id=3-10)
-- Product-spec review source: [feature/position-check](https://github.com/johnbenz13/NavigationFlight/blob/feature/position-check/docs/features/POSITION-CHECK_SPEC.md)
+- Approved product-spec revision:
+  [68e68e7](https://github.com/johnbenz13/NavigationFlight/blob/68e68e79e3013aa240fe12a2046b57dc227722ae/docs/features/POSITION-CHECK_SPEC.md)
 - Main-screen slice: the complete cockpit immediately before activation, paired
   with the same cockpit during an active ten-second Position Check.
 - Design status: `approved`.
@@ -63,9 +64,8 @@ This release does not:
   02 direction across all specified states, outcomes, accessibility behavior,
   and supported device-orientation baselines.
 - Paired-baseline approval: approved by John (feature owner), 2026-11-03.
-- Approved product revision: current `feature/position-check` branch working
-  revision. An immutable GitHub permalink remains pending the first explicitly
-  authorized checkpoint commit and push.
+- Approved product revision:
+  [68e68e7](https://github.com/johnbenz13/NavigationFlight/blob/68e68e79e3013aa240fe12a2046b57dc227722ae/docs/features/POSITION-CHECK_SPEC.md).
 
 ## Device and orientation baseline
 

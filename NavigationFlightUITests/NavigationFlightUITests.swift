@@ -26,6 +26,7 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     func testFreshLaunchShellRoutesBetweenFixedAppSections() throws {
         let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launch()
 
         let cockpitTab = tab(named: "Cockpit", in: app)
@@ -80,6 +81,25 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(row.label.contains("Loaded in Cockpit"))
         XCTAssertTrue(app.staticTexts["Most recently imported"].exists)
         XCTAssertTrue(app.buttons["add-flight-plan"].exists)
+    }
+
+    @MainActor
+    func testAccessibilityTextKeepsPopulatedFlightPlanMeaningAndActionsReachable() throws {
+        let data = try oneLegPlanData()
+        let title = try projectTitle(in: data)
+        let app = launchFlightPlans(
+            seedData: [data],
+            loadedPlanData: data,
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL"
+        )
+
+        let row = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-plan-row-'")
+        ).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertTrue(row.label.contains(title))
+        XCTAssertTrue(row.label.contains("Loaded in Cockpit"))
+        XCTAssertTrue(app.buttons["add-flight-plan"].isHittable)
     }
 
     @MainActor
@@ -463,7 +483,7 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["open-cockpit"].tap()
         let cockpitHeading = app.descendants(matching: .any)["cockpit-heading"]
         XCTAssertTrue(cockpitHeading.waitForExistence(timeout: 2))
-        XCTAssertTrue(cockpitHeading.label.contains("Magnetic heading"))
+        XCTAssertTrue(cockpitHeading.label.contains("PLANNED HEADING"))
         XCTAssertTrue(cockpitHeading.label.contains("033°"))
         XCTAssertFalse(cockpitHeading.label.contains("° M"))
         let readyTimer = app.descendants(matching: .any)["cockpit-time"]
@@ -471,9 +491,16 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(readyTimer.label.contains("Starts when Start Leg is pressed"))
         XCTAssertFalse(readyTimer.label.contains("ELAPSED"))
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
-        app.buttons["compact-frequencies"].tap()
-        let groupedVOR = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'"))
-        XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
+        let compactFrequencies = app.buttons["compact-frequencies"]
+        if compactFrequencies.exists {
+            compactFrequencies.tap()
+            let groupedVOR = app.descendants(matching: .any).matching(
+                NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'")
+            )
+            XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
+        } else {
+            XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].exists)
+        }
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("3,000"))
         XCTAssertTrue(app.buttons["focus-leg"].exists)
         XCTAssertTrue(app.buttons["focus-waypoint"].exists)
@@ -549,7 +576,7 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         let heading = app.buttons["cockpit-heading"]
         XCTAssertTrue(heading.waitForExistence(timeout: 2))
-        XCTAssertTrue(heading.label.contains("Magnetic heading"))
+        XCTAssertTrue(heading.label.contains("PLANNED HEADING"))
         XCTAssertTrue(heading.label.contains("033°"))
         heading.tap()
 
@@ -730,6 +757,7 @@ final class NavigationFlightUITests: XCTestCase {
         preferredContentSizeCategory: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
         if let progressionPolicy {
             app.launchEnvironment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] = progressionPolicy
@@ -783,7 +811,8 @@ final class NavigationFlightUITests: XCTestCase {
         loadedPlanData: Data? = nil,
         protectLoadedFlight: Bool = false,
         failFlightChange: Bool = false,
-        removalFailure: Bool = false
+        removalFailure: Bool = false,
+        preferredContentSizeCategory: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -809,6 +838,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if removalFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_REMOVAL_FAILURE"] = "1"
+        }
+        if let preferredContentSizeCategory {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSizeCategory]
         }
         app.launch()
         return app

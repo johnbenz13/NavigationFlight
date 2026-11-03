@@ -99,6 +99,11 @@ struct CockpitFeatureState: Equatable, Sendable {
         flight?.hasProtectedPilotWork == true || hasChecklistAcknowledgements
     }
 
+    var isAcceptedFlightInProgress: Bool {
+        guard let flight else { return false }
+        return flight.legState == .ready || flight.legState == .active
+    }
+
     var activeLegStartChecklist: LegStartChecklistState? {
         guard let flight, flight.legState == .active else { return nil }
         return legStartChecklists[flight.legIDs[flight.activeLegIndex]]

@@ -330,6 +330,38 @@ struct PositionCheckPresentation: Equatable, Sendable {
     let isHoldEligible: Bool
     var disclosedPosition: PositionCheckProjection? = nil
     var recovery: Recovery? = nil
+    var remainingSeconds: Int? = nil
+
+    var accessibilityLabel: String {
+        let statusText = switch status {
+        case .ready: "Ready"
+        case .acquiring, .requesting: "Acquiring"
+        case .unavailable: "Unavailable"
+        case .permissionRequired: "Permission Required"
+        case .active: "Active"
+        case .signalLost: "GPS Lost"
+        }
+        return "Position Check, \(statusText)"
+    }
+
+    var accessibilityValue: String {
+        detail.components(separatedBy: " · ").first ?? detail
+    }
+
+    var accessibilityHint: String {
+        switch status {
+        case .ready:
+            "\(remedy). Starts a temporary GPS disclosure."
+        case .acquiring:
+            "GPS information remains hidden until a deliberate hold is accepted."
+        case .requesting:
+            "Cancels GPS acquisition without disclosing position."
+        case .active:
+            "Ends the temporary GPS disclosure."
+        case .unavailable, .permissionRequired, .signalLost:
+            remedy
+        }
+    }
 }
 
 struct CockpitPresentationAdapter: Sendable {
@@ -374,7 +406,8 @@ struct CockpitPresentationAdapter: Sendable {
                 systemImage: "location.fill",
                 isHoldEligible: true,
                 disclosedPosition: session.projection,
-                recovery: makeRecoveryPresentation(recoveryOutcome)
+                recovery: makeRecoveryPresentation(recoveryOutcome),
+                remainingSeconds: remainingSeconds
             )
         case .transientFailure(let failure):
             switch failure {

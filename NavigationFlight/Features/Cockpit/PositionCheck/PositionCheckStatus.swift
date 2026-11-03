@@ -19,7 +19,7 @@ struct PositionCheckStatus: View {
         case .unavailable, .permissionRequired, .signalLost:
             Color(red: 196 / 255, green: 75 / 255, blue: 66 / 255)
         case .active:
-            Color(red: 255 / 255, green: 138 / 255, blue: 0)
+            Color(red: 154 / 255, green: 74 / 255, blue: 0)
         }
     }
 }

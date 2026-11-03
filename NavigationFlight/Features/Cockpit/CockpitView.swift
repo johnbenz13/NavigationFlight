@@ -1316,14 +1316,24 @@ struct CockpitView: View {
     private var positionCheckAndProgressionControls: some View {
         if flight.legState == .active, let positionCheck {
             if horizontalSizeClass == .compact {
-                HStack(alignment: .top, spacing: 10) {
-                    PositionCheckControl(
-                        presentation: positionCheck,
-                        onAction: handlePositionCheckAction
-                    )
-                    .frame(maxWidth: .infinity)
-                    waypointReachedButton
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(spacing: 10) {
+                        PositionCheckControl(
+                            presentation: positionCheck,
+                            onAction: handlePositionCheckAction
+                        )
+                        waypointReachedButton
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 10) {
+                        PositionCheckControl(
+                            presentation: positionCheck,
+                            onAction: handlePositionCheckAction
+                        )
                         .frame(maxWidth: .infinity)
+                        waypointReachedButton
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             } else {
                 ViewThatFits(in: .horizontal) {

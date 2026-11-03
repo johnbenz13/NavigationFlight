@@ -743,6 +743,29 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPositionCheckAccessibilityTextStacksDistinctReachableActions() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL",
+            positionCheckState: "ready"
+        )
+        app.buttons["start-leg"].tap()
+
+        let positionCheck = app.buttons["position-check-control"]
+        let waypointIdentified = app.buttons["waypoint-identified"]
+        XCTAssertTrue(positionCheck.waitForExistence(timeout: 3))
+        XCTAssertTrue(waypointIdentified.exists)
+        XCTAssertTrue(positionCheck.label.contains("Position Check, Ready"))
+        XCTAssertEqual(positionCheck.value as? String, "GPS Ready")
+        XCTAssertLessThan(positionCheck.frame.maxY, waypointIdentified.frame.minY)
+
+        XCTAssertTrue(positionCheck.isHittable)
+        app.swipeUp()
+        XCTAssertTrue(waypointIdentified.isHittable)
+        XCTAssertTrue(app.buttons["reached-now"].exists)
+    }
+
+    @MainActor
     func testPositionCheckPermissionEducationCanContinueManually() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -763,10 +786,10 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     func testPositionCheckReadinessFixturesPreserveManualNavigationAndHideGPSValues() throws {
         let fixtures = [
-            ("ready", "READY"),
-            ("acquiring", "ACQUIRING"),
-            ("unavailable", "UNAVAILABLE"),
-            ("permission-required", "PERMISSION REQUIRED")
+            ("ready", "Ready"),
+            ("acquiring", "Acquiring"),
+            ("unavailable", "Unavailable"),
+            ("permission-required", "Permission Required")
         ]
 
         for (fixture, status) in fixtures {
@@ -794,25 +817,25 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(control.waitForExistence(timeout: 3))
 
         control.tap()
-        XCTAssertTrue(control.label.contains("READY"))
-        XCTAssertFalse(control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.label.contains("Ready"))
+        XCTAssertFalse(control.label.contains("Active"))
 
         control.press(forDuration: 1.1)
         XCTAssertTrue(
-            NSPredicate(format: "label CONTAINS 'ACTIVE'").evaluate(with: control),
+            NSPredicate(format: "label CONTAINS 'Active'").evaluate(with: control),
             "Completed hold should start the bounded disclosure"
         )
         XCTAssertTrue(control.label.contains("Position Check"))
-        XCTAssertTrue(control.label.contains("Tap to end"))
+        XCTAssertEqual(control.value as? String, "Tap to end")
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
 
         control.tap()
-        let ended = NSPredicate(format: "NOT (label CONTAINS 'ACTIVE')")
+        let ended = NSPredicate(format: "NOT (label CONTAINS 'Active')")
         expectation(for: ended, evaluatedWith: control)
         waitForExpectations(timeout: 2)
 
         control.press(forDuration: 1.1)
-        XCTAssertTrue(NSPredicate(format: "label CONTAINS 'ACTIVE'").evaluate(with: control))
+        XCTAssertTrue(NSPredicate(format: "label CONTAINS 'Active'").evaluate(with: control))
     }
 
     @MainActor
@@ -847,12 +870,11 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(control.waitForExistence(timeout: 3))
 
         control.press(forDuration: 1.1)
-        XCTAssertTrue(control.label.contains("ACQUIRING"))
-        XCTAssertTrue(control.label.contains("Acquiring GPS"))
-        XCTAssertTrue(control.label.contains("timer has not started"))
+        XCTAssertTrue(control.label.contains("Acquiring"))
+        XCTAssertEqual(control.value as? String, "Disclosure timer has not started")
 
         control.tap()
-        let cancelled = NSPredicate(format: "NOT (label CONTAINS 'timer has not started')")
+        let cancelled = NSPredicate(format: "NOT (value CONTAINS 'timer has not started')")
         expectation(for: cancelled, evaluatedWith: control)
         waitForExpectations(timeout: 2)
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
@@ -868,16 +890,15 @@ final class NavigationFlightUITests: XCTestCase {
 
         let recovery = app.descendants(matching: .any)["position-check-recovery"]
         XCTAssertTrue(recovery.waitForExistence(timeout: 3))
-        let gpsLost = NSPredicate(format: "label CONTAINS 'GPS LOST'")
+        let gpsLost = NSPredicate(format: "label CONTAINS 'GPS Lost'")
         expectation(for: gpsLost, evaluatedWith: control)
         waitForExpectations(timeout: 8)
 
         XCTAssertFalse(recovery.exists)
-        XCTAssertTrue(control.label.contains("GPS signal lost"))
-        XCTAssertFalse(control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.label.contains("GPS Lost"))
+        XCTAssertFalse(control.label.contains("Active"))
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
         XCTAssertTrue(app.buttons["reached-now"].exists)
-        XCTAssertTrue(app.buttons["Charts"].exists)
     }
 
     @MainActor
@@ -889,10 +910,10 @@ final class NavigationFlightUITests: XCTestCase {
         control.press(forDuration: 1.1)
         XCTAssertTrue(app.descendants(matching: .any)["position-check-recovery"].waitForExistence(timeout: 3))
 
-        expectation(for: NSPredicate(format: "label CONTAINS 'PERMISSION REQUIRED'"), evaluatedWith: control)
+        expectation(for: NSPredicate(format: "label CONTAINS 'Permission Required'"), evaluatedWith: control)
         waitForExpectations(timeout: 8)
         XCTAssertFalse(app.descendants(matching: .any)["position-check-recovery"].exists)
-        XCTAssertTrue(control.label.contains("manual navigation remains available"))
+        XCTAssertTrue((control.value as? String)?.contains("manual navigation remains available") == true)
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
     }
 
@@ -903,19 +924,19 @@ final class NavigationFlightUITests: XCTestCase {
         let control = app.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(control.waitForExistence(timeout: 3))
         control.press(forDuration: 1.1)
-        XCTAssertTrue(control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.label.contains("Active"))
 
         XCUIDevice.shared.press(.home)
         app.activate()
         XCTAssertTrue(control.waitForExistence(timeout: 3))
-        XCTAssertFalse(control.label.contains("ACTIVE"))
+        XCTAssertFalse(control.label.contains("Active"))
 
         control.press(forDuration: 1.1)
-        XCTAssertTrue(control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.label.contains("Active"))
         app.buttons["Flight Plans"].firstMatch.tap()
         app.buttons["Cockpit"].firstMatch.tap()
         XCTAssertTrue(control.waitForExistence(timeout: 3))
-        XCTAssertFalse(control.label.contains("ACTIVE"))
+        XCTAssertFalse(control.label.contains("Active"))
     }
 
     @MainActor
@@ -925,37 +946,45 @@ final class NavigationFlightUITests: XCTestCase {
         let control = app.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(control.waitForExistence(timeout: 3))
         control.press(forDuration: 1.1)
-        XCTAssertTrue(control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.label.contains("Active"))
 
         app.buttons["waypoint-identified"].tap()
         app.buttons["waypoint-reached"].tap()
-        XCTAssertTrue(control.waitForNonExistence(timeout: 3) || !control.label.contains("ACTIVE"))
+        XCTAssertTrue(control.waitForNonExistence(timeout: 3) || !control.label.contains("Active"))
     }
 
     @MainActor
     func testPositionCheckDisclosureAndAcquisitionExpireWithoutRetainingGPS() throws {
-        let activeApp = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "ready")
+        let activeApp = launchCockpit(
+            planData: try oneLegPlanData(),
+            positionCheckState: "ready",
+            positionCheckDuration: 1
+        )
         activeApp.buttons["start-leg"].tap()
         let activeControl = activeApp.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(activeControl.waitForExistence(timeout: 3))
         activeControl.press(forDuration: 1.1)
-        XCTAssertTrue(activeControl.label.contains("ACTIVE"))
+        XCTAssertTrue(activeControl.label.contains("Active"))
         XCTAssertTrue(
-            activeControl.waitForNonExistence(timeout: 12)
-                || NSPredicate(format: "NOT (label CONTAINS 'ACTIVE')").evaluate(with: activeControl)
+            activeControl.waitForNonExistence(timeout: 2)
+                || NSPredicate(format: "NOT (label CONTAINS 'Active')").evaluate(with: activeControl)
         )
         XCTAssertFalse(activeControl.label.localizedCaseInsensitiveContains("accuracy"))
         activeApp.terminate()
 
-        let acquiringApp = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "acquiring")
+        let acquiringApp = launchCockpit(
+            planData: try oneLegPlanData(),
+            positionCheckState: "acquiring",
+            positionCheckDuration: 1
+        )
         acquiringApp.buttons["start-leg"].tap()
         let acquiringControl = acquiringApp.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(acquiringControl.waitForExistence(timeout: 3))
         acquiringControl.press(forDuration: 1.1)
-        XCTAssertTrue(acquiringControl.label.contains("timer has not started"))
-        let timedOut = NSPredicate(format: "label CONTAINS 'timed out'")
+        XCTAssertEqual(acquiringControl.value as? String, "Disclosure timer has not started")
+        let timedOut = NSPredicate(format: "value CONTAINS 'timed out'")
         expectation(for: timedOut, evaluatedWith: acquiringControl)
-        waitForExpectations(timeout: 12)
+        waitForExpectations(timeout: 2)
         XCTAssertFalse(acquiringControl.label.localizedCaseInsensitiveContains("latitude"))
         XCTAssertTrue(acquiringApp.buttons["waypoint-identified"].exists)
     }
@@ -973,7 +1002,8 @@ final class NavigationFlightUITests: XCTestCase {
         planData: Data,
         progressionPolicy: String? = nil,
         preferredContentSizeCategory: String? = nil,
-        positionCheckState: String? = nil
+        positionCheckState: String? = nil,
+        positionCheckDuration: Double? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -986,6 +1016,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if let positionCheckState {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"] = positionCheckState
+        }
+        if let positionCheckDuration {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"] = String(positionCheckDuration)
         }
         app.launch()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))

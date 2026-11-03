@@ -65,6 +65,28 @@ struct PositionCheckCoordinatorTests {
         #expect(coordinator.pendingMapRestoration == nil)
     }
 
+    @Test("Injected timing drives acquisition and disclosure without changing production defaults")
+    func injectedTiming() {
+        let timing = PositionCheckTiming(
+            acquisitionDuration: .milliseconds(200),
+            disclosureDuration: .milliseconds(300)
+        )
+        let acquiring = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .acquiring, restoration: .empty),
+            now: .seconds(4),
+            timing: timing
+        ).state
+        let active = PositionCheckState.idle.transition(
+            .holdCompleted(availability: .ready(sample()), restoration: .empty),
+            now: .seconds(4),
+            timing: timing
+        ).state
+
+        #expect(acquiring.acquisitionRequest?.deadline == .seconds(4) + .milliseconds(200))
+        #expect(active.activeSession?.deadline == .seconds(4) + .milliseconds(300))
+        #expect(PositionCheckTiming.standard.disclosureDuration == .seconds(10))
+    }
+
     private func makeCoordinator(clock: ManualPositionCheckClock) -> PositionCheckCoordinator {
         PositionCheckCoordinator(
             now: { clock.now },

@@ -12,6 +12,7 @@ enum PositionCheckControlAction: Equatable, Sendable {
 
 struct PositionCheckControl: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @State private var isHolding = false
 
     let presentation: PositionCheckPresentation
@@ -26,13 +27,15 @@ struct PositionCheckControl: View {
                             Capsule()
                                 .fill(holdColor)
                                 .frame(width: isHolding ? geometry.size.width : 0, height: 4)
-                                .animation(.linear(duration: 1), value: isHolding)
+                                .animation(
+                                    accessibilityReduceMotion ? nil : .linear(duration: 1),
+                                    value: isHolding
+                                )
                         }
                         .frame(height: 4)
                     }
                     .onLongPressGesture(minimumDuration: 1, maximumDistance: 0) {
                         onAction(.holdCompleted)
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     } onPressingChanged: { pressing in
                         isHolding = pressing
                     }
@@ -43,7 +46,6 @@ struct PositionCheckControl: View {
                         LongPressGesture(minimumDuration: 1, maximumDistance: 0)
                             .onEnded { _ in
                                 onAction(.holdCompleted)
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             }
                     )
             } else if let action {
@@ -53,9 +55,12 @@ struct PositionCheckControl: View {
                 content
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(presentation.statusLabel), \(presentation.title), \(presentation.detail)")
-        .accessibilityHint(presentation.remedy)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(presentation.accessibilityLabel)
+        .accessibilityValue(presentation.accessibilityValue)
+        .accessibilityHint(presentation.accessibilityHint)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { performAccessibilityAction() }
         .accessibilityIdentifier("position-check-control")
     }
 
@@ -99,6 +104,23 @@ struct PositionCheckControl: View {
         }
     }
 
+    private func performAccessibilityAction() {
+        switch presentation.status {
+        case .ready, .acquiring:
+            onAction(.holdCompleted)
+        case .active:
+            onAction(.end)
+        case .requesting:
+            onAction(.cancel)
+        case .unavailable:
+            onAction(.retry)
+        case .permissionRequired:
+            onAction(presentation.remedy == "Allow Location" ? .requestPermission : .openSettings)
+        case .signalLost:
+            onAction(.dismiss)
+        }
+    }
+
     private var statusColor: Color {
         switch presentation.status {
         case .ready:
@@ -108,7 +130,7 @@ struct PositionCheckControl: View {
         case .unavailable, .permissionRequired, .signalLost:
             Color(red: 196 / 255, green: 75 / 255, blue: 66 / 255)
         case .active:
-            holdColor
+            Color(red: 154 / 255, green: 74 / 255, blue: 0)
         }
     }
 

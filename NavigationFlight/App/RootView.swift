@@ -8,6 +8,7 @@ struct RootView: View {
     private let debugImportData: Data?
     private let debugShouldFailFlightChange: Bool
     private let locationService: AircraftLocationService
+    private let positionCheckTiming: PositionCheckTiming
     private let shouldPresentPositionCheckEducation: Bool
 
     init() {
@@ -33,8 +34,22 @@ struct RootView: View {
             .flatMap { Data(base64Encoded: $0) }
         debugShouldFailFlightChange = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] == "1"
         shouldPresentPositionCheckEducation = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION"] == "1"
-        if let fixture = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"] {
-            locationService = AircraftLocationService(source: FixtureAircraftLocationSource.make(state: fixture))
+        if let seconds = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"].flatMap(Double.init) {
+            positionCheckTiming = PositionCheckTiming(
+                acquisitionDuration: .seconds(seconds),
+                disclosureDuration: .seconds(seconds)
+            )
+        } else {
+            positionCheckTiming = .standard
+        }
+        if let fixtureName = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE"],
+           let fixture = PositionCheckFixtureScenario(rawValue: fixtureName) {
+            let delay = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY"]
+                .flatMap(Double.init)
+                .map(Duration.seconds) ?? .seconds(6)
+            locationService = AircraftLocationService(
+                source: PositionCheckFixtureSource(scenario: fixture, followUpDelay: delay)
+            )
         } else {
             locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
         }
@@ -44,6 +59,7 @@ struct RootView: View {
         debugImportData = nil
         debugShouldFailFlightChange = false
         shouldPresentPositionCheckEducation = true
+        positionCheckTiming = .standard
         locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
 #endif
         let store: any FlightPlanStore
@@ -114,6 +130,7 @@ struct RootView: View {
                     ),
                     presentationRequestID: appState.cockpitPresentationRequestID,
                     locationService: locationService,
+                    positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     onIntent: handleCockpitIntent
                 )

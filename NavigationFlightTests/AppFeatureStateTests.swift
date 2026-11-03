@@ -49,7 +49,7 @@ struct AppFeatureStateTests {
         let originalCockpit = state.cockpit
         let originalFlightPlans = state.flightPlans
 
-        state.handleCockpitIntent(.chooseFlightPlan)
+        state.chooseFlightPlanFromCockpit()
 
         #expect(state.selectedAppSection == .flightPlans)
         #expect(state.cockpit == originalCockpit)
@@ -293,6 +293,52 @@ struct AppFeatureStateTests {
         #expect(state.cockpit.flight?.flightPlanID == plan.id)
     }
 
+    @Test("Removing a loaded library copy preserves Cockpit and restart uses its snapshot")
+    func loadedCopyRemovalPreservesCockpitAndRestartSnapshot() throws {
+        let plan = try flightPlan()
+        let originalFlightID = try #require(UUID(uuidString: "AAAAAAAA-2222-2222-2222-222222222222"))
+        let restartFlightID = try #require(UUID(uuidString: "BBBBBBBB-2222-2222-2222-222222222222"))
+        let record = LibraryFlightPlan(flightPlan: plan, importedAt: .distantPast)
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(plan, flightID: originalFlightID)
+        try cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        var flightPlans = FlightPlansFeatureState()
+        let loadID = UUID()
+        flightPlans.beginLoading(requestID: loadID)
+        _ = flightPlans.completeLoading(requestID: loadID, records: [record], error: nil)
+        flightPlans.selectRecord(id: record.id)
+        var state = AppFeatureState(
+            selectedAppSection: .flightPlans,
+            cockpit: cockpit,
+            flightPlans: flightPlans
+        )
+        let originalCockpit = state.cockpit
+        let confirmationID = UUID()
+        let removalRequestID = UUID()
+
+        var removing = state.flightPlans
+        _ = removing.requestRemoval(
+            recordID: record.id,
+            loadedFlightPlanID: plan.id,
+            confirmationID: confirmationID
+        )
+        _ = removing.beginRemoval(confirmationID: confirmationID, requestID: removalRequestID)
+        _ = removing.completeRemoval(requestID: removalRequestID, recordID: record.id, records: [])
+        state.updateFlightPlans(removing)
+
+        #expect(state.cockpit == originalCockpit)
+        #expect(state.selectedAppSection == .flightPlans)
+        #expect(state.flightPlans.records.isEmpty)
+        let decision = try state.restartFlight(flightID: restartFlightID)
+        guard case .confirmationRequired(let pending) = decision else {
+            Issue.record("Expected protected restart confirmation")
+            return
+        }
+        #expect(pending.candidateCockpit.flightPlan == plan)
+        #expect(pending.candidateCockpit.flight?.id == restartFlightID)
+        #expect(state.flightPlans.records.isEmpty)
+    }
+
     @Test("Return preserves Flight while restart uses loaded snapshot and new identity")
     func returnAndRestart() throws {
         let plan = try flightPlan()
@@ -360,6 +406,147 @@ struct AppFeatureStateTests {
 
         #expect(state.selectedRecordID == nil)
         #expect(state.selectedRecord == nil)
+    }
+
+    @Test("Removal confirmation is identity-bound and matching cancellation preserves the inspection")
+    func removalConfirmationCancellation() throws {
+        let record = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        let confirmationID = try #require(UUID(uuidString: "AAAAAAAA-1111-1111-1111-111111111111"))
+        var state = FlightPlansFeatureState()
+        let loadID = UUID()
+        state.beginLoading(requestID: loadID)
+        _ = state.completeLoading(requestID: loadID, records: [record], error: nil)
+        state.selectRecord(id: record.id)
+
+        let requested = state.requestRemoval(
+            recordID: record.id,
+            loadedFlightPlanID: record.id,
+            confirmationID: confirmationID
+        )
+
+        #expect(requested)
+        #expect(state.pendingRemoval == PendingFlightPlanRemoval(
+            id: confirmationID,
+            recordID: record.id,
+            isLoadedFlightPlan: true
+        ))
+        let staleCancellation = state.cancelPendingRemoval(confirmationID: UUID())
+        let acceptedCancellation = state.cancelPendingRemoval(confirmationID: confirmationID)
+        #expect(staleCancellation == false)
+        #expect(acceptedCancellation)
+        #expect(state.pendingRemoval == nil)
+        #expect(state.records == [record])
+        #expect(state.selectedRecordID == record.id)
+        #expect(state.inFlightRequestID == nil)
+    }
+
+    @Test("Successful removal publishes refreshed records and dismisses only its inspection")
+    func successfulRemovalDismissesMatchingInspection() throws {
+        let removed = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        let retained = LibraryFlightPlan(
+            flightPlan: copy(try flightPlan(), id: UUID()),
+            importedAt: .now
+        )
+        let confirmationID = UUID()
+        let requestID = UUID()
+        var state = FlightPlansFeatureState()
+        let loadID = UUID()
+        state.beginLoading(requestID: loadID)
+        _ = state.completeLoading(requestID: loadID, records: [retained, removed], error: nil)
+        state.selectRecord(id: removed.id)
+        _ = state.requestRemoval(
+            recordID: removed.id,
+            loadedFlightPlanID: nil,
+            confirmationID: confirmationID
+        )
+
+        let targetID = state.beginRemoval(confirmationID: confirmationID, requestID: requestID)
+        let completed = state.completeRemoval(
+            requestID: requestID,
+            recordID: removed.id,
+            records: [retained]
+        )
+
+        #expect(targetID == removed.id)
+        #expect(completed)
+        #expect(state.records == [retained])
+        #expect(state.selectedRecordID == nil)
+        #expect(state.pendingRemoval == nil)
+        #expect(state.inFlightRequestID == nil)
+    }
+
+    @Test("Removal completion cannot overwrite or dismiss a later selection")
+    func staleRemovalCompletionPreservesLaterSelection() throws {
+        let removed = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        let later = LibraryFlightPlan(
+            flightPlan: copy(try flightPlan(), id: UUID()),
+            importedAt: .now
+        )
+        let confirmationID = UUID()
+        let requestID = UUID()
+        var state = FlightPlansFeatureState()
+        let loadID = UUID()
+        state.beginLoading(requestID: loadID)
+        _ = state.completeLoading(requestID: loadID, records: [later, removed], error: nil)
+        state.selectRecord(id: removed.id)
+        _ = state.requestRemoval(
+            recordID: removed.id,
+            loadedFlightPlanID: nil,
+            confirmationID: confirmationID
+        )
+        _ = state.beginRemoval(confirmationID: confirmationID, requestID: requestID)
+        state.selectRecord(id: later.id)
+
+        let wrongTarget = state.completeRemoval(
+            requestID: requestID,
+            recordID: later.id,
+            records: [removed]
+        )
+        let wrongRequest = state.completeRemoval(
+            requestID: UUID(),
+            recordID: removed.id,
+            records: [later]
+        )
+        let accepted = state.completeRemoval(
+            requestID: requestID,
+            recordID: removed.id,
+            records: [later]
+        )
+
+        #expect(wrongTarget == false)
+        #expect(wrongRequest == false)
+        #expect(accepted)
+        #expect(state.records == [later])
+        #expect(state.selectedRecordID == later.id)
+    }
+
+    @Test("Removal failure preserves last-known-good records and inspection")
+    func removalFailurePreservesRecordsAndInspection() throws {
+        let record = LibraryFlightPlan(flightPlan: try flightPlan(), importedAt: .distantPast)
+        let confirmationID = UUID()
+        let requestID = UUID()
+        var state = FlightPlansFeatureState()
+        let loadID = UUID()
+        state.beginLoading(requestID: loadID)
+        _ = state.completeLoading(requestID: loadID, records: [record], error: nil)
+        state.selectRecord(id: record.id)
+        _ = state.requestRemoval(
+            recordID: record.id,
+            loadedFlightPlanID: nil,
+            confirmationID: confirmationID
+        )
+        _ = state.beginRemoval(confirmationID: confirmationID, requestID: requestID)
+
+        let staleFailure = state.failRemoval(requestID: UUID(), recordID: record.id)
+        let acceptedFailure = state.failRemoval(requestID: requestID, recordID: record.id)
+
+        #expect(staleFailure == false)
+        #expect(acceptedFailure)
+        #expect(state.records == [record])
+        #expect(state.selectedRecordID == record.id)
+        #expect(state.pendingRemoval == nil)
+        #expect(state.inFlightRequestID == nil)
+        #expect(state.presentation == .removalFailure)
     }
 
     @Test("New import proposal requests commit of the exact proposal")

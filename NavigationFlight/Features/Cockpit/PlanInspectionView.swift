@@ -6,6 +6,7 @@ struct PlanInspectionView: View {
     let canSelectNextLeg: Bool
     let onOpenPlan: () -> Void
     let onOpenCockpit: () -> Void
+    let onRestartFlight: () -> Void
     let onSelectPreviousLeg: () -> Void
     let onSelectNextLeg: () -> Void
     let onSelectMode: (NavigationMode) -> Void
@@ -20,6 +21,7 @@ struct PlanInspectionView: View {
                     references
                     annotations
                     frequencies
+                    flightActions
                 }
                 .padding(24)
             }
@@ -38,6 +40,20 @@ struct PlanInspectionView: View {
                 }
             }
         }
+    }
+
+    private var flightActions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("FLIGHT ACTIONS")
+                .font(.caption.weight(.bold))
+                .tracking(0.5)
+            Button("Restart Flight…", role: .destructive, action: onRestartFlight)
+                .accessibilityIdentifier("restart-flight")
+            Text("Creates a new ready Flight from this Flight Plan. Existing progress or edits require confirmation.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var routeSummary: some View {

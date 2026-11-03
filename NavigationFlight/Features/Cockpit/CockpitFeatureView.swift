@@ -129,6 +129,7 @@ struct CockpitFeatureView: View {
                     canSelectNextLeg: state.canSelectNextLeg,
                     onOpenPlan: { isImporterPresented = true },
                     onOpenCockpit: { isCockpitPresented = true },
+                    onRestartFlight: { onIntent(.restartFlight) },
                     onSelectPreviousLeg: { state.selectPreviousLeg() },
                     onSelectNextLeg: { state.selectNextLeg() },
                     onSelectMode: { state.selectMode($0) }

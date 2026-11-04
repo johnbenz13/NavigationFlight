@@ -4,6 +4,75 @@ import Testing
 
 @Suite("Cockpit operational cue projection")
 struct CockpitOperationalCueProjectorTests {
+    @Test("Initial and background projections seed without replaying due emphasis")
+    func initialAndBackgroundProjectionsSeedWithoutReplayingDueEmphasis() throws {
+        let frequencyID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000009"))
+        let dueEvents: Set<CockpitOperationalCueState.DueEvent> = [.frequency(frequencyID)]
+        let now = Date(timeIntervalSince1970: 1_000)
+        var emphasis = CockpitDueEmphasis()
+
+        emphasis.observe(dueEvents, contextID: "leg-1", isVisible: true, at: now)
+        #expect(emphasis.activeEvents(at: now).isEmpty)
+
+        emphasis.observe([], contextID: "leg-1", isVisible: false, at: now.addingTimeInterval(1))
+        emphasis.observe(dueEvents, contextID: "leg-1", isVisible: true, at: now.addingTimeInterval(2))
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(2)).isEmpty)
+    }
+
+    @Test("Simultaneous cue changes emphasize independently for exactly five seconds")
+    func simultaneousCueChangesEmphasizeIndependentlyForFiveSeconds() throws {
+        let frequencyID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000009"))
+        let altitudeID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000006"))
+        let frequency = CockpitOperationalCueState.DueEvent.frequency(frequencyID)
+        let altitude = CockpitOperationalCueState.DueEvent.altitude(altitudeID)
+        let now = Date(timeIntervalSince1970: 2_000)
+        var emphasis = CockpitDueEmphasis()
+        emphasis.observe([], contextID: "leg-1", isVisible: true, at: now)
+
+        emphasis.observe([frequency, altitude], contextID: "leg-1", isVisible: true, at: now.addingTimeInterval(1))
+
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(1)) == [frequency, altitude])
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(5.99)) == [frequency, altitude])
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(6)).isEmpty)
+    }
+
+    @Test("A due change at the beginning of a new leg is emphasized")
+    func dueChangeAtBeginningOfNewLegIsEmphasized() throws {
+        let frequencyID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000009"))
+        let frequency = CockpitOperationalCueState.DueEvent.frequency(frequencyID)
+        let now = Date(timeIntervalSince1970: 3_000)
+        var emphasis = CockpitDueEmphasis()
+        emphasis.observe([], contextID: "leg-1", isVisible: true, at: now)
+        emphasis.observe([frequency], contextID: "leg-1", isVisible: true, at: now.addingTimeInterval(1))
+
+        emphasis.observe([frequency], contextID: "leg-2", isVisible: true, at: now.addingTimeInterval(2))
+
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(2)) == [frequency])
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(6.99)) == [frequency])
+        #expect(emphasis.activeEvents(at: now.addingTimeInterval(7)).isEmpty)
+    }
+
+    @Test("Cue projection exposes semantic current next and altitude direction descriptions")
+    func cueProjectionExposesSemanticDescriptions() throws {
+        let flightPlan = try fixtureFlightPlan()
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: Date(timeIntervalSince1970: 1_000)
+        )
+
+        #expect(state.frequencies.map(\.statusLabel) == ["CURRENT", "NEXT"])
+        #expect(state.frequencies[0].accessibilityDescription.contains("current"))
+        #expect(state.frequencies[1].accessibilityDescription.contains("next"))
+        #expect(state.altitudeAccessibilityDescription == "Target altitude 2,000 feet MSL, next target 4,000 feet, climb")
+    }
+
     @Test("Ready first leg projects planned current and next cues")
     func readyFirstLegProjectsPlannedCurrentAndNextCues() throws {
         let flightPlan = try fixtureFlightPlan()
@@ -60,6 +129,7 @@ struct CockpitOperationalCueProjectorTests {
         )
         #expect(altitudeDue.currentAltitude == AltitudeFeet(value: 4_000))
         #expect(altitudeDue.nextAltitude == .init(target: .init(value: 3_200), direction: .up))
+        #expect(altitudeDue.dueAltitude == .init(target: .init(value: 4_000), direction: .up))
         #expect(altitudeDue.dueEvents == [.altitude(altitudeChangeID)])
 
         let frequencyDue = try projector.project(
@@ -249,6 +319,53 @@ struct CockpitOperationalCueProjectorTests {
 
         #expect(state.currentAltitude == AltitudeFeet(value: 2_500))
         #expect(state.nextAltitude == .init(target: .init(value: 1_500), direction: .up))
+    }
+
+    @Test("Next-leg time-zero frequency is previewed on the preceding leg")
+    func nextLegTimeZeroFrequencyIsPreviewedOnPrecedingLeg() throws {
+        let flightPlan = try twoLegFixtureWithImmediateChanges()
+        let start = Date(timeIntervalSince1970: 4_800)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(41)
+        )
+
+        #expect(
+            state.frequencies.first(where: { $0.frequency.frequencyMHz == 120.6 })?.status == .next
+        )
+    }
+
+    @Test("Current frequency carries across legs without a new frequency change")
+    func currentFrequencyCarriesAcrossLegsWithoutNewChange() throws {
+        let flightPlan = try removingFrequencyChangesFromSecondLeg(
+            of: twoLegFixtureWithImmediateChanges()
+        )
+        let start = Date(timeIntervalSince1970: 4_900)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(42))
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(43)
+        )
+
+        #expect(state.frequencies.prefix(2).map(\.status) == [.other, .current])
     }
 
     @Test("Selected navigation mode controls annotation timing")
@@ -541,6 +658,35 @@ struct CockpitOperationalCueProjectorTests {
             execution["frequenciesByPhase"] = phases
             object["execution"] = execution
         }
+    }
+
+    private func removingFrequencyChangesFromSecondLeg(of source: FlightPlan) throws -> FlightPlan {
+        let secondLegID = source.legs[1].id
+        let planned = try #require(source.plannedNavigation.plannedNavigation)
+        let removedIDs = Set(source.frequencyChanges.lazy.filter { $0.legID == secondLegID }.map(\.id))
+        return FlightPlan(
+            id: source.id,
+            title: source.title,
+            createdAt: source.createdAt,
+            modifiedAt: source.modifiedAt,
+            parameters: source.parameters,
+            waypoints: source.waypoints,
+            legs: source.legs,
+            identificationPoints: source.identificationPoints,
+            altitudeChanges: source.altitudeChanges,
+            frequencyChanges: source.frequencyChanges.filter { removedIDs.contains($0.id) == false },
+            vorDmeReferences: source.vorDmeReferences,
+            operationalContext: source.operationalContext,
+            plannedNavigation: .eligible(PlannedNavigation(
+                calculationVersion: planned.calculationVersion,
+                altitudeReference: planned.altitudeReference,
+                legs: planned.legs,
+                annotations: planned.annotations.filter { removedIDs.contains($0.entityID) == false },
+                vorDmeReferences: planned.vorDmeReferences,
+                frequenciesByPhase: planned.frequenciesByPhase,
+                defaultMode: planned.defaultMode
+            ))
+        )
     }
 
     private func fixtureData() throws -> Data {

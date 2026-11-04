@@ -550,6 +550,38 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+
+        let currentFrequency = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'frequency-' AND value == 'current'")
+        ).firstMatch
+        let nextFrequency = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'frequency-' AND value == 'next'")
+        ).firstMatch
+        XCTAssertTrue(currentFrequency.waitForExistence(timeout: 3))
+        XCTAssertTrue(nextFrequency.waitForExistence(timeout: 3))
+
+        let altitude = app.descendants(matching: .any)["cockpit-altitude"]
+        XCTAssertTrue(altitude.waitForExistence(timeout: 3))
+        XCTAssertTrue((altitude.value as? String)?.contains("Target altitude") == true)
+        XCTAssertTrue((altitude.value as? String)?.contains("next target") == true)
+    }
+
+    @MainActor
+    func testCockpitOperationalCuesRemainAvailableWithLargerText() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityExtraExtraExtraLarge"
+        )
+
+        let altitude = app.descendants(matching: .any)["cockpit-altitude"]
+        XCTAssertTrue(altitude.waitForExistence(timeout: 3))
+        XCTAssertTrue((altitude.value as? String)?.contains("Target altitude") == true)
+        XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
     func testDriftLineVisibilityPersistsAcrossPlanInspection() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
         let toggle = app.buttons["toggle-drift-lines"]

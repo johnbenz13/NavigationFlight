@@ -157,6 +157,7 @@ extension CockpitRestoration {
 struct CockpitView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     private let visualStyle = AviationMapVisualStyle.default
     let data: CockpitPresentationData
     let mapPresentation: AviationMapPresentation
@@ -166,6 +167,8 @@ struct CockpitView: View {
     let checklistState: CockpitFeatureState.LegStartChecklistState?
     let flight: Flight
     let areDriftLinesVisible: Bool
+    var operationalCues: CockpitOperationalCueState? = nil
+    var emphasizedCueEvents: Set<CockpitOperationalCueState.DueEvent> = []
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
     var positionCheck: PositionCheckPresentation? = nil
     var positionCheckMapRestoration: PositionCheckMapRestorationCommand? = nil
@@ -641,19 +644,21 @@ struct CockpitView: View {
 
                 if dynamicTypeSize.isAccessibilitySize {
                     portraitTimerMetric
-                    compactOperationalSummary
+                    readyETAMetric
+                    compactHeadingButton
+                    readyAltitudeMetric
                 } else {
                     HStack(alignment: .top, spacing: 8) {
                         portraitTimerMetric
                         readyETAMetric
                     }
-                    compactSummaryButtons
+                    HStack(alignment: .top, spacing: 8) {
+                        compactHeadingButton
+                        readyAltitudeMetric
+                    }
                 }
 
-                if showsCompactFrequencies {
-                    readyFrequencyRow
-                }
-
+                frequencyColumn
                 positionCheckAndProgressionControls
             }
             .padding(.horizontal, 12)
@@ -898,12 +903,23 @@ struct CockpitView: View {
     }
 
     private var readyAltitudeMetric: some View {
-        readyInstrumentCard(
-            title: "ALTITUDE",
-            value: "\(Self.feet(data.initialAltitudeFeetMsl)) ft",
-            detail: "Initial planned · MSL",
-            valueColor: .primary,
-            accessibilityIdentifier: "cockpit-altitude"
+        let currentAltitude = operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl
+        let nextAltitude = operationalCues?.nextAltitude
+        let displayedTransition = containsAltitudeEmphasis
+            ? operationalCues?.dueAltitude
+            : nextAltitude
+        let transitionStatus = containsAltitudeEmphasis ? "DUE" : "NEXT"
+        return readyInstrumentCard(
+            title: "TARGET ALTITUDE",
+            value: "\(Self.feet(currentAltitude)) ft",
+            detail: "Current planned · MSL",
+            valueColor: nextAltitude == nil ? .primary : Self.cueAmber,
+            accessibilityIdentifier: "cockpit-altitude",
+            trailingTitle: displayedTransition.map {
+                "\($0.direction == .up ? "↑" : "↓") \(Self.feet($0.target.value)) \(transitionStatus)"
+            },
+            accessibilityValue: operationalCues?.altitudeAccessibilityDescription,
+            emphasized: containsAltitudeEmphasis
         )
     }
 
@@ -914,14 +930,35 @@ struct CockpitView: View {
         valueColor: Color,
         accessibilityIdentifier: String,
         highlighted: Bool = false,
-        highlightColor: Color = Color(.systemTeal)
+        highlightColor: Color = Color(.systemTeal),
+        trailingTitle: String? = nil,
+        accessibilityValue: String? = nil,
+        emphasized: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(title)
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 2)
+                if let trailingTitle {
+                    Text(trailingTitle)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Self.cueAmber)
+                        .padding(.horizontal, emphasized && accessibilityReduceMotion ? 5 : 0)
+                        .padding(.vertical, emphasized && accessibilityReduceMotion ? 2 : 0)
+                        .background(
+                            emphasized && accessibilityReduceMotion ? Self.cueAmber.opacity(0.16) : .clear,
+                            in: Capsule()
+                        )
+                        .cuePulse(
+                            active: emphasized && !accessibilityReduceMotion,
+                            scale: 1.08
+                        )
+                }
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
             Text(value)
                 .font(.title2.weight(.bold))
                 .fontDesign(.rounded)
@@ -947,6 +984,7 @@ struct CockpitView: View {
             }
         }
         .accessibilityElement(children: .combine)
+        .accessibilityValue(accessibilityValue ?? "")
         .accessibilityIdentifier(accessibilityIdentifier)
     }
 
@@ -957,44 +995,70 @@ struct CockpitView: View {
                 .tracking(0.7)
                 .foregroundStyle(.secondary)
 
-            ScrollView(.horizontal) {
-                HStack(spacing: 10) {
-                    ForEach(orderedFrequencies) { readyFrequencyCard($0) }
-                    if orderedFrequencies.isEmpty {
-                        Text("No planned frequencies")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.vertical, 12)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(spacing: 10) {
+                        ForEach(orderedFrequencyCues) { readyFrequencyCard($0) }
+                        if orderedFrequencies.isEmpty {
+                            Text("No planned frequencies")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.vertical, 12)
+                        }
                     }
                 }
+                .scrollIndicators(.hidden)
+                .onChange(of: currentFrequencyID, initial: true) { _, frequencyID in
+                    centerFrequency(frequencyID, using: proxy)
+                }
             }
-            .scrollIndicators(.hidden)
         }
         .accessibilityIdentifier("planned-frequencies")
         .accessibilitySortPriority(60)
     }
 
-    private func readyFrequencyCard(_ frequency: CockpitPresentationData.DisplayFrequency) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("\(frequency.service) · \(frequency.serviceType)")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.secondary)
+    private func readyFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {
+        let frequency = cue.frequency
+        let isEmphasized = cue.status == .current && containsFrequencyEmphasis
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text("\(frequency.service) · \(frequency.serviceType)")
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                if let statusLabel = cue.statusLabel {
+                    Text(statusLabel)
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(cueForeground(for: cue.status))
+                }
+            }
             Text("\(Self.frequency(frequency.frequencyMHz)) MHz")
                 .font(.subheadline.weight(.bold))
                 .monospacedDigit()
+                .foregroundStyle(cueForeground(for: cue.status))
             Text(frequency.phases.map(Self.phaseAbbreviation).joined(separator: " → "))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 11))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(frequency.service) · \(frequency.serviceType), "
-                + "\(Self.frequency(frequency.frequencyMHz)) MHz, "
-                + frequency.phases.map(Self.phaseAbbreviation).joined(separator: " to ")
+        .frame(minWidth: 176, alignment: .leading)
+        .background(cueBackground(for: cue.status), in: RoundedRectangle(cornerRadius: 13))
+        .overlay {
+            RoundedRectangle(cornerRadius: 13)
+                .stroke(
+                    cueBorder(for: cue.status),
+                    lineWidth: isEmphasized && accessibilityReduceMotion ? 4 : (cue.status == .other ? 1 : 2)
+                )
+        }
+        .cuePulse(
+            active: isEmphasized && !accessibilityReduceMotion,
+            scale: 1.04
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(cue.accessibilityDescription)
+        .accessibilityValue(cue.statusLabel?.lowercased() ?? "planned")
+        .accessibilityIdentifier("frequency-\(frequency.id)")
     }
 
     private var readyStartRow: some View {
@@ -1200,17 +1264,39 @@ struct CockpitView: View {
         data.displayFrequencies
     }
 
+    private var orderedFrequencyCues: [CockpitOperationalCueState.FrequencyCue] {
+        operationalCues?.frequencies ?? orderedFrequencies.map {
+            CockpitOperationalCueState.FrequencyCue(frequency: $0, status: .other)
+        }
+    }
+
+    private var currentFrequencyID: String? {
+        orderedFrequencyCues.first(where: { $0.status == .current })?.id
+    }
+
     private var frequencyRow: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 18) {
-                Text("PLANNED FREQUENCIES").font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
-                ForEach(orderedFrequencies) { frequencyValue($0) }
-                if orderedFrequencies.isEmpty { Text("None").font(.caption).foregroundStyle(.secondary) }
-                Text("Not tuned").font(.caption).foregroundStyle(.secondary)
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: 18) {
+                    Text("PLANNED FREQUENCIES").font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
+                    ForEach(orderedFrequencyCues) { frequencyValue($0) }
+                    if orderedFrequencies.isEmpty { Text("None").font(.caption).foregroundStyle(.secondary) }
+                    Text("Not tuned").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .scrollIndicators(.hidden).frame(minHeight: 30).padding(.horizontal, 10)
+            .overlay(alignment: .top) { Divider() }.overlay(alignment: .bottom) { Divider() }
+            .onChange(of: currentFrequencyID, initial: true) { _, frequencyID in
+                centerFrequency(frequencyID, using: proxy)
             }
         }
-        .scrollIndicators(.hidden).frame(minHeight: 30).padding(.horizontal, 10)
-        .overlay(alignment: .top) { Divider() }.overlay(alignment: .bottom) { Divider() }
+    }
+
+    private func centerFrequency(_ frequencyID: String?, using proxy: ScrollViewProxy) {
+        guard let frequencyID else { return }
+        withAnimation(.easeInOut(duration: 0.35)) {
+            proxy.scrollTo(frequencyID, anchor: .center)
+        }
     }
 
     private var frequencyColumn: some View {
@@ -1221,27 +1307,56 @@ struct CockpitView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 7) {
-                    ForEach(orderedFrequencies) { frequencyValue($0) }
+                    ForEach(orderedFrequencyCues) { frequencyValue($0) }
                     if orderedFrequencies.isEmpty { Text("None").font(.caption).foregroundStyle(.secondary) }
                 }
             }
             .frame(maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("planned-frequencies")
     }
 
-    private func frequencyValue(_ frequency: CockpitPresentationData.DisplayFrequency) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 7) {
-                Text("\(frequency.service) · \(frequency.serviceType)")
-                    .font(.subheadline).lineLimit(1).minimumScaleFactor(0.8)
-                Text("\(Self.frequency(frequency.frequencyMHz)) MHz")
-                    .font(.subheadline.weight(.semibold)).monospacedDigit().lineLimit(1)
-            }
-            Text(frequency.phases.map(Self.phaseAbbreviation).joined(separator: " → "))
-                .font(.caption2.weight(.bold)).foregroundStyle(.secondary)
+    private func frequencyValue(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {
+        readyFrequencyCard(cue)
+    }
+
+    private var containsFrequencyEmphasis: Bool {
+        emphasizedCueEvents.contains { if case .frequency = $0 { true } else { false } }
+    }
+
+    private var containsAltitudeEmphasis: Bool {
+        emphasizedCueEvents.contains { if case .altitude = $0 { true } else { false } }
+    }
+
+    private func cueForeground(for status: CockpitOperationalCueState.FrequencyCue.Status) -> Color {
+        switch status {
+        case .current: Self.cueGreen
+        case .next: Self.cueAmber
+        case .other: .primary
         }
     }
+
+    private func cueBackground(for status: CockpitOperationalCueState.FrequencyCue.Status) -> Color {
+        switch status {
+        case .current: Self.cueGreenBackground
+        case .next: Self.cueAmberBackground
+        case .other: Color(.secondarySystemBackground)
+        }
+    }
+
+    private func cueBorder(for status: CockpitOperationalCueState.FrequencyCue.Status) -> Color {
+        switch status {
+        case .current: Self.cueGreen
+        case .next: Self.cueAmber
+        case .other: Color(.separator)
+        }
+    }
+
+    private static let cueGreen = Color(red: 10 / 255, green: 122 / 255, blue: 74 / 255)
+    private static let cueGreenBackground = Color(red: 222 / 255, green: 247 / 255, blue: 232 / 255)
+    private static let cueAmber = Color(red: 176 / 255, green: 80 / 255, blue: 0 / 255)
+    private static let cueAmberBackground = Color(red: 255 / 255, green: 240 / 255, blue: 209 / 255)
 
     @ViewBuilder
     private var waypointReachedButton: some View {
@@ -1560,6 +1675,21 @@ struct CockpitView: View {
                     .map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
             )
         )
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func cuePulse(active: Bool, scale: CGFloat) -> some View {
+        if active {
+            phaseAnimator([false, true]) { content, expanded in
+                content.scaleEffect(expanded ? scale : 1)
+            } animation: { _ in
+                .easeInOut(duration: 0.65)
+            }
+        } else {
+            self
+        }
     }
 }
 

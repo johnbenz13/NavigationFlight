@@ -148,6 +148,15 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     let startCause: String?
     let outcome: String?
     let closureCause: String?
+    var targetKind: String? = nil
+    var priorValue: Int? = nil
+    var committedValue: Int? = nil
+    var linkedEventID: UUID? = nil
+    var latitudeDegrees: Double? = nil
+    var longitudeDegrees: Double? = nil
+    var sampleObservedAt: Date? = nil
+    var sampleAccuracyMeters: Double? = nil
+    var degradationReason: String? = nil
 
     init(event: RecordedFlightEvent) {
         id = event.id
@@ -222,6 +231,73 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             startCause = nil
             outcome = nil
             closureCause = nil
+        case .etaRevised(let target, let priorSeconds, let committedSeconds):
+            kind = "etaRevised"
+            legID = target.legID
+            targetID = target.targetID
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            switch target.kind {
+            case .destination: targetKind = "destination"
+            case .identificationPoint: targetKind = "identificationPoint"
+            }
+            priorValue = priorSeconds
+            committedValue = committedSeconds
+        case .headingRevised(let value, let priorDegrees, let committedDegrees):
+            kind = "headingRevised"
+            legID = value
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            priorValue = priorDegrees
+            committedValue = committedDegrees
+        case .reachUndone(let originalEventID):
+            kind = "reachUndone"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            linkedEventID = originalEventID
+        case .positionCheckRequested:
+            kind = "positionCheckRequested"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .positionCheckEnded(let value):
+            kind = "positionCheckEnded"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            closureCause = nil
+            switch value {
+            case .endedWithoutDisclosure:
+                outcome = "endedWithoutDisclosure"
+            case .disclosed(let sample):
+                outcome = "disclosed"
+                latitudeDegrees = sample.coordinate.latitudeDegrees
+                longitudeDegrees = sample.coordinate.longitudeDegrees
+                sampleObservedAt = sample.observedAt
+                sampleAccuracyMeters = sample.horizontalAccuracyMeters
+            }
+        case .storageDegraded(let reason):
+            kind = "storageDegraded"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            degradationReason = reason.rawValue
         case .navigationCompleted:
             kind = "navigationCompleted"
             legID = nil
@@ -278,6 +354,42 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         case "automaticLegRecovery":
             guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .automaticLegRecovery(legID: legID)
+        case "etaRevised":
+            guard let legID, let targetID, let targetKind, let committedValue else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            let kind: NavigationTimingTargetKey.Kind = targetKind == "destination" ? .destination : .identificationPoint
+            payload = .etaRevised(
+                target: NavigationTimingTargetKey(legID: legID, kind: kind, targetID: targetID),
+                priorSeconds: priorValue,
+                committedSeconds: committedValue
+            )
+        case "headingRevised":
+            guard let legID, let priorValue, let committedValue else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .headingRevised(legID: legID, priorDegrees: priorValue, committedDegrees: committedValue)
+        case "reachUndone":
+            guard let linkedEventID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .reachUndone(originalEventID: linkedEventID)
+        case "positionCheckRequested":
+            payload = .positionCheckRequested
+        case "positionCheckEnded" where outcome == "endedWithoutDisclosure":
+            payload = .positionCheckEnded(outcome: .endedWithoutDisclosure)
+        case "positionCheckEnded" where outcome == "disclosed":
+            guard let latitudeDegrees, let longitudeDegrees, let sampleObservedAt, let sampleAccuracyMeters else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .positionCheckEnded(outcome: .disclosed(sample: PositionCheckRecordedSample(
+                coordinate: WGS84Coordinate(latitudeDegrees: latitudeDegrees, longitudeDegrees: longitudeDegrees),
+                observedAt: sampleObservedAt,
+                horizontalAccuracyMeters: sampleAccuracyMeters
+            )))
+        case "storageDegraded":
+            guard let degradationReason, let reason = RecordingStorageDegradation(rawValue: degradationReason) else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .storageDegraded(reason: reason)
         case "navigationCompleted":
             payload = .navigationCompleted
         case "manualEnd":

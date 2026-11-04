@@ -505,6 +505,31 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testRecordingDegradationWarnsWithoutBlockingOperationalActions() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            recordingDegradation: true
+        )
+
+        app.buttons["start-leg"].tap()
+        let status = app.buttons["recording-status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 5))
+        XCTAssertEqual(status.label, "Recording May Be Incomplete")
+        XCTAssertTrue(app.buttons["waypoint-identified"].isEnabled)
+        XCTAssertTrue(app.buttons["reached-now"].isEnabled)
+        XCTAssertTrue(app.descendants(matching: .any)["position-check-control"].isEnabled)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS[c] 'latitude' OR label CONTAINS[c] 'longitude'"
+        )).firstMatch.exists)
+
+        status.tap()
+        XCTAssertTrue(app.staticTexts[
+            "Some track data could not be saved. Navigation actions remain available."
+        ].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["end-recording"].exists)
+    }
+
+    @MainActor
     func testTabRoundTripAndRotationPreserveActiveFlight() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
         app.buttons["start-leg"].tap()
@@ -1107,7 +1132,8 @@ final class NavigationFlightUITests: XCTestCase {
         preferredContentSizeCategory: String? = nil,
         positionCheckState: String? = nil,
         positionCheckDuration: Double? = nil,
-        recordingFailure: Bool = false
+        recordingFailure: Bool = false,
+        recordingDegradation: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1126,6 +1152,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if recordingFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] = "1"
+        }
+        if recordingDegradation {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_DEGRADATION"] = "1"
         }
         app.launch()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))

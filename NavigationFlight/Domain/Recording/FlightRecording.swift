@@ -195,7 +195,7 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         navigationState: RecordedNavigationState? = nil
     ) throws -> [RecordedFlightEvent] {
         guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
-        guard self.navigationState == .active else { throw TransitionError.navigationAlreadyActive }
+        guard self.navigationState != .ready else { throw TransitionError.navigationAlreadyActive }
         guard entries.count == eventIDs.count else { throw TransitionError.invalidEventIdentifierCount }
         guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
 

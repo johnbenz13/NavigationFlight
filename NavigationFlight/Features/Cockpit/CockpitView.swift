@@ -176,14 +176,14 @@ struct CockpitView: View {
     var isNavigationCompletionCommitted = false
     var positionCheckMapRestoration: PositionCheckMapRestorationCommand? = nil
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
-    var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) -> Void = { _, _ in }
+    var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) async -> Void = { _, _ in }
     var onEndRecording: () -> Void = {}
     var onNavigationComplete: () -> Void = {}
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: (CockpitRestoration) -> Void
     let onIdentificationPointReached: (IdentificationPointKey, AviationMapPresentation, CockpitRestoration) throws -> Void
-    var onUndoReach: (Date) -> CockpitRestoration? = { _ in nil }
+    var onUndoReach: (Date) async -> CockpitRestoration? = { _ in nil }
     let onOpenPilotETA: (AviationMapETATarget) -> Void
     let onAdjustPilotETA: (NavigationTimingTargetKey, Int) -> Void
     let onCommitPilotETA: (NavigationTimingTargetKey) -> Void
@@ -1703,18 +1703,23 @@ struct CockpitView: View {
         if action == .holdCompleted, positionCheckRestoration == nil {
             positionCheckRestoration = cockpitRestoration
         }
-        onPositionCheckAction(action, positionCheckRestoration ?? cockpitRestoration)
+        let restoration = positionCheckRestoration ?? cockpitRestoration
+        Task {
+            await onPositionCheckAction(action, restoration)
+        }
     }
 
     private func restoreReach(at now: Date) {
-        guard let restoration = onUndoReach(now) else { return }
-        isRestoringReach = true
-        preservedMapCamera = restoration.camera
-        isMapCameraUserControlled = restoration.isCameraUserControlled
-        selectedMapCallout = restoration.selectedCallout
-        mapFocusRequest = restoration.focusRequest
-        mapIdentity = UUID()
-        identificationPointReportError = nil
+        Task {
+            guard let restoration = await onUndoReach(now) else { return }
+            isRestoringReach = true
+            preservedMapCamera = restoration.camera
+            isMapCameraUserControlled = restoration.isCameraUserControlled
+            selectedMapCallout = restoration.selectedCallout
+            mapFocusRequest = restoration.focusRequest
+            mapIdentity = UUID()
+            identificationPointReportError = nil
+        }
     }
 
     private var identificationContext: AviationMapIdentificationContext? {

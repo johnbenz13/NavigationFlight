@@ -4,6 +4,36 @@ import Testing
 
 @Suite("Flight recording engine")
 struct FlightRecordingEngineTests {
+    @Test("Cancelled ETA drafts remain outside the recording journal")
+    func cancelledETADraftAppendsNothing() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        let eventCount = started.recording.nextEventSequence
+        let target = NavigationTimingTargetKey(
+            legID: fixture.snapshot.legIDs[0],
+            kind: .destination,
+            targetID: UUID()
+        )
+
+        await MainActor.run {
+            var draft = started.flight
+            draft.initializePilotETA(targetKey: target, plannedElapsedSeconds: 300)
+            draft.adjustPilotETA(targetKey: target, by: 15)
+            draft.cancelPilotETAEditing(targetKey: target)
+        }
+
+        let snapshot = await engine.snapshot()
+        let persisted = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.recording?.nextEventSequence == eventCount)
+        #expect(UInt64(persisted.events.count) == eventCount)
+    }
+
     @Test("Start Leg is not published until the durable package is synchronized")
     func publicationWaitsForDurability() async throws {
         let fixture = makeFixture()
@@ -241,6 +271,126 @@ struct FlightRecordingEngineTests {
         let event = try #require(try await store.readSnapshot(id: started.recording.id).events.last)
         #expect(event.origin == .recovery)
         #expect(event.payload == .automaticLegRecovery(legID: fixture.snapshot.legIDs[0]))
+    }
+
+    @Test("Committed ETA revision records its canonical target and before/after values")
+    func etaRevisionRecordsBeforeAndAfterValues() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let target = NavigationTimingTargetKey(
+            legID: fixture.snapshot.legIDs[0],
+            kind: .destination,
+            targetID: UUID()
+        )
+
+        let transition = try await engine.commit(.reviseETA(
+            target: target,
+            plannedElapsedSeconds: 600,
+            committedSeconds: 720,
+            at: fixture.startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            eventID: UUID()
+        ))
+
+        #expect(transition.flight.committedPilotETA(targetKey: target) == 720)
+        let event = try #require(try await store.readSnapshot(id: started.recording.id).events.last)
+        #expect(event.payload == .etaRevised(target: target, priorSeconds: nil, committedSeconds: 720))
+
+        await #expect(throws: Flight.TransitionError.self) {
+            try await engine.commit(.reviseETA(
+                target: target,
+                plannedElapsedSeconds: 600,
+                committedSeconds: 720,
+                at: fixture.startedAt.addingTimeInterval(31),
+                elapsed: .seconds(31),
+                eventID: UUID()
+            ))
+        }
+        #expect(try await store.readSnapshot(id: started.recording.id).events.count == 3)
+    }
+
+    @Test("Committed heading revision records its leg and before/after values")
+    func headingRevisionRecordsBeforeAndAfterValues() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+
+        _ = try await engine.commit(.reviseHeading(
+            legID: fixture.snapshot.legIDs[0],
+            baselineDegrees: 74,
+            committedDegrees: 82,
+            at: fixture.startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            eventID: UUID()
+        ))
+
+        let event = try #require(try await store.readSnapshot(id: started.recording.id).events.last)
+        #expect(event.payload == .headingRevised(legID: fixture.snapshot.legIDs[0], priorDegrees: 74, committedDegrees: 82))
+    }
+
+    @Test("Undo appends a linked event and preserves the original reach event")
+    func undoLinksWithoutRewritingOriginal() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let reachID = UUID()
+        _ = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [],
+            at: fixture.startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            eventIDs: [reachID, UUID()]
+        ))
+        let undoID = UUID()
+
+        _ = try await engine.commit(.undoReach(
+            originalEventID: reachID,
+            at: fixture.startedAt.addingTimeInterval(31),
+            elapsed: .seconds(31),
+            eventID: undoID
+        ))
+
+        let events = try await store.readSnapshot(id: started.recording.id).events
+        #expect(events.contains { $0.id == reachID && $0.payload == .waypointReached(legID: fixture.snapshot.legIDs[0]) })
+        #expect(events.last?.payload == .reachUndone(originalEventID: reachID))
+    }
+
+    @Test("Position Check request survives acquisition failure and successful end stores only the qualified sample")
+    func positionCheckRequestAndOutcomesAreDurable() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        _ = try await engine.commit(.requestPositionCheck(at: fixture.startedAt, elapsed: .zero, eventID: UUID()))
+        _ = try await engine.commit(.endPositionCheck(
+            outcome: .endedWithoutDisclosure,
+            at: fixture.startedAt.addingTimeInterval(10),
+            elapsed: .seconds(10),
+            eventID: UUID()
+        ))
+        let sample = PositionCheckRecordedSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
+            observedAt: fixture.startedAt.addingTimeInterval(20),
+            horizontalAccuracyMeters: 8
+        )
+        _ = try await engine.commit(.requestPositionCheck(at: fixture.startedAt.addingTimeInterval(20), elapsed: .seconds(20), eventID: UUID()))
+        _ = try await engine.commit(.endPositionCheck(
+            outcome: .disclosed(sample: sample),
+            at: fixture.startedAt.addingTimeInterval(21),
+            elapsed: .seconds(21),
+            eventID: UUID()
+        ))
+
+        let payloads = try await store.readSnapshot(id: started.recording.id).events.map(\.payload)
+        #expect(payloads.suffix(4) == [
+            .positionCheckRequested,
+            .positionCheckEnded(outcome: .endedWithoutDisclosure),
+            .positionCheckRequested,
+            .positionCheckEnded(outcome: .disclosed(sample: sample))
+        ])
     }
 
     private func makeFixture(legCount: Int = 1) -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {

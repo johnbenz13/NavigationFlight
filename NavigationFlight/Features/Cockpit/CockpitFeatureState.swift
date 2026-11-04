@@ -44,6 +44,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         let legStartChecklists: [UUID: LegStartChecklistState]
         let selectedLegIndex: Int
         let cockpitRestoration: CockpitRestoration
+        var originalEventID: UUID? = nil
     }
 
     struct LegStartChecklistState: Equatable, Sendable {
@@ -187,6 +188,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func installCommittedWaypointReach(
         _ committedFlight: Flight,
+        originalEventID: UUID,
         cockpitRestoration: CockpitRestoration,
         at timestamp: Date
     ) {
@@ -207,12 +209,14 @@ struct CockpitFeatureState: Equatable, Sendable {
             flight: restorationFlight,
             legStartChecklists: restorationChecklists,
             selectedLegIndex: restorationLegIndex,
-            cockpitRestoration: cockpitRestoration
+            cockpitRestoration: cockpitRestoration,
+            originalEventID: originalEventID
         )
     }
 
     mutating func installCommittedIdentificationPointReach(
         _ committedFlight: Flight,
+        originalEventID: UUID,
         key: IdentificationPointKey,
         mapPresentation: AviationMapPresentation,
         cockpitRestoration: CockpitRestoration,
@@ -231,7 +235,8 @@ struct CockpitFeatureState: Equatable, Sendable {
             flight: restorationFlight,
             legStartChecklists: restorationChecklists,
             selectedLegIndex: restorationLegIndex,
-            cockpitRestoration: cockpitRestoration
+            cockpitRestoration: cockpitRestoration,
+            originalEventID: originalEventID
         )
     }
 

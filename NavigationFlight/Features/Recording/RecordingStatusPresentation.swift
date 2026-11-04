@@ -3,6 +3,7 @@ import Foundation
 nonisolated enum RecordingStatus: Equatable, Sendable {
     case ready
     case recordingGPSUnavailable
+    case recordingDegraded
     case navigationCompleteRecordingContinues
     case closedComplete
     case closedIncomplete
@@ -36,6 +37,13 @@ nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
             compactTitle = "REC · NO GPS"
             detail = "Navigation actions are recorded without coordinates or a GPS track."
             systemImage = "location.slash.fill"
+            tone = .caution
+            showsEndRecordingAction = true
+        case .recordingDegraded:
+            title = "Recording May Be Incomplete"
+            compactTitle = "REC · WARNING"
+            detail = "Some track data could not be saved. Navigation actions remain available."
+            systemImage = "exclamationmark.triangle.fill"
             tone = .caution
             showsEndRecordingAction = true
         case .navigationCompleteRecordingContinues:

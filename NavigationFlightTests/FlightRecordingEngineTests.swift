@@ -529,4 +529,6 @@ private actor ControlledFlightRecordingStore: FlightRecordingStore {
     }
 
     func close(id: UUID, closure: FlightRecordingClosure) async throws {}
+
+    func remove(id: UUID) async throws {}
 }

@@ -41,6 +41,12 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     case positionCheckRequested
     case positionCheckEnded(outcome: PositionCheckRecordedOutcome)
     case storageDegraded(reason: RecordingStorageDegradation)
+    case physicalStateChanged(from: PhysicalFlightState, to: PhysicalFlightState)
+    case physicalStateCorrected(
+        originalEventID: UUID,
+        from: PhysicalFlightState,
+        to: PhysicalFlightState
+    )
     case navigationCompleted
     case manualEnd
     case recordingClosed(

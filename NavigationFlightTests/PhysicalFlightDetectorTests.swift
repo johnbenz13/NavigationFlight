@@ -63,14 +63,34 @@ struct PhysicalFlightDetectorTests {
         #expect(detector.state == .airborne)
     }
 
+    @Test("Landing requires sustained low-speed evidence near the departure elevation")
+    func sustainedLandingEvidence() {
+        var detector = airborneDetector()
+
+        #expect(detector.process(sample(speed: 8, altitude: 40, at: 12), monotonicTime: .seconds(12)).isEmpty)
+        #expect(detector.process(sample(speed: 8, altitude: 38, at: 16), monotonicTime: .seconds(16)).isEmpty)
+        #expect(detector.process(sample(speed: 8, altitude: 36, at: 17), monotonicTime: .seconds(17)) == [.landingDetected])
+        #expect(detector.state == .landedAwaitingStop)
+    }
+
+    @Test("A stopped Flight requires sustained credible stationary evidence after landing")
+    func sustainedPostLandingStop() {
+        var detector = landedDetector()
+
+        #expect(detector.process(sample(speed: 0, altitude: 31, at: 18), monotonicTime: .seconds(18)).isEmpty)
+        #expect(detector.process(sample(speed: 0, altitude: 31, at: 22), monotonicTime: .seconds(22)).isEmpty)
+        #expect(detector.process(sample(speed: 0, altitude: 31, at: 23), monotonicTime: .seconds(23)) == [.sustainedStopDetected])
+        #expect(detector.state == .stopped)
+    }
+
     @Test("Contradictory sustained evidence emits a correction without erasing takeoff")
     func contradictionEmitsCorrection() {
         var detector = detectorWithGroundMovement()
         _ = detector.process(sample(speed: 24, altitude: 55, at: 6), monotonicTime: .seconds(6))
         _ = detector.process(sample(speed: 24, altitude: 60, at: 11), monotonicTime: .seconds(11))
 
-        #expect(detector.process(sample(speed: 0, altitude: 30, at: 12), monotonicTime: .seconds(12)).isEmpty)
-        #expect(detector.process(sample(speed: 0, altitude: 30, at: 17), monotonicTime: .seconds(17)) == [
+        #expect(detector.process(sample(speed: 0, altitude: 49, at: 12), monotonicTime: .seconds(12)).isEmpty)
+        #expect(detector.process(sample(speed: 0, altitude: 49, at: 17), monotonicTime: .seconds(17)) == [
             .correction(previous: .airborne, corrected: .groundMovement)
         ])
         #expect(detector.state == .groundMovement)
@@ -98,6 +118,20 @@ struct PhysicalFlightDetectorTests {
         var detector = PhysicalFlightDetector(policy: .fixture)
         _ = detector.process(sample(speed: 4, at: 0), monotonicTime: .seconds(0))
         _ = detector.process(sample(speed: 4, at: 5), monotonicTime: .seconds(5))
+        return detector
+    }
+
+    private func airborneDetector() -> PhysicalFlightDetector {
+        var detector = detectorWithGroundMovement()
+        _ = detector.process(sample(speed: 24, altitude: 55, at: 6), monotonicTime: .seconds(6))
+        _ = detector.process(sample(speed: 24, altitude: 60, at: 11), monotonicTime: .seconds(11))
+        return detector
+    }
+
+    private func landedDetector() -> PhysicalFlightDetector {
+        var detector = airborneDetector()
+        _ = detector.process(sample(speed: 8, altitude: 40, at: 12), monotonicTime: .seconds(12))
+        _ = detector.process(sample(speed: 8, altitude: 36, at: 17), monotonicTime: .seconds(17))
         return detector
     }
 
@@ -131,6 +165,11 @@ private extension PhysicalFlightDetectionPolicy {
         takeoffSpeedMetersPerSecond: 20,
         takeoffAltitudeGainMeters: 20,
         takeoffWindow: .seconds(5),
+        landingSpeedMetersPerSecond: 10,
+        landingAltitudeToleranceMeters: 15,
+        landingWindow: .seconds(5),
+        stoppedSpeedMetersPerSecond: 1,
+        stoppedWindow: .seconds(5),
         provisionalTimeout: .seconds(30),
         airborneLaunchWindow: .seconds(8)
     )

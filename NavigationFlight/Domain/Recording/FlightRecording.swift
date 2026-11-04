@@ -6,7 +6,7 @@ nonisolated struct RecordedFlightPlanSnapshot: Equatable, Sendable {
     let legIDs: [UUID]
 }
 
-nonisolated enum PhysicalFlightState: Equatable, Sendable {
+nonisolated enum PhysicalFlightState: String, Equatable, Sendable {
     case preparing
     case groundMovement
     case airborne
@@ -57,6 +57,7 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         case legNotInFlightPlan(UUID)
         case navigationAlreadyActive
         case recordingAlreadyClosed
+        case physicalStopRequired
         case timestampPrecedesStart
     }
 
@@ -179,12 +180,16 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             origin: .pilot,
             payload: .manualEnd
         )
+        let landingEvidenceAvailable = physicalState == .landedAwaitingStop || physicalState == .stopped
+        let isActionOnly = gpsCoverage == .unavailable
         let closure = FlightRecordingClosure(
-            outcome: navigationState == .complete ? .complete : .incomplete,
+            outcome: navigationState == .complete && (landingEvidenceAvailable || isActionOnly)
+                ? .complete
+                : .incomplete,
             cause: .manual,
             closedAt: timestamp,
             elapsed: elapsed,
-            landingEvidenceAvailable: false
+            landingEvidenceAvailable: landingEvidenceAvailable
         )
         let closed = makeEvent(
             id: eventIDs[1],
@@ -195,6 +200,76 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         )
         self.closure = closure
         return [manualEnd, closed]
+    }
+
+    mutating func recordPhysicalTransition(
+        to state: PhysicalFlightState,
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        let previous = physicalState
+        physicalState = state
+        return makeEvent(
+            id: eventID,
+            occurredAt: timestamp,
+            elapsed: elapsed,
+            origin: .automatic,
+            payload: .physicalStateChanged(from: previous, to: state)
+        )
+    }
+
+    mutating func recordPhysicalCorrection(
+        originalEventID: UUID,
+        from previous: PhysicalFlightState,
+        to corrected: PhysicalFlightState,
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        physicalState = corrected
+        return makeEvent(
+            id: eventID,
+            occurredAt: timestamp,
+            elapsed: elapsed,
+            origin: .automatic,
+            payload: .physicalStateCorrected(
+                originalEventID: originalEventID,
+                from: previous,
+                to: corrected
+            )
+        )
+    }
+
+    mutating func closeAutomatically(
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard physicalState == .stopped else { throw TransitionError.physicalStopRequired }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        let outcome: FlightRecordingClosure.Outcome = navigationState == .complete ? .complete : .incomplete
+        let closure = FlightRecordingClosure(
+            outcome: outcome,
+            cause: .automatic,
+            closedAt: timestamp,
+            elapsed: elapsed,
+            landingEvidenceAvailable: true
+        )
+        let event = makeEvent(
+            id: eventID,
+            occurredAt: timestamp,
+            elapsed: elapsed,
+            origin: .system,
+            payload: .recordingClosed(outcome: outcome, cause: .automatic)
+        )
+        self.closure = closure
+        return event
     }
 
     mutating func completeNavigation(
@@ -282,6 +357,23 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
 
     func restoring(
         navigationState: RecordedNavigationState,
+        nextEventSequence: UInt64
+    ) -> FlightRecording {
+        FlightRecording(
+            id: id,
+            flightID: flightID,
+            flightPlanSnapshot: flightPlanSnapshot,
+            startedAt: startedAt,
+            physicalState: physicalState,
+            navigationState: navigationState,
+            gpsCoverage: gpsCoverage,
+            closure: closure,
+            nextEventSequence: nextEventSequence
+        )
+    }
+
+    func restoring(
+        physicalState: PhysicalFlightState,
         nextEventSequence: UInt64
     ) -> FlightRecording {
         FlightRecording(

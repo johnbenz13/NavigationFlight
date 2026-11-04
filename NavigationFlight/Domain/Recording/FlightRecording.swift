@@ -109,6 +109,37 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         )
     }
 
+    static func promoteAutomatically(
+        id: UUID,
+        flightID: UUID,
+        flightPlanSnapshot: RecordedFlightPlanSnapshot,
+        startedAt: Date,
+        promotedAt: Date,
+        partial: Bool,
+        eventID: UUID
+    ) -> FlightRecordingPromotion {
+        var recording = FlightRecording(
+            id: id,
+            flightID: flightID,
+            flightPlanSnapshot: flightPlanSnapshot,
+            startedAt: startedAt,
+            physicalState: .airborne,
+            navigationState: .ready,
+            gpsCoverage: .available,
+            closure: nil,
+            nextEventSequence: 0
+        )
+        let elapsed = Duration.seconds(max(0, promotedAt.timeIntervalSince(startedAt)))
+        let event = recording.makeEvent(
+            id: eventID,
+            occurredAt: promotedAt,
+            elapsed: elapsed,
+            origin: .system,
+            payload: .recordingStarted(cause: partial ? .partialStart : .automaticTakeoff)
+        )
+        return FlightRecordingPromotion(recording: recording, events: [event])
+    }
+
     mutating func startLeg(
         legID: UUID,
         at timestamp: Date,

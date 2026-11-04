@@ -4,6 +4,7 @@ nonisolated enum RecordingStatus: Equatable, Sendable {
     case ready
     case prepared
     case recording
+    case partialRecording
     case gpsGap
     case gpsResumed
     case recordingGPSUnavailable
@@ -49,6 +50,13 @@ nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
             detail = "GPS track samples are being saved without displaying the aircraft position."
             systemImage = "record.circle.fill"
             tone = .neutral
+            showsEndRecordingAction = true
+        case .partialRecording:
+            title = "Partial Recording"
+            compactTitle = "REC · PARTIAL"
+            detail = "Recording began after airborne movement was detected. Earlier track history is unavailable."
+            systemImage = "exclamationmark.circle.fill"
+            tone = .caution
             showsEndRecordingAction = true
         case .gpsGap:
             title = "Recording · GPS Gap"

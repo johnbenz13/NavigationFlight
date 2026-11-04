@@ -54,6 +54,14 @@ nonisolated struct FlightRecordingEngineSnapshot: Equatable, Sendable {
     let storageDegradations: Set<RecordingStorageDegradation>
 }
 
+nonisolated enum FlightRecordingLocationOutcome: Equatable, Sendable {
+    case none
+    case provisionalBegan
+    case provisionalDiscarded
+    case promoted(FlightRecording, partial: Bool)
+    case promotionPersistenceFailed
+}
+
 actor FlightRecordingEngine {
     enum EngineError: Error, Equatable, Sendable {
         case navigationNotReadyForCompletion
@@ -61,6 +69,7 @@ actor FlightRecordingEngine {
 
     private let store: any FlightRecordingStore
     private let flightPlanSnapshot: RecordedFlightPlanSnapshot
+    private var detector: PhysicalFlightDetector
     private var flight: Flight
     private var recording: FlightRecording?
     private var storageDegradations: Set<RecordingStorageDegradation> = []
@@ -73,11 +82,13 @@ actor FlightRecordingEngine {
     init(
         store: any FlightRecordingStore,
         flight: Flight,
-        flightPlanSnapshot: RecordedFlightPlanSnapshot
+        flightPlanSnapshot: RecordedFlightPlanSnapshot,
+        detectorPolicy: PhysicalFlightDetectionPolicy = .production
     ) {
         self.store = store
         self.flight = flight
         self.flightPlanSnapshot = flightPlanSnapshot
+        detector = PhysicalFlightDetector(policy: detectorPolicy)
     }
 
     func arm() {
@@ -92,22 +103,56 @@ actor FlightRecordingEngine {
         segmentNeedsReopening = false
     }
 
-    func ingest(_ event: LocationSourceEvent) async {
-        guard isArmed else { return }
+    func ingest(_ event: LocationSourceEvent, monotonicTime: Duration) async -> FlightRecordingLocationOutcome {
+        guard isArmed else { return .none }
         switch event {
         case .sample(let sourceSample, _):
-            guard let sample = RecordedTrackSample(sourceSample), !deliveredSamples.contains(sample) else { return }
+            guard let sample = RecordedTrackSample(sourceSample), !deliveredSamples.contains(sample) else { return .none }
             deliveredSamples.append(sample)
             if recording == nil {
                 rollingBuffer.append(sample)
                 let cutoff = sample.observedAt.addingTimeInterval(-120)
                 rollingBuffer.removeAll { $0.observedAt < cutoff }
+                let events = detector.process(sourceSample, monotonicTime: monotonicTime)
+                if events.contains(.provisionalTimedOut) {
+                    rollingBuffer.removeAll()
+                    return .provisionalDiscarded
+                }
+                if events.contains(.takeoffDetected) || events.contains(.partialStartDetected) {
+                    let partial = events.contains(.partialStartDetected)
+                    let promotion = FlightRecording.promoteAutomatically(
+                        id: UUID(),
+                        flightID: flight.id,
+                        flightPlanSnapshot: flightPlanSnapshot,
+                        startedAt: rollingBuffer.first?.observedAt ?? sourceSample.observedAt,
+                        promotedAt: sourceSample.observedAt,
+                        partial: partial,
+                        eventID: UUID()
+                    )
+                    let segmentID = UUID()
+                    activeSegmentID = segmentID
+                    do {
+                        try await store.create(FlightRecordingSeed(
+                            recording: promotion.recording,
+                            events: promotion.events,
+                            trackSegments: [RecordedTrackSegment(id: segmentID, samples: rollingBuffer)]
+                        ))
+                    } catch {
+                        activeSegmentID = nil
+                        return .promotionPersistenceFailed
+                    }
+                    recording = promotion.recording
+                    return .promoted(promotion.recording, partial: partial)
+                }
+                if events.contains(.groundMovementBegan) {
+                    return .provisionalBegan
+                }
             } else if let recording {
                 if segmentNeedsReopening || activeSegmentID == nil {
                     activeSegmentID = UUID()
                     segmentNeedsReopening = false
                 }
-                guard let segmentID = activeSegmentID else { return }
+                guard let segmentID = activeSegmentID else { return .none }
                 try? await store.appendTrackBatch(RecordedTrackBatch(
                     recordingID: recording.id,
                     segmentID: segmentID,
@@ -122,6 +167,22 @@ actor FlightRecordingEngine {
         case .authorization(.notDetermined), .authorization(.whenInUse):
             break
         }
+        return .none
+    }
+
+    @discardableResult
+    func ingest(_ event: LocationSourceEvent) async -> FlightRecordingLocationOutcome {
+        let timestamp: Date
+        switch event {
+        case .sample(_, let receivedAt):
+            timestamp = receivedAt
+        case .servicesDisabled, .signalLost, .authorization:
+            timestamp = .distantPast
+        }
+        return await ingest(
+            event,
+            monotonicTime: .seconds(timestamp.timeIntervalSinceReferenceDate)
+        )
     }
 
     func promoteForStartLeg(
@@ -139,9 +200,6 @@ actor FlightRecordingEngine {
     ) async throws -> CommittedNavigationTransition {
         switch command {
         case .startLeg(let timestamp, let recordingID, let eventIDs):
-            guard recording == nil else {
-                throw FlightRecording.TransitionError.navigationAlreadyActive
-            }
             let currentFlight = flight
             let candidateFlight = try await MainActor.run {
                 var candidate = currentFlight
@@ -149,6 +207,26 @@ actor FlightRecordingEngine {
                 return candidate
             }
             let legID = candidateFlight.legIDs[candidateFlight.activeLegIndex]
+            if var candidateRecording = recording {
+                guard eventIDs.count == 1 else {
+                    throw FlightRecording.TransitionError.invalidEventIdentifierCount
+                }
+                let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(candidateRecording.startedAt)))
+                let event = try candidateRecording.startLeg(
+                    legID: legID,
+                    at: timestamp,
+                    elapsed: elapsed,
+                    eventID: eventIDs[0]
+                )
+                try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+                flight = candidateFlight
+                recording = candidateRecording
+                return CommittedNavigationTransition(
+                    flight: candidateFlight,
+                    recording: candidateRecording,
+                    eventIDs: [event.id]
+                )
+            }
             var promotion = try FlightRecording.promoteForStartLeg(
                 id: recordingID,
                 flightID: candidateFlight.id,

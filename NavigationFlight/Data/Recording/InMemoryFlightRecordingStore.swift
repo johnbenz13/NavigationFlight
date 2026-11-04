@@ -65,12 +65,21 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
         let events = current.events + [event]
-        let recording = event.payload == .navigationCompleted
-            ? current.recording.restoring(
+        let recording: FlightRecording
+        switch event.payload {
+        case .navigationCompleted:
+            recording = current.recording.restoring(
                 navigationState: .complete,
                 nextEventSequence: UInt64(events.count)
             )
-            : current.recording
+        case .physicalStateChanged(_, let to), .physicalStateCorrected(_, _, let to):
+            recording = current.recording.restoring(
+                physicalState: to,
+                nextEventSequence: UInt64(events.count)
+            )
+        default:
+            recording = current.recording
+        }
         snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
             recording: recording,
             events: events,
@@ -102,5 +111,15 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
             events: current.events,
             trackSegments: current.trackSegments
         )
+    }
+
+    func remove(id: UUID) throws {
+        guard let current = snapshotsByID[id] else {
+            throw FlightRecordingStoreError.corruptPackage(id: id)
+        }
+        guard current.recording.closure != nil else {
+            throw FlightRecordingStoreError.recordingActive(id: id)
+        }
+        snapshotsByID[id] = nil
     }
 }

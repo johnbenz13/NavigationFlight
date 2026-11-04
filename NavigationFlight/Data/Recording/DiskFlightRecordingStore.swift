@@ -217,6 +217,20 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         }
     }
 
+    func remove(id: UUID) throws {
+        let snapshot = try readSnapshot(id: id)
+        guard snapshot.recording.closure != nil else {
+            throw FlightRecordingStoreError.recordingActive(id: id)
+        }
+        do {
+            try fileManager.removeItem(at: packageDirectory(id: id))
+            try synchronizeDirectory(rootDirectory)
+            lastTrackSynchronization[id] = nil
+        } catch {
+            throw FlightRecordingStoreError.operationFailed(id: id)
+        }
+    }
+
     private func readSnapshot(
         at directory: URL,
         expectedID: UUID?
@@ -253,9 +267,16 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             let gpsCoverage: GPSCoverageState = trackSegments.isEmpty
                 ? .unavailable
                 : (trackSegments.count == 1 ? .available : .partial)
+            let restoredPhysicalState = events.reversed().compactMap { event -> PhysicalFlightState? in
+                switch event.payload {
+                case .physicalStateChanged(_, let to), .physicalStateCorrected(_, _, let to): to
+                default: nil
+                }
+            }.first
             return FlightRecordingReadSnapshot(
                 recording: try manifest.domain(
                     snapshot: plan.domain,
+                    physicalState: restoredPhysicalState,
                     navigationState: events.contains { $0.payload == .navigationCompleted }
                         ? .complete
                         : nil,

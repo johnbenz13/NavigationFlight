@@ -67,6 +67,38 @@ struct FlightRecordingCoordinatorTests {
         #expect(coordinator.status == .recording)
     }
 
+    @Test("Sustained landing and stop close a durable recording incomplete when navigation is not complete")
+    func automaticPhysicalClosure() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let clock = ManualMonotonicClock()
+        let coordinator = FlightRecordingCoordinator(store: store, detectorPolicy: .fixture, monotonicNow: clock.now)
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+
+        for (time, speed, altitude) in [
+            (0.0, 4.0, 30.0), (5, 4, 30), (6, 24, 55), (11, 24, 60),
+            (12, 8, 40), (17, 8, 36), (18, 0, 31), (23, 0, 31)
+        ] {
+            clock.advance(by: .seconds(time - Double(clock.seconds)))
+            let date = fixture.startedAt.addingTimeInterval(time)
+            await coordinator.handleLocationEvent(.sample(
+                sample(speed: speed, altitude: altitude, at: date),
+                receivedAt: date
+            ))
+        }
+
+        let recording = try #require(coordinator.snapshot.recording)
+        #expect(coordinator.status == .closedIncomplete)
+        #expect(recording.physicalState == .stopped)
+        #expect(recording.closure?.outcome == .incomplete)
+        let stored = try await store.readSnapshot(id: recording.id)
+        #expect(stored.events.suffix(3).map(\.payload) == [
+            .physicalStateChanged(from: .airborne, to: .landedAwaitingStop),
+            .physicalStateChanged(from: .landedAwaitingStop, to: .stopped),
+            .recordingClosed(outcome: .incomplete, cause: .automatic)
+        ])
+    }
+
     @Test("Already-airborne launch publishes an explicit partial recording")
     func airborneLaunchPublishesPartialStatus() async {
         let fixture = makeFixture()
@@ -154,6 +186,50 @@ struct FlightRecordingCoordinatorTests {
         #expect(coordinator.status == .gpsGap)
         await coordinator.handleLocationEvent(.sample(resumed, receivedAt: resumed.observedAt))
         #expect(coordinator.status == .gpsResumed)
+    }
+
+    @Test("GPS samples do not re-enable Navigation Complete after it commits")
+    func navigationCompletionSurvivesGPSUpdates() async throws {
+        let fixture = makeFixture()
+        let coordinator = FlightRecordingCoordinator(store: InMemoryFlightRecordingStore())
+        let first = sample(at: fixture.startedAt)
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        await coordinator.handleLocationEvent(.sample(first, receivedAt: first.observedAt))
+        _ = try await coordinator.startLeg(
+            flight: fixture.flight,
+            flightPlanSnapshot: fixture.snapshot,
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        let reached = try await coordinator.commitNavigation(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [],
+            at: fixture.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventIDs: [UUID(), UUID()]
+        ))
+        try await coordinator.completeNavigation(
+            flight: reached.flight,
+            at: fixture.startedAt.addingTimeInterval(61),
+            elapsed: .seconds(61),
+            eventID: UUID()
+        )
+        #expect(coordinator.status == .navigationCompleteRecordingContinues)
+
+        let later = sample(at: fixture.startedAt.addingTimeInterval(62))
+        await coordinator.handleLocationEvent(.sample(later, receivedAt: later.observedAt))
+
+        #expect(coordinator.status == .navigationCompleteRecordingContinues)
+        #expect(coordinator.snapshot.recording?.navigationState == .complete)
+
+        try await coordinator.endManually(
+            at: fixture.startedAt.addingTimeInterval(63),
+            elapsed: .seconds(63),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        #expect(coordinator.status == .closedIncomplete)
+        #expect(coordinator.isNavigationCompletionCommitted)
     }
     @Test("Successful Start Leg commit publishes the committed transition and recording status")
     func successfulStartLegCommit() async throws {
@@ -311,6 +387,8 @@ private final class ManualMonotonicClock {
         { [weak self] in self?.value ?? .zero }
     }
 
+    var seconds: Int64 { value.components.seconds }
+
     func advance(by duration: Duration) {
         value += duration
     }
@@ -326,6 +404,11 @@ private extension PhysicalFlightDetectionPolicy {
         takeoffSpeedMetersPerSecond: 20,
         takeoffAltitudeGainMeters: 20,
         takeoffWindow: .seconds(5),
+        landingSpeedMetersPerSecond: 10,
+        landingAltitudeToleranceMeters: 15,
+        landingWindow: .seconds(5),
+        stoppedSpeedMetersPerSecond: 1,
+        stoppedWindow: .seconds(5),
         provisionalTimeout: .seconds(30),
         airborneLaunchWindow: .seconds(8)
     )

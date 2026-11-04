@@ -28,6 +28,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
 
     func domain(
         snapshot: RecordedFlightPlanSnapshot,
+        physicalState restoredPhysicalState: PhysicalFlightState? = nil,
         navigationState restoredNavigationState: RecordedNavigationState? = nil,
         gpsCoverage restoredGPSCoverage: GPSCoverageState? = nil,
         nextEventSequence: UInt64? = nil
@@ -45,7 +46,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
             flightID: flightID,
             flightPlanSnapshot: snapshot,
             startedAt: startedAt,
-            physicalState: physicalState,
+            physicalState: restoredPhysicalState ?? physicalState,
             navigationState: restoredNavigationState ?? navigationState,
             gpsCoverage: restoredGPSCoverage ?? gpsCoverage,
             closure: closure?.domain,
@@ -248,6 +249,8 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     var sampleObservedAt: Date? = nil
     var sampleAccuracyMeters: Double? = nil
     var degradationReason: String? = nil
+    var physicalStateFrom: String? = nil
+    var physicalStateTo: String? = nil
 
     init(event: RecordedFlightEvent) {
         id = event.id
@@ -389,6 +392,27 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             outcome = nil
             closureCause = nil
             degradationReason = reason.rawValue
+        case .physicalStateChanged(let from, let to):
+            kind = "physicalStateChanged"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            physicalStateFrom = from.rawValue
+            physicalStateTo = to.rawValue
+        case .physicalStateCorrected(let originalEventID, let from, let to):
+            kind = "physicalStateCorrected"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            linkedEventID = originalEventID
+            physicalStateFrom = from.rawValue
+            physicalStateTo = to.rawValue
         case .navigationCompleted:
             kind = "navigationCompleted"
             legID = nil
@@ -481,6 +505,19 @@ nonisolated struct RecordedFlightEventDTO: Codable {
                 throw FlightRecordingStoreError.corruptPackage(id: nil)
             }
             payload = .storageDegraded(reason: reason)
+        case "physicalStateChanged":
+            guard let from = physicalStateFrom.flatMap(PhysicalFlightState.init(rawValue:)),
+                  let to = physicalStateTo.flatMap(PhysicalFlightState.init(rawValue:)) else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .physicalStateChanged(from: from, to: to)
+        case "physicalStateCorrected":
+            guard let linkedEventID,
+                  let from = physicalStateFrom.flatMap(PhysicalFlightState.init(rawValue:)),
+                  let to = physicalStateTo.flatMap(PhysicalFlightState.init(rawValue:)) else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .physicalStateCorrected(originalEventID: linkedEventID, from: from, to: to)
         case "navigationCompleted":
             payload = .navigationCompleted
         case "manualEnd":

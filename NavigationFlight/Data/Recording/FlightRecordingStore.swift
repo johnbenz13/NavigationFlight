@@ -12,6 +12,7 @@ nonisolated protocol FlightRecordingStore: Sendable {
     func packages() async -> [FlightRecordingPackageResult]
     func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot
     func close(id: UUID, closure: FlightRecordingClosure) async throws
+    func remove(id: UUID) async throws
 }
 
 nonisolated struct FlightRecordingSeed: Equatable, Sendable {
@@ -58,4 +59,5 @@ nonisolated enum FlightRecordingStoreError: Error, Equatable, Sendable {
     case unsupportedVersion(id: UUID, schemaVersion: Int)
     case corruptPackage(id: UUID?)
     case operationFailed(id: UUID?)
+    case recordingActive(id: UUID)
 }

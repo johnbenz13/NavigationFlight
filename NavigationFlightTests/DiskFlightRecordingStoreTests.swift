@@ -84,6 +84,28 @@ struct DiskFlightRecordingStoreTests {
         #expect(await store.packages() == [.available(snapshot)])
     }
 
+    @Test("An active recording cannot be deleted, while a closed recording can")
+    func activeRecordingDeletionGuard() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+
+        await #expect(throws: FlightRecordingStoreError.recordingActive(id: seed.recording.id)) {
+            try await store.remove(id: seed.recording.id)
+        }
+        try await store.close(id: seed.recording.id, closure: FlightRecordingClosure(
+            outcome: .incomplete,
+            cause: .manual,
+            closedAt: seed.recording.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            landingEvidenceAvailable: false
+        ))
+        try await store.remove(id: seed.recording.id)
+
+        #expect(await store.packages().isEmpty)
+    }
+
     @Test("Package creation succeeds in the application support hierarchy")
     func applicationSupportCreation() async throws {
         let applicationSupport = try #require(

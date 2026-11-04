@@ -9,6 +9,11 @@ nonisolated struct PhysicalFlightDetectionPolicy: Equatable, Sendable {
     let takeoffSpeedMetersPerSecond: Double
     let takeoffAltitudeGainMeters: Double
     let takeoffWindow: Duration
+    let landingSpeedMetersPerSecond: Double
+    let landingAltitudeToleranceMeters: Double
+    let landingWindow: Duration
+    let stoppedSpeedMetersPerSecond: Double
+    let stoppedWindow: Duration
     let provisionalTimeout: Duration
     let airborneLaunchWindow: Duration
 }
@@ -23,6 +28,11 @@ extension PhysicalFlightDetectionPolicy {
         takeoffSpeedMetersPerSecond: 25,
         takeoffAltitudeGainMeters: 30,
         takeoffWindow: .seconds(10),
+        landingSpeedMetersPerSecond: 15,
+        landingAltitudeToleranceMeters: 45,
+        landingWindow: .seconds(30),
+        stoppedSpeedMetersPerSecond: 1.5,
+        stoppedWindow: .seconds(60),
         provisionalTimeout: .seconds(600),
         airborneLaunchWindow: .seconds(15)
     )
@@ -32,6 +42,8 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
     enum Event: Equatable, Sendable {
         case groundMovementBegan
         case takeoffDetected
+        case landingDetected
+        case sustainedStopDetected
         case provisionalTimedOut
         case partialStartDetected
         case correction(previous: PhysicalFlightState, corrected: PhysicalFlightState)
@@ -46,6 +58,10 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
     private var takeoffCandidateStartedAt: Duration?
     private var takeoffLastCredibleAt: Duration?
     private var contradictionCandidateStartedAt: Duration?
+    private var landingCandidateStartedAt: Duration?
+    private var landingLastCredibleAt: Duration?
+    private var stoppedCandidateStartedAt: Duration?
+    private var stoppedLastCredibleAt: Duration?
     private var provisionalStartedAt: Duration?
     private var groundReferenceAltitudeMeters: Double?
 
@@ -64,7 +80,9 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
             return processGroundMovement(sample, monotonicTime: monotonicTime)
         case .airborne:
             return processAirborne(sample, monotonicTime: monotonicTime)
-        case .landedAwaitingStop, .stopped, .unavailable:
+        case .landedAwaitingStop:
+            return processLandedAwaitingStop(sample, monotonicTime: monotonicTime)
+        case .stopped, .unavailable:
             return []
         }
     }
@@ -151,6 +169,26 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
         _ sample: AircraftLocationSample,
         monotonicTime: Duration
     ) -> [Event] {
+        if isCredibleLanding(sample) {
+            landingLastCredibleAt = monotonicTime
+            guard let candidateStartedAt = landingCandidateStartedAt else {
+                landingCandidateStartedAt = monotonicTime
+                return []
+            }
+            guard monotonicTime - candidateStartedAt >= policy.landingWindow else { return [] }
+            state = .landedAwaitingStop
+            landingCandidateStartedAt = nil
+            landingLastCredibleAt = nil
+            contradictionCandidateStartedAt = nil
+            return [.landingDetected]
+        }
+        if let lastCredibleAt = landingLastCredibleAt,
+           monotonicTime - lastCredibleAt <= policy.candidateInterruptionTolerance {
+            return []
+        }
+        landingCandidateStartedAt = nil
+        landingLastCredibleAt = nil
+
         let contradictsTakeoff = !isCredibleMovement(sample)
             && (sample.altitudeMeters ?? .infinity) - (sample.verticalAccuracyMeters ?? 0)
                 <= (groundReferenceAltitudeMeters ?? -.infinity) + policy.takeoffAltitudeGainMeters
@@ -167,6 +205,31 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
         contradictionCandidateStartedAt = nil
         provisionalStartedAt = monotonicTime
         return [.correction(previous: .airborne, corrected: .groundMovement)]
+    }
+
+    private mutating func processLandedAwaitingStop(
+        _ sample: AircraftLocationSample,
+        monotonicTime: Duration
+    ) -> [Event] {
+        guard isCrediblyStopped(sample) else {
+            if let lastCredibleAt = stoppedLastCredibleAt,
+               monotonicTime - lastCredibleAt <= policy.candidateInterruptionTolerance {
+                return []
+            }
+            stoppedCandidateStartedAt = nil
+            stoppedLastCredibleAt = nil
+            return []
+        }
+        stoppedLastCredibleAt = monotonicTime
+        guard let candidateStartedAt = stoppedCandidateStartedAt else {
+            stoppedCandidateStartedAt = monotonicTime
+            return []
+        }
+        guard monotonicTime - candidateStartedAt >= policy.stoppedWindow else { return [] }
+        state = .stopped
+        stoppedCandidateStartedAt = nil
+        stoppedLastCredibleAt = nil
+        return [.sustainedStopDetected]
     }
 
     private func isCredibleMovement(_ sample: AircraftLocationSample) -> Bool {
@@ -193,5 +256,25 @@ nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
               let verticalAccuracy = sample.verticalAccuracyMeters,
               let groundReferenceAltitudeMeters else { return false }
         return altitude - verticalAccuracy - groundReferenceAltitudeMeters >= policy.takeoffAltitudeGainMeters
+    }
+
+    private func isCredibleLanding(_ sample: AircraftLocationSample) -> Bool {
+        guard sample.horizontalAccuracyMeters <= policy.maximumHorizontalAccuracyMeters,
+              let speed = sample.groundSpeedMetersPerSecond,
+              let speedAccuracy = sample.speedAccuracyMetersPerSecond,
+              speedAccuracy <= policy.maximumSpeedAccuracyMetersPerSecond,
+              let altitude = sample.altitudeMeters,
+              let verticalAccuracy = sample.verticalAccuracyMeters,
+              let groundReferenceAltitudeMeters else { return false }
+        return speed + speedAccuracy <= policy.landingSpeedMetersPerSecond
+            && altitude + verticalAccuracy <= groundReferenceAltitudeMeters + policy.landingAltitudeToleranceMeters
+    }
+
+    private func isCrediblyStopped(_ sample: AircraftLocationSample) -> Bool {
+        guard sample.horizontalAccuracyMeters <= policy.maximumHorizontalAccuracyMeters,
+              let speed = sample.groundSpeedMetersPerSecond,
+              let speedAccuracy = sample.speedAccuracyMetersPerSecond,
+              speedAccuracy <= policy.maximumSpeedAccuracyMetersPerSecond else { return false }
+        return speed + speedAccuracy <= policy.stoppedSpeedMetersPerSecond
     }
 }

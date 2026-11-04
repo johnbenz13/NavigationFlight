@@ -18,11 +18,16 @@ final class FlightRecordingCoordinator {
     private var publishedFlight: Flight?
     private var publishedRecording: FlightRecording?
     private var locationConsumptionTask: Task<Void, Never>?
+    private var recordingLocationHub: AircraftLocationService?
 
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
     private(set) var isCommitting = false
     private(set) var storageDegradations: Set<RecordingStorageDegradation> = []
+
+    var isNavigationCompletionCommitted: Bool {
+        publishedRecording?.navigationState == .complete
+    }
 
     var snapshot: FlightRecordingEngineSnapshot {
         guard let publishedFlight else {
@@ -72,6 +77,7 @@ final class FlightRecordingCoordinator {
         locationConsumptionTask?.cancel()
         let updates = await locationHub.recordingUpdates()
         await locationHub.startMonitoring(scope: .recording)
+        recordingLocationHub = locationHub
         locationConsumptionTask = Task { [weak self] in
             for await event in updates {
                 if Task.isCancelled { return }
@@ -83,6 +89,7 @@ final class FlightRecordingCoordinator {
     func disarm() async {
         locationConsumptionTask?.cancel()
         locationConsumptionTask = nil
+        recordingLocationHub = nil
         await engine?.disarm()
         engine = nil
         publishedFlight = nil
@@ -109,7 +116,28 @@ final class FlightRecordingCoordinator {
             status = .prepared
             return
         }
+        switch outcome {
+        case .physicalStateChanged(let recording):
+            publishedRecording = recording
+            status = recording.physicalState == .landedAwaitingStop ? .landedAwaitingStop : .recording
+            return
+        case .physicalStateCorrected(let recording):
+            publishedRecording = recording
+            status = .physicalPhaseCorrected
+            return
+        case .closed(let recording):
+            publishedRecording = recording
+            status = recording.closure?.outcome == .complete ? .closedComplete : .closedIncomplete
+            await stopRecordingLocationCapture()
+            return
+        case .none, .provisionalBegan, .provisionalDiscarded, .promoted, .promotionPersistenceFailed:
+            break
+        }
         guard publishedRecording != nil else { return }
+        if publishedRecording?.navigationState == .complete {
+            status = .navigationCompleteRecordingContinues
+            return
+        }
         switch event {
         case .sample:
             status = status == .gpsGap ? .gpsResumed : .recording
@@ -187,6 +215,16 @@ final class FlightRecordingCoordinator {
         status = committed.recording?.closure?.outcome == .complete
             ? .closedComplete
             : .closedIncomplete
+        await stopRecordingLocationCapture()
+    }
+
+    private func stopRecordingLocationCapture() async {
+        locationConsumptionTask?.cancel()
+        locationConsumptionTask = nil
+        if let recordingLocationHub {
+            await recordingLocationHub.stopMonitoring(scope: .recording)
+            self.recordingLocationHub = nil
+        }
     }
 
     func completeNavigation(
@@ -204,7 +242,12 @@ final class FlightRecordingCoordinator {
         ))
         publishedFlight = transition.flight
         publishedRecording = transition.recording
-        status = .navigationCompleteRecordingContinues
+        if transition.recording.closure?.outcome == .complete {
+            status = .closedComplete
+            await stopRecordingLocationCapture()
+        } else {
+            status = .navigationCompleteRecordingContinues
+        }
     }
 
     func commitNavigation(

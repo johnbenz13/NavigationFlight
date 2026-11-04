@@ -92,6 +92,87 @@ struct FlightRecordingTests {
         #expect(promotion.recording.closure?.outcome == .complete)
     }
 
+    @Test("Manual physical closure is complete only after navigation and landing evidence")
+    func manualPhysicalClosureMatrix() throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var promotion = try makePromotion(startedAt: startedAt)
+        _ = try promotion.recording.recordPhysicalTransition(
+            to: .landedAwaitingStop,
+            at: startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventID: UUID()
+        )
+        _ = try promotion.recording.completeNavigation(
+            at: startedAt.addingTimeInterval(90),
+            elapsed: .seconds(90),
+            eventID: UUID()
+        )
+
+        let events = try promotion.recording.endManually(
+            at: startedAt.addingTimeInterval(120),
+            elapsed: .seconds(120),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        #expect(events.last?.payload == .recordingClosed(outcome: .complete, cause: .manual))
+        #expect(promotion.recording.closure?.landingEvidenceAvailable == true)
+    }
+
+    @Test("Automatic stop closure reflects navigation completion", arguments: [false, true])
+    func automaticStopClosure(navigationCompleted: Bool) throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var promotion = try makePromotion(startedAt: startedAt)
+        _ = try promotion.recording.recordPhysicalTransition(
+            to: .stopped,
+            at: startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventID: UUID()
+        )
+        if navigationCompleted {
+            _ = try promotion.recording.completeNavigation(
+                at: startedAt.addingTimeInterval(90),
+                elapsed: .seconds(90),
+                eventID: UUID()
+            )
+        }
+
+        let event = try promotion.recording.closeAutomatically(
+            at: startedAt.addingTimeInterval(120),
+            elapsed: .seconds(120),
+            eventID: UUID()
+        )
+        let expected: FlightRecordingClosure.Outcome = navigationCompleted ? .complete : .incomplete
+
+        #expect(event.payload == .recordingClosed(outcome: expected, cause: .automatic))
+        #expect(promotion.recording.closure?.outcome == expected)
+        #expect(promotion.recording.closure?.landingEvidenceAvailable == true)
+    }
+
+    @Test("Navigation completion before physical stop also closes Complete")
+    func navigationFirstAutomaticClosure() throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        var promotion = try makePromotion(startedAt: startedAt)
+        _ = try promotion.recording.completeNavigation(
+            at: startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventID: UUID()
+        )
+        _ = try promotion.recording.recordPhysicalTransition(
+            to: .stopped,
+            at: startedAt.addingTimeInterval(90),
+            elapsed: .seconds(90),
+            eventID: UUID()
+        )
+
+        _ = try promotion.recording.closeAutomatically(
+            at: startedAt.addingTimeInterval(90),
+            elapsed: .seconds(90),
+            eventID: UUID()
+        )
+
+        #expect(promotion.recording.closure?.outcome == .complete)
+    }
+
     @Test("Duplicate Start Leg and duplicate manual end are rejected without advancing sequence")
     func duplicateCommandsAreRejected() throws {
         let startedAt = Date(timeIntervalSince1970: 1_000)

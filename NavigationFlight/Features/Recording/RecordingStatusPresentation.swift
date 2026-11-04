@@ -10,6 +10,8 @@ nonisolated enum RecordingStatus: Equatable, Sendable {
     case recordingGPSUnavailable
     case recordingDegraded
     case navigationCompleteRecordingContinues
+    case landedAwaitingStop
+    case physicalPhaseCorrected
     case closedComplete
     case closedIncomplete
 }
@@ -93,17 +95,31 @@ nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
             systemImage = "checkmark.circle.fill"
             tone = .neutral
             showsEndRecordingAction = true
+        case .landedAwaitingStop:
+            title = "Landed · Awaiting Stop"
+            compactTitle = "LANDED · REC"
+            detail = "Landing was detected. Recording continues until a sustained stop is confirmed."
+            systemImage = "airplane.arrival"
+            tone = .neutral
+            showsEndRecordingAction = true
+        case .physicalPhaseCorrected:
+            title = "Recording · Phase Corrected"
+            compactTitle = "REC · CORRECTED"
+            detail = "New sustained evidence corrected the detected flight phase without changing recorded history."
+            systemImage = "arrow.trianglehead.2.clockwise.rotate.90"
+            tone = .caution
+            showsEndRecordingAction = true
         case .closedComplete:
             title = "Recording ended · Complete"
             compactTitle = "Ended · Complete"
-            detail = "Navigation was completed before the action-only recording ended."
+            detail = "Navigation and physical flight recording completed."
             systemImage = "checkmark.circle.fill"
             tone = .neutral
             showsEndRecordingAction = false
         case .closedIncomplete:
             title = "Recording ended · Incomplete"
             compactTitle = "Ended · Incomplete"
-            detail = "The action-only recording was ended manually."
+            detail = "The recording ended before navigation was completed."
             systemImage = "exclamationmark.circle.fill"
             tone = .destructive
             showsEndRecordingAction = false

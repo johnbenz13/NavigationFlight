@@ -59,6 +59,9 @@ nonisolated enum FlightRecordingLocationOutcome: Equatable, Sendable {
     case provisionalBegan
     case provisionalDiscarded
     case promoted(FlightRecording, partial: Bool)
+    case physicalStateChanged(FlightRecording)
+    case physicalStateCorrected(FlightRecording)
+    case closed(FlightRecording)
     case promotionPersistenceFailed
 }
 
@@ -78,6 +81,7 @@ actor FlightRecordingEngine {
     private var deliveredSamples: [RecordedTrackSample] = []
     private var activeSegmentID: UUID?
     private var segmentNeedsReopening = false
+    private var lastPhysicalTransitionEventID: UUID?
 
     init(
         store: any FlightRecordingStore,
@@ -142,22 +146,107 @@ actor FlightRecordingEngine {
                         return .promotionPersistenceFailed
                     }
                     recording = promotion.recording
+                    lastPhysicalTransitionEventID = promotion.events.last?.id
                     return .promoted(promotion.recording, partial: partial)
                 }
                 if events.contains(.groundMovementBegan) {
                     return .provisionalBegan
                 }
-            } else if let recording {
+            } else if let currentRecording = recording {
                 if segmentNeedsReopening || activeSegmentID == nil {
                     activeSegmentID = UUID()
                     segmentNeedsReopening = false
                 }
                 guard let segmentID = activeSegmentID else { return .none }
                 try? await store.appendTrackBatch(RecordedTrackBatch(
-                    recordingID: recording.id,
+                    recordingID: currentRecording.id,
                     segmentID: segmentID,
                     samples: [sample]
                 ))
+                var candidateDetector = detector
+                let physicalEvents = candidateDetector.process(sourceSample, monotonicTime: monotonicTime)
+                guard let physicalEvent = physicalEvents.first else {
+                    detector = candidateDetector
+                    break
+                }
+                var candidateRecording = currentRecording
+                let elapsed = Duration.seconds(max(0, sourceSample.observedAt.timeIntervalSince(candidateRecording.startedAt)))
+                do {
+                    switch physicalEvent {
+                    case .landingDetected:
+                        let event = try candidateRecording.recordPhysicalTransition(
+                            to: .landedAwaitingStop,
+                            at: sourceSample.observedAt,
+                            elapsed: elapsed,
+                            eventID: UUID()
+                        )
+                        try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+                        lastPhysicalTransitionEventID = event.id
+                        detector = candidateDetector
+                        recording = candidateRecording
+                        return .physicalStateChanged(candidateRecording)
+                    case .sustainedStopDetected:
+                        let transition = try candidateRecording.recordPhysicalTransition(
+                            to: .stopped,
+                            at: sourceSample.observedAt,
+                            elapsed: elapsed,
+                            eventID: UUID()
+                        )
+                        try await store.appendEvent(transition, recordingID: candidateRecording.id, synchronize: true)
+                        if candidateRecording.navigationState == .active
+                            || candidateRecording.navigationState == .reachedFinalWaypoint {
+                            lastPhysicalTransitionEventID = transition.id
+                            detector = candidateDetector
+                            recording = candidateRecording
+                            return .physicalStateChanged(candidateRecording)
+                        }
+                        let closed = try candidateRecording.closeAutomatically(
+                            at: sourceSample.observedAt,
+                            elapsed: elapsed,
+                            eventID: UUID()
+                        )
+                        try await store.appendEvent(closed, recordingID: candidateRecording.id, synchronize: true)
+                        if let closure = candidateRecording.closure {
+                            try await store.close(id: candidateRecording.id, closure: closure)
+                        }
+                        lastPhysicalTransitionEventID = transition.id
+                        detector = candidateDetector
+                        recording = candidateRecording
+                        isArmed = false
+                        return .closed(candidateRecording)
+                    case .correction(let previous, let corrected):
+                        guard let originalEventID = lastPhysicalTransitionEventID else { break }
+                        let event = try candidateRecording.recordPhysicalCorrection(
+                            originalEventID: originalEventID,
+                            from: previous,
+                            to: corrected,
+                            at: sourceSample.observedAt,
+                            elapsed: elapsed,
+                            eventID: UUID()
+                        )
+                        try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+                        detector = candidateDetector
+                        recording = candidateRecording
+                        return .physicalStateCorrected(candidateRecording)
+                    case .groundMovementBegan, .takeoffDetected, .partialStartDetected:
+                        let state: PhysicalFlightState = physicalEvent == .groundMovementBegan ? .groundMovement : .airborne
+                        let event = try candidateRecording.recordPhysicalTransition(
+                            to: state,
+                            at: sourceSample.observedAt,
+                            elapsed: elapsed,
+                            eventID: UUID()
+                        )
+                        try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+                        lastPhysicalTransitionEventID = event.id
+                        detector = candidateDetector
+                        recording = candidateRecording
+                        return .physicalStateChanged(candidateRecording)
+                    case .provisionalTimedOut:
+                        break
+                    }
+                } catch {
+                    return .none
+                }
             }
         case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
             if let recording {
@@ -320,8 +409,26 @@ actor FlightRecordingEngine {
                 eventID: eventID
             )
             try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+            var committedEventIDs = [eventID]
+            if candidateRecording.physicalState == .stopped {
+                let closed = try candidateRecording.closeAutomatically(
+                    at: timestamp,
+                    elapsed: elapsed,
+                    eventID: UUID()
+                )
+                try await store.appendEvent(closed, recordingID: candidateRecording.id, synchronize: true)
+                if let closure = candidateRecording.closure {
+                    try await store.close(id: candidateRecording.id, closure: closure)
+                }
+                isArmed = false
+                committedEventIDs.append(closed.id)
+            }
             recording = candidateRecording
-            return CommittedNavigationTransition(flight: flight, recording: candidateRecording, eventIDs: [eventID])
+            return CommittedNavigationTransition(
+                flight: flight,
+                recording: candidateRecording,
+                eventIDs: committedEventIDs
+            )
         case .automaticLegRecovery(let legID, let timestamp, let elapsed, let eventID):
             return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
                 guard candidate.legState == .active,

@@ -202,8 +202,7 @@ struct CockpitFeatureView: View {
                         positionCheck: positionCheck,
                         recordingStatus: RecordingStatusPresentation(status: recordingCoordinator.status),
                         isRecordingCommitInFlight: recordingCoordinator.isCommitting,
-                        isNavigationCompletionCommitted: recordingCoordinator.status == .navigationCompleteRecordingContinues
-                            || recordingCoordinator.status == .closedComplete,
+                        isNavigationCompletionCommitted: recordingCoordinator.isNavigationCompletionCommitted,
                         positionCheckMapRestoration: positionCheckCoordinator.pendingMapRestoration,
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         onPositionCheckAction: handlePositionCheckAction,

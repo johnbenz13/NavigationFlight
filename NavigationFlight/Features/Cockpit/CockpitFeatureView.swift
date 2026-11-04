@@ -141,6 +141,11 @@ struct CockpitFeatureView: View {
                             magneticCourseDegrees: presentation.magneticCourseDegrees
                         )
                     )
+                    CockpitOperationalCueTimeline(
+                        flightPlan: flightPlan,
+                        flight: flight,
+                        isVisible: isSectionSelected && scenePhase == .active
+                    ) { operationalCues, emphasizedCueEvents in
                     CockpitView(
                         data: presentation,
                         mapPresentation: addingGPSDisclosure(
@@ -157,6 +162,8 @@ struct CockpitFeatureView: View {
                         checklistState: state.activeLegStartChecklist,
                         flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
+                        operationalCues: operationalCues,
+                        emphasizedCueEvents: emphasizedCueEvents,
                         pendingReachUndo: state.pendingReachUndo,
                         positionCheck: positionCheck,
                         positionCheckMapRestoration: positionCheckCoordinator.pendingMapRestoration,
@@ -197,6 +204,7 @@ struct CockpitFeatureView: View {
                         onToggleDriftLines: { state.toggleDriftLines() },
                         onShowPlanInspection: { isCockpitPresented = false }
                     )
+                    }
                     .onChange(of: positionCheck) { previous, current in
                         let feedback = PositionCheckFeedbackPolicy().feedback(
                             previous: previous,
@@ -327,6 +335,52 @@ struct CockpitFeatureView: View {
             activeLeg: mapPresentation.activeLeg,
             importedMagneticCourseDegrees: magneticCourseDegrees
         )
+    }
+}
+
+private struct CockpitOperationalCueTimeline<Content: View>: View {
+    let flightPlan: FlightPlan
+    let flight: Flight
+    let isVisible: Bool
+    @ViewBuilder let content: (CockpitOperationalCueState, Set<CockpitOperationalCueState.DueEvent>) -> Content
+
+    @State private var emphasis = CockpitDueEmphasis()
+    private let projector = CockpitOperationalCueProjector()
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            if let cues = try? projector.project(flightPlan: flightPlan, flight: flight, at: timeline.date) {
+                content(cues, emphasis.activeEvents(at: timeline.date))
+                    .onChange(of: cues.dueEvents, initial: true) { _, events in
+                        emphasis.observe(
+                            events,
+                            contextID: contextID,
+                            isVisible: isVisible,
+                            at: timeline.date
+                        )
+                    }
+                    .onChange(of: isVisible) { _, visible in
+                        emphasis.observe(
+                            cues.dueEvents,
+                            contextID: contextID,
+                            isVisible: visible,
+                            at: timeline.date
+                        )
+                    }
+                    .onChange(of: contextID) { _, _ in
+                        emphasis.observe(
+                            cues.dueEvents,
+                            contextID: contextID,
+                            isVisible: isVisible,
+                            at: timeline.date
+                        )
+                    }
+            }
+        }
+    }
+
+    private var contextID: String {
+        "\(flight.id.uuidString):\(flight.activeLegIndex)"
     }
 }
 

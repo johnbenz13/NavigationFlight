@@ -1,6 +1,6 @@
 # Automatic Flight Recording and Recovery — Product Specification
 
-Status: behavioral baseline draft; Figma direction not started.
+Status: paired product/Figma baseline approved.
 
 ## Summary
 
@@ -25,12 +25,17 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 ## Figma
 
-- Stable proposal: not created yet.
-- Design status: `not started`.
-- Required location: the [Navigation Flight Figma project](https://www.figma.com/files/folder/676737789).
-- Product-spec working source: [`AUTOMATIC-FLIGHT-RECORDING-AND-RECOVERY_SPEC.md`](AUTOMATIC-FLIGHT-RECORDING-AND-RECOVERY_SPEC.md).
-- Approved iteration: none.
-- Human approver and approval date: none.
+- Stable proposal: [NavigationFlight — Automatic Flight Recording and Recovery](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc).
+- Design status: `approved`.
+- Approved iteration: Iteration 02 — complete product-spec coverage extending the approved main-screen direction.
+- Product-spec revision reviewed: [`14f2ed9`](https://github.com/johnbenz13/NavigationFlight/blob/14f2ed9/docs/features/AUTOMATIC-FLIGHT-RECORDING-AND-RECOVERY_SPEC.md).
+- Human approver and approval date: John, 2026-11-04.
+- Approved main-screen direction: [Flights on iPad Pro 11-inch portrait](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=6-2).
+- Approved behavioral coverage: [product-spec coverage map](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-39).
+- Approved Flights states: [library](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-97) and [complete Flight detail](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-127).
+- Approved operational states: [Cockpit recording lifecycle](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=12-5) and [Flight recovery](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=12-114).
+- Approved adaptive references: [iPad landscape](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=13-5), [iPhone portrait](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=13-28), and [Larger Text](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=13-51).
+- Design decisions and authoring constraints: [approved baseline notes](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=13-71).
 
 ## Device and orientation baseline
 

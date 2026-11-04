@@ -170,6 +170,16 @@ struct CockpitFeatureState: Equatable, Sendable {
         pendingReachUndo = nil
     }
 
+    mutating func installCommittedFlight(_ committedFlight: Flight) {
+        guard let flightPlan,
+              committedFlight.id == flight?.id,
+              committedFlight.flightPlanID == flightPlan.id else { return }
+        flight = committedFlight
+        selectedLegIndex = committedFlight.activeLegIndex
+        createPendingLegStartChecklistForActiveLeg()
+        pendingReachUndo = nil
+    }
+
     mutating func reachCurrentWaypoint(
         cockpitRestoration: CockpitRestoration,
         at timestamp: Date = .now

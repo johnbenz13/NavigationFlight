@@ -171,9 +171,14 @@ struct CockpitView: View {
     var emphasizedCueEvents: Set<CockpitOperationalCueState.DueEvent> = []
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
     var positionCheck: PositionCheckPresentation? = nil
+    var recordingStatus: RecordingStatusPresentation? = nil
+    var isRecordingCommitInFlight = false
+    var isNavigationCompletionCommitted = false
     var positionCheckMapRestoration: PositionCheckMapRestorationCommand? = nil
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) -> Void = { _, _ in }
+    var onEndRecording: () -> Void = {}
+    var onNavigationComplete: () -> Void = {}
     let onStartLeg: () -> Void
     let onIdentifyDestination: () -> Void
     let onWaypointReached: (CockpitRestoration) -> Void
@@ -210,6 +215,7 @@ struct CockpitView: View {
     @State private var isRestoringReach = false
     @State private var mapIdentity = UUID()
     @State private var showsCompactFrequencies = false
+    @State private var isRecordingStatusPresented = false
     @State private var isCompactMapChromeVisible = true
     @State private var compactMapChromeVisibilityID = 0
     @State private var positionCheckRestoration: CockpitRestoration?
@@ -609,12 +615,93 @@ struct CockpitView: View {
         .buttonStyle(.plain).disabled(true).accessibilityLabel(label)
     }
 
+    @ViewBuilder
+    private var activeLegInstrumentsHeader: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 6) {
+                activeLegInstrumentsTitle
+                recordingStatusControl
+            }
+        } else {
+            HStack(alignment: .center, spacing: 10) {
+                activeLegInstrumentsTitle
+                Spacer(minLength: 8)
+                recordingStatusControl
+            }
+        }
+    }
+
+    private var activeLegInstrumentsTitle: some View {
+        Text("ACTIVE LEG INSTRUMENTS")
+            .font(.caption2.weight(.bold))
+            .tracking(0.7)
+            .foregroundStyle(.secondary)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    @ViewBuilder
+    private var recordingStatusControl: some View {
+        if let recordingStatus {
+            Button {
+                isRecordingStatusPresented = true
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: recordingStatus.systemImage)
+                    ViewThatFits(in: .horizontal) {
+                        Text(recordingStatus.title)
+                        Text(recordingStatus.compactTitle)
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(recordingStatusColor(recordingStatus.tone))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(recordingStatus.title)
+            .accessibilityHint(recordingStatus.detail)
+            .accessibilityIdentifier("recording-status")
+            .popover(isPresented: $isRecordingStatusPresented) {
+                recordingStatusDetails(recordingStatus)
+                    .presentationCompactAdaptation(.popover)
+            }
+        }
+    }
+
+    private func recordingStatusDetails(
+        _ recordingStatus: RecordingStatusPresentation
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(recordingStatus.title, systemImage: recordingStatus.systemImage)
+                .font(.headline)
+                .foregroundStyle(recordingStatusColor(recordingStatus.tone))
+            Text(recordingStatus.detail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if recordingStatus.showsEndRecordingAction {
+                Button("End Recording…", role: .destructive) {
+                    isRecordingStatusPresented = false
+                    onEndRecording()
+                }
+                .accessibilityHint("Opens confirmation to close the recording as incomplete")
+                .accessibilityIdentifier("end-recording")
+            }
+        }
+        .padding()
+        .frame(idealWidth: 300, alignment: .leading)
+    }
+
+    private func recordingStatusColor(_ tone: RecordingStatusPresentation.Tone) -> Color {
+        switch tone {
+        case .neutral: Color.secondary
+        case .caution: Color(.systemOrange)
+        case .destructive: Color(.systemRed)
+        }
+    }
+
     private var portraitControlPanel: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("ACTIVE LEG INSTRUMENTS")
-                .font(.caption2.weight(.bold))
-                .tracking(0.7)
-                .foregroundStyle(.secondary)
+            activeLegInstrumentsHeader
 
             HStack(alignment: .top, spacing: 12) {
                 readyHeadingMetric
@@ -637,10 +724,7 @@ struct CockpitView: View {
     private var compactControlPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 8) {
-                Text("ACTIVE LEG INSTRUMENTS")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .accessibilityAddTraits(.isHeader)
+                activeLegInstrumentsHeader
 
                 if dynamicTypeSize.isAccessibilitySize {
                     portraitTimerMetric
@@ -1091,6 +1175,7 @@ struct CockpitView: View {
             .frame(maxWidth: 350)
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
+            .disabled(isRecordingCommitInFlight)
         }
     }
 
@@ -1184,10 +1269,7 @@ struct CockpitView: View {
     private var landscapeControlPanel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("ACTIVE LEG INSTRUMENTS")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .accessibilityAddTraits(.isHeader)
+                activeLegInstrumentsHeader
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     readyHeadingMetric
                     portraitTimerMetric
@@ -1370,6 +1452,7 @@ struct CockpitView: View {
             .tint(Color(uiColor: visualStyle.primaryActionColor))
             .accessibilityHint("Starts timing the current navigation leg")
             .accessibilityIdentifier("start-leg")
+            .disabled(isRecordingCommitInFlight)
         case .active:
             if flight.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {
@@ -1416,14 +1499,22 @@ struct CockpitView: View {
                 .accessibilityIdentifier("waypoint-reached")
             }
         case .completed:
-            Label("Navigation Complete", systemImage: "checkmark.circle.fill")
-                .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+            if isNavigationCompletionCommitted {
+                Label("Navigation Complete · Recording Continues", systemImage: "checkmark.circle.fill")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("navigation-complete-committed")
+            } else {
+                Button(action: onNavigationComplete) {
+                    Label("Navigation Complete", systemImage: "checkmark.circle.fill")
+                        .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor))
                 .foregroundStyle(.white)
-                .background(
-                    Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
-                    in: RoundedRectangle(cornerRadius: 10)
-                )
+                .accessibilityHint("Commits navigation completion while recording continues")
                 .accessibilityIdentifier("navigation-complete")
+            }
         }
     }
 

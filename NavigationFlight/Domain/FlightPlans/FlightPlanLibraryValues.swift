@@ -13,6 +13,13 @@ nonisolated struct StoredFlightPlan: Equatable, Sendable, Identifiable {
 nonisolated struct LibraryFlightPlan: Equatable, Sendable, Identifiable {
     let flightPlan: FlightPlan
     let importedAt: Date
+    let sourceData: Data?
+
+    init(flightPlan: FlightPlan, importedAt: Date, sourceData: Data? = nil) {
+        self.flightPlan = flightPlan
+        self.importedAt = importedAt
+        self.sourceData = sourceData
+    }
 
     var id: UUID { flightPlan.id }
 

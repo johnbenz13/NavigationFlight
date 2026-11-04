@@ -81,7 +81,8 @@ actor FlightPlanLibrary {
         }
         return LibraryFlightPlan(
             flightPlan: prepared.flightPlan,
-            importedAt: prepared.record.importedAt
+            importedAt: prepared.record.importedAt,
+            sourceData: prepared.record.sourceData
         )
     }
 
@@ -122,7 +123,11 @@ actor FlightPlanLibrary {
               revisionsMatch(stored: record.modifiedAt, source: flightPlan.modifiedAt) else {
             throw FlightPlanLibraryError.corruptRecord(id: record.id)
         }
-        return LibraryFlightPlan(flightPlan: flightPlan, importedAt: record.importedAt)
+        return LibraryFlightPlan(
+            flightPlan: flightPlan,
+            importedAt: record.importedAt,
+            sourceData: record.sourceData
+        )
     }
 
     private func revisionsMatch(stored: Date, source: Date) -> Bool {

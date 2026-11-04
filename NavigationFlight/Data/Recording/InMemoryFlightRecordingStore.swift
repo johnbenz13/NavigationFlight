@@ -8,10 +8,22 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
     }
 
     private var snapshotsByID: [UUID: FlightRecordingReadSnapshot] = [:]
+    private var unavailablePackageResults: [FlightRecordingPackageResult] = []
     private let failure: Failure?
 
-    init(failure: Failure? = nil) {
+    init(
+        failure: Failure? = nil,
+        packageResults: [FlightRecordingPackageResult] = []
+    ) {
         self.failure = failure
+        for result in packageResults {
+            switch result {
+            case .available(let snapshot):
+                snapshotsByID[snapshot.recording.id] = snapshot
+            case .unsupported, .corrupt:
+                unavailablePackageResults.append(result)
+            }
+        }
     }
 
     func create(_ seed: FlightRecordingSeed) throws {
@@ -88,7 +100,7 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
     }
 
     func packages() -> [FlightRecordingPackageResult] {
-        snapshotsByID.values.map(FlightRecordingPackageResult.available)
+        snapshotsByID.values.map(FlightRecordingPackageResult.available) + unavailablePackageResults
     }
 
     func readSnapshot(id: UUID) throws -> FlightRecordingReadSnapshot {

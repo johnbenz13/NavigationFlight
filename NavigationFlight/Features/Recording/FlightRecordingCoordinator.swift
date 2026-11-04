@@ -86,6 +86,31 @@ final class FlightRecordingCoordinator {
         }
     }
 
+    func restore(_ recovered: RecoveredFlight) async {
+        locationConsumptionTask?.cancel()
+        locationConsumptionTask = nil
+        recordingLocationHub = nil
+        let stored = try? await store.readSnapshot(id: recovered.recording.id)
+        let degradations: Set<RecordingStorageDegradation> = Set(stored?.events.compactMap { event in
+            guard case .storageDegraded(let reason) = event.payload else { return nil }
+            return reason
+        } ?? [])
+        let candidate = FlightRecordingEngine(
+            store: store,
+            recoveredFlight: recovered.flight,
+            recoveredRecording: recovered.recording,
+            detectorPolicy: detectorPolicy,
+            storageDegradations: degradations
+        )
+        await candidate.arm()
+        engine = candidate
+        publishedFlight = recovered.flight
+        publishedRecording = recovered.recording
+        storageDegradations = degradations
+        status = Self.status(for: recovered.recording, hasDegradation: !degradations.isEmpty)
+        lastError = nil
+    }
+
     func disarm() async {
         locationConsumptionTask?.cancel()
         locationConsumptionTask = nil
@@ -227,6 +252,23 @@ final class FlightRecordingCoordinator {
         }
     }
 
+    private static func status(
+        for recording: FlightRecording,
+        hasDegradation: Bool
+    ) -> RecordingStatus {
+        if hasDegradation { return .recordingDegraded }
+        if let closure = recording.closure {
+            return closure.outcome == .complete ? .closedComplete : .closedIncomplete
+        }
+        if recording.navigationState == .complete { return .navigationCompleteRecordingContinues }
+        if recording.physicalState == .landedAwaitingStop { return .landedAwaitingStop }
+        return switch recording.gpsCoverage {
+        case .available: .recording
+        case .partial: .partialRecording
+        case .unavailable: .recordingGPSUnavailable
+        }
+    }
+
     func completeNavigation(
         flight: Flight,
         at timestamp: Date,
@@ -292,7 +334,8 @@ final class FlightRecordingCoordinator {
             _ = try await engine.endManually(
                 at: timestamp,
                 elapsed: elapsed,
-                eventIDs: eventIDs
+                eventIDs: eventIDs,
+                forcedOutcome: .incomplete
             )
         }
         engine = nil

@@ -62,16 +62,23 @@ nonisolated struct RecordedFlightPlanSnapshotDTO: Codable {
     let id: UUID
     let title: String
     let legIDs: [UUID]
+    let sourceData: Data?
 
     init(snapshot: RecordedFlightPlanSnapshot) {
         schemaVersion = Self.currentSchemaVersion
         id = snapshot.id
         title = snapshot.title
         legIDs = snapshot.legIDs
+        sourceData = snapshot.sourceData
     }
 
     var domain: RecordedFlightPlanSnapshot {
-        RecordedFlightPlanSnapshot(id: id, title: title, legIDs: legIDs)
+        RecordedFlightPlanSnapshot(
+            id: id,
+            title: title,
+            legIDs: legIDs,
+            sourceData: sourceData
+        )
     }
 }
 
@@ -431,6 +438,14 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             startCause = nil
             outcome = nil
             closureCause = nil
+        case .recoveryContinued:
+            kind = "recoveryContinued"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
         case .manualEnd:
             kind = "manualEnd"
             legID = nil
@@ -536,6 +551,8 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             payload = .physicalStateCorrected(originalEventID: linkedEventID, from: from, to: to)
         case "navigationCompleted":
             payload = .navigationCompleted
+        case "recoveryContinued":
+            payload = .recoveryContinued
         case "manualEnd":
             payload = .manualEnd
         case "recordingClosed":

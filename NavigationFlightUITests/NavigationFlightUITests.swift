@@ -491,7 +491,9 @@ final class NavigationFlightUITests: XCTestCase {
         var app = launchCockpit(planData: plan)
         XCTAssertEqual(app.buttons["recording-status"].label, "Prepared · Sensing")
 
-        for expected in [(fixture: "gps-gap", label: "Recording · GPS Gap"),
+        for expected in [(fixture: "recording", label: "Recording"),
+                         (fixture: "partial", label: "Partial Recording"),
+                         (fixture: "gps-gap", label: "Recording · GPS Gap"),
                          (fixture: "gps-resumed", label: "Recording · GPS Resumed")] {
             app.terminate()
             app = launchCockpit(planData: plan, recordingStatus: expected.fixture)
@@ -501,6 +503,12 @@ final class NavigationFlightUITests: XCTestCase {
             XCTAssertFalse(app.staticTexts.matching(NSPredicate(
                 format: "label CONTAINS[c] 'latitude' OR label CONTAINS[c] 'longitude'"
             )).firstMatch.exists)
+            if expected.fixture == "partial" {
+                status.tap()
+                XCTAssertTrue(app.staticTexts[
+                    "Recording began after airborne movement was detected. Earlier track history is unavailable."
+                ].waitForExistence(timeout: 2))
+            }
         }
     }
 

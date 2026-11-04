@@ -19,6 +19,8 @@ nonisolated struct RecordedFlightEvent: Equatable, Sendable, Identifiable {
 nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     enum RecordingStartCause: Equatable, Sendable {
         case startLegWithoutLocation
+        case automaticTakeoff
+        case partialStart
     }
 
     case recordingStarted(cause: RecordingStartCause)

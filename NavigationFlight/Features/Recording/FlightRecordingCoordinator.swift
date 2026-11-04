@@ -6,11 +6,14 @@ import Observation
 final class FlightRecordingCoordinator {
     enum CoordinationError: Error, Equatable, Sendable {
         case startLegPersistenceFailed
+        case automaticPromotionPersistenceFailed
         case noActiveRecording
         case commandInFlight
     }
 
     private let store: any FlightRecordingStore
+    private let detectorPolicy: PhysicalFlightDetectionPolicy
+    private let monotonicNow: @MainActor @Sendable () -> Duration
     private var engine: FlightRecordingEngine?
     private var publishedFlight: Flight?
     private var publishedRecording: FlightRecording?
@@ -32,8 +35,16 @@ final class FlightRecordingCoordinator {
         )
     }
 
-    init(store: any FlightRecordingStore) {
+    init(
+        store: any FlightRecordingStore,
+        detectorPolicy: PhysicalFlightDetectionPolicy = .production,
+        monotonicNow: @escaping @MainActor @Sendable () -> Duration = {
+            .seconds(ProcessInfo.processInfo.systemUptime)
+        }
+    ) {
         self.store = store
+        self.detectorPolicy = detectorPolicy
+        self.monotonicNow = monotonicNow
     }
 
     func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot) async {
@@ -41,7 +52,8 @@ final class FlightRecordingCoordinator {
         let candidate = FlightRecordingEngine(
             store: store,
             flight: flight,
-            flightPlanSnapshot: flightPlanSnapshot
+            flightPlanSnapshot: flightPlanSnapshot,
+            detectorPolicy: detectorPolicy
         )
         await candidate.arm()
         engine = candidate
@@ -86,7 +98,17 @@ final class FlightRecordingCoordinator {
 
     func handleLocationEvent(_ event: LocationSourceEvent) async {
         guard let engine else { return }
-        await engine.ingest(event)
+        let outcome = await engine.ingest(event, monotonicTime: monotonicNow())
+        if case .promoted(let recording, let partial) = outcome {
+            publishedRecording = recording
+            status = partial ? .partialRecording : .recording
+            return
+        }
+        if outcome == .promotionPersistenceFailed {
+            lastError = .automaticPromotionPersistenceFailed
+            status = .prepared
+            return
+        }
         guard publishedRecording != nil else { return }
         switch event {
         case .sample:
@@ -112,8 +134,8 @@ final class FlightRecordingCoordinator {
         eventIDs: [UUID]
     ) async throws -> CommittedNavigationTransition {
         guard !isCommitting else { throw CoordinationError.commandInFlight }
+        let priorPublishedRecording = publishedRecording
         publishedFlight = flight
-        publishedRecording = nil
         lastError = nil
         isCommitting = true
         defer { isCommitting = false }
@@ -125,7 +147,8 @@ final class FlightRecordingCoordinator {
             candidateEngine = FlightRecordingEngine(
                 store: store,
                 flight: flight,
-                flightPlanSnapshot: flightPlanSnapshot
+                flightPlanSnapshot: flightPlanSnapshot,
+                detectorPolicy: detectorPolicy
             )
         }
         do {
@@ -141,8 +164,9 @@ final class FlightRecordingCoordinator {
             status = stored?.trackSegments.isEmpty == false ? .recording : .recordingGPSUnavailable
             return transition
         } catch {
+            publishedRecording = priorPublishedRecording
             lastError = .startLegPersistenceFailed
-            status = engine == nil ? .ready : .prepared
+            status = priorPublishedRecording == nil ? (engine == nil ? .ready : .prepared) : .recording
             throw error
         }
     }

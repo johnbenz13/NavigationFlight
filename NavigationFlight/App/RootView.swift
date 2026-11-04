@@ -50,6 +50,7 @@ struct RootView: View {
         case "gps-gap": .gpsGap
         case "gps-resumed": .gpsResumed
         case "recording": .recording
+        case "partial": .partialRecording
         default: nil
         }
         if let seconds = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"].flatMap(Double.init) {

@@ -187,6 +187,33 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         )
     }
 
+    mutating func recordNavigationEvents(
+        at timestamp: Date,
+        elapsed: Duration,
+        entries: [(origin: RecordedFlightEvent.Origin, payload: RecordedFlightEventPayload)],
+        eventIDs: [UUID],
+        navigationState: RecordedNavigationState? = nil
+    ) throws -> [RecordedFlightEvent] {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard self.navigationState == .active else { throw TransitionError.navigationAlreadyActive }
+        guard entries.count == eventIDs.count else { throw TransitionError.invalidEventIdentifierCount }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+
+        let events = zip(entries, eventIDs).map { entry, id in
+            makeEvent(
+                id: id,
+                occurredAt: timestamp,
+                elapsed: elapsed,
+                origin: entry.origin,
+                payload: entry.payload
+            )
+        }
+        if let navigationState {
+            self.navigationState = navigationState
+        }
+        return events
+    }
+
     private mutating func makeEvent(
         id: UUID,
         occurredAt: Date,

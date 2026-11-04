@@ -23,6 +23,12 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
 
     case recordingStarted(cause: RecordingStartCause)
     case legStarted(legID: UUID)
+    case destinationIdentified(legID: UUID)
+    case identificationPointReached(key: IdentificationPointKey)
+    case waypointReached(legID: UUID)
+    case automaticNextLegTransition(fromLegID: UUID, toLegID: UUID)
+    case finalWaypointReached(legID: UUID)
+    case automaticLegRecovery(legID: UUID)
     case navigationCompleted
     case manualEnd
     case recordingClosed(

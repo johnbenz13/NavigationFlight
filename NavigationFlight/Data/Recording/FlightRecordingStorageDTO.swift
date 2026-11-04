@@ -143,6 +143,8 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     let origin: RecordedFlightEvent.Origin
     let kind: String
     let legID: UUID?
+    let targetID: UUID?
+    let successorLegID: UUID?
     let startCause: String?
     let outcome: String?
     let closureCause: String?
@@ -159,30 +161,88 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         case .recordingStarted:
             kind = "recordingStarted"
             legID = nil
+            targetID = nil
+            successorLegID = nil
             startCause = "startLegWithoutLocation"
             outcome = nil
             closureCause = nil
         case .legStarted(let value):
             kind = "legStarted"
             legID = value
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .destinationIdentified(let value):
+            kind = "destinationIdentified"
+            legID = value
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .identificationPointReached(let key):
+            kind = "identificationPointReached"
+            legID = key.legID
+            targetID = key.identificationPointID
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .waypointReached(let value):
+            kind = "waypointReached"
+            legID = value
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .automaticNextLegTransition(let fromLegID, let toLegID):
+            kind = "automaticNextLegTransition"
+            legID = fromLegID
+            targetID = nil
+            successorLegID = toLegID
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .finalWaypointReached(let value):
+            kind = "finalWaypointReached"
+            legID = value
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .automaticLegRecovery(let value):
+            kind = "automaticLegRecovery"
+            legID = value
+            targetID = nil
+            successorLegID = nil
             startCause = nil
             outcome = nil
             closureCause = nil
         case .navigationCompleted:
             kind = "navigationCompleted"
             legID = nil
+            targetID = nil
+            successorLegID = nil
             startCause = nil
             outcome = nil
             closureCause = nil
         case .manualEnd:
             kind = "manualEnd"
             legID = nil
+            targetID = nil
+            successorLegID = nil
             startCause = nil
             outcome = nil
             closureCause = nil
         case .recordingClosed(let value, let cause):
             kind = "recordingClosed"
             legID = nil
+            targetID = nil
+            successorLegID = nil
             startCause = nil
             outcome = value == .complete ? "complete" : "incomplete"
             closureCause = cause == .automatic ? "automatic" : "manual"
@@ -197,6 +257,27 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         case "legStarted":
             guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .legStarted(legID: legID)
+        case "destinationIdentified":
+            guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .destinationIdentified(legID: legID)
+        case "identificationPointReached":
+            guard let legID, let targetID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .identificationPointReached(key: IdentificationPointKey(
+                legID: legID,
+                identificationPointID: targetID
+            ))
+        case "waypointReached":
+            guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .waypointReached(legID: legID)
+        case "automaticNextLegTransition":
+            guard let legID, let successorLegID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .automaticNextLegTransition(fromLegID: legID, toLegID: successorLegID)
+        case "finalWaypointReached":
+            guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .finalWaypointReached(legID: legID)
+        case "automaticLegRecovery":
+            guard let legID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .automaticLegRecovery(legID: legID)
         case "navigationCompleted":
             payload = .navigationCompleted
         case "manualEnd":

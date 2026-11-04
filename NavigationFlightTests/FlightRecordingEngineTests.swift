@@ -90,17 +90,170 @@ struct FlightRecordingEngineTests {
         #expect(persisted.events.last?.payload == .navigationCompleted)
     }
 
-    private func makeFixture() -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {
+    @Test("Destination identification is durably committed with the active leg ID")
+    func destinationIdentificationIsDurable() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        let transition = try await engine.commit(.identifyDestination(
+            at: fixture.startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            eventID: UUID()
+        ))
+
+        let identifiedAt = await MainActor.run { transition.flight.legTimings.last?.destinationIdentifiedAt }
+        #expect(identifiedAt == fixture.startedAt.addingTimeInterval(30))
+        let persisted = try await store.readSnapshot(id: started.recording.id)
+        #expect(persisted.events.last?.payload == .destinationIdentified(legID: fixture.snapshot.legIDs[0]))
+        #expect(persisted.events.last?.origin == .pilot)
+    }
+
+    @Test("Identification-point reach records the canonical target and rejected duplicate writes nothing")
+    func identificationPointReachIsDurableAndDuplicateIsNoOp() async throws {
+        let fixture = makeFixture()
+        let point = IdentificationPointKey(legID: fixture.snapshot.legIDs[0], identificationPointID: UUID())
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let reachedAt = fixture.startedAt.addingTimeInterval(40)
+
+        _ = try await engine.commit(.reachIdentificationPoint(
+            key: point,
+            orderedActiveLegPointKeys: [point],
+            at: reachedAt,
+            elapsed: .seconds(40),
+            eventID: UUID(),
+            nextETATarget: nil,
+            nextETAPlannedElapsedSeconds: nil
+        ))
+        await #expect(throws: Flight.TransitionError.self) {
+            try await engine.commit(.reachIdentificationPoint(
+                key: point,
+                orderedActiveLegPointKeys: [point],
+                at: reachedAt,
+                elapsed: .seconds(40),
+                eventID: UUID(),
+                nextETATarget: nil,
+                nextETAPlannedElapsedSeconds: nil
+            ))
+        }
+
+        let persisted = try await store.readSnapshot(id: started.recording.id)
+        #expect(persisted.events.count == 3)
+        #expect(persisted.events.last?.payload == .identificationPointReached(key: point))
+    }
+
+    @Test("Intermediate waypoint reach orders pilot reach before automatic successor start")
+    func waypointReachOrdersAutomaticTransition() async throws {
+        let fixture = makeFixture(legCount: 2)
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+
+        let transition = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [],
+            at: fixture.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventIDs: [UUID(), UUID()]
+        ))
+
+        #expect(transition.flight.activeLegIndex == 1)
+        #expect(transition.flight.legState == .active)
+        let events = try await store.readSnapshot(id: started.recording.id).events
+        #expect(Array(events.suffix(2).map(\.payload)) == [
+            .waypointReached(legID: fixture.snapshot.legIDs[0]),
+            .automaticNextLegTransition(fromLegID: fixture.snapshot.legIDs[0], toLegID: fixture.snapshot.legIDs[1])
+        ])
+        #expect(Array(events.suffix(2).map(\.origin)) == [.pilot, .automatic])
+    }
+
+    @Test("Final waypoint reach is durable but waits for explicit Navigation Complete")
+    func finalWaypointWaitsForExplicitCompletion() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+
+        let transition = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [],
+            at: fixture.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventIDs: [UUID(), UUID()]
+        ))
+
+        #expect(transition.flight.legState == .completed)
+        #expect(transition.recording.navigationState == .reachedFinalWaypoint)
+        #expect(transition.recording.closure == nil)
+        let events = try await store.readSnapshot(id: started.recording.id).events
+        #expect(Array(events.suffix(2).map(\.payload)) == [
+            .waypointReached(legID: fixture.snapshot.legIDs[0]),
+            .finalWaypointReached(legID: fixture.snapshot.legIDs[0])
+        ])
+    }
+
+    @Test("Reach persistence failure preserves the published active Flight")
+    func reachPersistenceFailurePreservesPublishedFlight() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore(failure: .append)
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        await #expect(throws: FlightRecordingStoreError.self) {
+            try await engine.commit(.reachCurrentWaypoint(
+                orderedActiveLegPointKeys: [],
+                at: fixture.startedAt.addingTimeInterval(60),
+                elapsed: .seconds(60),
+                eventIDs: [UUID(), UUID()]
+            ))
+        }
+
+        let snapshot = await engine.snapshot()
+        #expect(snapshot.flight == started.flight)
+        #expect(snapshot.recording == started.recording)
+        let persisted = try await store.readSnapshot(id: started.recording.id)
+        #expect(persisted.events.count == 2)
+    }
+
+    @Test("Automatic leg recovery is distinguished from pilot actions")
+    func automaticLegRecoveryHasRecoveryOrigin() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+
+        _ = try await engine.commit(.automaticLegRecovery(
+            legID: fixture.snapshot.legIDs[0],
+            at: fixture.startedAt.addingTimeInterval(10),
+            elapsed: .seconds(10),
+            eventID: UUID()
+        ))
+
+        let event = try #require(try await store.readSnapshot(id: started.recording.id).events.last)
+        #expect(event.origin == .recovery)
+        #expect(event.payload == .automaticLegRecovery(legID: fixture.snapshot.legIDs[0]))
+    }
+
+    private func makeFixture(legCount: Int = 1) -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {
         let planID = UUID()
-        let legID = UUID()
+        let legIDs = (0..<legCount).map { _ in UUID() }
         return (
             Flight(
                 flightPlanID: planID,
-                legIDs: [legID],
+                legIDs: legIDs,
                 activeLegIndex: 0,
                 executionMode: .noWind
             ),
-            RecordedFlightPlanSnapshot(id: planID, title: "Training flight", legIDs: [legID]),
+            RecordedFlightPlanSnapshot(id: planID, title: "Training flight", legIDs: legIDs),
             Date(timeIntervalSince1970: 1_000)
         )
     }

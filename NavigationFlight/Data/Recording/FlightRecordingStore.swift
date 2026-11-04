@@ -7,6 +7,8 @@ nonisolated protocol FlightRecordingStore: Sendable {
         recordingID: UUID,
         synchronize: Bool
     ) async throws
+    func appendTrackBatch(_ batch: RecordedTrackBatch) async throws
+    func synchronizeTrack(recordingID: UUID) async throws
     func packages() async -> [FlightRecordingPackageResult]
     func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot
     func close(id: UUID, closure: FlightRecordingClosure) async throws
@@ -15,11 +17,33 @@ nonisolated protocol FlightRecordingStore: Sendable {
 nonisolated struct FlightRecordingSeed: Equatable, Sendable {
     let recording: FlightRecording
     let events: [RecordedFlightEvent]
+    let trackSegments: [RecordedTrackSegment]
+
+    init(
+        recording: FlightRecording,
+        events: [RecordedFlightEvent],
+        trackSegments: [RecordedTrackSegment] = []
+    ) {
+        self.recording = recording
+        self.events = events
+        self.trackSegments = trackSegments
+    }
 }
 
 nonisolated struct FlightRecordingReadSnapshot: Equatable, Sendable {
     let recording: FlightRecording
     let events: [RecordedFlightEvent]
+    var trackSegments: [RecordedTrackSegment]
+
+    init(
+        recording: FlightRecording,
+        events: [RecordedFlightEvent],
+        trackSegments: [RecordedTrackSegment] = []
+    ) {
+        self.recording = recording
+        self.events = events
+        self.trackSegments = trackSegments
+    }
 }
 
 nonisolated enum FlightRecordingPackageResult: Equatable, Sendable {

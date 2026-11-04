@@ -13,6 +13,7 @@ struct RootView: View {
     private let positionCheckTiming: PositionCheckTiming
     private let shouldPresentPositionCheckEducation: Bool
     private let shouldSimulateRecordingDegradation: Bool
+    private let debugRecordingStatus: RecordingStatus?
 
     init() {
         let defaultLibraryDirectory = FileManager.default.urls(
@@ -45,6 +46,12 @@ struct RootView: View {
         debugShouldFailFlightChange = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] == "1"
         shouldPresentPositionCheckEducation = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION"] == "1"
         shouldSimulateRecordingDegradation = environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_DEGRADATION"] == "1"
+        debugRecordingStatus = switch environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_STATUS"] {
+        case "gps-gap": .gpsGap
+        case "gps-resumed": .gpsResumed
+        case "recording": .recording
+        default: nil
+        }
         if let seconds = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"].flatMap(Double.init) {
             positionCheckTiming = PositionCheckTiming(
                 acquisitionDuration: .seconds(seconds),
@@ -73,6 +80,7 @@ struct RootView: View {
         debugShouldFailFlightChange = false
         shouldPresentPositionCheckEducation = true
         shouldSimulateRecordingDegradation = false
+        debugRecordingStatus = nil
         positionCheckTiming = .standard
         locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
 #endif
@@ -193,6 +201,27 @@ struct RootView: View {
         }
         .onChange(of: appState.cockpit.isAcceptedFlightInProgress) { _, _ in
             synchronizeIdleTimer()
+        }
+        .task(id: appState.cockpit.flight?.id) {
+            guard let flight = appState.cockpit.flight,
+                  let flightPlan = appState.cockpit.flightPlan else {
+                await flightRecordingCoordinator.disarm(locationHub: locationService)
+                return
+            }
+            await flightRecordingCoordinator.arm(
+                flight: flight,
+                flightPlanSnapshot: RecordedFlightPlanSnapshot(
+                    id: flightPlan.id,
+                    title: flightPlan.title,
+                    legIDs: flightPlan.legs.map(\.id)
+                ),
+                locationHub: locationService
+            )
+#if DEBUG
+            if let debugRecordingStatus {
+                flightRecordingCoordinator.overrideStatusForTesting(debugRecordingStatus)
+            }
+#endif
         }
         .onDisappear {
             idleTimerCoordinator.teardown()

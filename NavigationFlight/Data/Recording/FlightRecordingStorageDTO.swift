@@ -29,6 +29,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
     func domain(
         snapshot: RecordedFlightPlanSnapshot,
         navigationState restoredNavigationState: RecordedNavigationState? = nil,
+        gpsCoverage restoredGPSCoverage: GPSCoverageState? = nil,
         nextEventSequence: UInt64? = nil
     ) throws -> FlightRecording {
         guard schemaVersion == Self.currentSchemaVersion else {
@@ -46,7 +47,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
             startedAt: startedAt,
             physicalState: physicalState,
             navigationState: restoredNavigationState ?? navigationState,
-            gpsCoverage: gpsCoverage,
+            gpsCoverage: restoredGPSCoverage ?? gpsCoverage,
             closure: closure?.domain,
             nextEventSequence: nextEventSequence ?? self.nextEventSequence
         )
@@ -131,6 +132,96 @@ nonisolated struct RecordedFlightEventEnvelopeDTO: Codable {
     private static func checksum(for event: RecordedFlightEventDTO) throws -> String {
         let digest = SHA256.hash(data: try FlightRecordingCoding.encoder.encode(event))
         return digest.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+nonisolated struct RecordedTrackBatchEnvelopeDTO: Codable {
+    static let currentPayloadVersion = 1
+
+    let payloadVersion: Int
+    let batch: RecordedTrackBatchDTO
+    let checksum: String
+
+    init(batch: RecordedTrackBatch) throws {
+        payloadVersion = Self.currentPayloadVersion
+        self.batch = RecordedTrackBatchDTO(batch: batch)
+        checksum = try Self.checksum(for: self.batch)
+    }
+
+    func domain() throws -> RecordedTrackBatch {
+        guard payloadVersion == Self.currentPayloadVersion,
+              checksum == (try Self.checksum(for: batch)) else {
+            throw FlightRecordingStoreError.corruptPackage(id: batch.recordingID)
+        }
+        return batch.domain
+    }
+
+    private static func checksum(for batch: RecordedTrackBatchDTO) throws -> String {
+        let digest = SHA256.hash(data: try FlightRecordingCoding.encoder.encode(batch))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+nonisolated struct RecordedTrackBatchDTO: Codable {
+    let recordingID: UUID
+    let segmentID: UUID
+    let samples: [RecordedTrackSampleDTO]
+
+    init(batch: RecordedTrackBatch) {
+        recordingID = batch.recordingID
+        segmentID = batch.segmentID
+        samples = batch.samples.map(RecordedTrackSampleDTO.init)
+    }
+
+    var domain: RecordedTrackBatch {
+        RecordedTrackBatch(
+            recordingID: recordingID,
+            segmentID: segmentID,
+            samples: samples.map(\.domain)
+        )
+    }
+}
+
+nonisolated struct RecordedTrackSampleDTO: Codable {
+    let latitudeDegrees: Double
+    let longitudeDegrees: Double
+    let observedAt: Date
+    let horizontalAccuracyMeters: Double
+    let altitudeMeters: Double?
+    let verticalAccuracyMeters: Double?
+    let groundSpeedMetersPerSecond: Double?
+    let speedAccuracyMetersPerSecond: Double?
+    let courseDegrees: Double?
+    let courseAccuracyDegrees: Double?
+
+    init(sample: RecordedTrackSample) {
+        latitudeDegrees = sample.coordinate.latitudeDegrees
+        longitudeDegrees = sample.coordinate.longitudeDegrees
+        observedAt = sample.observedAt
+        horizontalAccuracyMeters = sample.horizontalAccuracyMeters
+        altitudeMeters = sample.altitudeMeters
+        verticalAccuracyMeters = sample.verticalAccuracyMeters
+        groundSpeedMetersPerSecond = sample.groundSpeedMetersPerSecond
+        speedAccuracyMetersPerSecond = sample.speedAccuracyMetersPerSecond
+        courseDegrees = sample.courseDegrees
+        courseAccuracyDegrees = sample.courseAccuracyDegrees
+    }
+
+    var domain: RecordedTrackSample {
+        RecordedTrackSample(
+            coordinate: WGS84Coordinate(
+                latitudeDegrees: latitudeDegrees,
+                longitudeDegrees: longitudeDegrees
+            ),
+            observedAt: observedAt,
+            horizontalAccuracyMeters: horizontalAccuracyMeters,
+            altitudeMeters: altitudeMeters,
+            verticalAccuracyMeters: verticalAccuracyMeters,
+            groundSpeedMetersPerSecond: groundSpeedMetersPerSecond,
+            speedAccuracyMetersPerSecond: speedAccuracyMetersPerSecond,
+            courseDegrees: courseDegrees,
+            courseAccuracyDegrees: courseAccuracyDegrees
+        )
     }
 }
 

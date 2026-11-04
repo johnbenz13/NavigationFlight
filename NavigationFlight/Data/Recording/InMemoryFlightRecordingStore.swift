@@ -21,8 +21,34 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         }
         snapshotsByID[seed.recording.id] = FlightRecordingReadSnapshot(
             recording: seed.recording,
-            events: seed.events
+            events: seed.events,
+            trackSegments: seed.trackSegments
         )
+    }
+
+    func appendTrackBatch(_ batch: RecordedTrackBatch) throws {
+        guard var current = snapshotsByID[batch.recordingID] else {
+            throw FlightRecordingStoreError.corruptPackage(id: batch.recordingID)
+        }
+        if let index = current.trackSegments.firstIndex(where: { $0.id == batch.segmentID }) {
+            current.trackSegments[index].samples.append(contentsOf: batch.samples)
+        } else {
+            current.trackSegments.append(RecordedTrackSegment(id: batch.segmentID, samples: batch.samples))
+        }
+        current = FlightRecordingReadSnapshot(
+            recording: current.recording.restoring(
+                gpsCoverage: current.trackSegments.count == 1 ? .available : .partial
+            ),
+            events: current.events,
+            trackSegments: current.trackSegments
+        )
+        snapshotsByID[batch.recordingID] = current
+    }
+
+    func synchronizeTrack(recordingID: UUID) throws {
+        guard snapshotsByID[recordingID] != nil else {
+            throw FlightRecordingStoreError.corruptPackage(id: recordingID)
+        }
     }
 
     func appendEvent(
@@ -47,7 +73,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
             : current.recording
         snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
             recording: recording,
-            events: events
+            events: events,
+            trackSegments: current.trackSegments
         )
     }
 
@@ -72,7 +99,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
                 closure: closure,
                 nextEventSequence: UInt64(current.events.count)
             ),
-            events: current.events
+            events: current.events,
+            trackSegments: current.trackSegments
         )
     }
 }

@@ -480,9 +480,28 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(restartConfirmation.waitForExistence(timeout: 3))
         restartConfirmation.buttons["Restart"].tap()
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 5))
-        XCTAssertEqual(app.buttons["recording-status"].label, "Ready to record")
+        XCTAssertEqual(app.buttons["recording-status"].label, "Prepared · Sensing")
         app.buttons["start-leg"].tap()
         XCTAssertEqual(app.buttons["recording-status"].label, "Recording · No GPS")
+    }
+
+    @MainActor
+    func testPreparedGapAndResumedRecordingStatesHidePosition() throws {
+        let plan = try oneLegPlanData()
+        var app = launchCockpit(planData: plan)
+        XCTAssertEqual(app.buttons["recording-status"].label, "Prepared · Sensing")
+
+        for expected in [(fixture: "gps-gap", label: "Recording · GPS Gap"),
+                         (fixture: "gps-resumed", label: "Recording · GPS Resumed")] {
+            app.terminate()
+            app = launchCockpit(planData: plan, recordingStatus: expected.fixture)
+            let status = app.buttons["recording-status"]
+            XCTAssertTrue(status.waitForExistence(timeout: 3))
+            XCTAssertEqual(status.label, expected.label)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(
+                format: "label CONTAINS[c] 'latitude' OR label CONTAINS[c] 'longitude'"
+            )).firstMatch.exists)
+        }
     }
 
     @MainActor
@@ -500,7 +519,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
         let readyStatus = app.buttons["recording-status"]
         XCTAssertTrue(readyStatus.exists)
-        XCTAssertEqual(readyStatus.label, "Ready to record")
+        XCTAssertEqual(readyStatus.label, "Prepared · Sensing")
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label == 'Recording · No GPS'")).firstMatch.exists)
     }
 
@@ -1132,8 +1151,10 @@ final class NavigationFlightUITests: XCTestCase {
         preferredContentSizeCategory: String? = nil,
         positionCheckState: String? = nil,
         positionCheckDuration: Double? = nil,
+        fixtureDelay: Double? = nil,
         recordingFailure: Bool = false,
-        recordingDegradation: Bool = false
+        recordingDegradation: Bool = false,
+        recordingStatus: String? = nil
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1150,11 +1171,17 @@ final class NavigationFlightUITests: XCTestCase {
         if let positionCheckDuration {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"] = String(positionCheckDuration)
         }
+        if let fixtureDelay {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY"] = String(fixtureDelay)
+        }
         if recordingFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] = "1"
         }
         if recordingDegradation {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_DEGRADATION"] = "1"
+        }
+        if let recordingStatus {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_STATUS"] = recordingStatus
         }
         app.launch()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))

@@ -29,10 +29,37 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     case automaticNextLegTransition(fromLegID: UUID, toLegID: UUID)
     case finalWaypointReached(legID: UUID)
     case automaticLegRecovery(legID: UUID)
+    case etaRevised(
+        target: NavigationTimingTargetKey,
+        priorSeconds: Int?,
+        committedSeconds: Int
+    )
+    case headingRevised(legID: UUID, priorDegrees: Int, committedDegrees: Int)
+    case reachUndone(originalEventID: UUID)
+    case positionCheckRequested
+    case positionCheckEnded(outcome: PositionCheckRecordedOutcome)
+    case storageDegraded(reason: RecordingStorageDegradation)
     case navigationCompleted
     case manualEnd
     case recordingClosed(
         outcome: FlightRecordingClosure.Outcome,
         cause: FlightRecordingClosure.Cause
     )
+}
+
+nonisolated enum PositionCheckRecordedOutcome: Equatable, Sendable {
+    case disclosed(sample: PositionCheckRecordedSample)
+    case endedWithoutDisclosure
+}
+
+nonisolated struct PositionCheckRecordedSample: Equatable, Sendable {
+    let coordinate: WGS84Coordinate
+    let observedAt: Date
+    let horizontalAccuracyMeters: Double
+}
+
+nonisolated enum RecordingStorageDegradation: String, Codable, Equatable, Sendable {
+    case trackWriteFailed
+    case lowStorage
+    case bufferOverflow
 }

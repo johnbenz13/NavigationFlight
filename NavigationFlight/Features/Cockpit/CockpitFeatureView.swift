@@ -16,6 +16,7 @@ struct CockpitFeatureView: View {
     @State private var locationAvailability: LocationAvailability = .acquiring
     @State private var positionCheckCoordinator: PositionCheckCoordinator
     @State private var pendingPositionCheckAcceptanceFeedback = false
+    @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
@@ -23,6 +24,7 @@ struct CockpitFeatureView: View {
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
     private let recordingCoordinator: FlightRecordingCoordinator
+    private let shouldSimulateRecordingDegradation: Bool
     private let onIntent: (CockpitFeatureIntent) -> Void
 
     init(
@@ -32,6 +34,7 @@ struct CockpitFeatureView: View {
         positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
         recordingCoordinator: FlightRecordingCoordinator,
+        shouldSimulateRecordingDegradation: Bool = false,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
@@ -40,6 +43,7 @@ struct CockpitFeatureView: View {
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
         self.recordingCoordinator = recordingCoordinator
+        self.shouldSimulateRecordingDegradation = shouldSimulateRecordingDegradation
         self.onIntent = onIntent
     }
 
@@ -50,32 +54,50 @@ struct CockpitFeatureView: View {
                     isCockpitPresented = true
                 }
             }
+            .onChange(of: positionCheckCoordinator.state) { previous, current in
+                let ended = (previous.activeSession != nil || previous.acquisitionRequest != nil)
+                    && current.activeSession == nil
+                    && current.acquisitionRequest == nil
+                guard ended else { return }
+                if suppressNextPositionCheckEndRecording {
+                    suppressNextPositionCheckEndRecording = false
+                    return
+                }
+                let sample = previous.activeSession.map {
+                    PositionCheckRecordedSample(
+                        coordinate: $0.projection.coordinate,
+                        observedAt: $0.projection.observedAt,
+                        horizontalAccuracyMeters: $0.projection.horizontalAccuracyMeters
+                    )
+                }
+                recordPositionCheckEnd(sample: sample)
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase != .active {
-                    positionCheckCoordinator.send(.sceneBecameInactive)
+                    endPositionCheck(.sceneBecameInactive)
                 }
             }
             .onChange(of: state.flight?.id) { oldValue, newValue in
                 if oldValue != nil, oldValue != newValue {
-                    positionCheckCoordinator.send(.activeFlightLost)
+                    endPositionCheck(.activeFlightLost)
                 }
             }
             .onChange(of: state.flight?.activeLegIndex) { _, _ in
-                positionCheckCoordinator.send(.activeLegChanged)
+                endPositionCheck(.activeLegChanged)
             }
             .onChange(of: state.flight?.legState) { _, legState in
                 if legState != .active {
-                    positionCheckCoordinator.send(.activeFlightLost)
+                    endPositionCheck(.activeFlightLost)
                 }
             }
             .onChange(of: isSectionSelected) { _, selected in
                 if !selected {
-                    positionCheckCoordinator.send(.cockpitDismissed)
+                    endPositionCheck(.cockpitDismissed)
                 }
             }
             .onChange(of: isCockpitPresented) { _, presented in
                 if !presented {
-                    positionCheckCoordinator.send(.cockpitDismissed)
+                    endPositionCheck(.cockpitDismissed)
                 }
             }
             .fileImporter(
@@ -199,12 +221,12 @@ struct CockpitFeatureView: View {
                                 restoration: restoration
                             )
                         },
-                        onUndoReach: { state.undoMostRecentReach(at: $0) },
+                        onUndoReach: undoMostRecentReach,
                         onOpenPilotETA: { state.openPilotETAEditor(target: $0) },
                         onAdjustPilotETA: { targetID, delta in
                             state.adjustPilotETA(targetKey: targetID, by: delta)
                         },
-                        onCommitPilotETA: { state.commitPilotETA(targetKey: $0) },
+                        onCommitPilotETA: commitPilotETA,
                         onCancelPilotETA: { state.cancelPilotETAEditing(targetKey: $0) },
                         onEditPilotETA: { state.beginEditingPilotETA(targetKey: $0) },
                         onShowPilotETACheck: {
@@ -213,7 +235,7 @@ struct CockpitFeatureView: View {
                         onHidePilotETACheck: { state.hidePilotETACheck(targetKey: $0) },
                         onOpenPilotHeading: { baseline in state.openPilotHeadingEditor(baselineDegrees: baseline) },
                         onAdjustPilotHeading: { state.adjustPilotHeading(by: $0) },
-                        onCommitPilotHeading: { state.commitPilotHeading() },
+                        onCommitPilotHeading: commitPilotHeading,
                         onCancelPilotHeading: { state.cancelPilotHeadingEditing() },
                         onCollapseChecklist: { state.collapseLegStartChecklist() },
                         onReopenChecklist: { state.reopenLegStartChecklist() },
@@ -298,6 +320,14 @@ struct CockpitFeatureView: View {
                     eventIDs: [UUID(), UUID()]
                 )
                 state.installCommittedFlight(transition.flight)
+                if shouldSimulateRecordingDegradation {
+                    try? await recordingCoordinator.recordStorageDegradation(
+                        .trackWriteFailed,
+                        at: .now,
+                        elapsed: .zero,
+                        eventID: UUID()
+                    )
+                }
             } catch {
                 presentedError = .init(
                     title: "Couldn’t Start Leg",
@@ -358,6 +388,7 @@ struct CockpitFeatureView: View {
                 ))
                 state.installCommittedWaypointReach(
                     transition.flight,
+                    originalEventID: transition.eventIDs[0],
                     cockpitRestoration: restoration,
                     at: timing.now
                 )
@@ -394,6 +425,7 @@ struct CockpitFeatureView: View {
                 ))
                 try state.installCommittedIdentificationPointReach(
                     transition.flight,
+                    originalEventID: transition.eventIDs[0],
                     key: key,
                     mapPresentation: mapPresentation,
                     cockpitRestoration: restoration,
@@ -403,6 +435,112 @@ struct CockpitFeatureView: View {
                 presentNavigationCommitFailure("Reach Identification Point")
             }
         }
+    }
+
+    private func commitPilotETA(_ target: NavigationTimingTargetKey) {
+        guard let timing = recordingTiming(),
+              let draft = state.flight?.pilotETAState(targetKey: target)?.draftSeconds else { return }
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.reviseETA(
+                    target: target,
+                    plannedElapsedSeconds: draft,
+                    committedSeconds: draft,
+                    at: timing.now,
+                    elapsed: timing.elapsed,
+                    eventID: UUID()
+                ))
+                state.installCommittedFlight(transition.flight)
+            } catch {
+                presentNavigationCommitFailure("Revise ETA")
+            }
+        }
+    }
+
+    private func commitPilotHeading() {
+        guard let timing = recordingTiming(),
+              let flight = state.flight else { return }
+        let legID = flight.legIDs[flight.activeLegIndex]
+        guard let heading = flight.pilotHeadingState(for: legID) else { return }
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.reviseHeading(
+                    legID: legID,
+                    baselineDegrees: heading.baselineDegrees,
+                    committedDegrees: heading.draftDegrees,
+                    at: timing.now,
+                    elapsed: timing.elapsed,
+                    eventID: UUID()
+                ))
+                state.installCommittedFlight(transition.flight)
+            } catch {
+                presentNavigationCommitFailure("Revise Heading")
+            }
+        }
+    }
+
+    private func undoMostRecentReach(at timestamp: Date) async -> CockpitRestoration? {
+        guard let undo = state.availableReachUndo(at: timestamp),
+              let originalEventID = undo.originalEventID,
+              let timing = recordingTiming() else { return nil }
+        do {
+            _ = try await recordingCoordinator.commitNavigation(.undoReach(
+                originalEventID: originalEventID,
+                at: timing.now,
+                elapsed: timing.elapsed,
+                eventID: UUID()
+            ))
+            return state.undoMostRecentReach(at: timestamp)
+        } catch {
+            presentNavigationCommitFailure("Undo Reach")
+            return nil
+        }
+    }
+
+    private func recordPositionCheckRequest() async throws {
+        guard let timing = recordingTiming() else { return }
+        _ = try await recordingCoordinator.commitNavigation(.requestPositionCheck(
+            at: timing.now,
+            elapsed: timing.elapsed,
+            eventID: UUID()
+        ))
+    }
+
+    private func recordPositionCheckEnd(sample: PositionCheckRecordedSample?) {
+        guard let timing = recordingTiming() else { return }
+        Task {
+            _ = try? await recordingCoordinator.commitNavigation(.endPositionCheck(
+                outcome: sample.map(PositionCheckRecordedOutcome.disclosed) ?? .endedWithoutDisclosure,
+                at: timing.now,
+                elapsed: timing.elapsed,
+                eventID: UUID()
+            ))
+        }
+    }
+
+    private func recordPositionCheckRestart(sample: PositionCheckRecordedSample) async throws {
+        guard let timing = recordingTiming() else { return }
+        _ = try await recordingCoordinator.commitNavigation(.endPositionCheck(
+            outcome: .disclosed(sample: sample),
+            at: timing.now,
+            elapsed: timing.elapsed,
+            eventID: UUID()
+        ))
+        do {
+            _ = try await recordingCoordinator.commitNavigation(.requestPositionCheck(
+                at: timing.now,
+                elapsed: timing.elapsed,
+                eventID: UUID()
+            ))
+        } catch {
+            suppressNextPositionCheckEndRecording = true
+            positionCheckCoordinator.send(.end)
+            throw error
+        }
+    }
+
+    private func endPositionCheck(_ intent: PositionCheckIntent) {
+        positionCheckCoordinator.send(intent)
     }
 
     private func recordingTiming() -> (now: Date, elapsed: Duration)? {
@@ -464,10 +602,25 @@ struct CockpitFeatureView: View {
     private func handlePositionCheckAction(
         _ action: PositionCheckControlAction,
         restoration: CockpitRestoration
-    ) {
+    ) async {
         switch action {
         case .holdCompleted:
-            let intent: PositionCheckIntent = positionCheckCoordinator.state.activeSession == nil
+            let activeSession = positionCheckCoordinator.state.activeSession
+            do {
+                if let activeSession {
+                    try await recordPositionCheckRestart(sample: PositionCheckRecordedSample(
+                        coordinate: activeSession.projection.coordinate,
+                        observedAt: activeSession.projection.observedAt,
+                        horizontalAccuracyMeters: activeSession.projection.horizontalAccuracyMeters
+                    ))
+                } else {
+                    try await recordPositionCheckRequest()
+                }
+            } catch {
+                presentNavigationCommitFailure(activeSession == nil ? "Start Position Check" : "Restart Position Check")
+                return
+            }
+            let intent: PositionCheckIntent = activeSession == nil
                 ? .holdCompleted(availability: locationAvailability, restoration: restoration)
                 : .restartHoldCompleted(availability: locationAvailability, restoration: restoration)
             let effect = positionCheckCoordinator.send(intent)

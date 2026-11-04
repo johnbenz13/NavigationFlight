@@ -14,10 +14,12 @@ nonisolated struct PositionCheckProjection: Equatable, Sendable {
     let coordinate: WGS84Coordinate
     let horizontalAccuracyMeters: Double
     let trueCourseDegrees: Double?
+    let observedAt: Date
 
     init(sample: AircraftLocationSample) {
         coordinate = sample.coordinate
         horizontalAccuracyMeters = sample.horizontalAccuracyMeters
+        observedAt = sample.observedAt
         trueCourseDegrees = PositionCheckQualityPolicy().classify(
             sample,
             receivedAt: sample.observedAt,

@@ -1930,6 +1930,26 @@ struct NavigationFlightTests {
         #expect(state.undoMostRecentReach(at: start.addingTimeInterval(30)) == nil)
     }
 
+    @Test func reachUndoExpiresAcrossProcessTermination() throws {
+        let flightPlan = try flightWithThreeIdentificationPoints()
+        var state = CockpitFeatureState()
+        try state.accept(flightPlan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 85_000))
+        let map = try AviationMapPresentationFactory().makePresentation(
+            flightPlan: flightPlan,
+            flight: try #require(state.flight)
+        )
+        try state.reachIdentificationPoint(
+            key: map.identificationPoints[0].id,
+            mapPresentation: map,
+            at: Date(timeIntervalSince1970: 85_010)
+        )
+        #expect(state.pendingReachUndo != nil)
+
+        let relaunchedState = CockpitFeatureState()
+        #expect(relaunchedState.pendingReachUndo == nil)
+    }
+
     @Test func rejectedReachPreservesUndoWhileSuccessfulFlightStateCommitInvalidatesIt() throws {
         let flightPlan = try flightWithThreeIdentificationPoints()
         var state = CockpitFeatureState()

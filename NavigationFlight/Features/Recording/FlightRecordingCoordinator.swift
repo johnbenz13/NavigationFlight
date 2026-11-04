@@ -18,6 +18,7 @@ final class FlightRecordingCoordinator {
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
     private(set) var isCommitting = false
+    private(set) var storageDegradations: Set<RecordingStorageDegradation> = []
 
     var snapshot: FlightRecordingEngineSnapshot {
         guard let publishedFlight else {
@@ -25,7 +26,8 @@ final class FlightRecordingCoordinator {
         }
         return FlightRecordingEngineSnapshot(
             flight: publishedFlight,
-            recording: publishedRecording
+            recording: publishedRecording,
+            storageDegradations: storageDegradations
         )
     }
 
@@ -121,6 +123,22 @@ final class FlightRecordingCoordinator {
         return committed
     }
 
+    func recordStorageDegradation(
+        _ reason: RecordingStorageDegradation,
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID
+    ) async throws {
+        storageDegradations.insert(reason)
+        status = .recordingDegraded
+        _ = try await commitNavigation(.recordStorageDegradation(
+            reason: reason,
+            at: timestamp,
+            elapsed: elapsed,
+            eventID: eventID
+        ))
+    }
+
     func prepareForFlightReplacement(
         at timestamp: Date,
         eventIDs: [UUID]
@@ -138,6 +156,7 @@ final class FlightRecordingCoordinator {
         engine = nil
         publishedFlight = nil
         publishedRecording = nil
+        storageDegradations = []
         status = .ready
         lastError = nil
     }

@@ -12,6 +12,7 @@ struct RootView: View {
     private let locationService: AircraftLocationService
     private let positionCheckTiming: PositionCheckTiming
     private let shouldPresentPositionCheckEducation: Bool
+    private let shouldSimulateRecordingDegradation: Bool
 
     init() {
         let defaultLibraryDirectory = FileManager.default.urls(
@@ -43,6 +44,7 @@ struct RootView: View {
             .flatMap { Data(base64Encoded: $0) }
         debugShouldFailFlightChange = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHT_CHANGE_FAILURE"] == "1"
         shouldPresentPositionCheckEducation = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION"] == "1"
+        shouldSimulateRecordingDegradation = environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_DEGRADATION"] == "1"
         if let seconds = environment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"].flatMap(Double.init) {
             positionCheckTiming = PositionCheckTiming(
                 acquisitionDuration: .seconds(seconds),
@@ -70,6 +72,7 @@ struct RootView: View {
         debugImportData = nil
         debugShouldFailFlightChange = false
         shouldPresentPositionCheckEducation = true
+        shouldSimulateRecordingDegradation = false
         positionCheckTiming = .standard
         locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
 #endif
@@ -160,6 +163,7 @@ struct RootView: View {
                     positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
+                    shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
             }

@@ -88,6 +88,37 @@ struct FlightRecordingCoordinatorTests {
         #expect(transition.recording.closure == nil)
     }
 
+    @Test("Storage degradation projects a warning without disabling navigation commits")
+    func storageDegradationWarnsWithoutBlockingNavigation() async throws {
+        let fixture = makeFixture()
+        let coordinator = FlightRecordingCoordinator(store: InMemoryFlightRecordingStore())
+        _ = try await coordinator.startLeg(
+            flight: fixture.flight,
+            flightPlanSnapshot: fixture.snapshot,
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        try await coordinator.recordStorageDegradation(
+            .trackWriteFailed,
+            at: fixture.startedAt.addingTimeInterval(5),
+            elapsed: .seconds(5),
+            eventID: UUID()
+        )
+
+        #expect(coordinator.status == .recordingDegraded)
+        #expect(coordinator.snapshot.storageDegradations == [.trackWriteFailed])
+        let transition = try await coordinator.commitNavigation(.identifyDestination(
+            at: fixture.startedAt.addingTimeInterval(6),
+            elapsed: .seconds(6),
+            eventID: UUID()
+        ))
+        #expect(transition.flight.destinationIdentifiedAt != nil)
+        let presentation = RecordingStatusPresentation(status: coordinator.status)
+        #expect(presentation.compactTitle == "REC · WARNING")
+        #expect(presentation.showsEndRecordingAction)
+    }
+
     private func makeFixture() -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {
         let planID = UUID()
         let legID = UUID()

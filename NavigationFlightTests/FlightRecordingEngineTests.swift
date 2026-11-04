@@ -64,6 +64,33 @@ struct FlightRecordingEngineTests {
         #expect(snapshot.trackSegments.map { $0.samples.map(\.coordinate.latitudeDegrees) } == [[32], [33]])
     }
 
+    @Test("A GPS gap and fresh-sample resumption are journaled once without bridging segments")
+    func gapAndResumptionAreJournaledOnce() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let first = trackSample(at: fixture.startedAt, latitude: 32)
+        let resumed = trackSample(at: fixture.startedAt.addingTimeInterval(10), latitude: 33)
+
+        await engine.arm()
+        await engine.ingest(.sample(first, receivedAt: first.observedAt))
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        await engine.ingest(.signalLost)
+        await engine.ingest(.signalLost)
+        await engine.ingest(.sample(resumed, receivedAt: resumed.observedAt))
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.events.suffix(2).map(\.payload) == [
+            .locationAvailabilityChanged(.signalLost),
+            .locationAvailabilityChanged(.resumed)
+        ])
+        #expect(snapshot.trackSegments.map { $0.samples.map(\.coordinate.latitudeDegrees) } == [[32], [33]])
+    }
+
     private func trackSample(
         at date: Date,
         latitude: Double,

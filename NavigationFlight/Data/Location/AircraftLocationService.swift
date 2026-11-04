@@ -14,6 +14,7 @@ actor AircraftLocationService {
     private var recordingContinuations: [UUID: AsyncStream<LocationSourceEvent>.Continuation] = [:]
     private var monitoringScopes: Set<MonitoringScope> = []
     private var lastAcceptedObservation: Date?
+    private var hasPublishedAvailability = false
     private(set) var availability: LocationAvailability = .acquiring
 
     init(
@@ -29,8 +30,8 @@ actor AircraftLocationService {
     }
 
     func startMonitoring(scope: MonitoringScope) async {
-        monitoringScopes.insert(scope)
-        if scope == .recording {
+        let wasInserted = monitoringScopes.insert(scope).inserted
+        if scope == .recording, wasInserted {
             await source.beginRecordingActivity()
         }
         guard acquisitionTask == nil else { return }
@@ -57,8 +58,8 @@ actor AircraftLocationService {
     }
 
     func stopMonitoring(scope: MonitoringScope) async {
-        monitoringScopes.remove(scope)
-        if scope == .recording {
+        let wasRemoved = monitoringScopes.remove(scope) != nil
+        if scope == .recording, wasRemoved {
             await source.endRecordingActivity()
         }
         guard monitoringScopes.isEmpty else { return }
@@ -76,6 +77,9 @@ actor AircraftLocationService {
         let id = UUID()
         return AsyncStream { continuation in
             continuations[id] = continuation
+            if hasPublishedAvailability {
+                continuation.yield(availability)
+            }
             continuation.onTermination = { [weak self] _ in
                 Task { await self?.removeContinuation(id) }
             }
@@ -141,6 +145,7 @@ actor AircraftLocationService {
 
     private func publish(_ availability: LocationAvailability) {
         self.availability = availability
+        hasPublishedAvailability = true
         continuations.values.forEach { $0.yield(availability) }
     }
 

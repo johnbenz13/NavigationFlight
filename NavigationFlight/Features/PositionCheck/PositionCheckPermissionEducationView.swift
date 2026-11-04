@@ -24,7 +24,7 @@ struct PositionCheckPermissionEducationView: View {
                         .foregroundStyle(.primary)
 
                     Label(
-                        "While Using the App only · No GPS track or Position Check history is recorded in this release.",
+                        "During an active Flight, NavigationFlight records the aircraft track and may continue location collection in the background. Recordings stay on this device and export only when you deliberately choose. Deliberately force-quitting the app may stop collection until you reopen it.",
                         systemImage: "hand.raised.fill"
                     )
                     .font(.subheadline.weight(.semibold))

@@ -251,6 +251,7 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     var degradationReason: String? = nil
     var physicalStateFrom: String? = nil
     var physicalStateTo: String? = nil
+    var locationAvailability: String? = nil
 
     init(event: RecordedFlightEvent) {
         id = event.id
@@ -392,6 +393,15 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             outcome = nil
             closureCause = nil
             degradationReason = reason.rawValue
+        case .locationAvailabilityChanged(let availability):
+            kind = "locationAvailabilityChanged"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+            locationAvailability = availability.rawValue
         case .physicalStateChanged(let from, let to):
             kind = "physicalStateChanged"
             legID = nil
@@ -505,6 +515,12 @@ nonisolated struct RecordedFlightEventDTO: Codable {
                 throw FlightRecordingStoreError.corruptPackage(id: nil)
             }
             payload = .storageDegraded(reason: reason)
+        case "locationAvailabilityChanged":
+            guard let locationAvailability,
+                  let availability = RecordingLocationAvailability(rawValue: locationAvailability) else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .locationAvailabilityChanged(availability)
         case "physicalStateChanged":
             guard let from = physicalStateFrom.flatMap(PhysicalFlightState.init(rawValue:)),
                   let to = physicalStateTo.flatMap(PhysicalFlightState.init(rawValue:)) else {

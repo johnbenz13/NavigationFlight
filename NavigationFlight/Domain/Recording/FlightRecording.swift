@@ -320,6 +320,24 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         return events
     }
 
+    mutating func recordLocationAvailabilityChange(
+        _ availability: RecordingLocationAvailability,
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+
+        return makeEvent(
+            id: eventID,
+            occurredAt: timestamp,
+            elapsed: elapsed,
+            origin: .system,
+            payload: .locationAvailabilityChanged(availability)
+        )
+    }
+
     private mutating func makeEvent(
         id: UUID,
         occurredAt: Date,

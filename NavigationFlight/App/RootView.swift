@@ -74,7 +74,7 @@ struct RootView: View {
                 source: PositionCheckFixtureSource(scenario: fixture, followUpDelay: delay)
             )
         } else {
-            locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
+            locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource.shared)
         }
 #else
         libraryDirectory = defaultLibraryDirectory
@@ -87,7 +87,7 @@ struct RootView: View {
         shouldSimulateRecordingDegradation = false
         debugRecordingStatus = nil
         positionCheckTiming = .standard
-        locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource())
+        locationService = AircraftLocationService(source: CoreLocationAircraftLocationSource.shared)
 #endif
         let store: any FlightPlanStore
 #if DEBUG

@@ -265,4 +265,18 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             nextEventSequence: nextEventSequence
         )
     }
+
+    func restoring(gpsCoverage: GPSCoverageState) -> FlightRecording {
+        FlightRecording(
+            id: id,
+            flightID: flightID,
+            flightPlanSnapshot: flightPlanSnapshot,
+            startedAt: startedAt,
+            physicalState: physicalState,
+            navigationState: navigationState,
+            gpsCoverage: gpsCoverage,
+            closure: closure,
+            nextEventSequence: nextEventSequence
+        )
+    }
 }

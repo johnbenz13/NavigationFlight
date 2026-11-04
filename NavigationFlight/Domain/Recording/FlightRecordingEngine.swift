@@ -64,6 +64,11 @@ actor FlightRecordingEngine {
     private var flight: Flight
     private var recording: FlightRecording?
     private var storageDegradations: Set<RecordingStorageDegradation> = []
+    private var isArmed = false
+    private var rollingBuffer: [RecordedTrackSample] = []
+    private var deliveredSamples: [RecordedTrackSample] = []
+    private var activeSegmentID: UUID?
+    private var segmentNeedsReopening = false
 
     init(
         store: any FlightRecordingStore,
@@ -73,6 +78,50 @@ actor FlightRecordingEngine {
         self.store = store
         self.flight = flight
         self.flightPlanSnapshot = flightPlanSnapshot
+    }
+
+    func arm() {
+        isArmed = true
+    }
+
+    func disarm() {
+        isArmed = false
+        rollingBuffer.removeAll()
+        deliveredSamples.removeAll()
+        activeSegmentID = nil
+        segmentNeedsReopening = false
+    }
+
+    func ingest(_ event: LocationSourceEvent) async {
+        guard isArmed else { return }
+        switch event {
+        case .sample(let sourceSample, _):
+            guard let sample = RecordedTrackSample(sourceSample), !deliveredSamples.contains(sample) else { return }
+            deliveredSamples.append(sample)
+            if recording == nil {
+                rollingBuffer.append(sample)
+                let cutoff = sample.observedAt.addingTimeInterval(-120)
+                rollingBuffer.removeAll { $0.observedAt < cutoff }
+            } else if let recording {
+                if segmentNeedsReopening || activeSegmentID == nil {
+                    activeSegmentID = UUID()
+                    segmentNeedsReopening = false
+                }
+                guard let segmentID = activeSegmentID else { return }
+                try? await store.appendTrackBatch(RecordedTrackBatch(
+                    recordingID: recording.id,
+                    segmentID: segmentID,
+                    samples: [sample]
+                ))
+            }
+        case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
+            if let recording {
+                segmentNeedsReopening = true
+                self.recording = recording.restoring(gpsCoverage: .partial)
+            }
+        case .authorization(.notDetermined), .authorization(.whenInUse):
+            break
+        }
     }
 
     func promoteForStartLeg(
@@ -100,7 +149,7 @@ actor FlightRecordingEngine {
                 return candidate
             }
             let legID = candidateFlight.legIDs[candidateFlight.activeLegIndex]
-            let promotion = try FlightRecording.promoteForStartLeg(
+            var promotion = try FlightRecording.promoteForStartLeg(
                 id: recordingID,
                 flightID: candidateFlight.id,
                 flightPlanSnapshot: flightPlanSnapshot,
@@ -109,9 +158,22 @@ actor FlightRecordingEngine {
                 eventIDs: eventIDs
             )
 
-            try await store.create(
-                FlightRecordingSeed(recording: promotion.recording, events: promotion.events)
-            )
+            let bufferedSegment: [RecordedTrackSegment]
+            if rollingBuffer.isEmpty {
+                bufferedSegment = []
+            } else {
+                let segmentID = UUID()
+                activeSegmentID = segmentID
+                bufferedSegment = [RecordedTrackSegment(id: segmentID, samples: rollingBuffer)]
+            }
+            if !bufferedSegment.isEmpty {
+                promotion.recording = promotion.recording.restoring(gpsCoverage: .available)
+            }
+            try await store.create(FlightRecordingSeed(
+                recording: promotion.recording,
+                events: promotion.events,
+                trackSegments: bufferedSegment
+            ))
             flight = candidateFlight
             recording = promotion.recording
             return CommittedNavigationTransition(

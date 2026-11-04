@@ -1,9 +1,69 @@
 import Foundation
+import Synchronization
 import Testing
 @testable import NavigationFlight
 
 @Suite("Disk flight recording store")
 struct DiskFlightRecordingStoreTests {
+    @Test("Checksummed track batches round-trip and a torn tail preserves prior samples")
+    func trackBatchChecksumAndTornTail() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+        let segmentID = UUID()
+        let first = recordedSample(at: seed.recording.startedAt, latitude: 32)
+        let second = recordedSample(at: seed.recording.startedAt.addingTimeInterval(1), latitude: 33)
+        try await store.appendTrackBatch(RecordedTrackBatch(
+            recordingID: seed.recording.id,
+            segmentID: segmentID,
+            samples: [first, second]
+        ))
+        try await store.synchronizeTrack(recordingID: seed.recording.id)
+        let file = root
+            .appending(path: seed.recording.id.uuidString.lowercased())
+            .appending(path: "track")
+            .appending(path: "\(segmentID.uuidString.lowercased()).ndjson")
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("{\"torn\":".utf8))
+        try handle.close()
+
+        let snapshot = try await store.readSnapshot(id: seed.recording.id)
+
+        #expect(snapshot.trackSegments == [RecordedTrackSegment(id: segmentID, samples: [first, second])])
+    }
+
+    @Test("Track synchronization is triggered at the configured five-second boundary")
+    func configuredSynchronizationInterval() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let now = Mutex(seed.recording.startedAt)
+        let synchronizationAttempts = Mutex(0)
+        let store = DiskFlightRecordingStore(
+            rootDirectory: root,
+            synchronizationInterval: 5,
+            now: { now.withLock { $0 } },
+            beforeTrackSynchronization: { _ in synchronizationAttempts.withLock { $0 += 1 } }
+        )
+        try await store.create(seed)
+        let segmentID = UUID()
+        now.withLock { $0 = $0.addingTimeInterval(4) }
+        try await store.appendTrackBatch(RecordedTrackBatch(
+            recordingID: seed.recording.id,
+            segmentID: segmentID,
+            samples: [recordedSample(at: seed.recording.startedAt, latitude: 32)]
+        ))
+        #expect(synchronizationAttempts.withLock { $0 } == 0)
+        now.withLock { $0 = $0.addingTimeInterval(1) }
+        try await store.appendTrackBatch(RecordedTrackBatch(
+            recordingID: seed.recording.id,
+            segmentID: segmentID,
+            samples: [recordedSample(at: seed.recording.startedAt.addingTimeInterval(1), latitude: 33)]
+        ))
+
+        #expect(synchronizationAttempts.withLock { $0 } == 1)
+    }
     @Test("Package creation is atomic and persists versioned immutable inputs")
     func atomicCreation() async throws {
         let root = temporaryDirectory()
@@ -174,6 +234,20 @@ struct DiskFlightRecordingStoreTests {
 
     private func temporaryDirectory() -> URL {
         URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    }
+
+    private func recordedSample(at date: Date, latitude: Double) -> RecordedTrackSample {
+        RecordedTrackSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: latitude, longitudeDegrees: 34.8),
+            observedAt: date,
+            horizontalAccuracyMeters: 20,
+            altitudeMeters: nil,
+            verticalAccuracyMeters: nil,
+            groundSpeedMetersPerSecond: 0,
+            speedAccuracyMetersPerSecond: nil,
+            courseDegrees: nil,
+            courseAccuracyDegrees: nil
+        )
     }
 
     private enum TestFailure: Error {

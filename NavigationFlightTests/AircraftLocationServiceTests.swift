@@ -34,6 +34,22 @@ struct AircraftLocationServiceTests {
         #expect(await source.streamCount == 1)
     }
 
+    @Test("Recording and Position Check scopes coexist without cancelling each other")
+    func monitoringScopesCoexist() async {
+        let source = ControllableAircraftLocationSource()
+        let service = AircraftLocationService(source: source)
+        var recordingEvents = await service.recordingUpdates().makeAsyncIterator()
+
+        await service.startMonitoring(scope: .recording)
+        await service.startMonitoring(scope: .positionCheck)
+        await source.waitForStreamCount(1)
+        await service.stopMonitoring(scope: .positionCheck)
+        await source.send(.signalLost)
+
+        #expect(await recordingEvents.next() == .signalLost)
+        #expect(await source.streamCount == 1)
+    }
+
     @Test("Stopping cancels acquisition and monitoring can restart")
     func cancellationAndRestart() async {
         let source = ControllableAircraftLocationSource()

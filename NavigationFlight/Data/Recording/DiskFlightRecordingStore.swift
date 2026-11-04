@@ -4,22 +4,33 @@ import Foundation
 actor DiskFlightRecordingStore: FlightRecordingStore {
     typealias BeforeInstall = @Sendable (URL) throws -> Void
     typealias BeforeClose = @Sendable (UUID) throws -> Void
+    typealias BeforeTrackSynchronization = @Sendable (UUID) throws -> Void
 
     private let rootDirectory: URL
     private let fileManager: FileManager
     private let beforeInstall: BeforeInstall
     private let beforeClose: BeforeClose
+    private let synchronizationInterval: TimeInterval
+    private let now: @Sendable () -> Date
+    private let beforeTrackSynchronization: BeforeTrackSynchronization
+    private var lastTrackSynchronization: [UUID: Date] = [:]
 
     init(
         rootDirectory: URL,
         fileManager: FileManager = .default,
         beforeInstall: @escaping BeforeInstall = { _ in },
-        beforeClose: @escaping BeforeClose = { _ in }
+        beforeClose: @escaping BeforeClose = { _ in },
+        synchronizationInterval: TimeInterval = 5,
+        now: @escaping @Sendable () -> Date = Date.init,
+        beforeTrackSynchronization: @escaping BeforeTrackSynchronization = { _ in }
     ) {
         self.rootDirectory = rootDirectory
         self.fileManager = fileManager
         self.beforeInstall = beforeInstall
         self.beforeClose = beforeClose
+        self.synchronizationInterval = synchronizationInterval
+        self.now = now
+        self.beforeTrackSynchronization = beforeTrackSynchronization
     }
 
     func create(_ seed: FlightRecordingSeed) throws {
@@ -51,16 +62,74 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 data.append(0x0A)
             }
             try writeAndSynchronize(eventData, to: temporary.appending(path: "events.ndjson"))
+            let trackDirectory = temporary.appending(path: "track", directoryHint: .isDirectory)
+            try fileManager.createDirectory(at: trackDirectory, withIntermediateDirectories: false)
+            for segment in seed.trackSegments {
+                let batch = RecordedTrackBatch(
+                    recordingID: seed.recording.id,
+                    segmentID: segment.id,
+                    samples: segment.samples
+                )
+                var data = try FlightRecordingCoding.encoder.encode(RecordedTrackBatchEnvelopeDTO(batch: batch))
+                data.append(0x0A)
+                try writeAndSynchronize(data, to: trackFile(recordingID: seed.recording.id, segmentID: segment.id, root: temporary))
+            }
             try synchronizeDirectory(temporary)
             try beforeInstall(temporary)
             try fileManager.moveItem(at: temporary, to: destination)
             try synchronizeDirectory(rootDirectory)
+            lastTrackSynchronization[seed.recording.id] = now()
         } catch let error as FlightRecordingStoreError {
             try? fileManager.removeItem(at: temporary)
             throw error
         } catch {
             try? fileManager.removeItem(at: temporary)
             throw FlightRecordingStoreError.operationFailed(id: seed.recording.id)
+        }
+    }
+
+    func appendTrackBatch(_ batch: RecordedTrackBatch) throws {
+        guard !batch.samples.isEmpty else { return }
+        let trackDirectory = packageDirectory(id: batch.recordingID)
+            .appending(path: "track", directoryHint: .isDirectory)
+        do {
+            try fileManager.createDirectory(at: trackDirectory, withIntermediateDirectories: true)
+            let url = trackFile(recordingID: batch.recordingID, segmentID: batch.segmentID)
+            if !fileManager.fileExists(atPath: url.path) {
+                fileManager.createFile(atPath: url.path, contents: nil)
+            }
+            let handle = try FileHandle(forWritingTo: url)
+            try handle.seekToEnd()
+            try handle.write(contentsOf: FlightRecordingCoding.encoder.encode(
+                RecordedTrackBatchEnvelopeDTO(batch: batch)
+            ))
+            try handle.write(contentsOf: Data([0x0A]))
+            try handle.close()
+            let last = lastTrackSynchronization[batch.recordingID] ?? .distantPast
+            if now().timeIntervalSince(last) >= synchronizationInterval {
+                try synchronizeTrack(recordingID: batch.recordingID)
+            }
+        } catch {
+            throw FlightRecordingStoreError.operationFailed(id: batch.recordingID)
+        }
+    }
+
+    func synchronizeTrack(recordingID: UUID) throws {
+        let trackDirectory = packageDirectory(id: recordingID).appending(path: "track", directoryHint: .isDirectory)
+        guard fileManager.fileExists(atPath: trackDirectory.path) else {
+            throw FlightRecordingStoreError.corruptPackage(id: recordingID)
+        }
+        do {
+            try beforeTrackSynchronization(recordingID)
+            for file in try fileManager.contentsOfDirectory(at: trackDirectory, includingPropertiesForKeys: nil) {
+                let handle = try FileHandle(forWritingTo: file)
+                try handle.synchronize()
+                try handle.close()
+            }
+            try synchronizeDirectory(trackDirectory)
+            lastTrackSynchronization[recordingID] = now()
+        } catch {
+            throw FlightRecordingStoreError.operationFailed(id: recordingID)
         }
     }
 
@@ -180,15 +249,21 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             guard events.map(\.sequence) == Array(0..<UInt64(events.count)) else {
                 throw FlightRecordingStoreError.corruptPackage(id: manifest.id)
             }
+            let trackSegments = try readTrackSegments(recordingID: manifest.id, directory: directory)
+            let gpsCoverage: GPSCoverageState = trackSegments.isEmpty
+                ? .unavailable
+                : (trackSegments.count == 1 ? .available : .partial)
             return FlightRecordingReadSnapshot(
                 recording: try manifest.domain(
                     snapshot: plan.domain,
                     navigationState: events.contains { $0.payload == .navigationCompleted }
                         ? .complete
                         : nil,
+                    gpsCoverage: gpsCoverage,
                     nextEventSequence: UInt64(events.count)
                 ),
-                events: events
+                events: events,
+                trackSegments: trackSegments
             )
         } catch let error as FlightRecordingStoreError {
             throw error
@@ -199,6 +274,43 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
 
     private func packageDirectory(id: UUID) -> URL {
         rootDirectory.appending(path: id.uuidString.lowercased(), directoryHint: .isDirectory)
+    }
+
+    private func trackFile(recordingID: UUID, segmentID: UUID, root: URL? = nil) -> URL {
+        (root ?? packageDirectory(id: recordingID))
+            .appending(path: "track", directoryHint: .isDirectory)
+            .appending(path: "\(segmentID.uuidString.lowercased()).ndjson")
+    }
+
+    private func readTrackSegments(recordingID: UUID, directory: URL) throws -> [RecordedTrackSegment] {
+        let trackDirectory = directory.appending(path: "track", directoryHint: .isDirectory)
+        guard fileManager.fileExists(atPath: trackDirectory.path) else { return [] }
+        let files = try fileManager.contentsOfDirectory(at: trackDirectory, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "ndjson" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return try files.compactMap { file in
+            guard let segmentID = UUID(uuidString: file.deletingPathExtension().lastPathComponent) else {
+                throw FlightRecordingStoreError.corruptPackage(id: recordingID)
+            }
+            let data = try Data(contentsOf: file)
+            let lines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
+            var samples: [RecordedTrackSample] = []
+            for (index, line) in lines.enumerated() where !line.isEmpty {
+                do {
+                    let batch = try FlightRecordingCoding.decoder.decode(
+                        RecordedTrackBatchEnvelopeDTO.self,
+                        from: Data(line)
+                    ).domain()
+                    guard batch.recordingID == recordingID, batch.segmentID == segmentID else {
+                        throw FlightRecordingStoreError.corruptPackage(id: recordingID)
+                    }
+                    samples.append(contentsOf: batch.samples)
+                } catch where index == lines.indices.last {
+                    break
+                }
+            }
+            return RecordedTrackSegment(id: segmentID, samples: samples)
+        }
     }
 
     private func writeAndSynchronize(_ data: Data, to url: URL) throws {

@@ -5,6 +5,39 @@ import Testing
 @MainActor
 @Suite("Flight recording application coordination")
 struct FlightRecordingCoordinatorTests {
+    @Test("Loaded Flight arms capture and publishes prepared without creating a package")
+    func loadedFlightArmsCapture() async {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let coordinator = FlightRecordingCoordinator(store: store)
+
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+
+        #expect(coordinator.status == .prepared)
+        #expect(await store.packages().isEmpty)
+    }
+
+    @Test("Buffered GPS, gap, and resumed delivery publish distinct recording states")
+    func gpsLifecyclePresentation() async throws {
+        let fixture = makeFixture()
+        let coordinator = FlightRecordingCoordinator(store: InMemoryFlightRecordingStore())
+        let first = sample(at: fixture.startedAt)
+        let resumed = sample(at: fixture.startedAt.addingTimeInterval(10))
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        await coordinator.handleLocationEvent(.sample(first, receivedAt: first.observedAt))
+        _ = try await coordinator.startLeg(
+            flight: fixture.flight,
+            flightPlanSnapshot: fixture.snapshot,
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        #expect(coordinator.status == .recording)
+        await coordinator.handleLocationEvent(.signalLost)
+        #expect(coordinator.status == .gpsGap)
+        await coordinator.handleLocationEvent(.sample(resumed, receivedAt: resumed.observedAt))
+        #expect(coordinator.status == .gpsResumed)
+    }
     @Test("Successful Start Leg commit publishes the committed transition and recording status")
     func successfulStartLegCommit() async throws {
         let fixture = makeFixture()
@@ -131,6 +164,18 @@ struct FlightRecordingCoordinatorTests {
             ),
             RecordedFlightPlanSnapshot(id: planID, title: "Training flight", legIDs: [legID]),
             Date(timeIntervalSince1970: 1_000)
+        )
+    }
+
+    private func sample(at date: Date) -> AircraftLocationSample {
+        AircraftLocationSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: 32, longitudeDegrees: 34.8),
+            observedAt: date,
+            horizontalAccuracyMeters: 20,
+            trueCourseDegrees: 90,
+            courseAccuracyDegrees: 5,
+            groundSpeedMetersPerSecond: 10,
+            speedAccuracyMetersPerSecond: 1
         )
     }
 }

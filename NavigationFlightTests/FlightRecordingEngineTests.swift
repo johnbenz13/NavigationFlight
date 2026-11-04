@@ -4,6 +4,83 @@ import Testing
 
 @Suite("Flight recording engine")
 struct FlightRecordingEngineTests {
+    @Test("Start Leg promotes the ordered two-minute rolling track buffer")
+    func rollingBufferPromotion() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let old = trackSample(at: fixture.startedAt.addingTimeInterval(-121), latitude: 32)
+        let retained = trackSample(at: fixture.startedAt.addingTimeInterval(-120), latitude: 32.1, accuracy: 4_000)
+        let stationary = trackSample(at: fixture.startedAt, latitude: 32.1, speed: 0)
+
+        await engine.arm()
+        await engine.ingest(.sample(old, receivedAt: old.observedAt))
+        await engine.ingest(.sample(retained, receivedAt: retained.observedAt))
+        await engine.ingest(.sample(stationary, receivedAt: stationary.observedAt))
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.trackSegments.flatMap(\.samples).map(\.observedAt) == [retained.observedAt, stationary.observedAt])
+    }
+
+    @Test("Only exact duplicate track deliveries are rejected")
+    func exactDuplicateOnly() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let sample = trackSample(at: fixture.startedAt, latitude: 32)
+        let repeatedPositionLater = trackSample(at: fixture.startedAt.addingTimeInterval(1), latitude: 32)
+
+        await engine.arm()
+        await engine.ingest(.sample(sample, receivedAt: sample.observedAt))
+        await engine.ingest(.sample(sample, receivedAt: sample.observedAt))
+        await engine.ingest(.sample(repeatedPositionLater, receivedAt: repeatedPositionLater.observedAt))
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.trackSegments.flatMap(\.samples).map(\.observedAt) == [sample.observedAt, repeatedPositionLater.observedAt])
+    }
+
+    @Test("A known GPS gap closes the segment and fresh delivery reopens another")
+    func gapCreatesDistinctSegments() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let first = trackSample(at: fixture.startedAt, latitude: 32)
+        let resumed = trackSample(at: fixture.startedAt.addingTimeInterval(10), latitude: 33)
+
+        await engine.arm()
+        await engine.ingest(.sample(first, receivedAt: first.observedAt))
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        await engine.ingest(.signalLost)
+        await engine.ingest(.sample(resumed, receivedAt: resumed.observedAt))
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.trackSegments.count == 2)
+        #expect(snapshot.trackSegments.map { $0.samples.map(\.coordinate.latitudeDegrees) } == [[32], [33]])
+    }
+
+    private func trackSample(
+        at date: Date,
+        latitude: Double,
+        accuracy: Double = 20,
+        speed: Double? = 10
+    ) -> AircraftLocationSample {
+        AircraftLocationSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: latitude, longitudeDegrees: 34.8),
+            observedAt: date,
+            horizontalAccuracyMeters: accuracy,
+            trueCourseDegrees: nil,
+            courseAccuracyDegrees: nil,
+            groundSpeedMetersPerSecond: speed,
+            speedAccuracyMetersPerSecond: nil
+        )
+    }
+
     @Test("Cancelled ETA drafts remain outside the recording journal")
     func cancelledETADraftAppendsNothing() async throws {
         let fixture = makeFixture()
@@ -440,6 +517,10 @@ private actor ControlledFlightRecordingStore: FlightRecordingStore {
         recordingID: UUID,
         synchronize: Bool
     ) async throws {}
+
+    func appendTrackBatch(_ batch: RecordedTrackBatch) async throws {}
+
+    func synchronizeTrack(recordingID: UUID) async throws {}
 
     func packages() async -> [FlightRecordingPackageResult] { [] }
 

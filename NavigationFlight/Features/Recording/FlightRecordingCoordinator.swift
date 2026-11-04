@@ -14,6 +14,7 @@ final class FlightRecordingCoordinator {
     private var engine: FlightRecordingEngine?
     private var publishedFlight: Flight?
     private var publishedRecording: FlightRecording?
+    private var locationConsumptionTask: Task<Void, Never>?
 
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
@@ -35,6 +36,74 @@ final class FlightRecordingCoordinator {
         self.store = store
     }
 
+    func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot) async {
+        guard publishedFlight?.id != flight.id || engine == nil else { return }
+        let candidate = FlightRecordingEngine(
+            store: store,
+            flight: flight,
+            flightPlanSnapshot: flightPlanSnapshot
+        )
+        await candidate.arm()
+        engine = candidate
+        publishedFlight = flight
+        publishedRecording = nil
+        status = .prepared
+        lastError = nil
+    }
+
+    func arm(
+        flight: Flight,
+        flightPlanSnapshot: RecordedFlightPlanSnapshot,
+        locationHub: AircraftLocationService
+    ) async {
+        await arm(flight: flight, flightPlanSnapshot: flightPlanSnapshot)
+        locationConsumptionTask?.cancel()
+        let updates = await locationHub.recordingUpdates()
+        await locationHub.startMonitoring(scope: .recording)
+        locationConsumptionTask = Task { [weak self] in
+            for await event in updates {
+                if Task.isCancelled { return }
+                await self?.handleLocationEvent(event)
+            }
+        }
+    }
+
+    func disarm() async {
+        locationConsumptionTask?.cancel()
+        locationConsumptionTask = nil
+        await engine?.disarm()
+        engine = nil
+        publishedFlight = nil
+        publishedRecording = nil
+        status = .ready
+    }
+
+
+    func disarm(locationHub: AircraftLocationService) async {
+        await disarm()
+        await locationHub.stopMonitoring(scope: .recording)
+    }
+
+    func handleLocationEvent(_ event: LocationSourceEvent) async {
+        guard let engine else { return }
+        await engine.ingest(event)
+        guard publishedRecording != nil else { return }
+        switch event {
+        case .sample:
+            status = status == .gpsGap ? .gpsResumed : .recording
+        case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
+            status = .gpsGap
+        case .authorization(.notDetermined), .authorization(.whenInUse):
+            break
+        }
+    }
+
+#if DEBUG
+    func overrideStatusForTesting(_ status: RecordingStatus) {
+        self.status = status
+    }
+#endif
+
     func startLeg(
         flight: Flight,
         flightPlanSnapshot: RecordedFlightPlanSnapshot,
@@ -49,11 +118,16 @@ final class FlightRecordingCoordinator {
         isCommitting = true
         defer { isCommitting = false }
 
-        let candidateEngine = FlightRecordingEngine(
-            store: store,
-            flight: flight,
-            flightPlanSnapshot: flightPlanSnapshot
-        )
+        let candidateEngine: FlightRecordingEngine
+        if let engine, publishedFlight?.id == flight.id {
+            candidateEngine = engine
+        } else {
+            candidateEngine = FlightRecordingEngine(
+                store: store,
+                flight: flight,
+                flightPlanSnapshot: flightPlanSnapshot
+            )
+        }
         do {
             let transition = try await candidateEngine.promoteForStartLeg(
                 at: timestamp,
@@ -63,11 +137,12 @@ final class FlightRecordingCoordinator {
             engine = candidateEngine
             publishedFlight = transition.flight
             publishedRecording = transition.recording
-            status = .recordingGPSUnavailable
+            let stored = try? await store.readSnapshot(id: transition.recording.id)
+            status = stored?.trackSegments.isEmpty == false ? .recording : .recordingGPSUnavailable
             return transition
         } catch {
             lastError = .startLegPersistenceFailed
-            status = .ready
+            status = engine == nil ? .ready : .prepared
             throw error
         }
     }

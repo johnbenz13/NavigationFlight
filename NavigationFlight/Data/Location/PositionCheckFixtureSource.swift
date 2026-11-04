@@ -13,6 +13,7 @@ nonisolated enum PositionCheckFixtureScenario: String, CaseIterable, Sendable {
     case extremeDisplacement = "extreme-displacement"
     case signalLoss = "signal-loss"
     case permissionRevoked = "permission-revoked"
+    case recordingLifecycle = "recording-lifecycle"
 }
 
 nonisolated struct PositionCheckFixtureSource: AircraftLocationSource {
@@ -39,6 +40,17 @@ nonisolated struct PositionCheckFixtureSource: AircraftLocationSource {
         AsyncThrowingStream { continuation in
             let task = Task {
                 continuation.yield(initialEvent)
+                if scenario == .recordingLifecycle {
+                    await sleep(followUpDelay)
+                    guard !Task.isCancelled else { return }
+                    continuation.yield(.signalLost)
+                    await sleep(followUpDelay)
+                    await sleep(followUpDelay)
+                    guard !Task.isCancelled else { return }
+                    continuation.yield(resumedSampleEvent)
+                    continuation.finish()
+                    return
+                }
                 guard let followUpEvent else {
                     continuation.finish()
                     return
@@ -64,7 +76,7 @@ nonisolated struct PositionCheckFixtureSource: AircraftLocationSource {
             .signalLost
         case .ready, .recoveryAvailable, .onTrack, .positionOnly,
              .noSensibleIntercept, .extremeDisplacement, .signalLoss,
-             .permissionRevoked:
+             .permissionRevoked, .recordingLifecycle:
             sampleEvent
         }
     }
@@ -109,6 +121,21 @@ nonisolated struct PositionCheckFixtureSource: AircraftLocationSource {
                 speedAccuracyMetersPerSecond: 1
             ),
             receivedAt: observedAt
+        )
+    }
+
+    private var resumedSampleEvent: LocationSourceEvent {
+        .sample(
+            AircraftLocationSample(
+                coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
+                observedAt: observedAt.addingTimeInterval(2),
+                horizontalAccuracyMeters: 50,
+                trueCourseDegrees: 90,
+                courseAccuracyDegrees: 10,
+                groundSpeedMetersPerSecond: 20,
+                speedAccuracyMetersPerSecond: 1
+            ),
+            receivedAt: observedAt.addingTimeInterval(2)
         )
     }
 }

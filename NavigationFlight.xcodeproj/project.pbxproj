@@ -35,6 +35,16 @@
 		52B0615030874A4700B840D6 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		52EC66C1309B976B0029813A /* Exceptions for "NavigationFlight" folder in "NavigationFlight" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5269A1DE307A4CC2009CD5A1 /* NavigationFlight */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		52324C62308A1E5B0009C1AA /* docs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -43,6 +53,9 @@
 		};
 		5269A1E1307A4CC2009CD5A1 /* NavigationFlight */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				52EC66C1309B976B0029813A /* Exceptions for "NavigationFlight" folder in "NavigationFlight" target */,
+			);
 			path = NavigationFlight;
 			sourceTree = "<group>";
 		};
@@ -407,7 +420,8 @@
 				DEVELOPMENT_TEAM = R7F8KZ4774;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "NavigationFlight uses your location only while the cockpit is active to prepare a deliberate ten-second Position Check. No GPS track or Position Check history is recorded.";
+				INFOPLIST_FILE = NavigationFlight/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "NavigationFlight records the aircraft track for a loaded Flight, including while the app is in the background. Recordings stay on this device and are exported only when you choose. Position remains hidden unless you request Position Check.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -440,7 +454,8 @@
 				DEVELOPMENT_TEAM = R7F8KZ4774;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "NavigationFlight uses your location only while the cockpit is active to prepare a deliberate ten-second Position Check. No GPS track or Position Check history is recorded.";
+				INFOPLIST_FILE = NavigationFlight/Info.plist;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "NavigationFlight records the aircraft track for a loaded Flight, including while the app is in the background. Recordings stay on this device and are exported only when you choose. Position remains hidden unless you request Position Check.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

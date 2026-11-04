@@ -3,6 +3,8 @@ import Foundation
 
 nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSource, @unchecked Sendable {
     private let locationManager = CLLocationManager()
+    @MainActor private var serviceSession: CLServiceSession?
+    @MainActor private var backgroundActivitySession: CLBackgroundActivitySession?
 
     func updates() -> AsyncThrowingStream<LocationSourceEvent, Error> {
         AsyncThrowingStream { continuation in
@@ -44,6 +46,22 @@ nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSour
         }
     }
 
+    func beginRecordingActivity() async {
+        await MainActor.run {
+            serviceSession = CLServiceSession(authorization: .whenInUse)
+            backgroundActivitySession = CLBackgroundActivitySession()
+        }
+    }
+
+    func endRecordingActivity() async {
+        await MainActor.run {
+            backgroundActivitySession?.invalidate()
+            serviceSession?.invalidate()
+            backgroundActivitySession = nil
+            serviceSession = nil
+        }
+    }
+
     private func authorizationEvent() async -> LocationAuthorization {
         await MainActor.run {
             switch locationManager.authorizationStatus {
@@ -64,6 +82,8 @@ nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSour
             ),
             observedAt: location.timestamp,
             horizontalAccuracyMeters: location.horizontalAccuracy,
+            altitudeMeters: location.verticalAccuracy >= 0 ? location.altitude : nil,
+            verticalAccuracyMeters: location.verticalAccuracy >= 0 ? location.verticalAccuracy : nil,
             trueCourseDegrees: location.course >= 0 ? location.course : nil,
             courseAccuracyDegrees: location.courseAccuracy >= 0 ? location.courseAccuracy : nil,
             groundSpeedMetersPerSecond: location.speed >= 0 ? location.speed : nil,

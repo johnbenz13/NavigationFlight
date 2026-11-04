@@ -1633,6 +1633,7 @@ struct CockpitView: View {
     }
 
     private func selectTimingTarget(_ key: NavigationTimingTargetKey) {
+        guard flight.legState != .completed else { return }
         guard let target = mapPresentation.timingTarget(for: key) else { return }
         if selectedTimingTargetKey == key {
             dismissMapCallout()
@@ -1652,6 +1653,7 @@ struct CockpitView: View {
     }
 
     private func reviseNextETA(_ target: AviationMapETATarget) {
+        guard flight.legState != .completed else { return }
         if let selectedTimingTargetKey,
            flight.pilotETAState(targetKey: selectedTimingTargetKey)?.isEditing == true {
             onCancelPilotETA(selectedTimingTargetKey)

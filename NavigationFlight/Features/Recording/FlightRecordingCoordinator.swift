@@ -95,15 +95,30 @@ final class FlightRecordingCoordinator {
         eventID: UUID
     ) async throws {
         guard let engine else { throw CoordinationError.noActiveRecording }
-        let committed = try await engine.completeNavigation(
-            flight: flight,
+        _ = flight
+        let transition = try await engine.commit(.completeNavigation(
             at: timestamp,
             elapsed: elapsed,
             eventID: eventID
-        )
+        ))
+        publishedFlight = transition.flight
+        publishedRecording = transition.recording
+        status = .navigationCompleteRecordingContinues
+    }
+
+    func commitNavigation(
+        _ command: RecordedNavigationCommand
+    ) async throws -> CommittedNavigationTransition {
+        guard !isCommitting else { throw CoordinationError.commandInFlight }
+        guard let engine else { throw CoordinationError.noActiveRecording }
+        lastError = nil
+        isCommitting = true
+        defer { isCommitting = false }
+
+        let committed = try await engine.commit(command)
         publishedFlight = committed.flight
         publishedRecording = committed.recording
-        status = .navigationCompleteRecordingContinues
+        return committed
     }
 
     func prepareForFlightReplacement(

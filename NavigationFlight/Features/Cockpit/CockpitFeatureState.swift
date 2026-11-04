@@ -180,6 +180,61 @@ struct CockpitFeatureState: Equatable, Sendable {
         pendingReachUndo = nil
     }
 
+    mutating func installCommittedDestinationIdentification(_ committedFlight: Flight) {
+        installCommittedFlight(committedFlight)
+        hideActiveLegStartChecklistForPhase()
+    }
+
+    mutating func installCommittedWaypointReach(
+        _ committedFlight: Flight,
+        cockpitRestoration: CockpitRestoration,
+        at timestamp: Date
+    ) {
+        guard let restorationFlight = flight else { return }
+        let restorationChecklists = legStartChecklists
+        let restorationLegIndex = selectedLegIndex
+        let departingLegID = activeLegStartChecklist?.legID
+        installCommittedFlight(committedFlight)
+        if let departingLegID { hideLegStartChecklist(for: departingLegID) }
+        selectedLegIndex = committedFlight.activeLegIndex
+        if committedFlight.legState == .active { createPendingLegStartChecklistForActiveLeg() }
+        pendingReachUndo = PendingReachUndo(
+            kind: .destination(
+                legNumber: restorationLegIndex + 1,
+                isFinalLeg: restorationLegIndex == committedFlight.legIDs.count - 1
+            ),
+            expiresAt: timestamp.addingTimeInterval(20),
+            flight: restorationFlight,
+            legStartChecklists: restorationChecklists,
+            selectedLegIndex: restorationLegIndex,
+            cockpitRestoration: cockpitRestoration
+        )
+    }
+
+    mutating func installCommittedIdentificationPointReach(
+        _ committedFlight: Flight,
+        key: IdentificationPointKey,
+        mapPresentation: AviationMapPresentation,
+        cockpitRestoration: CockpitRestoration,
+        at timestamp: Date
+    ) throws {
+        guard let restorationFlight = flight,
+              let point = mapPresentation.identificationPoints.first(where: { $0.id == key }) else {
+            throw Flight.TransitionError.invalidIdentificationPointOrder
+        }
+        let restorationChecklists = legStartChecklists
+        let restorationLegIndex = selectedLegIndex
+        installCommittedFlight(committedFlight)
+        pendingReachUndo = PendingReachUndo(
+            kind: .identificationPoint(point.name),
+            expiresAt: timestamp.addingTimeInterval(20),
+            flight: restorationFlight,
+            legStartChecklists: restorationChecklists,
+            selectedLegIndex: restorationLegIndex,
+            cockpitRestoration: cockpitRestoration
+        )
+    }
+
     mutating func reachCurrentWaypoint(
         cockpitRestoration: CockpitRestoration,
         at timestamp: Date = .now

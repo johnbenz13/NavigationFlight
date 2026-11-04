@@ -188,16 +188,15 @@ struct CockpitFeatureView: View {
                         onEndRecording: { isEndRecordingConfirmationPresented = true },
                         onNavigationComplete: completeNavigation,
                         onStartLeg: startLeg,
-                        onIdentifyDestination: { try? state.identifyDestination(at: .now) },
+                        onIdentifyDestination: identifyDestination,
                         onWaypointReached: { restoration in
-                            try? state.reachCurrentWaypoint(cockpitRestoration: restoration, at: .now)
+                            reachCurrentWaypoint(mapPresentation: mapPresentation, restoration: restoration)
                         },
                         onIdentificationPointReached: { pointID, mapPresentation, restoration in
-                            try state.reachIdentificationPoint(
-                                key: pointID,
+                            reachIdentificationPoint(
+                                pointID,
                                 mapPresentation: mapPresentation,
-                                cockpitRestoration: restoration,
-                                at: .now
+                                restoration: restoration
                             )
                         },
                         onUndoReach: { state.undoMostRecentReach(at: $0) },
@@ -326,6 +325,97 @@ struct CockpitFeatureView: View {
                 )
             }
         }
+    }
+
+    private func identifyDestination() {
+        guard let timing = recordingTiming() else { return }
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.identifyDestination(
+                    at: timing.now,
+                    elapsed: timing.elapsed,
+                    eventID: UUID()
+                ))
+                state.installCommittedDestinationIdentification(transition.flight)
+            } catch {
+                presentNavigationCommitFailure("Identify Waypoint")
+            }
+        }
+    }
+
+    private func reachCurrentWaypoint(
+        mapPresentation: AviationMapPresentation,
+        restoration: CockpitRestoration
+    ) {
+        guard let timing = recordingTiming() else { return }
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.reachCurrentWaypoint(
+                    orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
+                    at: timing.now,
+                    elapsed: timing.elapsed,
+                    eventIDs: [UUID(), UUID()]
+                ))
+                state.installCommittedWaypointReach(
+                    transition.flight,
+                    cockpitRestoration: restoration,
+                    at: timing.now
+                )
+            } catch {
+                presentNavigationCommitFailure("Reach Waypoint")
+            }
+        }
+    }
+
+    private func reachIdentificationPoint(
+        _ key: IdentificationPointKey,
+        mapPresentation: AviationMapPresentation,
+        restoration: CockpitRestoration
+    ) {
+        guard let timing = recordingTiming(),
+              let selectedIndex = mapPresentation.identificationPoints.firstIndex(where: { $0.id == key }) else { return }
+        let nextTarget = mapPresentation.identificationPoints[(selectedIndex + 1)...].first.map { point in
+            (NavigationTimingTargetKey(
+                legID: point.id.legID,
+                kind: .identificationPoint,
+                targetID: point.id.identificationPointID
+            ), point.plannedElapsedSeconds)
+        } ?? (mapPresentation.destinationTarget.id, mapPresentation.destinationTarget.plannedElapsedSeconds)
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.reachIdentificationPoint(
+                    key: key,
+                    orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
+                    at: timing.now,
+                    elapsed: timing.elapsed,
+                    eventID: UUID(),
+                    nextETATarget: nextTarget.0,
+                    nextETAPlannedElapsedSeconds: nextTarget.1
+                ))
+                try state.installCommittedIdentificationPointReach(
+                    transition.flight,
+                    key: key,
+                    mapPresentation: mapPresentation,
+                    cockpitRestoration: restoration,
+                    at: timing.now
+                )
+            } catch {
+                presentNavigationCommitFailure("Reach Identification Point")
+            }
+        }
+    }
+
+    private func recordingTiming() -> (now: Date, elapsed: Duration)? {
+        guard let recording = recordingCoordinator.snapshot.recording else { return nil }
+        let now = Date.now
+        return (now, .seconds(max(0, now.timeIntervalSince(recording.startedAt))))
+    }
+
+    private func presentNavigationCommitFailure(_ action: String) {
+        presentedError = .init(
+            title: "Couldn’t \(action)",
+            message: "The recording couldn’t be saved. Navigation remains unchanged."
+        )
     }
 
     private func completeNavigation() {

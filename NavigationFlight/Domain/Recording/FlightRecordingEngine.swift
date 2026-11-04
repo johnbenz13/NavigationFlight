@@ -153,6 +153,22 @@ actor FlightRecordingEngine {
                     return .provisionalBegan
                 }
             } else if let currentRecording = recording {
+                if segmentNeedsReopening {
+                    var resumedRecording = currentRecording
+                    let elapsed = Duration.seconds(max(0, sourceSample.observedAt.timeIntervalSince(resumedRecording.startedAt)))
+                    if let event = try? resumedRecording.recordLocationAvailabilityChange(
+                        .resumed,
+                        at: sourceSample.observedAt,
+                        elapsed: elapsed,
+                        eventID: UUID()
+                    ), (try? await store.appendEvent(
+                        event,
+                        recordingID: resumedRecording.id,
+                        synchronize: true
+                    )) != nil {
+                        recording = resumedRecording
+                    }
+                }
                 if segmentNeedsReopening || activeSegmentID == nil {
                     activeSegmentID = UUID()
                     segmentNeedsReopening = false
@@ -249,9 +265,30 @@ actor FlightRecordingEngine {
                 }
             }
         case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
-            if let recording {
+            if var recording, !segmentNeedsReopening {
+                let availability: RecordingLocationAvailability
+                switch event {
+                case .servicesDisabled: availability = .servicesDisabled
+                case .signalLost: availability = .signalLost
+                case .authorization(.denied): availability = .permissionDenied
+                case .authorization(.restricted): availability = .permissionRestricted
+                case .sample, .authorization(.notDetermined), .authorization(.whenInUse): return .none
+                }
+                let timestamp = Date.now
+                let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(recording.startedAt)))
+                if let availabilityEvent = try? recording.recordLocationAvailabilityChange(
+                    availability,
+                    at: timestamp,
+                    elapsed: elapsed,
+                    eventID: UUID()
+                ), (try? await store.appendEvent(
+                    availabilityEvent,
+                    recordingID: recording.id,
+                    synchronize: true
+                )) != nil {
+                    self.recording = recording.restoring(gpsCoverage: .partial)
+                }
                 segmentNeedsReopening = true
-                self.recording = recording.restoring(gpsCoverage: .partial)
             }
         case .authorization(.notDetermined), .authorization(.whenInUse):
             break

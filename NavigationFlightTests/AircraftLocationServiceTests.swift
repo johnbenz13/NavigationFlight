@@ -50,6 +50,25 @@ struct AircraftLocationServiceTests {
         #expect(await source.streamCount == 1)
     }
 
+    @Test("Recording activity session follows the recording scope exactly once")
+    func recordingActivitySessionIsIdempotent() async {
+        let source = ControllableAircraftLocationSource()
+        let service = AircraftLocationService(source: source)
+
+        await service.startMonitoring(scope: .recording)
+        await service.startMonitoring(scope: .recording)
+        await service.startMonitoring(scope: .positionCheck)
+        await service.stopMonitoring(scope: .positionCheck)
+
+        #expect(await source.recordingActivityStartCount == 1)
+        #expect(await source.recordingActivityEndCount == 0)
+
+        await service.stopMonitoring(scope: .recording)
+        await service.stopMonitoring(scope: .recording)
+
+        #expect(await source.recordingActivityEndCount == 1)
+    }
+
     @Test("Stopping cancels acquisition and monitoring can restart")
     func cancellationAndRestart() async {
         let source = ControllableAircraftLocationSource()
@@ -87,6 +106,24 @@ struct AircraftLocationServiceTests {
         #expect(await service.availability == .ready(secondSample))
     }
 
+    @Test("A late observer immediately receives the current published availability")
+    func lateObserverReceivesCurrentAvailability() async {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let source = ControllableAircraftLocationSource()
+        let service = AircraftLocationService(source: source)
+        let currentSample = sample(observedAt: now)
+
+        await service.startMonitoring(scope: .recording)
+        await source.waitForStreamCount(1)
+        await source.send(.sample(currentSample, receivedAt: now))
+        while await service.availability != .ready(currentSample) {
+            await Task.yield()
+        }
+        var updates = await service.availabilityUpdates().makeAsyncIterator()
+
+        #expect(await updates.next() == .ready(currentSample))
+    }
+
     @Test("Authorization request is delegated as When In Use only")
     func requestsWhenInUseAuthorization() async {
         let source = ControllableAircraftLocationSource()
@@ -115,6 +152,8 @@ private actor ControllableAircraftLocationSource: AircraftLocationSource {
     private var pendingEvents: [LocationSourceEvent] = []
     private(set) var streamCount = 0
     private(set) var authorizationRequestCount = 0
+    private(set) var recordingActivityStartCount = 0
+    private(set) var recordingActivityEndCount = 0
     private var streamWaiters: [(Int, CheckedContinuation<Void, Never>)] = []
 
     nonisolated func updates() -> AsyncThrowingStream<LocationSourceEvent, Error> {
@@ -125,6 +164,14 @@ private actor ControllableAircraftLocationSource: AircraftLocationSource {
 
     func requestWhenInUseAuthorization() {
         authorizationRequestCount += 1
+    }
+
+    func beginRecordingActivity() {
+        recordingActivityStartCount += 1
+    }
+
+    func endRecordingActivity() {
+        recordingActivityEndCount += 1
     }
 
     func send(_ event: LocationSourceEvent) {

@@ -2,6 +2,9 @@ import CoreLocation
 import Foundation
 
 nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSource, @unchecked Sendable {
+    @MainActor static let shared = CoreLocationAircraftLocationSource()
+
+    private static let recordingActivityDefaultsKey = "activeBackgroundLocationRecording"
     private let locationManager = CLLocationManager()
     @MainActor private var serviceSession: CLServiceSession?
     @MainActor private var backgroundActivitySession: CLBackgroundActivitySession?
@@ -11,11 +14,7 @@ nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSour
             let task = Task {
                 do {
                     let authorization = await authorizationEvent()
-                    guard authorization == .whenInUse else {
-                        continuation.yield(.authorization(authorization))
-                        continuation.finish()
-                        return
-                    }
+                    continuation.yield(.authorization(authorization))
                     for try await update in CLLocationUpdate.liveUpdates(.airborne) {
                         if Task.isCancelled { break }
                         if update.authorizationDeniedGlobally {
@@ -48,6 +47,7 @@ nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSour
 
     func beginRecordingActivity() async {
         await MainActor.run {
+            UserDefaults.standard.set(true, forKey: Self.recordingActivityDefaultsKey)
             serviceSession = CLServiceSession(authorization: .whenInUse)
             backgroundActivitySession = CLBackgroundActivitySession()
         }
@@ -55,11 +55,19 @@ nonisolated final class CoreLocationAircraftLocationSource: AircraftLocationSour
 
     func endRecordingActivity() async {
         await MainActor.run {
+            UserDefaults.standard.set(false, forKey: Self.recordingActivityDefaultsKey)
             backgroundActivitySession?.invalidate()
             serviceSession?.invalidate()
             backgroundActivitySession = nil
             serviceSession = nil
         }
+    }
+
+    @MainActor
+    func resumeBackgroundActivityIfNeeded() {
+        guard UserDefaults.standard.bool(forKey: Self.recordingActivityDefaultsKey) else { return }
+        serviceSession = CLServiceSession(authorization: .whenInUse)
+        backgroundActivitySession = CLBackgroundActivitySession()
     }
 
     private func authorizationEvent() async -> LocationAuthorization {

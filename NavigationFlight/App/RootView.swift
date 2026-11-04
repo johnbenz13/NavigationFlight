@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @State private var appState: AppFeatureState
     @State private var idleTimerCoordinator: IdleTimerCoordinator
+    @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     private let flightPlanLibrary: FlightPlanLibrary
     private let flightPlanFileReader = FlightPlanFileReader()
     private let debugLibrarySeedData: [Data]
@@ -19,12 +20,19 @@ struct RootView: View {
         ).first?.appending(path: "FlightPlans", directoryHint: .isDirectory)
             ?? URL.temporaryDirectory.appending(path: "NavigationFlight-FlightPlans", directoryHint: .isDirectory)
         let libraryDirectory: URL
+        let recordingDirectory: URL
 #if DEBUG
         let environment = ProcessInfo.processInfo.environment
         if let libraryID = environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] {
             libraryDirectory = URL.temporaryDirectory.appending(path: libraryID, directoryHint: .isDirectory)
+            recordingDirectory = URL.temporaryDirectory.appending(
+                path: "\(libraryID)-recordings",
+                directoryHint: .isDirectory
+            )
         } else {
             libraryDirectory = defaultLibraryDirectory
+            recordingDirectory = defaultLibraryDirectory.deletingLastPathComponent()
+                .appending(path: "Flights", directoryHint: .isDirectory)
         }
         let shouldFailStorage = environment["NAVIGATION_FLIGHT_UI_TEST_STORAGE_FAILURE"] == "1"
         let shouldFailRemoval = environment["NAVIGATION_FLIGHT_UI_TEST_REMOVAL_FAILURE"] == "1"
@@ -56,6 +64,8 @@ struct RootView: View {
         }
 #else
         libraryDirectory = defaultLibraryDirectory
+        recordingDirectory = defaultLibraryDirectory.deletingLastPathComponent()
+            .appending(path: "Flights", directoryHint: .isDirectory)
         debugLibrarySeedData = []
         debugImportData = nil
         debugShouldFailFlightChange = false
@@ -122,6 +132,19 @@ struct RootView: View {
         _idleTimerCoordinator = State(
             initialValue: IdleTimerCoordinator(controller: UIApplicationIdleTimerController())
         )
+        let recordingStore: any FlightRecordingStore
+#if DEBUG
+        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] == "1" {
+            recordingStore = InMemoryFlightRecordingStore(failure: .create)
+        } else {
+            recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+        }
+#else
+        recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+#endif
+        _flightRecordingCoordinator = State(
+            initialValue: FlightRecordingCoordinator(store: recordingStore)
+        )
     }
 
     var body: some View {
@@ -136,6 +159,7 @@ struct RootView: View {
                     locationService: locationService,
                     positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,
+                    recordingCoordinator: flightRecordingCoordinator,
                     onIntent: handleCockpitIntent
                 )
             }
@@ -172,8 +196,21 @@ struct RootView: View {
         .alert(flightChangeConfirmationTitle, isPresented: flightChangeConfirmationPresented) {
             Button(flightChangeConfirmationAction, role: .destructive) {
                 guard let id = appState.pendingFlightChange?.id else { return }
-                if appState.confirmPendingFlightChange(id: id), shouldPresentPositionCheckEducation {
-                    appState.presentPositionCheckPermissionEducation()
+                Task {
+                    do {
+                        try await flightRecordingCoordinator.prepareForFlightReplacement(
+                            at: .now,
+                            eventIDs: [UUID(), UUID()]
+                        )
+                        if appState.confirmPendingFlightChange(id: id), shouldPresentPositionCheckEducation {
+                            appState.presentPositionCheckPermissionEducation()
+                        }
+                    } catch {
+                        appState.cancelPendingFlightChange(id: id)
+                        var flightPlans = appState.flightPlans
+                        flightPlans.presentFlightChangeFailure()
+                        appState.updateFlightPlans(flightPlans)
+                    }
                 }
             }
             Button("Cancel", role: .cancel) {

@@ -16,11 +16,13 @@ struct CockpitFeatureView: View {
     @State private var locationAvailability: LocationAvailability = .acquiring
     @State private var positionCheckCoordinator: PositionCheckCoordinator
     @State private var pendingPositionCheckAcceptanceFeedback = false
+    @State private var isEndRecordingConfirmationPresented = false
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
     private let presentationRequestID: UUID?
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
+    private let recordingCoordinator: FlightRecordingCoordinator
     private let onIntent: (CockpitFeatureIntent) -> Void
 
     init(
@@ -29,6 +31,7 @@ struct CockpitFeatureView: View {
         locationService: AircraftLocationService,
         positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
+        recordingCoordinator: FlightRecordingCoordinator,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
@@ -36,6 +39,7 @@ struct CockpitFeatureView: View {
         self.locationService = locationService
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
+        self.recordingCoordinator = recordingCoordinator
         self.onIntent = onIntent
     }
 
@@ -89,6 +93,14 @@ struct CockpitFeatureView: View {
                     message: Text(error.message),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+            .alert("End Recording?", isPresented: $isEndRecordingConfirmationPresented) {
+                Button(endRecordingConfirmationAction, role: .destructive) {
+                    endRecording()
+                }
+                Button("Keep Recording", role: .cancel) {}
+            } message: {
+                Text(endRecordingConfirmationMessage)
             }
             .task(id: shouldMonitorLocation) {
                 guard shouldMonitorLocation else {
@@ -166,9 +178,15 @@ struct CockpitFeatureView: View {
                         emphasizedCueEvents: emphasizedCueEvents,
                         pendingReachUndo: state.pendingReachUndo,
                         positionCheck: positionCheck,
+                        recordingStatus: RecordingStatusPresentation(status: recordingCoordinator.status),
+                        isRecordingCommitInFlight: recordingCoordinator.isCommitting,
+                        isNavigationCompletionCommitted: recordingCoordinator.status == .navigationCompleteRecordingContinues
+                            || recordingCoordinator.status == .closedComplete,
                         positionCheckMapRestoration: positionCheckCoordinator.pendingMapRestoration,
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         onPositionCheckAction: handlePositionCheckAction,
+                        onEndRecording: { isEndRecordingConfirmationPresented = true },
+                        onNavigationComplete: completeNavigation,
                         onStartLeg: startLeg,
                         onIdentifyDestination: { try? state.identifyDestination(at: .now) },
                         onWaypointReached: { restoration in
@@ -266,11 +284,82 @@ struct CockpitFeatureView: View {
     }
 
     private func startLeg() {
-        do {
-            try state.startLeg(at: .now)
-        } catch {
-            presentedError = .init(title: "Couldn’t Start Leg", message: error.localizedDescription)
+        guard let flight = state.flight, let flightPlan = state.flightPlan else { return }
+        Task {
+            do {
+                let transition = try await recordingCoordinator.startLeg(
+                    flight: flight,
+                    flightPlanSnapshot: RecordedFlightPlanSnapshot(
+                        id: flightPlan.id,
+                        title: flightPlan.title,
+                        legIDs: flightPlan.legs.map(\.id)
+                    ),
+                    at: .now,
+                    recordingID: UUID(),
+                    eventIDs: [UUID(), UUID()]
+                )
+                state.installCommittedFlight(transition.flight)
+            } catch {
+                presentedError = .init(
+                    title: "Couldn’t Start Leg",
+                    message: "The recording couldn’t be saved. The leg remains ready."
+                )
+            }
         }
+    }
+
+    private func endRecording() {
+        guard let recording = recordingCoordinator.snapshot.recording else { return }
+        let now = Date.now
+        let elapsed = Duration.seconds(max(0, now.timeIntervalSince(recording.startedAt)))
+        Task {
+            do {
+                try await recordingCoordinator.endManually(
+                    at: now,
+                    elapsed: elapsed,
+                    eventIDs: [UUID(), UUID()]
+                )
+            } catch {
+                presentedError = .init(
+                    title: "Couldn’t End Recording",
+                    message: "The recording remains active and no saved data was discarded."
+                )
+            }
+        }
+    }
+
+    private func completeNavigation() {
+        guard let flight = state.flight,
+              let recording = recordingCoordinator.snapshot.recording else { return }
+        let now = Date.now
+        let elapsed = Duration.seconds(max(0, now.timeIntervalSince(recording.startedAt)))
+        Task {
+            do {
+                try await recordingCoordinator.completeNavigation(
+                    flight: flight,
+                    at: now,
+                    elapsed: elapsed,
+                    eventID: UUID()
+                )
+            } catch {
+                presentedError = .init(
+                    title: "Couldn’t Complete Navigation",
+                    message: "Navigation remains unchanged and the recording continues."
+                )
+            }
+        }
+    }
+
+    private var endRecordingConfirmationAction: String {
+        recordingCoordinator.status == .navigationCompleteRecordingContinues
+            ? "End Recording"
+            : "End and mark incomplete"
+    }
+
+    private var endRecordingConfirmationMessage: String {
+        recordingCoordinator.status == .navigationCompleteRecordingContinues
+            ? "Navigation is complete. The action-only recording will close as complete."
+            : "The action-only recording will close as incomplete. Navigation remains available."
     }
 
     private var shouldMonitorLocation: Bool {

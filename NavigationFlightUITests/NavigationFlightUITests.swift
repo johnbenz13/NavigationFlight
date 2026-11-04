@@ -434,6 +434,77 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testActionOnlyRecordingStatusAndEndConfirmation() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+
+        app.buttons["start-leg"].tap()
+        let recordingStatus = app.buttons["recording-status"]
+        XCTAssertTrue(recordingStatus.waitForExistence(timeout: 5))
+        XCTAssertEqual(recordingStatus.label, "Recording · No GPS")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'latitude' OR label CONTAINS[c] 'longitude'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["Navigation actions are recorded without coordinates or a GPS track."].exists)
+        XCTAssertFalse(app.buttons["end-recording"].exists)
+
+        recordingStatus.tap()
+        XCTAssertTrue(app.staticTexts["Navigation actions are recorded without coordinates or a GPS track."].waitForExistence(timeout: 3))
+        let endRecording = app.buttons["end-recording"]
+        XCTAssertTrue(endRecording.waitForExistence(timeout: 3))
+        endRecording.tap()
+        let confirmation = app.alerts["End Recording?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["Keep Recording"].tap()
+        XCTAssertTrue(recordingStatus.exists)
+        XCTAssertEqual(recordingStatus.label, "Recording · No GPS")
+
+        app.buttons["waypoint-identified"].tap()
+        app.buttons["waypoint-reached"].tap()
+        let navigationComplete = app.buttons["navigation-complete"]
+        XCTAssertTrue(navigationComplete.waitForExistence(timeout: 3))
+        navigationComplete.tap()
+        XCTAssertEqual(recordingStatus.label, "Navigation Complete · Recording Continues")
+
+        recordingStatus.tap()
+        XCTAssertTrue(endRecording.waitForExistence(timeout: 3))
+        endRecording.tap()
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        confirmation.buttons["End Recording"].tap()
+        let closedStatus = app.buttons["recording-status"]
+        XCTAssertTrue(closedStatus.waitForExistence(timeout: 5))
+        XCTAssertEqual(closedStatus.label, "Recording ended · Complete")
+        XCTAssertFalse(endRecording.exists)
+
+        app.buttons["show-plan-inspection"].tap()
+        XCTAssertTrue(app.navigationBars["Plan Inspection"].waitForExistence(timeout: 3))
+        app.buttons["restart-flight"].tap()
+        let restartConfirmation = app.alerts["Restart this Flight?"]
+        XCTAssertTrue(restartConfirmation.waitForExistence(timeout: 3))
+        restartConfirmation.buttons["Restart"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["recording-status"].label, "Ready to record")
+        app.buttons["start-leg"].tap()
+        XCTAssertEqual(app.buttons["recording-status"].label, "Recording · No GPS")
+    }
+
+    @MainActor
+    func testRecordingPersistenceFailureLeavesLegReady() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            recordingFailure: true
+        )
+
+        app.buttons["start-leg"].tap()
+        let alert = app.alerts["Couldn’t Start Leg"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        XCTAssertTrue(alert.staticTexts["The recording couldn’t be saved. The leg remains ready."].exists)
+        alert.buttons["OK"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        let readyStatus = app.buttons["recording-status"]
+        XCTAssertTrue(readyStatus.exists)
+        XCTAssertEqual(readyStatus.label, "Ready to record")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label == 'Recording · No GPS'")).firstMatch.exists)
+    }
+
+    @MainActor
     func testTabRoundTripAndRotationPreserveActiveFlight() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
         app.buttons["start-leg"].tap()
@@ -1035,7 +1106,8 @@ final class NavigationFlightUITests: XCTestCase {
         progressionPolicy: String? = nil,
         preferredContentSizeCategory: String? = nil,
         positionCheckState: String? = nil,
-        positionCheckDuration: Double? = nil
+        positionCheckDuration: Double? = nil,
+        recordingFailure: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1051,6 +1123,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if let positionCheckDuration {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_DURATION"] = String(positionCheckDuration)
+        }
+        if recordingFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] = "1"
         }
         app.launch()
         XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))

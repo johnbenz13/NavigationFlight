@@ -74,6 +74,7 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var selectedLegIndex = 0
     private(set) var mode = NavigationMode.noWind
     private(set) var flight: Flight?
+    private(set) var flightPlanSourceData: Data?
     private(set) var legStartChecklists: [UUID: LegStartChecklistState] = [:]
     private(set) var areDriftLinesVisible = true
     private(set) var pendingReachUndo: PendingReachUndo?
@@ -110,7 +111,11 @@ struct CockpitFeatureState: Equatable, Sendable {
         return legStartChecklists[flight.legIDs[flight.activeLegIndex]]
     }
 
-    mutating func accept(_ flightPlan: FlightPlan, flightID: UUID = UUID()) throws {
+    mutating func accept(
+        _ flightPlan: FlightPlan,
+        flightID: UUID = UUID(),
+        sourceData: Data? = nil
+    ) throws {
         switch flightPlan.plannedNavigation {
         case .unavailableLegacyFormat(let version):
             throw CockpitPlanError.legacyPlan(version: version)
@@ -119,6 +124,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         case .eligible(let plannedNavigation):
             guard !plannedNavigation.legs.isEmpty else { throw CockpitPlanError.emptyPlan }
             self.flightPlan = flightPlan
+            flightPlanSourceData = sourceData
             selectedLegIndex = 0
             mode = plannedNavigation.defaultMode
             flight = Flight(
@@ -133,6 +139,23 @@ struct CockpitFeatureState: Equatable, Sendable {
             areDriftLinesVisible = true
             pendingReachUndo = nil
         }
+    }
+
+    mutating func restore(
+        flightPlan: FlightPlan,
+        flight: Flight,
+        sourceData: Data?
+    ) {
+        precondition(flight.flightPlanID == flightPlan.id)
+        precondition(flight.legIDs == flightPlan.legs.map(\.id))
+        self.flightPlan = flightPlan
+        flightPlanSourceData = sourceData
+        selectedLegIndex = flight.activeLegIndex
+        mode = flight.executionMode
+        self.flight = flight
+        legStartChecklists = [:]
+        areDriftLinesVisible = true
+        pendingReachUndo = nil
     }
 
     mutating func toggleDriftLines() {

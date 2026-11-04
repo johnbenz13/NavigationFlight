@@ -95,6 +95,22 @@ actor FlightRecordingEngine {
         detector = PhysicalFlightDetector(policy: detectorPolicy)
     }
 
+    init(
+        store: any FlightRecordingStore,
+        recoveredFlight: Flight,
+        recoveredRecording: FlightRecording,
+        detectorPolicy: PhysicalFlightDetectionPolicy = .production,
+        storageDegradations: Set<RecordingStorageDegradation> = []
+    ) {
+        self.store = store
+        flight = recoveredFlight
+        flightPlanSnapshot = recoveredRecording.flightPlanSnapshot
+        recording = recoveredRecording
+        self.storageDegradations = storageDegradations
+        detector = PhysicalFlightDetector(policy: detectorPolicy)
+        segmentNeedsReopening = true
+    }
+
     func arm() {
         isArmed = true
     }
@@ -638,7 +654,8 @@ actor FlightRecordingEngine {
     func endManually(
         at timestamp: Date,
         elapsed: Duration,
-        eventIDs: [UUID]
+        eventIDs: [UUID],
+        forcedOutcome: FlightRecordingClosure.Outcome? = nil
     ) async throws -> FlightRecordingEngineSnapshot {
         guard var candidate = recording else {
             throw FlightRecording.TransitionError.recordingAlreadyClosed
@@ -646,7 +663,8 @@ actor FlightRecordingEngine {
         let events = try candidate.endManually(
             at: timestamp,
             elapsed: elapsed,
-            eventIDs: eventIDs
+            eventIDs: eventIDs,
+            forcedOutcome: forcedOutcome
         )
         for event in events {
             try await store.appendEvent(

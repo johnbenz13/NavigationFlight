@@ -4,6 +4,7 @@ struct RootView: View {
     @State private var appState: AppFeatureState
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
+    @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
     private let flightPlanLibrary: FlightPlanLibrary
     private let flightPlanFileReader = FlightPlanFileReader()
     private let debugLibrarySeedData: [Data]
@@ -124,13 +125,13 @@ struct RootView: View {
         if let encoded = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
            let data = Data(base64Encoded: encoded),
            let flightPlan = try? FPLNavDecoder().decode(data) {
-            try? cockpit.accept(flightPlan)
+            try? cockpit.accept(flightPlan, sourceData: data)
             selectedAppSection = .cockpit
         }
         if let encoded = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN"],
            let data = Data(base64Encoded: encoded),
            let flightPlan = try? FPLNavDecoder().decode(data) {
-            try? cockpit.accept(flightPlan)
+            try? cockpit.accept(flightPlan, sourceData: data)
             if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT"] == "1" {
                 try? cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
             }
@@ -150,7 +151,46 @@ struct RootView: View {
         )
         let recordingStore: any FlightRecordingStore
 #if DEBUG
-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] == "1" {
+        if let recoveryState = environment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] {
+            var packageResults: [FlightRecordingPackageResult] = []
+            if recoveryState == "unsupported" {
+                packageResults = [.unsupported(id: UUID(), schemaVersion: 99)]
+            } else if recoveryState == "corrupt" {
+                packageResults = [.corrupt(id: UUID())]
+            } else if let encoded = environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
+                      let data = Data(base64Encoded: encoded),
+                      let plan = try? FPLNavDecoder().decode(data),
+                      let mode = plan.plannedNavigation.plannedNavigation?.defaultMode {
+                let count = recoveryState == "multiple" ? 2 : 1
+                packageResults = (0..<count).compactMap { index in
+                    let startedAt = Date.now.addingTimeInterval(TimeInterval(-600 - (index * 600)))
+                    let flight = Flight(
+                        flightPlanID: plan.id,
+                        legIDs: plan.legs.map(\.id),
+                        activeLegIndex: 0,
+                        executionMode: mode
+                    )
+                    guard let promotion = try? FlightRecording.promoteForStartLeg(
+                        id: UUID(),
+                        flightID: flight.id,
+                        flightPlanSnapshot: RecordedFlightPlanSnapshot(
+                            id: plan.id,
+                            title: index == 0 ? plan.title : "Paphos local",
+                            legIDs: plan.legs.map(\.id),
+                            sourceData: data
+                        ),
+                        legID: plan.legs[0].id,
+                        startedAt: startedAt,
+                        eventIDs: [UUID(), UUID()]
+                    ) else { return nil }
+                    return .available(FlightRecordingReadSnapshot(
+                        recording: promotion.recording,
+                        events: promotion.events
+                    ))
+                }
+            }
+            recordingStore = InMemoryFlightRecordingStore(packageResults: packageResults)
+        } else if environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] == "1" {
             recordingStore = InMemoryFlightRecordingStore(failure: .create)
         } else {
             recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
@@ -161,9 +201,32 @@ struct RootView: View {
         _flightRecordingCoordinator = State(
             initialValue: FlightRecordingCoordinator(store: recordingStore)
         )
+        _flightRecoveryCoordinator = State(
+            initialValue: FlightRecoveryCoordinator(store: recordingStore)
+        )
     }
 
     var body: some View {
+        Group {
+            if flightRecoveryCoordinator.state == .none {
+                appShell
+            } else {
+                FlightRecoveryView(
+                    state: flightRecoveryCoordinator.state,
+                    onContinue: continueRecoveredFlight,
+                    onEndIncomplete: endRecoveredFlightAsIncomplete,
+                    onDismissUnavailable: flightRecoveryCoordinator.dismissUnavailableRecovery
+                )
+            }
+        }
+        .task {
+            if flightRecoveryCoordinator.state == .loading {
+                await flightRecoveryCoordinator.bootstrap()
+            }
+        }
+    }
+
+    private var appShell: some View {
         TabView(selection: appSectionSelection) {
             Tab("Cockpit", systemImage: "airplane", value: AppFeatureState.AppSection.cockpit) {
                 CockpitFeatureView(
@@ -218,7 +281,8 @@ struct RootView: View {
                 flightPlanSnapshot: RecordedFlightPlanSnapshot(
                     id: flightPlan.id,
                     title: flightPlan.title,
-                    legIDs: flightPlan.legs.map(\.id)
+                    legIDs: flightPlan.legs.map(\.id),
+                    sourceData: appState.cockpit.flightPlanSourceData
                 ),
                 locationHub: locationService
             )
@@ -269,6 +333,43 @@ struct RootView: View {
         }
         .fullScreenCover(isPresented: positionCheckEducationPresented) {
             PositionCheckPermissionEducationView(onIntent: handlePositionCheckPermissionIntent)
+        }
+    }
+
+    private func continueRecoveredFlight(id: UUID) {
+        Task {
+            do {
+                let timestamp = Date.now
+                let recovered = try await flightRecoveryCoordinator.continueFlight(
+                    id: id,
+                    at: timestamp,
+                    elapsed: flightRecoveryCoordinator.rebasedElapsed(for: id),
+                    eventID: UUID()
+                )
+                await flightRecordingCoordinator.restore(recovered)
+                appState.restoreRecoveredFlight(
+                    recovered,
+                    sourceData: recovered.recording.flightPlanSnapshot.sourceData
+                )
+            } catch {
+                await flightRecoveryCoordinator.bootstrap()
+            }
+        }
+    }
+
+    private func endRecoveredFlightAsIncomplete(id: UUID) {
+        Task {
+            let timestamp = Date.now
+            do {
+                try await flightRecoveryCoordinator.endAsIncomplete(
+                    id: id,
+                    at: timestamp,
+                    elapsed: flightRecoveryCoordinator.rebasedElapsed(for: id),
+                    eventIDs: [UUID(), UUID()]
+                )
+            } catch {
+                await flightRecoveryCoordinator.bootstrap()
+            }
         }
     }
 

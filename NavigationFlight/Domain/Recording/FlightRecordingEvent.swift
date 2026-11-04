@@ -49,6 +49,7 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
         to: PhysicalFlightState
     )
     case navigationCompleted
+    case recoveryContinued
     case manualEnd
     case recordingClosed(
         outcome: FlightRecordingClosure.Outcome,

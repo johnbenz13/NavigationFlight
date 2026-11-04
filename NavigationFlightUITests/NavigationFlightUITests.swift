@@ -24,6 +24,59 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit() throws {
+        let app = recoveryApp(state: "single", planData: try oneLegPlanData())
+
+        XCTAssertTrue(app.staticTexts["Continue your flight?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Continue Flight"].exists)
+        XCTAssertTrue(app.buttons["End as Incomplete"].exists)
+        XCTAssertFalse(tab(named: "Cockpit", in: app).exists)
+
+        app.buttons["Continue Flight"].tap()
+
+        XCTAssertTrue(tab(named: "Cockpit", in: app).waitForExistence(timeout: 5))
+        let status = app.buttons["recording-status"]
+        XCTAssertTrue(status.waitForExistence(timeout: 5))
+        XCTAssertEqual(status.label, "Recording · GPS Gap")
+        XCTAssertFalse(app.staticTexts["Continue your flight?"].exists)
+    }
+
+    @MainActor
+    func testSingleRecoveryEndAsIncompleteRequiresConfirmation() throws {
+        let app = recoveryApp(state: "single", planData: try oneLegPlanData())
+        let endButton = app.buttons["End as Incomplete"]
+        XCTAssertTrue(endButton.waitForExistence(timeout: 5))
+
+        endButton.tap()
+
+        XCTAssertTrue(app.staticTexts["End this Flight as incomplete?"].waitForExistence(timeout: 2))
+        app.buttons.matching(identifier: "End as Incomplete").element(boundBy: 1).tap()
+        XCTAssertTrue(tab(named: "Flight Plans", in: app).waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testMultipleRecoveriesAreListedWithoutAutomaticSelection() throws {
+        let app = recoveryApp(state: "multiple", planData: try oneLegPlanData())
+
+        XCTAssertTrue(app.staticTexts["Choose a flight to continue"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["2 recoverable flights were found."].exists)
+        XCTAssertTrue(app.buttons["Paphos local"].exists)
+        XCTAssertFalse(tab(named: "Cockpit", in: app).exists)
+    }
+
+    @MainActor
+    func testUnsupportedAndCorruptRecoveriesRemainExplicitLaunchStates() throws {
+        let unsupported = recoveryApp(state: "unsupported", planData: nil)
+        XCTAssertTrue(unsupported.staticTexts["Unsupported recording"].waitForExistence(timeout: 5))
+        XCTAssertTrue(unsupported.buttons["Keep in Flights"].exists)
+        unsupported.terminate()
+
+        let corrupt = recoveryApp(state: "corrupt", planData: nil)
+        XCTAssertTrue(corrupt.staticTexts["Recovery unavailable"].waitForExistence(timeout: 5))
+        XCTAssertTrue(corrupt.buttons["Continue to App"].exists)
+    }
+
+    @MainActor
     func testFreshLaunchShellRoutesBetweenFixedAppSections() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1157,6 +1210,17 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    private func recoveryApp(state: String, planData: Data?) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] = state
+        if let planData {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
+        }
+        app.launch()
+        return app
+    }
+
     private func launchCockpit(
         planData: Data,
         progressionPolicy: String? = nil,

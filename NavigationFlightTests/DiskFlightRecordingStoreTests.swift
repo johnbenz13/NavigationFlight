@@ -80,6 +80,7 @@ struct DiskFlightRecordingStoreTests {
 
         let snapshot = try await store.readSnapshot(id: seed.recording.id)
         #expect(snapshot.recording == seed.recording)
+        #expect(snapshot.recording.flightPlanSnapshot.sourceData == Data("immutable-plan".utf8))
         #expect(snapshot.events == seed.events)
         #expect(await store.packages() == [.available(snapshot)])
     }
@@ -245,7 +246,8 @@ struct DiskFlightRecordingStoreTests {
             flightPlanSnapshot: RecordedFlightPlanSnapshot(
                 id: UUID(),
                 title: "Training flight",
-                legIDs: [legID]
+                legIDs: [legID],
+                sourceData: Data("immutable-plan".utf8)
             ),
             legID: legID,
             startedAt: Date(timeIntervalSince1970: 1_000),

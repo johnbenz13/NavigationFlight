@@ -46,6 +46,21 @@ struct AppFeatureState: Equatable, Sendable {
         self.flightPlans = flightPlans
     }
 
+    mutating func restoreRecoveredFlight(
+        _ recovered: RecoveredFlight,
+        sourceData: Data?
+    ) {
+        cockpit.restore(
+            flightPlan: recovered.flightPlan,
+            flight: recovered.flight,
+            sourceData: sourceData
+        )
+        selectedAppSection = .cockpit
+        pendingFlightChange = nil
+        cockpitPresentationRequestID = recovered.flight.id
+        positionCheckPermissionEducation = .completed
+    }
+
     mutating func loadFlightPlan(
         _ snapshot: LibraryFlightPlan,
         flightID: UUID,
@@ -53,6 +68,7 @@ struct AppFeatureState: Equatable, Sendable {
     ) throws -> LoadFlightPlanDecision {
         try requestFlightChange(
             snapshot: snapshot.flightPlan,
+            snapshotSourceData: snapshot.sourceData,
             kind: .load,
             flightID: flightID,
             pendingID: pendingID
@@ -76,6 +92,7 @@ struct AppFeatureState: Equatable, Sendable {
         }
         return try requestFlightChange(
             snapshot: snapshot,
+            snapshotSourceData: cockpit.flightPlanSourceData,
             kind: .restart,
             flightID: flightID,
             pendingID: pendingID
@@ -127,6 +144,7 @@ struct AppFeatureState: Equatable, Sendable {
 
     private mutating func requestFlightChange(
         snapshot: FlightPlan,
+        snapshotSourceData: Data?,
         kind: PendingFlightChange.Kind,
         flightID: UUID,
         pendingID: UUID
@@ -136,7 +154,11 @@ struct AppFeatureState: Equatable, Sendable {
         }
 
         var candidate = CockpitFeatureState(progressionPolicy: cockpit.progressionPolicy)
-        try candidate.accept(snapshot, flightID: flightID)
+        try candidate.accept(
+            snapshot,
+            flightID: flightID,
+            sourceData: snapshotSourceData
+        )
 
         guard cockpit.hasProtectedPilotWork else {
             cockpit = candidate

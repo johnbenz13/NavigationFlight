@@ -1,16 +1,21 @@
 import SwiftUI
+import CoreTransferable
+import UniformTypeIdentifiers
 
 struct FlightDetailLoaderView: View {
     let id: UUID
     let library: FlightRecordingLibrary
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
-    let onExport: (UUID) -> Void
+    let exporter: GPXExporter
     let onDeleted: () async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var detail: FlightDetailPresentation?
     @State private var loadFailed = false
+    @State private var exportResult: GPXExportResult?
+    @State private var exportFailed = false
+    @State private var isExporting = false
 
     var body: some View {
         Group {
@@ -18,7 +23,8 @@ struct FlightDetailLoaderView: View {
                 FlightDetailView(
                     detail: detail,
                     onContinue: { onContinue(id) },
-                    onExport: { onExport(id) },
+                    isExporting: isExporting,
+                    onExport: export,
                     onDelete: delete
                 )
             } else if loadFailed {
@@ -41,6 +47,20 @@ struct FlightDetailLoaderView: View {
                 loadFailed = true
             }
         }
+        .navigationDestination(isPresented: Binding(
+            get: { exportResult != nil },
+            set: { if !$0 { exportResult = nil } }
+        )) {
+            if let exportResult {
+                GPXExportResultView(result: exportResult)
+            }
+        }
+        .alert("GPX export failed", isPresented: $exportFailed) {
+            Button("Retry") { Task { await export() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("No file was shared. The recording is unchanged and remains available to export again.")
+        }
     }
 
     @MainActor
@@ -53,12 +73,27 @@ struct FlightDetailLoaderView: View {
             detail = try? await library.detail(id: id, activeRecordingID: activeRecordingID)
         }
     }
+
+    @MainActor
+    private func export() async {
+        guard !isExporting else { return }
+        isExporting = true
+        defer { isExporting = false }
+        do {
+            exportResult = try await library.export(id: id, using: exporter)
+        } catch is CancellationError {
+            return
+        } catch {
+            exportFailed = true
+        }
+    }
 }
 
 struct FlightDetailView: View {
     let detail: FlightDetailPresentation
     let onContinue: () -> Void
-    let onExport: () -> Void
+    let isExporting: Bool
+    let onExport: () async -> Void
     let onDelete: () async -> Void
 
     @State private var confirmsDeletion = false
@@ -92,13 +127,21 @@ struct FlightDetailView: View {
                         .controlSize(.large)
                         .accessibilityIdentifier("flight-detail.continue")
                 } else if detail.canExport {
-                    Button(action: onExport) {
-                        Label(exportTitle, systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
+                    Button {
+                        Task { await onExport() }
+                    } label: {
+                        if isExporting {
+                            ProgressView("Preparing GPX")
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Label(exportTitle, systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                         .buttonStyle(.borderedProminent)
                         .buttonBorderShape(.roundedRectangle(radius: 14))
                         .controlSize(.large)
+                        .disabled(isExporting)
                         .accessibilityIdentifier("flight-detail.export")
                 }
 
@@ -315,4 +358,70 @@ struct FlightDetailView: View {
         case nil: "Not closed"
         }
     }
+}
+
+private struct GPXExportResultView: View {
+    let result: GPXExportResult
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 28) {
+                Text("Track exported as GPX")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Text("GPX")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 28)
+                    .background(Color.green.opacity(0.1), in: .capsule)
+
+                Text(result.fileURL.lastPathComponent)
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("flight-export.filename")
+
+                Text("Includes valid GPS samples only. Navigation events and private app metadata stay on device.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                ShareLink(
+                    item: GPXShareItem(fileURL: result.fileURL),
+                    preview: SharePreview(result.fileURL.lastPathComponent)
+                ) {
+                    Label("Open Share Sheet", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 14))
+                .controlSize(.large)
+                .accessibilityIdentifier("flight-export.share")
+            }
+            .frame(maxWidth: 600, alignment: .leading)
+            .padding(24)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Export result")
+        .navigationBarTitleDisplayMode(.large)
+        .accessibilityIdentifier("flight-export.result")
+    }
+}
+
+private struct GPXShareItem: Transferable {
+    let fileURL: URL
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .navigationFlightGPX) { item in
+            SentTransferredFile(item.fileURL)
+        }
+    }
+}
+
+private extension UTType {
+    static let navigationFlightGPX = UTType(
+        exportedAs: "app.navigationflight.gpx",
+        conformingTo: .xml
+    )
 }

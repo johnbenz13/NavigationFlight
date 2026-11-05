@@ -5,7 +5,7 @@ struct FlightsFeatureView: View {
     let library: FlightRecordingLibrary
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
-    let onExport: (UUID) -> Void
+    var exporter = GPXExporter()
 
     var body: some View {
         NavigationStack {
@@ -29,7 +29,7 @@ struct FlightsFeatureView: View {
                     library: library,
                     activeRecordingID: activeRecordingID,
                     onContinue: onContinue,
-                    onExport: onExport,
+                    exporter: exporter,
                     onDeleted: { await loadRows() }
                 )
             }

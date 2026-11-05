@@ -177,6 +177,38 @@ struct FlightRecordingLibraryTests {
         #expect(detail.isReadOnlySnapshot == false)
     }
 
+    @Test("Export uses a closed immutable snapshot without changing the recording")
+    func exportSnapshot() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let id = UUID()
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(
+            id: id,
+            startedAt: startedAt,
+            closedAt: startedAt.addingTimeInterval(60)
+        )
+        let snapshot = FlightRecordingReadSnapshot(
+            recording: recording,
+            events: [],
+            trackSegments: [RecordedTrackSegment(id: UUID(), samples: [
+                trackSample(latitude: 32, longitude: 34, at: startedAt, altitude: nil),
+            ])]
+        )
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let library = FlightRecordingLibrary(store: store)
+
+        let result = try await library.export(
+            id: id,
+            using: GPXExporter(temporaryDirectory: directory)
+        )
+
+        #expect(FileManager.default.fileExists(atPath: result.fileURL.path))
+        #expect(try await store.readSnapshot(id: id) == snapshot)
+    }
+
     private func recording(
         id: UUID,
         startedAt: Date,

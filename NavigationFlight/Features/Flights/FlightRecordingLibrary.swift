@@ -89,6 +89,14 @@ actor FlightRecordingLibrary {
         try await store.remove(id: id)
     }
 
+    func export(
+        id: UUID,
+        using exporter: GPXExporter = GPXExporter()
+    ) async throws -> GPXExportResult {
+        let snapshot = try await store.readSnapshot(id: id)
+        return try await exporter.export(snapshot: snapshot)
+    }
+
     func detail(
         id: UUID,
         activeRecordingID: UUID? = nil

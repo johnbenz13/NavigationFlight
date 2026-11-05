@@ -5,11 +5,13 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         case create
         case append
         case close
+        case remove
     }
 
     private var snapshotsByID: [UUID: FlightRecordingReadSnapshot] = [:]
     private var unavailablePackageResults: [FlightRecordingPackageResult] = []
     private let failure: Failure?
+    private(set) var removeCallCount = 0
 
     init(
         failure: Failure? = nil,
@@ -137,7 +139,19 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
     }
 
     func remove(id: UUID) throws {
+        removeCallCount += 1
+        if failure == .remove { throw FlightRecordingStoreError.operationFailed(id: id) }
         guard let current = snapshotsByID[id] else {
+            if let index = unavailablePackageResults.firstIndex(where: { result in
+                switch result {
+                case .unsupported(let packageID, _): packageID == id
+                case .corrupt(let packageID): packageID == id
+                case .available: false
+                }
+            }) {
+                unavailablePackageResults.remove(at: index)
+                return
+            }
             throw FlightRecordingStoreError.corruptPackage(id: id)
         }
         guard current.recording.closure != nil else {

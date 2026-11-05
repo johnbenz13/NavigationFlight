@@ -90,6 +90,21 @@ struct FlightRecordingLibraryTests {
         #expect(unavailable.canDelete)
     }
 
+    @Test("Corrupt package exposes a deletable unavailable detail without reading evidence")
+    func corruptPackageDetail() async throws {
+        let id = try #require(UUID(uuidString: "EFEFEFEF-EFEF-EFEF-EFEF-EFEFEFEFEFEF"))
+        let store = InMemoryFlightRecordingStore(packageResults: [.corrupt(id: id)])
+
+        let detail = try await FlightRecordingLibrary(store: store).detail(id: id)
+
+        #expect(detail.id == id)
+        #expect(detail.flightPlanTitle == "Unavailable recording")
+        #expect(detail.status == .unavailable)
+        #expect(detail.canExport == false)
+        #expect(detail.canDelete)
+        #expect(detail.isReadOnlySnapshot == false)
+    }
+
     @Test("Deletion revalidates durable eligibility")
     func deletionEligibility() async throws {
         let activeID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
@@ -112,6 +127,28 @@ struct FlightRecordingLibraryTests {
         try await library.delete(id: closedID)
 
         #expect(await library.recordings().map(\.id) == [activeID])
+    }
+
+    @Test("Failed deletion preserves the recording for a retry")
+    func failedDeletionPreservesRecording() async throws {
+        let id = try #require(UUID(uuidString: "23232323-2323-2323-2323-232323232323"))
+        let closed = try recording(
+            id: id,
+            startedAt: Date(timeIntervalSince1970: 2_000),
+            closedAt: Date(timeIntervalSince1970: 2_100)
+        )
+        let store = InMemoryFlightRecordingStore(
+            failure: .remove,
+            packageResults: [.available(FlightRecordingReadSnapshot(recording: closed, events: []))]
+        )
+        let library = FlightRecordingLibrary(store: store)
+
+        await #expect(throws: FlightRecordingStoreError.operationFailed(id: id)) {
+            try await library.delete(id: id)
+        }
+
+        #expect(await library.recordings().map(\.id) == [id])
+        #expect(await store.removeCallCount == 1)
     }
 
     @Test("Repeated executions remain distinct and equal start times use stable identity order")

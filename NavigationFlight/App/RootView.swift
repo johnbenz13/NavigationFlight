@@ -163,7 +163,10 @@ struct RootView: View {
                     Data(base64Encoded: $0)
                 }
             )
-            recordingStore = InMemoryFlightRecordingStore(packageResults: fixture.packages)
+            recordingStore = InMemoryFlightRecordingStore(
+                failure: environment["NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE"] == "1" ? .remove : nil,
+                packageResults: fixture.packages
+            )
             debugFlightsActiveRecordingID = fixture.activeRecordingID
         } else if let recoveryState = environment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] {
             var packageResults: [FlightRecordingPackageResult] = []

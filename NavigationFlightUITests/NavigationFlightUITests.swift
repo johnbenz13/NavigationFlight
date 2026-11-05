@@ -172,6 +172,51 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCompleteFlightDetailShowsEvidenceAndClosedActions() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("Complete"))
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.summary"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.export"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
+    }
+
+    @MainActor
+    func testIncompleteFlightDetailOffersPartialExport() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+
+        openFlightDetail(id: "04000000-0000-0000-0000-000000000004", in: app)
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("Incomplete"))
+        XCTAssertEqual(app.buttons["flight-detail.export"].label, "Export partial GPX")
+    }
+
+    @MainActor
+    func testActiveFlightDetailIsReadOnlyAndContinuable() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+
+        openFlightDetail(id: "01000000-0000-0000-0000-000000000001", in: app)
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("In Progress"))
+        XCTAssertTrue(app.buttons["flight-detail.continue"].exists)
+        XCTAssertFalse(app.buttons["flight-detail.delete"].exists)
+    }
+
+    @MainActor
+    func testMissingEvidenceDetailUsesUnavailableInsteadOfZero() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+
+        openFlightDetail(id: "05000000-0000-0000-0000-000000000005", in: app)
+
+        XCTAssertTrue(app.staticTexts["Unavailable"].firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["0 km"].exists)
+        XCTAssertFalse(app.buttons["flight-detail.export"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
+    }
+
+    @MainActor
     func testFreshLaunchShowsEmptyFlightPlans() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1304,6 +1349,21 @@ final class NavigationFlightUITests: XCTestCase {
         }
         app.launch()
         return app
+    }
+
+    @MainActor
+    private func openFlightDetail(id: String, in app: XCUIApplication) {
+        let list = app.descendants(matching: .any)["flights.list"]
+        XCTAssertTrue(list.waitForExistence(timeout: 5))
+        let row = app.descendants(matching: .any)["flights.row.\(id)"]
+        for _ in 0..<5 where !row.isHittable {
+            list.swipeUp()
+        }
+        XCTAssertTrue(row.isHittable)
+        row.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any)["flight-detail.status"].waitForExistence(timeout: 5)
+        )
     }
 
     private func launchCockpit(

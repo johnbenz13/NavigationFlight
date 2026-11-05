@@ -132,6 +132,51 @@ struct FlightRecordingLibraryTests {
         #expect(rows.map(\.flightPlanTitle) == ["Coastal Navigation", "Coastal Navigation"])
     }
 
+    @Test("Detail projects identity, timing, closure, evidence summaries, and action eligibility")
+    func detailProjection() async throws {
+        let sourceData = try fixtureData()
+        let plan = try FPLNavDecoder().decode(sourceData)
+        let id = UUID()
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let closedAt = Date(timeIntervalSince1970: 4_600)
+        let recording = try recording(
+            id: id,
+            startedAt: startedAt,
+            closedAt: closedAt,
+            sourceData: sourceData,
+            plan: plan
+        )
+        let segment = RecordedTrackSegment(id: UUID(), samples: [
+            trackSample(latitude: 32, longitude: 34, at: startedAt, altitude: 100),
+            trackSample(latitude: 32, longitude: 34.01, at: closedAt, altitude: 250),
+        ])
+        let store = InMemoryFlightRecordingStore(packageResults: [
+            .available(FlightRecordingReadSnapshot(
+                recording: recording,
+                events: [],
+                trackSegments: [segment],
+                approximateSizeBytes: 4_800_000
+            )),
+        ])
+
+        let detail = try await FlightRecordingLibrary(store: store).detail(id: id)
+
+        #expect(detail.id == id)
+        #expect(detail.flightPlanTitle == "Coastal training navigation")
+        #expect(detail.route == "Synthetic waypoint 1 → Synthetic waypoint 2")
+        #expect(detail.startedAt == startedAt)
+        #expect(detail.endedAt == closedAt)
+        #expect(detail.duration == .seconds(3_600))
+        #expect(detail.closureOutcome == .incomplete)
+        #expect(detail.closureCause == .manual)
+        #expect(detail.distanceMeters != nil)
+        #expect(detail.maximumAltitudeMeters == 250)
+        #expect(detail.approximateSizeBytes == 4_800_000)
+        #expect(detail.canExport)
+        #expect(detail.canDelete)
+        #expect(detail.isReadOnlySnapshot == false)
+    }
+
     private func recording(
         id: UUID,
         startedAt: Date,
@@ -175,6 +220,25 @@ struct FlightRecordingLibraryTests {
             nested ?? bundle.url(forResource: "representative-v7", withExtension: "fplnav")
         )
         return try Data(contentsOf: url)
+    }
+
+    private func trackSample(
+        latitude: Double,
+        longitude: Double,
+        at date: Date,
+        altitude: Double?
+    ) -> RecordedTrackSample {
+        RecordedTrackSample(
+            coordinate: WGS84Coordinate(latitudeDegrees: latitude, longitudeDegrees: longitude),
+            observedAt: date,
+            horizontalAccuracyMeters: 5,
+            altitudeMeters: altitude,
+            verticalAccuracyMeters: 5,
+            groundSpeedMetersPerSecond: nil,
+            speedAccuracyMetersPerSecond: nil,
+            courseDegrees: nil,
+            courseAccuracyDegrees: nil
+        )
     }
 }
 

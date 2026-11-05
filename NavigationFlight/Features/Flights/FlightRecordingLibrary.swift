@@ -22,6 +22,26 @@ nonisolated struct FlightRecordingSummary: Equatable, Sendable, Identifiable {
     let canDelete: Bool
 }
 
+nonisolated struct FlightDetailPresentation: Equatable, Sendable, Identifiable {
+    let id: UUID
+    let flightPlanTitle: String
+    let route: String?
+    let startedAt: Date
+    let endedAt: Date?
+    let duration: Duration?
+    let status: FlightRecordingSummary.Status
+    let closureOutcome: FlightRecordingClosure.Outcome?
+    let closureCause: FlightRecordingClosure.Cause?
+    let gpsCoverage: GPSCoverageState
+    let gpsCoverageFraction: Double?
+    let distanceMeters: Double?
+    let maximumAltitudeMeters: Double?
+    let approximateSizeBytes: Int64?
+    let canExport: Bool
+    let canDelete: Bool
+    let isReadOnlySnapshot: Bool
+}
+
 actor FlightRecordingLibrary {
     private static let rootUnavailableID = UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     private let store: any FlightRecordingStore
@@ -45,7 +65,7 @@ actor FlightRecordingLibrary {
                     flightPlanTitle: recording.flightPlanSnapshot.title,
                     route: route,
                     startedAt: recording.startedAt,
-                    duration: recording.closure?.elapsed ?? snapshot.events.map(\.elapsed).max(),
+                    duration: snapshot.evidenceSummary.duration,
                     status: Self.status(for: recording, activeRecordingID: activeRecordingID),
                     gpsCoverage: recording.gpsCoverage,
                     approximateSizeBytes: snapshot.approximateSizeBytes,
@@ -67,6 +87,37 @@ actor FlightRecordingLibrary {
 
     func delete(id: UUID) async throws {
         try await store.remove(id: id)
+    }
+
+    func detail(
+        id: UUID,
+        activeRecordingID: UUID? = nil
+    ) async throws -> FlightDetailPresentation {
+        let snapshot = try await store.readSnapshot(id: id)
+        let recording = snapshot.recording
+        let route = recording.flightPlanSnapshot.sourceData
+            .flatMap { try? FPLNavDecoder().decode($0) }
+            .flatMap(Self.routeSummary)
+        let summary = snapshot.evidenceSummary
+        return FlightDetailPresentation(
+            id: recording.id,
+            flightPlanTitle: recording.flightPlanSnapshot.title,
+            route: route,
+            startedAt: recording.startedAt,
+            endedAt: recording.closure?.closedAt,
+            duration: summary.duration,
+            status: Self.status(for: recording, activeRecordingID: activeRecordingID),
+            closureOutcome: recording.closure?.outcome,
+            closureCause: recording.closure?.cause,
+            gpsCoverage: recording.gpsCoverage,
+            gpsCoverageFraction: summary.gpsCoverageFraction,
+            distanceMeters: summary.distanceMeters,
+            maximumAltitudeMeters: summary.maximumAltitudeMeters,
+            approximateSizeBytes: snapshot.approximateSizeBytes,
+            canExport: snapshot.trackSegments.contains { !$0.samples.isEmpty },
+            canDelete: recording.closure != nil,
+            isReadOnlySnapshot: recording.closure == nil
+        )
     }
 
     private static func precedes(

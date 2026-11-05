@@ -290,7 +290,8 @@ struct RootView: View {
                     ),
                     library: flightRecordingLibrary,
                     activeRecordingID: flightRecordingCoordinator.activeRecordingID ?? debugFlightsActiveRecordingID,
-                    onContinue: continueFlightFromLibrary
+                    onContinue: continueFlightFromLibrary,
+                    onExport: { _ in }
                 )
             }
 
@@ -498,9 +499,37 @@ struct RootView: View {
             if let closure = definition.closure {
                 recording = recording.restoring(closure: closure)
             }
+            let evidenceEnd = definition.closure?.closedAt ?? startedAt.addingTimeInterval(3_600)
+            let firstSegmentID = UUID()
+            let firstSegment = RecordedTrackSegment(id: firstSegmentID, samples: [
+                RecordedTrackSample(
+                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
+                    observedAt: startedAt,
+                    horizontalAccuracyMeters: 5,
+                    altitudeMeters: 500,
+                    verticalAccuracyMeters: 5,
+                    groundSpeedMetersPerSecond: 42,
+                    speedAccuracyMetersPerSecond: 1,
+                    courseDegrees: 90,
+                    courseAccuracyDegrees: 2
+                ),
+                RecordedTrackSample(
+                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
+                    observedAt: evidenceEnd,
+                    horizontalAccuracyMeters: 5,
+                    altitudeMeters: 1_280,
+                    verticalAccuracyMeters: 5,
+                    groundSpeedMetersPerSecond: 44,
+                    speedAccuracyMetersPerSecond: 1,
+                    courseDegrees: 90,
+                    courseAccuracyDegrees: 2
+                ),
+            ])
+            let trackSegments = definition.coverage == .unavailable ? [] : [firstSegment]
             return .available(FlightRecordingReadSnapshot(
                 recording: recording,
                 events: promotion.events,
+                trackSegments: trackSegments,
                 approximateSizeBytes: definition.size
             ))
         } + [

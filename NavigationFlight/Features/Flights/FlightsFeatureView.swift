@@ -5,6 +5,7 @@ struct FlightsFeatureView: View {
     let library: FlightRecordingLibrary
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
+    let onExport: (UUID) -> Void
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,16 @@ struct FlightsFeatureView: View {
             }
             .navigationTitle("Flights")
             .navigationSubtitle("Recorded executions of your Flight Plans")
+            .navigationDestination(for: UUID.self) { id in
+                FlightDetailLoaderView(
+                    id: id,
+                    library: library,
+                    activeRecordingID: activeRecordingID,
+                    onContinue: onContinue,
+                    onExport: onExport,
+                    onDeleted: { await loadRows() }
+                )
+            }
         }
         .task(id: activeRecordingID) {
             await loadRows()
@@ -34,9 +45,11 @@ struct FlightsFeatureView: View {
             if !current.isEmpty {
                 Section("In Progress") {
                     ForEach(current) { row in
-                        FlightRecordingRow(summary: row) {
+                        Button("Continue Flight", systemImage: "arrow.right") {
                             onContinue(row.id)
                         }
+                        .accessibilityIdentifier("flights.continue.\(row.id.uuidString)")
+                        FlightRecordingRow(summary: row)
                     }
                 }
             }
@@ -88,16 +101,10 @@ struct FlightsFeatureView: View {
 
 private struct FlightRecordingRow: View {
     let summary: FlightRecordingSummary
-    var onContinue: (() -> Void)?
-
-    init(summary: FlightRecordingSummary, onContinue: (() -> Void)? = nil) {
-        self.summary = summary
-        self.onContinue = onContinue
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
+        NavigationLink(value: summary.id) {
+                HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(summary.flightPlanTitle)
                         .font(.headline)
@@ -122,13 +129,10 @@ private struct FlightRecordingRow: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(statusColor)
                 .fixedSize(horizontal: true, vertical: true)
-            }
-
-            if let onContinue {
-                Button("Continue Flight", systemImage: "arrow.right", action: onContinue)
-                    .accessibilityIdentifier("flights.continue.\(summary.id.uuidString)")
-            }
+                }
         }
+        .disabled(summary.status == .unavailable)
+        .buttonStyle(.plain)
         .frame(minHeight: 80)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)

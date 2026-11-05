@@ -36,6 +36,8 @@ nonisolated struct FlightDetailPresentation: Equatable, Sendable, Identifiable {
     let gpsCoverageFraction: Double?
     let distanceMeters: Double?
     let maximumAltitudeMeters: Double?
+    let maximumBarometricAltitudeMeters: Double?
+    let latestDeviceHeadingDegrees: Double?
     let approximateSizeBytes: Int64?
     let canExport: Bool
     let canDelete: Bool
@@ -129,6 +131,8 @@ actor FlightRecordingLibrary {
             gpsCoverageFraction: summary.gpsCoverageFraction,
             distanceMeters: summary.distanceMeters,
             maximumAltitudeMeters: summary.maximumAltitudeMeters,
+            maximumBarometricAltitudeMeters: summary.maximumBarometricAltitudeMeters,
+            latestDeviceHeadingDegrees: summary.latestDeviceHeadingDegrees,
             approximateSizeBytes: snapshot.approximateSizeBytes,
             canExport: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
@@ -162,6 +166,8 @@ actor FlightRecordingLibrary {
             gpsCoverageFraction: nil,
             distanceMeters: nil,
             maximumAltitudeMeters: nil,
+            maximumBarometricAltitudeMeters: nil,
+            latestDeviceHeadingDegrees: nil,
             approximateSizeBytes: nil,
             canExport: false,
             canDelete: true,

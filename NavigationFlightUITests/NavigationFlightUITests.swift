@@ -181,6 +181,24 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["flight-detail.summary"].exists)
         XCTAssertTrue(app.buttons["flight-detail.export"].exists)
         XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
+        let detail = app.descendants(matching: .any)["flight-detail.03000000-0000-0000-0000-000000000003"]
+        for _ in 0..<3 where !app.descendants(matching: .any)["flight-detail.supplemental-evidence"].exists {
+            detail.swipeUp()
+        }
+        let barometricAltitude = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH 'Anchored barometric maximum'")
+        ).firstMatch
+        let deviceHeading = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH 'Latest device compass heading'")
+        ).firstMatch
+        XCTAssertTrue(barometricAltitude.label.contains("Anchored barometric maximum"))
+        XCTAssertTrue(deviceHeading.label.contains("Latest device compass heading"))
+        XCTAssertTrue(deviceHeading.label.contains("92° device-relative"))
+        XCTAssertFalse(app.staticTexts["Aircraft heading"].exists)
+        let availableScreenshot = XCTAttachment(screenshot: app.screenshot())
+        availableScreenshot.name = "Issue 92 Supplemental Evidence Available"
+        availableScreenshot.lifetime = .keepAlways
+        add(availableScreenshot)
     }
 
     @MainActor
@@ -253,6 +271,16 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["0 km"].exists)
         XCTAssertFalse(app.buttons["flight-detail.export"].exists)
         XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
+        let detail = app.descendants(matching: .any)["flight-detail.05000000-0000-0000-0000-000000000005"]
+        for _ in 0..<3 where !app.descendants(matching: .any)["flight-detail.supplemental-evidence"].exists {
+            detail.swipeUp()
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.supplemental-evidence"].exists)
+        XCTAssertTrue(app.staticTexts["Best-effort device evidence; not authoritative aircraft altitude or heading."].exists)
+        let unavailableScreenshot = XCTAttachment(screenshot: app.screenshot())
+        unavailableScreenshot.name = "Issue 92 Supplemental Evidence Unavailable"
+        unavailableScreenshot.lifetime = .keepAlways
+        add(unavailableScreenshot)
     }
 
     @MainActor

@@ -82,6 +82,10 @@ actor FlightRecordingEngine {
     private var activeSegmentID: UUID?
     private var segmentNeedsReopening = false
     private var lastPhysicalTransitionEventID: UUID?
+    private var latestRelativeBarometricAltitude: (meters: Double, observedAt: Date)?
+    private var latestDeviceHeading: (degrees: Double, accuracyDegrees: Double?, observedAt: Date)?
+    private var barometricAltitudeAnchorOffsetMeters: Double?
+    private static let supplementalFreshnessInterval: TimeInterval = 5
 
     init(
         store: any FlightRecordingStore,
@@ -121,13 +125,31 @@ actor FlightRecordingEngine {
         deliveredSamples.removeAll()
         activeSegmentID = nil
         segmentNeedsReopening = false
+        latestRelativeBarometricAltitude = nil
+        latestDeviceHeading = nil
+        barometricAltitudeAnchorOffsetMeters = nil
+    }
+
+    func ingestSupplemental(_ event: SupplementalSensorEvent) {
+        switch event {
+        case .relativeBarometricAltitude(let meters, let observedAt):
+            guard meters.isFinite, observedAt.timeIntervalSinceReferenceDate.isFinite else { return }
+            latestRelativeBarometricAltitude = (meters, observedAt)
+        case .deviceHeading(let degrees, let accuracyDegrees, let observedAt):
+            guard degrees.isFinite, (0..<360).contains(degrees),
+                  observedAt.timeIntervalSinceReferenceDate.isFinite,
+                  accuracyDegrees.map({ $0.isFinite && $0 >= 0 }) ?? true else { return }
+            latestDeviceHeading = (degrees, accuracyDegrees, observedAt)
+        }
     }
 
     func ingest(_ event: LocationSourceEvent, monotonicTime: Duration) async -> FlightRecordingLocationOutcome {
         guard isArmed else { return .none }
         switch event {
         case .sample(let sourceSample, _):
-            guard let sample = RecordedTrackSample(sourceSample), !deliveredSamples.contains(sample) else { return .none }
+            guard let baseSample = RecordedTrackSample(sourceSample) else { return .none }
+            let sample = associateSupplemental(with: baseSample)
+            guard !deliveredSamples.contains(sample) else { return .none }
             deliveredSamples.append(sample)
             if recording == nil {
                 rollingBuffer.append(sample)
@@ -310,6 +332,28 @@ actor FlightRecordingEngine {
             break
         }
         return .none
+    }
+
+    private func associateSupplemental(with sample: RecordedTrackSample) -> RecordedTrackSample {
+        let relativeAltitude = latestRelativeBarometricAltitude.flatMap { evidence -> Double? in
+            guard abs(sample.observedAt.timeIntervalSince(evidence.observedAt)) <= Self.supplementalFreshnessInterval else {
+                return nil
+            }
+            if barometricAltitudeAnchorOffsetMeters == nil, let gpsAltitude = sample.altitudeMeters, gpsAltitude.isFinite {
+                barometricAltitudeAnchorOffsetMeters = gpsAltitude - evidence.meters
+            }
+            return barometricAltitudeAnchorOffsetMeters.map { evidence.meters + $0 }
+        }
+        let heading = latestDeviceHeading.flatMap { evidence in
+            abs(sample.observedAt.timeIntervalSince(evidence.observedAt)) <= Self.supplementalFreshnessInterval
+                ? evidence
+                : nil
+        }
+        return sample.addingSupplemental(
+            barometricAltitudeMeters: relativeAltitude,
+            deviceHeadingDegrees: heading?.degrees,
+            deviceHeadingAccuracyDegrees: heading?.accuracyDegrees
+        )
     }
 
     @discardableResult

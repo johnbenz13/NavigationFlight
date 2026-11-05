@@ -17,12 +17,14 @@ final class FlightRecordingCoordinator {
     private let monotonicNow: @MainActor @Sendable () -> Duration
     private let wallClockNow: @MainActor @Sendable () -> Date
     private let recoveryCheckpointInterval: TimeInterval
+    private let supplementalSensorSource: (any SupplementalSensorSource)?
     private var engine: FlightRecordingEngine?
     private var publishedFlight: Flight?
     private var publishedRecording: FlightRecording?
     private var locationConsumptionTask: Task<Void, Never>?
     private var recordingLocationHub: AircraftLocationService?
     private var recoveryCheckpointTask: Task<Void, Never>?
+    private var supplementalConsumptionTask: Task<Void, Never>?
 
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
@@ -56,13 +58,15 @@ final class FlightRecordingCoordinator {
             .seconds(ProcessInfo.processInfo.systemUptime)
         },
         wallClockNow: @escaping @MainActor @Sendable () -> Date = Date.init,
-        recoveryCheckpointInterval: TimeInterval = 30
+        recoveryCheckpointInterval: TimeInterval = 30,
+        supplementalSensorSource: (any SupplementalSensorSource)? = nil
     ) {
         self.store = store
         self.detectorPolicy = detectorPolicy
         self.monotonicNow = monotonicNow
         self.wallClockNow = wallClockNow
         self.recoveryCheckpointInterval = recoveryCheckpointInterval
+        self.supplementalSensorSource = supplementalSensorSource
     }
 
     func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot) async {
@@ -79,6 +83,7 @@ final class FlightRecordingCoordinator {
         publishedRecording = nil
         status = .prepared
         lastError = nil
+        startSupplementalCapture()
     }
 
     func arm(
@@ -130,12 +135,35 @@ final class FlightRecordingCoordinator {
         recoveryCheckpointTask = nil
         locationConsumptionTask?.cancel()
         locationConsumptionTask = nil
+        supplementalConsumptionTask?.cancel()
+        supplementalConsumptionTask = nil
         recordingLocationHub = nil
         await engine?.disarm()
         engine = nil
         publishedFlight = nil
         publishedRecording = nil
         status = .ready
+    }
+
+    private func startSupplementalCapture() {
+        supplementalConsumptionTask?.cancel()
+        guard let supplementalSensorSource, let engine else {
+            supplementalConsumptionTask = nil
+            return
+        }
+        let updates = supplementalSensorSource.updates()
+        supplementalConsumptionTask = Task {
+            do {
+                for try await event in updates {
+                    if Task.isCancelled { return }
+                    await engine.ingestSupplemental(event)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                // Supplemental evidence is best effort and never changes GPS recording state.
+            }
+        }
     }
 
 

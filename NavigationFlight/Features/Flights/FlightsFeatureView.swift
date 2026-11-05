@@ -7,6 +7,8 @@ struct FlightsFeatureView: View {
     let onContinue: (UUID) -> Void
     var exporter = GPXExporter()
 
+    @State private var isDeleting = false
+
     var body: some View {
         NavigationStack {
             Group {
@@ -30,12 +32,38 @@ struct FlightsFeatureView: View {
                     activeRecordingID: activeRecordingID,
                     onContinue: onContinue,
                     exporter: exporter,
-                    onDeleted: { await loadRows() }
+                    flightsState: $state,
+                    onRequestDelete: { state.requestDeletion(of: id) }
                 )
             }
         }
         .task(id: activeRecordingID) {
             await loadRows()
+        }
+        .alert(
+            deletionConfirmationTitle,
+            isPresented: deletionConfirmationPresented
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let id = state.pendingDeletionID, !isDeleting else { return }
+                isDeleting = true
+                Task { await delete(id) }
+            }
+            Button("Cancel", role: .cancel) {
+                state.cancelDeletion()
+            }
+        } message: {
+            Text("This permanently removes the GPS track and navigation event history from this device.")
+        }
+        .alert(deletionFailureTitle, isPresented: deletionFailurePresented) {
+            Button("Retry") {
+                state.retryFailedDeletion()
+            }
+            Button("Cancel", role: .cancel) {
+                state.dismissDeletionFailure()
+            }
+        } message: {
+            Text("The recording and all of its files remain on this device. Try deleting it again.")
         }
     }
 
@@ -62,8 +90,9 @@ struct FlightsFeatureView: View {
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 if row.canDelete {
                                     Button("Delete", systemImage: "trash", role: .destructive) {
-                                        Task { await delete(row.id) }
+                                        state.requestDeletion(of: row.id)
                                     }
+                                    .accessibilityIdentifier("flights.delete.\(row.id.uuidString)")
                                 }
                             }
                     }
@@ -90,12 +119,48 @@ struct FlightsFeatureView: View {
 
     @MainActor
     private func delete(_ id: UUID) async {
+        guard isDeleting, state.pendingDeletionID == id else { return }
+        defer { isDeleting = false }
         do {
             try await library.delete(id: id)
-            await loadRows()
+            state.completeDeletion(id: id)
         } catch {
-            await loadRows()
+            state.failDeletion(id: id)
         }
+    }
+
+    private var deletionConfirmationPresented: Binding<Bool> {
+        Binding(
+            get: { state.pendingDeletionID != nil && !isDeleting },
+            set: { isPresented in
+                if !isPresented, !isDeleting {
+                    state.cancelDeletion()
+                }
+            }
+        )
+    }
+
+    private var deletionFailurePresented: Binding<Bool> {
+        Binding(
+            get: { state.deletionFailureID != nil },
+            set: { if !$0 { state.dismissDeletionFailure() } }
+        )
+    }
+
+    private var deletionConfirmationTitle: String {
+        guard let id = state.pendingDeletionID,
+              let row = state.rows.first(where: { $0.id == id }) else {
+            return "Delete this Flight?"
+        }
+        return "Delete \(row.flightPlanTitle)?"
+    }
+
+    private var deletionFailureTitle: String {
+        guard let id = state.deletionFailureID,
+              let row = state.rows.first(where: { $0.id == id }) else {
+            return "Couldn’t delete this Flight"
+        }
+        return "Couldn’t delete \(row.flightPlanTitle)"
     }
 }
 
@@ -104,7 +169,50 @@ private struct FlightRecordingRow: View {
 
     var body: some View {
         NavigationLink(value: summary.id) {
-                HStack(alignment: .top, spacing: 12) {
+            FlightRecordingRowContent(summary: summary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityIdentifier("flights.row.\(summary.id.uuidString)")
+    }
+
+    private var accessibilityLabel: String {
+        let route = summary.route.map { ", \($0)" } ?? ""
+        return "\(summary.flightPlanTitle)\(route), \(statusText), \(gpsText), \(metadata)"
+    }
+
+    private var statusText: String {
+        switch summary.status {
+        case .inProgress: "In Progress"
+        case .recoveryRequired: "Recovery Required"
+        case .complete: "Complete"
+        case .incomplete: "Incomplete"
+        case .manuallyEnded: "Manually Ended"
+        case .unavailable: "Unavailable"
+        }
+    }
+
+    private var gpsText: String {
+        switch summary.gpsCoverage {
+        case .available: "GPS available"
+        case .partial: "Partial GPS"
+        case .unavailable: "GPS unavailable"
+        }
+    }
+
+    private var metadata: String {
+        let date = summary.startedAt.formatted(date: .abbreviated, time: .shortened)
+        guard let duration = summary.duration else { return date }
+        let minutes = max(0, duration.components.seconds) / 60
+        return "\(date) · \(minutes)m"
+    }
+}
+
+private struct FlightRecordingRowContent: View {
+    let summary: FlightRecordingSummary
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(summary.flightPlanTitle)
                         .font(.headline)
@@ -129,14 +237,9 @@ private struct FlightRecordingRow: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(statusColor)
                 .fixedSize(horizontal: true, vertical: true)
-                }
         }
-        .disabled(summary.status == .unavailable)
         .buttonStyle(.plain)
         .frame(minHeight: 80)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(accessibilityLabel)
-        .accessibilityIdentifier("flights.row.\(summary.id.uuidString)")
     }
 
     private var metadata: String {

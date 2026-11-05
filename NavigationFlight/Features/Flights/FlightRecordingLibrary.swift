@@ -101,7 +101,15 @@ actor FlightRecordingLibrary {
         id: UUID,
         activeRecordingID: UUID? = nil
     ) async throws -> FlightDetailPresentation {
-        let snapshot = try await store.readSnapshot(id: id)
+        let snapshot: FlightRecordingReadSnapshot
+        do {
+            snapshot = try await store.readSnapshot(id: id)
+        } catch {
+            if let unavailable = await unavailableDetail(id: id) {
+                return unavailable
+            }
+            throw error
+        }
         let recording = snapshot.recording
         let route = recording.flightPlanSnapshot.sourceData
             .flatMap { try? FPLNavDecoder().decode($0) }
@@ -125,6 +133,39 @@ actor FlightRecordingLibrary {
             canExport: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
             isReadOnlySnapshot: recording.closure == nil
+        )
+    }
+
+    private func unavailableDetail(id: UUID) async -> FlightDetailPresentation? {
+        let title = await store.packages().compactMap { result -> String? in
+            switch result {
+            case .unsupported(let packageID, _) where packageID == id:
+                "Unsupported recording"
+            case .corrupt(let packageID) where packageID == id:
+                "Unavailable recording"
+            case .available, .unsupported, .corrupt:
+                nil
+            }
+        }.first
+        guard let title else { return nil }
+        return FlightDetailPresentation(
+            id: id,
+            flightPlanTitle: title,
+            route: nil,
+            startedAt: .distantPast,
+            endedAt: nil,
+            duration: nil,
+            status: .unavailable,
+            closureOutcome: nil,
+            closureCause: nil,
+            gpsCoverage: .unavailable,
+            gpsCoverageFraction: nil,
+            distanceMeters: nil,
+            maximumAltitudeMeters: nil,
+            approximateSizeBytes: nil,
+            canExport: false,
+            canDelete: true,
+            isReadOnlySnapshot: false
         )
     }
 

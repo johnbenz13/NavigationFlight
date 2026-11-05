@@ -4,12 +4,14 @@ import Foundation
 actor DiskFlightRecordingStore: FlightRecordingStore {
     typealias BeforeInstall = @Sendable (URL) throws -> Void
     typealias BeforeClose = @Sendable (UUID) throws -> Void
+    typealias BeforeRemove = @Sendable (UUID) throws -> Void
     typealias BeforeTrackSynchronization = @Sendable (UUID) throws -> Void
 
     private let rootDirectory: URL
     private let fileManager: FileManager
     private let beforeInstall: BeforeInstall
     private let beforeClose: BeforeClose
+    private let beforeRemove: BeforeRemove
     private let synchronizationInterval: TimeInterval
     private let now: @Sendable () -> Date
     private let beforeTrackSynchronization: BeforeTrackSynchronization
@@ -20,6 +22,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         fileManager: FileManager = .default,
         beforeInstall: @escaping BeforeInstall = { _ in },
         beforeClose: @escaping BeforeClose = { _ in },
+        beforeRemove: @escaping BeforeRemove = { _ in },
         synchronizationInterval: TimeInterval = 5,
         now: @escaping @Sendable () -> Date = Date.init,
         beforeTrackSynchronization: @escaping BeforeTrackSynchronization = { _ in }
@@ -28,6 +31,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         self.fileManager = fileManager
         self.beforeInstall = beforeInstall
         self.beforeClose = beforeClose
+        self.beforeRemove = beforeRemove
         self.synchronizationInterval = synchronizationInterval
         self.now = now
         self.beforeTrackSynchronization = beforeTrackSynchronization
@@ -254,14 +258,23 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
     }
 
     func remove(id: UUID) throws {
-        let snapshot = try readSnapshot(id: id)
-        guard snapshot.recording.closure != nil else {
-            throw FlightRecordingStoreError.recordingActive(id: id)
-        }
+        let directory = packageDirectory(id: id)
         do {
-            try fileManager.removeItem(at: packageDirectory(id: id))
+            let manifestURL = directory.appending(path: "manifest.json")
+            if let data = try? Data(contentsOf: manifestURL),
+               let manifest = try? FlightRecordingCoding.decoder.decode(FlightRecordingManifestDTO.self, from: data),
+               manifest.closure == nil {
+                throw FlightRecordingStoreError.recordingActive(id: id)
+            }
+            try beforeRemove(id)
+            try fileManager.removeItem(at: directory)
             try synchronizeDirectory(rootDirectory)
+            guard !fileManager.fileExists(atPath: directory.path) else {
+                throw FlightRecordingStoreError.operationFailed(id: id)
+            }
             lastTrackSynchronization[id] = nil
+        } catch let error as FlightRecordingStoreError {
+            throw error
         } catch {
             throw FlightRecordingStoreError.operationFailed(id: id)
         }

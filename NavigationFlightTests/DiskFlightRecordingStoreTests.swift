@@ -263,6 +263,84 @@ struct DiskFlightRecordingStoreTests {
         #expect(snapshot.events == seed.events + closingEvents)
     }
 
+    @Test("Removal rejects a package whose durable manifest is still active")
+    func activePackageRemovalIsRejected() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+
+        await #expect(throws: FlightRecordingStoreError.recordingActive(id: seed.recording.id)) {
+            try await store.remove(id: seed.recording.id)
+        }
+
+        #expect(FileManager.default.fileExists(atPath: packageDirectory(for: seed.recording.id, root: root).path))
+    }
+
+    @Test("Removal deletes the complete closed package and reports success only after durable absence")
+    func closedPackageRemovalIsDurable() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+        let closure = FlightRecordingClosure(
+            outcome: .incomplete,
+            cause: .manual,
+            closedAt: seed.recording.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            landingEvidenceAvailable: false
+        )
+        try await store.close(id: seed.recording.id, closure: closure)
+
+        try await store.remove(id: seed.recording.id)
+
+        #expect(FileManager.default.fileExists(atPath: packageDirectory(for: seed.recording.id, root: root).path) == false)
+        let packages = await store.packages()
+        #expect(packages.isEmpty)
+    }
+
+    @Test("Corrupt packages remain removable when their identity is known")
+    func corruptPackageRemoval() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+        let manifestURL = packageDirectory(for: seed.recording.id, root: root).appending(path: "manifest.json")
+        try Data("not-json".utf8).write(to: manifestURL)
+
+        try await store.remove(id: seed.recording.id)
+
+        #expect(FileManager.default.fileExists(atPath: packageDirectory(for: seed.recording.id, root: root).path) == false)
+    }
+
+    @Test("Failed removal preserves every package file")
+    func failedRemovalPreservesPackage() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(
+            rootDirectory: root,
+            beforeRemove: { _ in throw TestFailure.expected }
+        )
+        try await store.create(seed)
+        let closure = FlightRecordingClosure(
+            outcome: .incomplete,
+            cause: .manual,
+            closedAt: seed.recording.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            landingEvidenceAvailable: false
+        )
+        try await store.close(id: seed.recording.id, closure: closure)
+        let packageURL = packageDirectory(for: seed.recording.id, root: root)
+        let filesBefore = try FileManager.default.subpathsOfDirectory(atPath: packageURL.path).sorted()
+
+        await #expect(throws: FlightRecordingStoreError.operationFailed(id: seed.recording.id)) {
+            try await store.remove(id: seed.recording.id)
+        }
+
+        #expect(FileManager.default.fileExists(atPath: packageURL.path))
+        #expect(try FileManager.default.subpathsOfDirectory(atPath: packageURL.path).sorted() == filesBefore)
+    }
+
     private func makeSeed() throws -> FlightRecordingSeed {
         let legID = UUID()
         let promotion = try FlightRecording.promoteForStartLeg(
@@ -283,6 +361,10 @@ struct DiskFlightRecordingStoreTests {
 
     private func temporaryDirectory() -> URL {
         URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+    }
+
+    private func packageDirectory(for id: UUID, root: URL) -> URL {
+        root.appending(path: id.uuidString.lowercased(), directoryHint: .isDirectory)
     }
 
     private func recordedSample(at date: Date, latitude: Double) -> RecordedTrackSample {

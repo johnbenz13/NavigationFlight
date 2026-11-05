@@ -8,7 +8,8 @@ struct FlightDetailLoaderView: View {
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
     let exporter: GPXExporter
-    let onDeleted: () async -> Void
+    @Binding var flightsState: FlightsFeatureState
+    let onRequestDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var detail: FlightDetailPresentation?
@@ -25,7 +26,7 @@ struct FlightDetailLoaderView: View {
                     onContinue: { onContinue(id) },
                     isExporting: isExporting,
                     onExport: export,
-                    onDelete: delete
+                    onDelete: onRequestDelete
                 )
             } else if loadFailed {
                 ContentUnavailableView(
@@ -61,20 +62,12 @@ struct FlightDetailLoaderView: View {
         } message: {
             Text("No file was shared. The recording is unchanged and remains available to export again.")
         }
-    }
-
-    @MainActor
-    private func delete() async {
-        do {
-            try await library.delete(id: id)
-            await onDeleted()
-            dismiss()
-        } catch {
-            detail = try? await library.detail(id: id, activeRecordingID: activeRecordingID)
+        .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
+            if wasPresent, !isPresent {
+                dismiss()
+            }
         }
     }
-
-    @MainActor
     private func export() async {
         guard !isExporting else { return }
         isExporting = true
@@ -94,15 +87,17 @@ struct FlightDetailView: View {
     let onContinue: () -> Void
     let isExporting: Bool
     let onExport: () async -> Void
-    let onDelete: () async -> Void
-
-    @State private var confirmsDeletion = false
+    let onDelete: () -> Void
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 if let route = detail.route {
                     Text(route)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if detail.status == .unavailable {
+                    Text("Recording cannot be read")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -115,7 +110,11 @@ struct FlightDetailView: View {
                     .background(Color(.secondarySystemBackground), in: .capsule)
                     .accessibilityIdentifier("flight-detail.status")
 
-                summaryCard
+                if detail.status == .unavailable {
+                    UnavailableRecordingCard()
+                } else {
+                    summaryCard
+                }
 
                 if detail.isReadOnlySnapshot {
                     Button(action: onContinue) {
@@ -145,20 +144,18 @@ struct FlightDetailView: View {
                         .accessibilityIdentifier("flight-detail.export")
                 }
 
-                storedEvidence
-                detailSections
+                if detail.status == .unavailable, detail.canDelete {
+                    FlightDeletionButton(action: onDelete)
+                }
 
-                if detail.canDelete {
-                    Button(role: .destructive) {
-                        confirmsDeletion = true
-                    } label: {
-                        Label("Delete recording", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
+                storedEvidence
+
+                if detail.status != .unavailable {
+                    detailSections
+
+                    if detail.canDelete {
+                        FlightDeletionButton(action: onDelete)
                     }
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.roundedRectangle(radius: 14))
-                    .controlSize(.large)
-                    .accessibilityIdentifier("flight-detail.delete")
                 }
             }
             .frame(maxWidth: 600, alignment: .leading)
@@ -168,18 +165,6 @@ struct FlightDetailView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Flight · \(statusText)")
         .navigationBarTitleDisplayMode(.large)
-        .confirmationDialog(
-            "Delete \(detail.flightPlanTitle)?",
-            isPresented: $confirmsDeletion,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                Task { await onDelete() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This permanently removes the GPS track and navigation event history from this device.")
-        }
         .accessibilityIdentifier("flight-detail.\(detail.id.uuidString)")
     }
 
@@ -357,6 +342,44 @@ struct FlightDetailView: View {
         case .supersededDuringRecovery: "Superseded during recovery"
         case nil: "Not closed"
         }
+    }
+}
+
+private struct UnavailableRecordingCard: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Track unavailable")
+                .font(.title3.weight(.bold))
+            Text("The recording metadata is damaged.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("Deletion remains available.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(Color(.systemBackground), in: .rect(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(.separator), lineWidth: 0.5)
+        }
+        .accessibilityIdentifier("flight-detail.summary")
+    }
+}
+
+private struct FlightDeletionButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(role: .destructive, action: action) {
+            Label("Delete recording", systemImage: "trash")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.roundedRectangle(radius: 14))
+        .controlSize(.large)
+        .accessibilityIdentifier("flight-detail.delete")
     }
 }
 

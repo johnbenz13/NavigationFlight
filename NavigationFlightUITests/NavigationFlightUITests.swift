@@ -256,6 +256,75 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testClosedFlightDeletionCancellationPreservesTheNamedFlight() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        let id = "03000000-0000-0000-0000-000000000003"
+        openFlightDetail(id: id, in: app)
+
+        app.buttons["flight-detail.delete"].tap()
+
+        XCTAssertTrue(app.staticTexts["Delete Jerusalem Corridor Practice?"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts[
+            "This permanently removes the GPS track and navigation event history from this device."
+        ].exists)
+        let confirmationScreenshot = XCTAttachment(screenshot: app.screenshot())
+        confirmationScreenshot.name = "Issue 91 Delete Confirmation"
+        confirmationScreenshot.lifetime = .keepAlways
+        add(confirmationScreenshot)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.\(id)"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testConfirmedClosedFlightDeletionReturnsToListAfterRemoval() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        let id = "03000000-0000-0000-0000-000000000003"
+        openFlightDetail(id: id, in: app)
+        app.buttons["flight-detail.delete"].tap()
+
+        app.buttons["Delete"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flights.list"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.descendants(matching: .any)["flights.row.\(id)"].exists)
+    }
+
+    @MainActor
+    func testFailedDeletionPreservesDetailAndOffersRetry() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            deletionFailure: true
+        )
+        let id = "03000000-0000-0000-0000-000000000003"
+        openFlightDetail(id: id, in: app)
+        app.buttons["flight-detail.delete"].tap()
+
+        app.buttons["Delete"].tap()
+
+        XCTAssertTrue(app.alerts["Couldn’t delete Jerusalem Corridor Practice"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[
+            "The recording and all of its files remain on this device. Try deleting it again."
+        ].exists)
+        XCTAssertTrue(app.alerts.firstMatch.buttons["Retry"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.\(id)"].exists)
+    }
+
+    @MainActor
+    func testCorruptRecordingRemainsDeletable() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        let id = "06000000-0000-0000-0000-000000000006"
+        openFlightDetail(id: id, in: app)
+
+        XCTAssertTrue(app.staticTexts["Track unavailable"].exists)
+        XCTAssertTrue(app.staticTexts["Deletion remains available."].exists)
+        XCTAssertTrue(app.buttons["flight-detail.delete"].isHittable)
+        let unavailableScreenshot = XCTAttachment(screenshot: app.screenshot())
+        unavailableScreenshot.name = "Issue 91 Unavailable Recording"
+        unavailableScreenshot.lifetime = .keepAlways
+        add(unavailableScreenshot)
+    }
+
+    @MainActor
     func testFreshLaunchShowsEmptyFlightPlans() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1375,7 +1444,8 @@ final class NavigationFlightUITests: XCTestCase {
         state: String,
         planData: Data? = nil,
         preferredContentSizeCategory: String? = nil,
-        exportFailure: Bool = false
+        exportFailure: Bool = false,
+        deletionFailure: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1383,6 +1453,9 @@ final class NavigationFlightUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] = state
         if exportFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] = "1"
+        }
+        if deletionFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE"] = "1"
         }
         if let planData {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()

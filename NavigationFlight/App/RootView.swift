@@ -292,7 +292,9 @@ struct RootView: View {
                     library: flightRecordingLibrary,
                     activeRecordingID: flightRecordingCoordinator.activeRecordingID ?? debugFlightsActiveRecordingID,
                     onContinue: continueFlightFromLibrary,
-                    onExport: { _ in }
+                    exporter: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] == "1"
+                        ? GPXExporter(temporaryDirectory: URL(fileURLWithPath: "/dev/null"))
+                        : GPXExporter()
                 )
             }
 

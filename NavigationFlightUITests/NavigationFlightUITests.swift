@@ -194,6 +194,45 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testClosedFlightExportsAndShareCancellationReturnsToRetryableResult() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.result"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.filename"].label.hasSuffix(".gpx"))
+        let share = app.buttons["flight-export.share"]
+        XCTAssertTrue(share.isHittable)
+        share.tap()
+        let dismissRegion = app.otherElements["PopoverDismissRegion"]
+        XCTAssertTrue(dismissRegion.waitForExistence(timeout: 5))
+        dismissRegion.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.result"].waitForExistence(timeout: 3))
+        let dismissed = expectation(
+            for: NSPredicate(format: "isHittable == true"),
+            evaluatedWith: share
+        )
+        wait(for: [dismissed], timeout: 5)
+    }
+
+    @MainActor
+    func testExportFailureExplainsNoFileWasSharedAndOffersRetry() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            exportFailure: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+
+        XCTAssertTrue(app.alerts["GPX export failed"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["No file was shared. The recording is unchanged and remains available to export again."].exists)
+        XCTAssertTrue(app.alerts["GPX export failed"].buttons["Retry"].exists)
+    }
+
+    @MainActor
     func testActiveFlightDetailIsReadOnlyAndContinuable() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
 
@@ -1335,12 +1374,16 @@ final class NavigationFlightUITests: XCTestCase {
     private func launchFlights(
         state: String,
         planData: Data? = nil,
-        preferredContentSizeCategory: String? = nil
+        preferredContentSizeCategory: String? = nil,
+        exportFailure: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] = "flights"
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] = state
+        if exportFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] = "1"
+        }
         if let planData {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
         }

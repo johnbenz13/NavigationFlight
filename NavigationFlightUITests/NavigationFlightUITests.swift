@@ -84,12 +84,15 @@ final class NavigationFlightUITests: XCTestCase {
 
         let cockpitTab = tab(named: "Cockpit", in: app)
         let flightPlansTab = tab(named: "Flight Plans", in: app)
+        let flightsTab = tab(named: "Flights", in: app)
         let settingsTab = tab(named: "Settings", in: app)
         XCTAssertTrue(cockpitTab.waitForExistence(timeout: 5))
         XCTAssertTrue(flightPlansTab.exists)
+        XCTAssertTrue(flightsTab.exists)
         XCTAssertTrue(settingsTab.exists)
         XCTAssertLessThan(cockpitTab.frame.minX, flightPlansTab.frame.minX)
-        XCTAssertLessThan(flightPlansTab.frame.minX, settingsTab.frame.minX)
+        XCTAssertLessThan(flightPlansTab.frame.minX, flightsTab.frame.minX)
+        XCTAssertLessThan(flightsTab.frame.minX, settingsTab.frame.minX)
         XCTAssertTrue(flightPlansTab.isSelected)
         XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
         XCTAssertTrue(app.buttons["add-flight-plan"].exists)
@@ -103,6 +106,69 @@ final class NavigationFlightUITests: XCTestCase {
 
         settingsTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.staticTexts["Settings will be available here. No functional settings or inactive future app sections."].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func testFlightsEmptyStateExplainsAutomaticPopulationWithoutImport() throws {
+        let app = launchFlights(state: "empty")
+
+        XCTAssertTrue(app.staticTexts["No recorded flights yet"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[
+            "Load a Flight Plan in Cockpit. Recording starts automatically when movement and takeoff are detected."
+        ].exists)
+        XCTAssertFalse(app.buttons["add-flight-plan"].exists)
+    }
+
+    @MainActor
+    func testFlightsPopulatedFixtureExposesAllRowStatesAndContinueActions() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        let rows = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flights.row.'")
+        )
+
+        XCTAssertTrue(app.descendants(matching: .any)["flights.list"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flights.continue.'")).count, 2)
+        var labels = rows.allElementsBoundByIndex.map(\.label)
+        app.descendants(matching: .any)["flights.list"].swipeUp()
+        labels.append(contentsOf: rows.allElementsBoundByIndex.map(\.label))
+        app.descendants(matching: .any)["flights.list"].swipeUp()
+        labels.append(contentsOf: rows.allElementsBoundByIndex.map(\.label))
+        XCTAssertTrue(labels.contains { $0.contains("In Progress") && $0.contains("GPS available") })
+        XCTAssertTrue(labels.contains { $0.contains("Recovery Required") && $0.contains("Partial GPS") })
+        XCTAssertTrue(labels.contains { $0.contains("Complete") })
+        XCTAssertTrue(labels.contains { $0.contains("Incomplete") && $0.contains("Partial GPS") })
+        XCTAssertTrue(labels.contains { $0.contains("Manually Ended") && $0.contains("GPS unavailable") })
+        XCTAssertTrue(labels.contains { $0.contains("Unavailable recording") && $0.contains("Unavailable") })
+    }
+
+    @MainActor
+    func testFlightsRowsPreserveStatusMeaningAtAccessibilityTextSize() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL"
+        )
+        let rows = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flights.row.'")
+        )
+
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(rows.allElementsBoundByIndex.allSatisfy { $0.label.isEmpty == false })
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'flights.continue.'")).firstMatch.isHittable)
+    }
+
+    @MainActor
+    func testActiveFlightContinueRoutesToCockpit() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        let continueButton = app.buttons[
+            "flights.continue.01000000-0000-0000-0000-000000000001"
+        ]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 5))
+
+        continueButton.tap()
+
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
+        XCTAssertTrue(tab(named: "Cockpit", in: app).exists)
     }
 
     @MainActor
@@ -1216,6 +1282,25 @@ final class NavigationFlightUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] = state
         if let planData {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
+        }
+        app.launch()
+        return app
+    }
+
+    private func launchFlights(
+        state: String,
+        planData: Data? = nil,
+        preferredContentSizeCategory: String? = nil
+    ) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] = "flights"
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] = state
+        if let planData {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
+        }
+        if let preferredContentSizeCategory {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSizeCategory]
         }
         app.launch()
         return app

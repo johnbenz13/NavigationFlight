@@ -284,7 +284,8 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                     nextEventSequence: UInt64(events.count)
                 ),
                 events: events,
-                trackSegments: trackSegments
+                trackSegments: trackSegments,
+                approximateSizeBytes: approximatePackageSize(at: directory)
             )
         } catch let error as FlightRecordingStoreError {
             throw error
@@ -332,6 +333,24 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             }
             return RecordedTrackSegment(id: segmentID, samples: samples)
         }
+    }
+
+    private func approximatePackageSize(at directory: URL) -> Int64? {
+        guard let enumerator = fileManager.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+        var total: Int64 = 0
+        for case let fileURL as URL in enumerator {
+            guard let values = try? fileURL.resourceValues(
+                forKeys: [.isRegularFileKey, .fileSizeKey]
+            ),
+            values.isRegularFile == true,
+            let fileSize = values.fileSize else { continue }
+            total += Int64(fileSize)
+        }
+        return total
     }
 
     private func writeAndSynchronize(_ data: Data, to url: URL) throws {

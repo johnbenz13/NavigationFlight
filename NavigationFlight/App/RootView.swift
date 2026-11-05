@@ -6,6 +6,7 @@ struct RootView: View {
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
     private let flightPlanLibrary: FlightPlanLibrary
+    private let flightRecordingLibrary: FlightRecordingLibrary
     private let flightPlanFileReader = FlightPlanFileReader()
     private let debugLibrarySeedData: [Data]
     private let debugImportData: Data?
@@ -15,6 +16,7 @@ struct RootView: View {
     private let shouldPresentPositionCheckEducation: Bool
     private let shouldSimulateRecordingDegradation: Bool
     private let debugRecordingStatus: RecordingStatus?
+    private let debugFlightsActiveRecordingID: UUID?
 
     init() {
         let defaultLibraryDirectory = FileManager.default.urls(
@@ -137,6 +139,9 @@ struct RootView: View {
             }
             selectedAppSection = .flightPlans
         }
+        if environment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] == "flights" {
+            selectedAppSection = .flights
+        }
 #endif
         var initialAppState = AppFeatureState(
             selectedAppSection: selectedAppSection,
@@ -151,7 +156,16 @@ struct RootView: View {
         )
         let recordingStore: any FlightRecordingStore
 #if DEBUG
-        if let recoveryState = environment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] {
+        if let flightsState = environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] {
+            let fixture = Self.makeFlightsFixture(
+                state: flightsState,
+                sourceData: environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"].flatMap {
+                    Data(base64Encoded: $0)
+                }
+            )
+            recordingStore = InMemoryFlightRecordingStore(packageResults: fixture.packages)
+            debugFlightsActiveRecordingID = fixture.activeRecordingID
+        } else if let recoveryState = environment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] {
             var packageResults: [FlightRecordingPackageResult] = []
             if recoveryState == "unsupported" {
                 packageResults = [.unsupported(id: UUID(), schemaVersion: 99)]
@@ -190,20 +204,29 @@ struct RootView: View {
                 }
             }
             recordingStore = InMemoryFlightRecordingStore(packageResults: packageResults)
+            debugFlightsActiveRecordingID = nil
         } else if environment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE"] == "1" {
             recordingStore = InMemoryFlightRecordingStore(failure: .create)
+            debugFlightsActiveRecordingID = nil
         } else {
             recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+            debugFlightsActiveRecordingID = nil
         }
 #else
         recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+        debugFlightsActiveRecordingID = nil
 #endif
         _flightRecordingCoordinator = State(
             initialValue: FlightRecordingCoordinator(store: recordingStore)
         )
-        _flightRecoveryCoordinator = State(
-            initialValue: FlightRecoveryCoordinator(store: recordingStore)
-        )
+        flightRecordingLibrary = FlightRecordingLibrary(store: recordingStore)
+        let recoveryCoordinator = FlightRecoveryCoordinator(store: recordingStore)
+#if DEBUG
+        if environment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] != nil {
+            recoveryCoordinator.dismissUnavailableRecovery()
+        }
+#endif
+        _flightRecoveryCoordinator = State(initialValue: recoveryCoordinator)
     }
 
     var body: some View {
@@ -256,6 +279,18 @@ struct RootView: View {
                     debugSeedData: debugLibrarySeedData,
                     debugImportData: debugImportData,
                     onIntent: handleFlightPlansIntent
+                )
+            }
+
+            Tab("Flights", systemImage: "clock.arrow.circlepath", value: AppFeatureState.AppSection.flights) {
+                FlightsFeatureView(
+                    state: Binding(
+                        get: { appState.flights },
+                        set: { appState.updateFlights($0) }
+                    ),
+                    library: flightRecordingLibrary,
+                    activeRecordingID: flightRecordingCoordinator.activeRecordingID ?? debugFlightsActiveRecordingID,
+                    onContinue: continueFlightFromLibrary
                 )
             }
 
@@ -356,6 +391,124 @@ struct RootView: View {
             }
         }
     }
+
+    private func continueFlightFromLibrary(id: UUID) {
+        if flightRecordingCoordinator.activeRecordingID == id || debugFlightsActiveRecordingID == id {
+            appState.returnToCockpit()
+        } else {
+            continueRecoveredFlight(id: id)
+        }
+    }
+
+#if DEBUG
+    private static func makeFlightsFixture(
+        state: String,
+        sourceData: Data?
+    ) -> (packages: [FlightRecordingPackageResult], activeRecordingID: UUID?) {
+        guard state == "populated",
+              let sourceData,
+              let plan = try? FPLNavDecoder().decode(sourceData),
+              let legID = plan.legs.first?.id else {
+            return ([], nil)
+        }
+        let baseDate = Date(timeIntervalSince1970: 1_794_000_000)
+        let definitions: [(
+            id: UUID,
+            title: String,
+            startOffset: TimeInterval,
+            closure: FlightRecordingClosure?,
+            coverage: GPSCoverageState,
+            size: Int64
+        )] = [
+            (
+                UUID(uuid: (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)),
+                "Herzliya Coastal Navigation",
+                0,
+                nil,
+                .available,
+                4_800_000
+            ),
+            (
+                UUID(uuid: (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2)),
+                "Recovery Practice",
+                -600,
+                nil,
+                .partial,
+                3_600_000
+            ),
+            (
+                UUID(uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
+                "Jerusalem Corridor Practice",
+                -86_400,
+                FlightRecordingClosure(
+                    outcome: .complete,
+                    cause: .automatic,
+                    closedAt: baseDate.addingTimeInterval(-82_440),
+                    elapsed: .seconds(3_960),
+                    landingEvidenceAvailable: true
+                ),
+                .available,
+                4_100_000
+            ),
+            (
+                UUID(uuid: (4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4)),
+                "Northern Hills Training",
+                -172_800,
+                FlightRecordingClosure(
+                    outcome: .incomplete,
+                    cause: .automatic,
+                    closedAt: baseDate.addingTimeInterval(-169_920),
+                    elapsed: .seconds(2_880),
+                    landingEvidenceAvailable: true
+                ),
+                .partial,
+                2_700_000
+            ),
+            (
+                UUID(uuid: (5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5)),
+                "Action-only Training",
+                -259_200,
+                FlightRecordingClosure(
+                    outcome: .incomplete,
+                    cause: .manual,
+                    closedAt: baseDate.addingTimeInterval(-257_400),
+                    elapsed: .seconds(1_800),
+                    landingEvidenceAvailable: false
+                ),
+                .unavailable,
+                900_000
+            ),
+        ]
+        let packages = definitions.compactMap { definition -> FlightRecordingPackageResult? in
+            let startedAt = baseDate.addingTimeInterval(definition.startOffset)
+            guard let promotion = try? FlightRecording.promoteForStartLeg(
+                id: definition.id,
+                flightID: UUID(),
+                flightPlanSnapshot: RecordedFlightPlanSnapshot(
+                    id: plan.id,
+                    title: definition.title,
+                    legIDs: plan.legs.map(\.id),
+                    sourceData: sourceData
+                ),
+                legID: legID,
+                startedAt: startedAt,
+                eventIDs: [UUID(), UUID()]
+            ) else { return nil }
+            var recording = promotion.recording.restoring(gpsCoverage: definition.coverage)
+            if let closure = definition.closure {
+                recording = recording.restoring(closure: closure)
+            }
+            return .available(FlightRecordingReadSnapshot(
+                recording: recording,
+                events: promotion.events,
+                approximateSizeBytes: definition.size
+            ))
+        } + [
+            .corrupt(id: UUID(uuid: (6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6))),
+        ]
+        return (packages, definitions.first?.id)
+    }
+#endif
 
     private func endRecoveredFlightAsIncomplete(id: UUID) {
         Task {

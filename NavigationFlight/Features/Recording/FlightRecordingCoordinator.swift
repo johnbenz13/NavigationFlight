@@ -25,6 +25,11 @@ final class FlightRecordingCoordinator {
     private(set) var isCommitting = false
     private(set) var storageDegradations: Set<RecordingStorageDegradation> = []
 
+    var activeRecordingID: UUID? {
+        guard publishedRecording?.closure == nil else { return nil }
+        return publishedRecording?.id
+    }
+
     var isNavigationCompletionCommitted: Bool {
         publishedRecording?.navigationState == .complete
     }

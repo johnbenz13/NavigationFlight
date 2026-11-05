@@ -7,6 +7,7 @@ final class FlightRecordingCoordinator {
     enum CoordinationError: Error, Equatable, Sendable {
         case startLegPersistenceFailed
         case automaticPromotionPersistenceFailed
+        case checkpointPersistenceFailed
         case noActiveRecording
         case commandInFlight
     }
@@ -14,11 +15,14 @@ final class FlightRecordingCoordinator {
     private let store: any FlightRecordingStore
     private let detectorPolicy: PhysicalFlightDetectionPolicy
     private let monotonicNow: @MainActor @Sendable () -> Duration
+    private let wallClockNow: @MainActor @Sendable () -> Date
+    private let recoveryCheckpointInterval: TimeInterval
     private var engine: FlightRecordingEngine?
     private var publishedFlight: Flight?
     private var publishedRecording: FlightRecording?
     private var locationConsumptionTask: Task<Void, Never>?
     private var recordingLocationHub: AircraftLocationService?
+    private var recoveryCheckpointTask: Task<Void, Never>?
 
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
@@ -50,11 +54,15 @@ final class FlightRecordingCoordinator {
         detectorPolicy: PhysicalFlightDetectionPolicy = .production,
         monotonicNow: @escaping @MainActor @Sendable () -> Duration = {
             .seconds(ProcessInfo.processInfo.systemUptime)
-        }
+        },
+        wallClockNow: @escaping @MainActor @Sendable () -> Date = Date.init,
+        recoveryCheckpointInterval: TimeInterval = 30
     ) {
         self.store = store
         self.detectorPolicy = detectorPolicy
         self.monotonicNow = monotonicNow
+        self.wallClockNow = wallClockNow
+        self.recoveryCheckpointInterval = recoveryCheckpointInterval
     }
 
     func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot) async {
@@ -111,12 +119,15 @@ final class FlightRecordingCoordinator {
         engine = candidate
         publishedFlight = recovered.flight
         publishedRecording = recovered.recording
+        startRecoveryCheckpointing()
         storageDegradations = degradations
         status = Self.status(for: recovered.recording, hasDegradation: !degradations.isEmpty)
         lastError = nil
     }
 
     func disarm() async {
+        recoveryCheckpointTask?.cancel()
+        recoveryCheckpointTask = nil
         locationConsumptionTask?.cancel()
         locationConsumptionTask = nil
         recordingLocationHub = nil
@@ -138,6 +149,7 @@ final class FlightRecordingCoordinator {
         let outcome = await engine.ingest(event, monotonicTime: monotonicNow())
         if case .promoted(let recording, let partial) = outcome {
             publishedRecording = recording
+            startRecoveryCheckpointing()
             status = partial ? .partialRecording : .recording
             return
         }
@@ -156,6 +168,8 @@ final class FlightRecordingCoordinator {
             status = .physicalPhaseCorrected
             return
         case .closed(let recording):
+            recoveryCheckpointTask?.cancel()
+            recoveryCheckpointTask = nil
             publishedRecording = recording
             status = recording.closure?.outcome == .complete ? .closedComplete : .closedIncomplete
             await stopRecordingLocationCapture()
@@ -290,6 +304,8 @@ final class FlightRecordingCoordinator {
         publishedFlight = transition.flight
         publishedRecording = transition.recording
         if transition.recording.closure?.outcome == .complete {
+            recoveryCheckpointTask?.cancel()
+            recoveryCheckpointTask = nil
             status = .closedComplete
             await stopRecordingLocationCapture()
         } else {
@@ -332,6 +348,8 @@ final class FlightRecordingCoordinator {
         at timestamp: Date,
         eventIDs: [UUID]
     ) async throws {
+        recoveryCheckpointTask?.cancel()
+        recoveryCheckpointTask = nil
         if let recording = publishedRecording,
            recording.closure == nil,
            let engine {
@@ -349,5 +367,73 @@ final class FlightRecordingCoordinator {
         storageDegradations = []
         status = .ready
         lastError = nil
+    }
+
+    private func startRecoveryCheckpointing() {
+        recoveryCheckpointTask?.cancel()
+        guard let recording = publishedRecording, recording.closure == nil else { return }
+        let recordingID = recording.id
+        let interval = recoveryCheckpointInterval
+        recoveryCheckpointTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(for: .seconds(interval))
+                } catch {
+                    return
+                }
+                guard let self, !Task.isCancelled else { return }
+                let timestamp = self.wallClockNow()
+                do {
+                    try await self.store.updateRecoveryCheckpoint(
+                        recordingID: recordingID,
+                        at: timestamp
+                    )
+                    if self.publishedRecording?.id == recordingID {
+                        self.publishedRecording = self.publishedRecording?.restoringRecoveryCheckpoint(
+                            at: timestamp
+                        )
+                    }
+                } catch {
+                    self.lastError = .checkpointPersistenceFailed
+                    await self.failClosedIfCheckpointExpired(
+                        recordingID: recordingID,
+                        observedAt: timestamp
+                    )
+                }
+            }
+        }
+    }
+
+    private func failClosedIfCheckpointExpired(
+        recordingID: UUID,
+        observedAt: Date
+    ) async {
+        guard var recording = publishedRecording,
+              recording.id == recordingID,
+              recording.closure == nil else { return }
+        let lastDurableActivity = recording.lastRecoveryCheckpointAt ?? recording.startedAt
+        guard observedAt >= lastDurableActivity,
+              observedAt.timeIntervalSince(lastDurableActivity) >= recording.recoveryWindowSeconds else {
+            status = .recordingDegraded
+            return
+        }
+        do {
+            let elapsed = Duration.seconds(max(0, lastDurableActivity.timeIntervalSince(recording.startedAt)))
+            let event = try recording.closeDuringRecovery(
+                at: lastDurableActivity,
+                elapsed: elapsed,
+                cause: .recoveryExpired,
+                eventID: UUID()
+            )
+            try await store.appendEvent(event, recordingID: recordingID, synchronize: true)
+            guard let closure = recording.closure else { return }
+            try await store.close(id: recordingID, closure: closure)
+            publishedRecording = recording
+            status = .closedIncomplete
+            recoveryCheckpointTask?.cancel()
+            recoveryCheckpointTask = nil
+        } catch {
+            status = .recordingDegraded
+        }
     }
 }

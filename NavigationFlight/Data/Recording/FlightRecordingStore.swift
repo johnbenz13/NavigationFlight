@@ -9,6 +9,7 @@ nonisolated protocol FlightRecordingStore: Sendable {
     ) async throws
     func appendTrackBatch(_ batch: RecordedTrackBatch) async throws
     func synchronizeTrack(recordingID: UUID) async throws
+    func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) async throws
     func packages() async -> [FlightRecordingPackageResult]
     func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot
     func close(id: UUID, closure: FlightRecordingClosure) async throws

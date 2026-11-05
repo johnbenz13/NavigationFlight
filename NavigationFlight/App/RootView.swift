@@ -177,7 +177,7 @@ struct RootView: View {
                       let mode = plan.plannedNavigation.plannedNavigation?.defaultMode {
                 let count = recoveryState == "multiple" ? 2 : 1
                 packageResults = (0..<count).compactMap { index in
-                    let startedAt = Date.now.addingTimeInterval(TimeInterval(-600 - (index * 600)))
+                    let startedAt = Date.now.addingTimeInterval(TimeInterval(-60 - (index * 60)))
                     let flight = Flight(
                         flightPlanID: plan.id,
                         legIDs: plan.legs.map(\.id),
@@ -238,6 +238,7 @@ struct RootView: View {
                     state: flightRecoveryCoordinator.state,
                     onContinue: continueRecoveredFlight,
                     onEndIncomplete: endRecoveredFlightAsIncomplete,
+                    onEndAll: endAllRecoveredFlightsAsIncomplete,
                     onDismissUnavailable: flightRecoveryCoordinator.dismissUnavailableRecovery
                 )
             }
@@ -549,6 +550,16 @@ struct RootView: View {
                     elapsed: flightRecoveryCoordinator.rebasedElapsed(for: id),
                     eventIDs: [UUID(), UUID()]
                 )
+            } catch {
+                await flightRecoveryCoordinator.bootstrap()
+            }
+        }
+    }
+
+    private func endAllRecoveredFlightsAsIncomplete() {
+        Task {
+            do {
+                try await flightRecoveryCoordinator.endAllAsIncomplete()
             } catch {
                 await flightRecoveryCoordinator.bootstrap()
             }

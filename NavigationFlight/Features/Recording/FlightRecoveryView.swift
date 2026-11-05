@@ -4,6 +4,7 @@ struct FlightRecoveryView: View {
     let state: FlightRecoveryState
     let onContinue: (UUID) -> Void
     let onEndIncomplete: (UUID) -> Void
+    let onEndAll: () -> Void
     let onDismissUnavailable: () -> Void
 
     @State private var pendingEndCandidate: RecoveryCandidate?
@@ -20,16 +21,30 @@ struct FlightRecoveryView: View {
                     title: "Continue your flight?",
                     message: "A recording from \(candidate.flightPlanTitle) is still active."
                 ) {
-                    checkpointCard(title: "DURABLE CHECKPOINT") {
-                        Text("Saved navigation checkpoint")
-                        Text("GPS samples preserved")
-                        Text("Navigation actions preserved")
+                    checkpointCard(title: "CONTINUE AVAILABLE FOR") {
+                        if let expiresAt = candidate.expiresAt {
+                            TimelineView(.periodic(from: .now, by: 1)) { context in
+                                Text(remainingTime(until: expiresAt, now: context.date))
+                                    .font(.largeTitle.bold().monospacedDigit())
+                                    .accessibilityLabel("Continue available for \(remainingTime(until: expiresAt, now: context.date))")
+                            }
+                        }
+                        if let lastActivityAt = candidate.lastActivityAt {
+                            Text("Last saved activity \(lastActivityAt.formatted(.relative(presentation: .named)))")
+                        }
                     }
                 } actions: {
                     primaryButton("Continue Flight") { onContinue(candidate.id) }
                     secondaryButton("End as Incomplete", role: .destructive) {
                         pendingEndCandidate = candidate
                     }
+                }
+                .task(id: candidate.id) {
+                    guard let expiresAt = candidate.expiresAt else { return }
+                    let delay = max(0, expiresAt.timeIntervalSinceNow)
+                    try? await Task.sleep(for: .seconds(delay))
+                    guard !Task.isCancelled else { return }
+                    onContinue(candidate.id)
                 }
             case .selectionRequired(let candidates):
                 recoverySurface(
@@ -60,6 +75,20 @@ struct FlightRecoveryView: View {
                         }
                         .accessibilityHint("Continues this saved Flight. Actions include ending it as incomplete.")
                     }
+                    secondaryButton("End All as Incomplete", role: .destructive, action: onEndAll)
+                }
+            case .reconciledExpired(let count):
+                recoverySurface(
+                    title: "Old Flights were saved",
+                    message: "NavigationFlight safely closed \(count) interrupted \(count == 1 ? "Flight" : "Flights") outside the continuation window."
+                ) {
+                    checkpointCard(title: "RECONCILIATION COMPLETE") {
+                        Text("No recorded evidence was deleted")
+                        Text("Each Flight closed at its last saved activity")
+                    }
+                } actions: {
+                    primaryButton("Review Flights", action: onDismissUnavailable)
+                    secondaryButton("Continue to App", action: onDismissUnavailable)
                 }
             case .unsupported:
                 recoverySurface(
@@ -108,6 +137,11 @@ struct FlightRecoveryView: View {
         } message: {
             Text("The recording remains stored, but it can no longer be continued.")
         }
+    }
+
+    private func remainingTime(until expiration: Date, now: Date) -> String {
+        let seconds = max(0, Int(expiration.timeIntervalSince(now).rounded(.up)))
+        return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 
     private func recoverySurface<Content: View, Actions: View>(

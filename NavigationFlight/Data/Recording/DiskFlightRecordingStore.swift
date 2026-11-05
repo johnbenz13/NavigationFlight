@@ -143,6 +143,30 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         }
     }
 
+    func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) throws {
+        let directory = packageDirectory(id: recordingID)
+        let manifestURL = directory.appending(path: "manifest.json")
+        let temporary = directory.appending(path: ".manifest-\(UUID().uuidString).tmp")
+        do {
+            var manifest = try FlightRecordingCoding.decoder.decode(
+                FlightRecordingManifestDTO.self,
+                from: Data(contentsOf: manifestURL)
+            )
+            guard manifest.closure == nil else {
+                throw FlightRecordingStoreError.recordingActive(id: recordingID)
+            }
+            manifest.lastRecoveryCheckpointAt = timestamp
+            try writeAndSynchronize(FlightRecordingCoding.encoder.encode(manifest), to: temporary)
+            _ = try fileManager.replaceItemAt(manifestURL, withItemAt: temporary)
+        } catch let error as FlightRecordingStoreError {
+            try? fileManager.removeItem(at: temporary)
+            throw error
+        } catch {
+            try? fileManager.removeItem(at: temporary)
+            throw FlightRecordingStoreError.operationFailed(id: recordingID)
+        }
+    }
+
     func appendEvent(
         _ event: RecordedFlightEvent,
         recordingID: UUID,

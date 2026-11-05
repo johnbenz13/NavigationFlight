@@ -309,6 +309,9 @@ struct FlightDetailView: View {
         switch detail.closureCause {
         case .automatic: "Automatic"
         case .manual: "Manual"
+        case .recoveryExpired: "Recovery expired"
+        case .endedDuringRecovery: "Ended during recovery"
+        case .supersededDuringRecovery: "Superseded during recovery"
         case nil: "Not closed"
         }
     }

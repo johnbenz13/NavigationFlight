@@ -1,6 +1,6 @@
 # Automatic Flight Recording and Recovery — Product Specification
 
-Status: paired product/Figma baseline approved.
+Status: bounded-recovery paired baseline approved for implementation.
 
 ## Summary
 
@@ -26,10 +26,13 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 ## Figma
 
 - Stable proposal: [NavigationFlight — Automatic Flight Recording and Recovery](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc).
-- Design status: `approved`.
-- Approved iteration: Iteration 02 — complete product-spec coverage extending the approved main-screen direction.
+- Design status: `approved` for Iteration 03 bounded recovery.
+- Approved iteration: Iteration 03 — bounded recovery.
+- Approved Iteration 03 main-screen direction: [single fresh Flight recovery gate on iPad portrait](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=38-275).
+- Iteration 03 recovery states under review: [end-incomplete confirmation](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-38), [expired result](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-67), [multiple-candidate selection](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-96), [legacy reconciliation summary](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-125), and [checkpoint failure](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-154).
+- Iteration 03 adaptive references under review: [iPad landscape](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-183), [iPhone portrait](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-202), and [Larger Text and VoiceOver](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=42-221).
 - Product-spec revision reviewed: [`14f2ed9`](https://github.com/johnbenz13/NavigationFlight/blob/14f2ed9/docs/features/AUTOMATIC-FLIGHT-RECORDING-AND-RECOVERY_SPEC.md).
-- Human approver and approval date: John, 2026-11-04.
+- Iteration 02 human approver and approval date: John, 2026-11-04. Iteration 03 paired baseline approved by John, 2026-11-05.
 - Approved main-screen direction: [Flights on iPad Pro 11-inch portrait](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=6-2).
 - Approved behavioral coverage: [product-spec coverage map](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-39).
 - Approved Flights states: [library](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-97) and [complete Flight detail](https://www.figma.com/design/ZrGA7ZuOACWtXA4mR7cwdc?node-id=11-127).
@@ -113,13 +116,13 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 30. If landing and sustained stop are established without **Navigation Complete**, the recording closes automatically as **Incomplete**.
 
-31. If navigation is complete but the pilot closes or force-quits the app before landing and sustained stop are established, the recording remains recoverable rather than being declared Complete.
+31. If navigation is complete but the process stops before landing and sustained stop are established, the recording may be recovered only within the recording's captured recovery window. After that window it closes as Incomplete rather than being declared Complete.
 
 32. The Cockpit provides a secondary **End Recording** action when automatic closure has not occurred. It requires confirmation and records that closure was manual.
 
 33. A manual end is Complete when navigation is complete and available evidence indicates landing. Otherwise it is Incomplete. Manual closure remains visible as part of the recording status.
 
-34. The currently active recording cannot be deleted. The pilot must first complete it or end it as incomplete.
+34. The currently active or recoverable recording cannot be exported or deleted. The pilot must first complete it or end it as incomplete.
 
 ### Navigation-event history
 
@@ -173,33 +176,37 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 58. An action-only recording may be Complete when navigation is complete and the pilot manually ends it. Its GPS coverage remains explicitly unavailable.
 
-59. Temporary sensor or storage degradation never blocks an operational navigation action. The app gives a restrained, non-blocking warning when recording may be incomplete.
+59. Temporary sensor or storage degradation does not block an operational navigation action. The app gives a restrained warning when recording may be incomplete. Recovery-checkpoint failure follows the stricter bounded-recovery rules below when durable protection cannot be restored before its window expires.
 
 ### Recovery and continuation
 
 60. Every committed navigation action is durably recoverable before the app presents that action as successful. High-frequency sensor data may have a bounded loss of approximately five seconds after an unexpected interruption.
 
-61. An interrupted Flight retains enough committed state to restore its Flight Plan, current leg, reached and passed targets, destination-identification state, ETA and heading revisions, timing history, navigation-completion state, and recording phase.
+61. At most one Flight is operationally active or recoverable. Starting or loading another Flight is unavailable until an existing recoverable Flight is continued or ended. A healthy recording owned by the running process remains active through ordinary foreground/background transitions and does not enter recovery.
 
-62. On launch, one recoverable Flight presents **Continue Flight** as the primary action and **End as Incomplete** as a confirmed alternative.
+62. Every durable recording captures the recovery window effective when it starts. The default is five minutes. A later Settings feature may offer bounded choices of 1, 2, 5, or 10 minutes, but never unlimited recovery; changing that preference does not alter an existing recording.
 
-63. Choosing **Continue Flight** restores committed navigation state and opens Cockpit. Active timing continues from its original time basis; closing the app never pauses the real Flight.
+63. While a recording is active, the app periodically preserves a lightweight recovery checkpoint even when GPS and navigation events are unavailable. The checkpoint is recovery evidence only: it is not a GPX point, waypoint, or navigation-history event.
 
-64. Recovery excludes transient presentation state: open editors, unsaved drafts, menus, sheets, alerts, map camera, and focus are not restored.
+64. An orphaned recording is recoverable only until its captured window has elapsed since the latest valid evidence written by the previous process session. Relaunch bookkeeping never refreshes freshness. When no later evidence exists, the recording start time is the fallback. A future-dated timestamp or wall-clock rollback fails closed for continuation.
 
-65. Any pending short-lived undo opportunity expires when the process terminates. The underlying action and its history remain preserved.
+65. Bootstrap reconciles every unclosed package before the normal app becomes interactive:
+   - expired recordings close automatically as **Incomplete — Recovery Expired** at their latest valid evidence time, not the later discovery time;
+   - legacy recordings without captured policy or checkpoints use the default five-minute window and their latest valid stored evidence;
+   - routine cleanup produces one summary rather than one alert per recording; and
+   - failure to persist a required closure blocks normal progress with **Retry** rather than pretending the one-Flight invariant was restored.
 
-66. When the app resumes after a sensor gap, it records the gap and continues from fresh samples. It never invents samples for the interruption.
+66. One fresh orphan presents a non-dismissible recovery gate before the tab interface. It shows Flight Plan identity, route, last durable activity, and **Continue Flight** availability as a visible countdown. It offers only **Continue Flight** and confirmed **End Flight as Incomplete**; it does not show summaries, map data, export, or deletion.
 
-67. If the app reopens after a gap and current evidence suggests landing and stop, it still offers continuation or ending unless the recording was already durably closed.
+67. Choosing **Continue Flight** revalidates freshness atomically. A stale command closes the recording as recovery-expired instead of reopening Cockpit. A valid command restores committed navigation state, opens Cockpit, preserves the original timing basis, and begins a new track segment so the interruption is never bridged by a fictional path.
 
-68. If more than one recording is unexpectedly recoverable, the app presents a recovery list and never chooses one silently. Each may be continued or ended incomplete.
+68. Choosing **End Flight as Incomplete** requires confirmation that continuation will become unavailable while evidence remains saved and exportable. Success opens the saved Flight detail. Retrying Continue or End after interruption is idempotent and cannot create duplicate events or conflicting closure state.
 
-69. Recovery always uses the Flight Plan copy captured by the recording, regardless of later library changes.
+69. If the recovery window expires while its gate is visible or backgrounded, the app revalidates on foreground, saves the Flight as incomplete, and explains the result with **View Flight** and **Continue to App** actions. VoiceOver announces the initial remaining time, one-minute threshold, and expiration rather than every visual countdown tick.
 
-70. A recording whose version cannot be safely restored remains preserved and visible. Continuation is unavailable, readable track data remains exportable, and the pilot may end or delete it.
+70. If more than one fresh orphan unexpectedly exists, the app never chooses silently. The pilot may select one to continue—after confirming that the others will close as **Incomplete — Superseded During Recovery**—or confirm **End All as Incomplete**. Unsupported or corrupt state is never continued; preserved readable evidence becomes exportable only after the package is durably closed.
 
-71. Replacing or restarting a recoverable active Flight requires the same explicit consequence confirmation as replacing protected pilot work. Confirming closes the displaced recording as Incomplete rather than discarding it.
+71. Recovery excludes transient presentation state: open editors, unsaved drafts, menus, sheets, alerts, map camera, focus, and short-lived undo opportunities are not restored. Recovery always uses the immutable Flight Plan copy captured by the recording. Repeated checkpoint failure warns immediately; if the last durable checkpoint ages beyond the captured window, recording ends incomplete and the app presents a blocking storage failure.
 
 ### Flights app section
 
@@ -213,13 +220,13 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 76. Flight duration describes the physical recording interval. Navigation timing remains available as separate recorded information and is not substituted for physical duration.
 
-77. An active or recoverable Flight appears first with an **In Progress** or recovery-required status, offers **Continue Flight**, and cannot be deleted.
+77. During a healthy running session, the single active Flight appears first as **In Progress** and selecting it offers **Return to Cockpit** without export or deletion. A recoverable orphan is resolved by the launch recovery gate before the Flights library is available and never appears as an ordinary library action row.
 
 78. Completed, incomplete, manually ended, partial-GPS, GPS-unavailable, and unavailable or corrupt states are distinguishable in text and accessibility semantics.
 
 79. A corrupt recording remains visible as unavailable and can be deleted. One corrupt recording never prevents healthy Flights from loading.
 
-80. Selecting a healthy Flight opens a detail view containing its identity, route summary, start and end information, duration, completion and closure status, GPS coverage, derived distance and altitude summary when available, and export and deletion actions.
+80. Selecting a healthy Flight opens a detail view containing its identity, route summary, start and end information, duration, completion and closure status, GPS coverage, derived distance and altitude summary when available, and actions eligible for that lifecycle state. Export and deletion are available only after durable closure.
 
 81. This release does not display the historical track on an in-app map and does not expose the navigation-event timeline as a debrief interface.
 
@@ -231,7 +238,7 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 ### GPX export
 
-85. A pilot may export any readable track, including complete, incomplete, partial, and in-progress recordings. Exporting an active recording first includes every sample committed at the time export begins and does not stop recording.
+85. A pilot may export any readable track from a durably closed complete, incomplete, manually ended, recovery-expired, or superseded recording. Active and recoverable recordings cannot be exported.
 
 86. Export uses an explicit system share or save interaction initiated from the selected Flight. Cancellation leaves the recording unchanged.
 
@@ -239,7 +246,7 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 88. Known GPS interruptions produce separate GPX track segments so external software does not connect a gap with a misleading straight line.
 
-89. GPX metadata identifies the Flight Plan and the recording's current complete, incomplete, manually ended, or in-progress status. Partial coverage remains explicit.
+89. GPX metadata identifies the Flight Plan and the recording's complete or incomplete status and closure cause. Partial coverage remains explicit.
 
 90. Unavailable or invalid values are omitted from GPX rather than exported as zero. Navigation events remain internal and are not encoded as misleading track points or waypoints.
 

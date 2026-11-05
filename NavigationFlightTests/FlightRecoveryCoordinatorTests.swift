@@ -5,6 +5,146 @@ import Testing
 @MainActor
 @Suite("Flight recovery coordination")
 struct FlightRecoveryCoordinatorTests {
+    @Test("Bootstrap expires a recording whose captured recovery window elapsed")
+    func bootstrapExpiresStaleRecording() async throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let snapshot = try recoveryFixture(
+            recordingID: #require(UUID(uuidString: "10101010-0000-0000-0000-000000000001")),
+            startedAt: startedAt
+        )
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(301) },
+            defaultRecoveryWindow: 300
+        )
+
+        await coordinator.bootstrap()
+
+        #expect(coordinator.state == .reconciledExpired(count: 1))
+        let stored = try await store.readSnapshot(id: snapshot.recording.id)
+        #expect(stored.recording.closure?.outcome == .incomplete)
+        #expect(stored.recording.closure?.cause == .recoveryExpired)
+        #expect(stored.recording.closure?.closedAt == startedAt)
+    }
+
+    @Test("The exact recovery cutoff is expired and cannot be continued")
+    func exactCutoffIsExpired() async throws {
+        let startedAt = Date(timeIntervalSince1970: 2_000)
+        let snapshot = try recoveryFixture(recordingID: UUID(), startedAt: startedAt)
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(300) },
+            defaultRecoveryWindow: 300
+        )
+
+        await coordinator.bootstrap()
+
+        #expect(coordinator.state == .reconciledExpired(count: 1))
+    }
+
+    @Test("A future durable timestamp fails closed")
+    func futureEvidenceFailsClosed() async throws {
+        let startedAt = Date(timeIntervalSince1970: 3_000)
+        let snapshot = try recoveryFixture(recordingID: UUID(), startedAt: startedAt)
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(-1) },
+            defaultRecoveryWindow: 300
+        )
+
+        await coordinator.bootstrap()
+
+        #expect(coordinator.state == .failure(.corrupt(id: snapshot.recording.id)))
+    }
+
+    @Test("Continue revalidates freshness at command time")
+    func continueRevalidatesFreshness() async throws {
+        let startedAt = Date(timeIntervalSince1970: 4_000)
+        let snapshot = try recoveryFixture(recordingID: UUID(), startedAt: startedAt)
+        let clock = MutableDate(value: startedAt.addingTimeInterval(299))
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { clock.value },
+            defaultRecoveryWindow: 300
+        )
+        await coordinator.bootstrap()
+        guard case .single = coordinator.state else {
+            Issue.record("Expected a fresh recovery candidate")
+            return
+        }
+        clock.value = startedAt.addingTimeInterval(300)
+
+        await #expect(throws: FlightRecoveryError.recoveryExpired) {
+            _ = try await coordinator.continueFlight(
+                id: snapshot.recording.id,
+                at: clock.value,
+                elapsed: .seconds(300),
+                eventID: UUID()
+            )
+        }
+    }
+
+    @Test("A durable checkpoint extends eligibility without relaunch refreshing it")
+    func checkpointDefinesFreshness() async throws {
+        let startedAt = Date(timeIntervalSince1970: 5_000)
+        let original = try recoveryFixture(recordingID: UUID(), startedAt: startedAt)
+        let checkpoint = startedAt.addingTimeInterval(250)
+        let snapshot = FlightRecordingReadSnapshot(
+            recording: original.recording.restoringRecoveryCheckpoint(at: checkpoint),
+            events: original.events
+        )
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(500) }
+        )
+
+        await coordinator.bootstrap()
+
+        guard case .single(let candidate) = coordinator.state else {
+            Issue.record("Expected checkpoint-backed recovery")
+            return
+        }
+        #expect(candidate.id == snapshot.recording.id)
+    }
+
+    @Test("Each Flight keeps the recovery window captured when recording began")
+    func capturedRecoveryWindowControlsEligibility() async throws {
+        let sourceData = try fixtureData()
+        let plan = try FPLNavDecoder().decode(sourceData)
+        let startedAt = Date(timeIntervalSince1970: 6_000)
+        let promotion = try FlightRecording.promoteForStartLeg(
+            id: UUID(),
+            flightID: UUID(),
+            flightPlanSnapshot: RecordedFlightPlanSnapshot(
+                id: plan.id,
+                title: plan.title,
+                legIDs: plan.legs.map(\.id),
+                sourceData: sourceData
+            ),
+            legID: plan.legs[0].id,
+            startedAt: startedAt,
+            eventIDs: [UUID(), UUID()],
+            recoveryWindowSeconds: 60
+        )
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(
+            FlightRecordingReadSnapshot(recording: promotion.recording, events: promotion.events)
+        )])
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(60) },
+            defaultRecoveryWindow: 300
+        )
+
+        await coordinator.bootstrap()
+
+        #expect(coordinator.state == .reconciledExpired(count: 1))
+    }
+
     @Test("Bootstrap presents every recoverable package without selecting one")
     func bootstrapPresentsRecoverablePackagesWithoutSelection() async throws {
         let first = try recoveryFixture(
@@ -13,7 +153,7 @@ struct FlightRecoveryCoordinatorTests {
         )
         let second = try recoveryFixture(
             recordingID: #require(UUID(uuidString: "BBBBBBBB-0000-0000-0000-000000000002")),
-            startedAt: Date(timeIntervalSince1970: 1_000)
+            startedAt: Date(timeIntervalSince1970: 1_900)
         )
         let unsupportedID = try #require(UUID(uuidString: "CCCCCCCC-0000-0000-0000-000000000003"))
         let store = InMemoryFlightRecordingStore(packageResults: [
@@ -22,7 +162,10 @@ struct FlightRecoveryCoordinatorTests {
             .unsupported(id: unsupportedID, schemaVersion: 99),
             .available(first)
         ])
-        let coordinator = FlightRecoveryCoordinator(store: store)
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { Date(timeIntervalSince1970: 2_001) }
+        )
 
         await coordinator.bootstrap()
 
@@ -30,12 +173,16 @@ struct FlightRecoveryCoordinatorTests {
             RecoveryCandidate(
                 recordingID: first.recording.id,
                 flightPlanTitle: first.recording.flightPlanSnapshot.title,
-                startedAt: first.recording.startedAt
+                startedAt: first.recording.startedAt,
+                lastActivityAt: first.recording.startedAt,
+                expiresAt: first.recording.startedAt.addingTimeInterval(300)
             ),
             RecoveryCandidate(
                 recordingID: second.recording.id,
                 flightPlanTitle: second.recording.flightPlanSnapshot.title,
-                startedAt: second.recording.startedAt
+                startedAt: second.recording.startedAt,
+                lastActivityAt: second.recording.startedAt,
+                expiresAt: second.recording.startedAt.addingTimeInterval(300)
             )
         ]))
         #expect(coordinator.unavailablePackages == [
@@ -43,6 +190,15 @@ struct FlightRecoveryCoordinatorTests {
             .corrupt(id: nil)
         ])
         #expect(coordinator.selectedRecordingID == nil)
+
+        _ = try await coordinator.continueFlight(
+            id: first.recording.id,
+            at: Date(timeIntervalSince1970: 2_002),
+            elapsed: .seconds(2),
+            eventID: UUID()
+        )
+        let superseded = try await store.readSnapshot(id: second.recording.id)
+        #expect(superseded.recording.closure?.cause == .supersededDuringRecovery)
     }
 
     @Test("Bootstrap does not offer Continue for a package without an immutable Flight Plan")
@@ -53,7 +209,10 @@ struct FlightRecoveryCoordinatorTests {
             includesSourceData: false
         )
         let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
-        let coordinator = FlightRecoveryCoordinator(store: store)
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { Date(timeIntervalSince1970: 2_001) }
+        )
 
         await coordinator.bootstrap()
 
@@ -68,7 +227,10 @@ struct FlightRecoveryCoordinatorTests {
             startedAt: Date(timeIntervalSince1970: 1_000)
         )
         let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
-        let coordinator = FlightRecoveryCoordinator(store: store)
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { Date(timeIntervalSince1970: 1_001) }
+        )
         await coordinator.bootstrap()
 
         try await coordinator.endAsIncomplete(
@@ -82,10 +244,10 @@ struct FlightRecoveryCoordinatorTests {
         )
 
         let stored = try await store.readSnapshot(id: snapshot.recording.id)
-        #expect(stored.events.suffix(2).map(\.payload) == [
-            .manualEnd,
-            .recordingClosed(outcome: .incomplete, cause: .manual)
-        ])
+        #expect(stored.events.last?.payload == .recordingClosed(
+            outcome: .incomplete,
+            cause: .endedDuringRecovery
+        ))
         #expect(stored.recording.closure?.outcome == .incomplete)
         #expect(coordinator.state == .none)
     }
@@ -100,7 +262,8 @@ struct FlightRecoveryCoordinatorTests {
         let store = InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
         let coordinator = FlightRecoveryCoordinator(
             store: store,
-            monotonicUptime: { uptime.value }
+            monotonicUptime: { uptime.value },
+            now: { Date(timeIntervalSince1970: 50_001) }
         )
 
         await coordinator.bootstrap()
@@ -137,7 +300,10 @@ struct FlightRecoveryCoordinatorTests {
         let store = InMemoryFlightRecordingStore(packageResults: [.available(
             FlightRecordingReadSnapshot(recording: promotion.recording, events: promotion.events)
         )])
-        let coordinator = FlightRecoveryCoordinator(store: store)
+        let coordinator = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(119) }
+        )
         await coordinator.bootstrap()
 
         let recovered = try await coordinator.continueFlight(
@@ -253,7 +419,10 @@ struct FlightRecoveryCoordinatorTests {
             eventID: UUID()
         ))
         let persisted = try await store.readSnapshot(id: committed.recording.id)
-        let recovery = FlightRecoveryCoordinator(store: store)
+        let recovery = FlightRecoveryCoordinator(
+            store: store,
+            now: { startedAt.addingTimeInterval(119) }
+        )
         await recovery.bootstrap()
 
         let recovered = try await recovery.continueFlight(
@@ -326,6 +495,15 @@ private final class MutableUptime {
     var value: TimeInterval
 
     init(value: TimeInterval) {
+        self.value = value
+    }
+}
+
+@MainActor
+private final class MutableDate {
+    var value: Date
+
+    init(value: Date) {
         self.value = value
     }
 }

@@ -10,6 +10,9 @@ nonisolated struct RecordedTrackSample: Equatable, Sendable {
     let speedAccuracyMetersPerSecond: Double?
     let courseDegrees: Double?
     let courseAccuracyDegrees: Double?
+    let barometricAltitudeMeters: Double?
+    let deviceHeadingDegrees: Double?
+    let deviceHeadingAccuracyDegrees: Double?
 
     init?(_ sample: AircraftLocationSample) {
         let latitude = sample.coordinate.latitudeDegrees
@@ -28,6 +31,9 @@ nonisolated struct RecordedTrackSample: Equatable, Sendable {
         speedAccuracyMetersPerSecond = sample.speedAccuracyMetersPerSecond
         courseDegrees = sample.trueCourseDegrees
         courseAccuracyDegrees = sample.courseAccuracyDegrees
+        barometricAltitudeMeters = nil
+        deviceHeadingDegrees = nil
+        deviceHeadingAccuracyDegrees = nil
     }
 
     init(
@@ -39,7 +45,10 @@ nonisolated struct RecordedTrackSample: Equatable, Sendable {
         groundSpeedMetersPerSecond: Double?,
         speedAccuracyMetersPerSecond: Double?,
         courseDegrees: Double?,
-        courseAccuracyDegrees: Double?
+        courseAccuracyDegrees: Double?,
+        barometricAltitudeMeters: Double? = nil,
+        deviceHeadingDegrees: Double? = nil,
+        deviceHeadingAccuracyDegrees: Double? = nil
     ) {
         self.coordinate = coordinate
         self.observedAt = observedAt
@@ -50,6 +59,30 @@ nonisolated struct RecordedTrackSample: Equatable, Sendable {
         self.speedAccuracyMetersPerSecond = speedAccuracyMetersPerSecond
         self.courseDegrees = courseDegrees
         self.courseAccuracyDegrees = courseAccuracyDegrees
+        self.barometricAltitudeMeters = barometricAltitudeMeters
+        self.deviceHeadingDegrees = deviceHeadingDegrees
+        self.deviceHeadingAccuracyDegrees = deviceHeadingAccuracyDegrees
+    }
+
+    func addingSupplemental(
+        barometricAltitudeMeters: Double?,
+        deviceHeadingDegrees: Double?,
+        deviceHeadingAccuracyDegrees: Double?
+    ) -> Self {
+        Self(
+            coordinate: coordinate,
+            observedAt: observedAt,
+            horizontalAccuracyMeters: horizontalAccuracyMeters,
+            altitudeMeters: altitudeMeters,
+            verticalAccuracyMeters: verticalAccuracyMeters,
+            groundSpeedMetersPerSecond: groundSpeedMetersPerSecond,
+            speedAccuracyMetersPerSecond: speedAccuracyMetersPerSecond,
+            courseDegrees: courseDegrees,
+            courseAccuracyDegrees: courseAccuracyDegrees,
+            barometricAltitudeMeters: barometricAltitudeMeters,
+            deviceHeadingDegrees: deviceHeadingDegrees,
+            deviceHeadingAccuracyDegrees: deviceHeadingAccuracyDegrees
+        )
     }
 }
 

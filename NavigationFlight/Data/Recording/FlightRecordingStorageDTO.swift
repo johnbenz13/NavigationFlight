@@ -150,7 +150,8 @@ nonisolated struct RecordedFlightEventEnvelopeDTO: Codable {
 }
 
 nonisolated struct RecordedTrackBatchEnvelopeDTO: Codable {
-    static let currentPayloadVersion = 1
+    static let currentPayloadVersion = 2
+    static let supportedPayloadVersions = 1...2
 
     let payloadVersion: Int
     let batch: RecordedTrackBatchDTO
@@ -163,7 +164,7 @@ nonisolated struct RecordedTrackBatchEnvelopeDTO: Codable {
     }
 
     func domain() throws -> RecordedTrackBatch {
-        guard payloadVersion == Self.currentPayloadVersion,
+        guard Self.supportedPayloadVersions.contains(payloadVersion),
               checksum == (try Self.checksum(for: batch)) else {
             throw FlightRecordingStoreError.corruptPackage(id: batch.recordingID)
         }
@@ -207,6 +208,9 @@ nonisolated struct RecordedTrackSampleDTO: Codable {
     let speedAccuracyMetersPerSecond: Double?
     let courseDegrees: Double?
     let courseAccuracyDegrees: Double?
+    let barometricAltitudeMeters: Double?
+    let deviceHeadingDegrees: Double?
+    let deviceHeadingAccuracyDegrees: Double?
 
     init(sample: RecordedTrackSample) {
         latitudeDegrees = sample.coordinate.latitudeDegrees
@@ -219,6 +223,9 @@ nonisolated struct RecordedTrackSampleDTO: Codable {
         speedAccuracyMetersPerSecond = sample.speedAccuracyMetersPerSecond
         courseDegrees = sample.courseDegrees
         courseAccuracyDegrees = sample.courseAccuracyDegrees
+        barometricAltitudeMeters = sample.barometricAltitudeMeters
+        deviceHeadingDegrees = sample.deviceHeadingDegrees
+        deviceHeadingAccuracyDegrees = sample.deviceHeadingAccuracyDegrees
     }
 
     var domain: RecordedTrackSample {
@@ -234,7 +241,10 @@ nonisolated struct RecordedTrackSampleDTO: Codable {
             groundSpeedMetersPerSecond: groundSpeedMetersPerSecond,
             speedAccuracyMetersPerSecond: speedAccuracyMetersPerSecond,
             courseDegrees: courseDegrees,
-            courseAccuracyDegrees: courseAccuracyDegrees
+            courseAccuracyDegrees: courseAccuracyDegrees,
+            barometricAltitudeMeters: barometricAltitudeMeters,
+            deviceHeadingDegrees: deviceHeadingDegrees,
+            deviceHeadingAccuracyDegrees: deviceHeadingAccuracyDegrees
         )
     }
 }

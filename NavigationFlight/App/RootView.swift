@@ -220,7 +220,10 @@ struct RootView: View {
         debugFlightsActiveRecordingID = nil
 #endif
         _flightRecordingCoordinator = State(
-            initialValue: FlightRecordingCoordinator(store: recordingStore)
+            initialValue: FlightRecordingCoordinator(
+                store: recordingStore,
+                supplementalSensorSource: CoreMotionSupplementalSensorSource.shared
+            )
         )
         flightRecordingLibrary = FlightRecordingLibrary(store: recordingStore)
         let recoveryCoordinator = FlightRecoveryCoordinator(store: recordingStore)
@@ -517,7 +520,10 @@ struct RootView: View {
                     groundSpeedMetersPerSecond: 42,
                     speedAccuracyMetersPerSecond: 1,
                     courseDegrees: 90,
-                    courseAccuracyDegrees: 2
+                    courseAccuracyDegrees: 2,
+                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 490 : nil,
+                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 88 : nil,
+                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
                 ),
                 RecordedTrackSample(
                     coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
@@ -528,7 +534,10 @@ struct RootView: View {
                     groundSpeedMetersPerSecond: 44,
                     speedAccuracyMetersPerSecond: 1,
                     courseDegrees: 90,
-                    courseAccuracyDegrees: 2
+                    courseAccuracyDegrees: 2,
+                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 1_270 : nil,
+                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 92 : nil,
+                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
                 ),
             ])
             let trackSegments = definition.coverage == .unavailable ? [] : [firstSegment]

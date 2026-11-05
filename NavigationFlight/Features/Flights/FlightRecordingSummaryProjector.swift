@@ -4,6 +4,8 @@ nonisolated struct FlightRecordingEvidenceSummary: Codable, Equatable, Sendable 
     let distanceMeters: Double?
     let duration: Duration?
     let maximumAltitudeMeters: Double?
+    let maximumBarometricAltitudeMeters: Double?
+    let latestDeviceHeadingDegrees: Double?
     let gpsCoverageFraction: Double?
 }
 
@@ -37,6 +39,14 @@ nonisolated struct FlightRecordingSummaryProjector: Sendable {
             .flatMap(\.samples)
             .compactMap(\.altitudeMeters)
             .filter(\.isFinite)
+        let samples = trackSegments.flatMap(\.samples)
+        let validBarometricAltitudes = samples
+            .compactMap(\.barometricAltitudeMeters)
+            .filter(\.isFinite)
+        let latestDeviceHeading = samples
+            .filter { $0.deviceHeadingDegrees?.isFinite == true }
+            .max(by: { $0.observedAt < $1.observedAt })?
+            .deviceHeadingDegrees
         return FlightRecordingEvidenceSummary(
             distanceMeters: distances.isEmpty ? nil : distances.reduce(0, +),
             duration: endedAt.flatMap { end in
@@ -44,6 +54,8 @@ nonisolated struct FlightRecordingSummaryProjector: Sendable {
                 return seconds > 0 ? .seconds(seconds) : nil
             },
             maximumAltitudeMeters: validAltitudes.max(),
+            maximumBarometricAltitudeMeters: validBarometricAltitudes.max(),
+            latestDeviceHeadingDegrees: latestDeviceHeading,
             gpsCoverageFraction: Self.coverage(
                 startedAt: startedAt,
                 endedAt: endedAt,

@@ -80,6 +80,42 @@ struct FlightRecordingSummaryProjectorTests {
         #expect(summary.gpsCoverageFraction == 0.7)
     }
 
+    @Test("Supplemental summary stays distinct from GPS altitude and course")
+    func supplementalEvidenceRemainsDistinct() {
+        let segment = RecordedTrackSegment(
+            id: UUID(),
+            samples: [
+                sample(
+                    latitude: 0,
+                    longitude: 0,
+                    observedAt: 0,
+                    altitudeMeters: 100,
+                    barometricAltitudeMeters: 110,
+                    deviceHeadingDegrees: 270
+                ),
+                sample(
+                    latitude: 0,
+                    longitude: 0.01,
+                    observedAt: 60,
+                    altitudeMeters: 200,
+                    barometricAltitudeMeters: 180,
+                    deviceHeadingDegrees: 280
+                )
+            ]
+        )
+
+        let summary = FlightRecordingSummaryProjector().project(
+            trackSegments: [segment],
+            startedAt: Date(timeIntervalSince1970: 0),
+            endedAt: Date(timeIntervalSince1970: 60),
+            knownGapIntervals: []
+        )
+
+        #expect(summary.maximumAltitudeMeters == 200)
+        #expect(summary.maximumBarometricAltitudeMeters == 180)
+        #expect(summary.latestDeviceHeadingDegrees == 280)
+    }
+
     @Test("Missing measurement evidence remains unavailable rather than zero")
     func missingEvidenceIsUnavailable() {
         let summary = FlightRecordingSummaryProjector().project(
@@ -98,7 +134,9 @@ struct FlightRecordingSummaryProjectorTests {
         latitude: Double,
         longitude: Double,
         observedAt: TimeInterval,
-        altitudeMeters: Double? = nil
+        altitudeMeters: Double? = nil,
+        barometricAltitudeMeters: Double? = nil,
+        deviceHeadingDegrees: Double? = nil
     ) -> RecordedTrackSample {
         RecordedTrackSample(
             coordinate: WGS84Coordinate(
@@ -112,7 +150,9 @@ struct FlightRecordingSummaryProjectorTests {
             groundSpeedMetersPerSecond: nil,
             speedAccuracyMetersPerSecond: nil,
             courseDegrees: nil,
-            courseAccuracyDegrees: nil
+            courseAccuracyDegrees: nil,
+            barometricAltitudeMeters: barometricAltitudeMeters,
+            deviceHeadingDegrees: deviceHeadingDegrees
         )
     }
 }

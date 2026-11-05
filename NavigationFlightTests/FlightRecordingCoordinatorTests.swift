@@ -17,6 +17,39 @@ struct FlightRecordingCoordinatorTests {
         #expect(await store.packages().isEmpty)
     }
 
+    @Test("Supplemental source failure does not block GPS recording")
+    func supplementalFailureDoesNotBlockGPSRecording() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let source = SupplementalSensorFixtureSource(
+            events: [
+                .deviceHeading(degrees: 90, accuracyDegrees: 2, observedAt: fixture.startedAt)
+            ],
+            shouldFail: true
+        )
+        let coordinator = FlightRecordingCoordinator(
+            store: store,
+            supplementalSensorSource: source
+        )
+
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        await Task.yield()
+        let location = sample(speed: 10, altitude: 100, at: fixture.startedAt)
+        await coordinator.handleLocationEvent(.sample(location, receivedAt: location.observedAt))
+        let started = try await coordinator.startLeg(
+            flight: fixture.flight,
+            flightPlanSnapshot: fixture.snapshot,
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.trackSegments.flatMap(\.samples).count == 1)
+        #expect(coordinator.status == .recording)
+        #expect(coordinator.lastError == nil)
+    }
+
     @Test("Ground movement remains hidden and timeout leaves no incomplete package")
     func provisionalMovementRemainsHidden() async {
         let fixture = makeFixture()

@@ -172,7 +172,7 @@ struct FlightDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("\(durationText)  •  \(distanceText)")
                 .font(.title3.weight(.bold))
-            Text("Max \(altitudeText)")
+            Text("GPS max \(altitudeText)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(coverageSummaryText)
@@ -217,9 +217,13 @@ struct FlightDetailView: View {
             }
             detailSection("Stored summary") {
                 valueRow("Distance", distanceText)
-                valueRow("Maximum altitude", altitudeText)
+                valueRow("Maximum GPS altitude", altitudeText)
                 valueRow("Recording size", sizeText)
             }
+            SupplementalEvidenceSection(
+                maximumBarometricAltitude: barometricAltitudeText,
+                latestDeviceHeading: deviceHeadingText
+            )
         }
     }
 
@@ -301,6 +305,22 @@ struct FlightDetailView: View {
             .formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0))))
     }
 
+    private var barometricAltitudeText: String {
+        guard let altitude = detail.maximumBarometricAltitudeMeters else { return "Unavailable" }
+        return Measurement(value: altitude, unit: UnitLength.meters)
+            .converted(to: .feet)
+            .formatted(.measurement(
+                width: .abbreviated,
+                usage: .asProvided,
+                numberFormatStyle: .number.precision(.fractionLength(0))
+            ))
+    }
+
+    private var deviceHeadingText: String {
+        guard let heading = detail.latestDeviceHeadingDegrees else { return "Unavailable" }
+        return "\(heading.formatted(.number.precision(.fractionLength(0))))° device-relative"
+    }
+
     private var sizeText: String {
         detail.approximateSizeBytes.map {
             ByteCountFormatter.string(fromByteCount: $0, countStyle: .file)
@@ -342,6 +362,35 @@ struct FlightDetailView: View {
         case .supersededDuringRecovery: "Superseded during recovery"
         case nil: "Not closed"
         }
+    }
+}
+
+private struct SupplementalEvidenceSection: View {
+    let maximumBarometricAltitude: String
+    let latestDeviceHeading: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Supplemental evidence")
+                .font(.headline)
+            LabeledContent("Anchored barometric maximum") {
+                Text(maximumBarometricAltitude)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("flight-detail.supplemental-altitude")
+            LabeledContent("Latest device compass heading") {
+                Text(latestDeviceHeading)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("flight-detail.device-heading")
+            Text("Best-effort device evidence; not authoritative aircraft altitude or heading.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+        .accessibilityIdentifier("flight-detail.supplemental-evidence")
     }
 }
 

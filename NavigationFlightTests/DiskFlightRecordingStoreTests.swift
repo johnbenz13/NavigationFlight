@@ -34,6 +34,44 @@ struct DiskFlightRecordingStoreTests {
         #expect(snapshot.trackSegments == [RecordedTrackSegment(id: segmentID, samples: [first, second])])
     }
 
+    @Test("Track payload version two round-trips optional supplemental evidence")
+    func supplementalTrackPayloadRoundTrip() throws {
+        let sample = recordedSample(at: Date(timeIntervalSince1970: 100), latitude: 32)
+            .addingSupplemental(
+                barometricAltitudeMeters: 123,
+                deviceHeadingDegrees: 271,
+                deviceHeadingAccuracyDegrees: 4
+            )
+        let batch = RecordedTrackBatch(recordingID: UUID(), segmentID: UUID(), samples: [sample])
+
+        let encoded = try FlightRecordingCoding.encoder.encode(RecordedTrackBatchEnvelopeDTO(batch: batch))
+        let decoded = try FlightRecordingCoding.decoder.decode(RecordedTrackBatchEnvelopeDTO.self, from: encoded)
+        let restored = try decoded.domain().samples[0]
+
+        #expect(decoded.payloadVersion == 2)
+        #expect(restored.barometricAltitudeMeters == 123)
+        #expect(restored.deviceHeadingDegrees == 271)
+        #expect(restored.deviceHeadingAccuracyDegrees == 4)
+    }
+
+    @Test("Legacy track samples decode with supplemental evidence unavailable")
+    func legacyTrackSampleMigration() throws {
+        let dto = RecordedTrackSampleDTO(sample: recordedSample(at: Date(timeIntervalSince1970: 100), latitude: 32))
+        var object = try #require(
+            try JSONSerialization.jsonObject(with: FlightRecordingCoding.encoder.encode(dto)) as? [String: Any]
+        )
+        object.removeValue(forKey: "barometricAltitudeMeters")
+        object.removeValue(forKey: "deviceHeadingDegrees")
+        object.removeValue(forKey: "deviceHeadingAccuracyDegrees")
+
+        let legacyData = try JSONSerialization.data(withJSONObject: object)
+        let restored = try FlightRecordingCoding.decoder.decode(RecordedTrackSampleDTO.self, from: legacyData).domain
+
+        #expect(restored.barometricAltitudeMeters == nil)
+        #expect(restored.deviceHeadingDegrees == nil)
+        #expect(restored.deviceHeadingAccuracyDegrees == nil)
+    }
+
     @Test("Track synchronization is triggered at the configured five-second boundary")
     func configuredSynchronizationInterval() async throws {
         let root = temporaryDirectory()

@@ -290,9 +290,13 @@ availability event. Fresh samples after recovery open a new segment. Summaries
 and GPX never bridge segment boundaries.
 
 Barometer and compass adapters are optional. Their latest timestamped values may
-be associated with a location sample only within a documented freshness window.
-Their absence or cancellation never blocks location recording. Raw motion values
-are not durable.
+be associated with a location sample only when their timestamps are within five
+seconds of that sample. Core Motion's relative barometric altitude is anchored to
+the first fresh location sample that has valid GPS altitude; subsequent relative
+values retain that offset and are stored as explicitly anchored barometric
+altitude. A relative series without an anchor is omitted. Their absence,
+cancellation, denial, or adapter failure never blocks location recording. Raw
+motion values are not durable.
 
 ## Store seam and disk format
 
@@ -719,10 +723,10 @@ permission copy, background indicator, and device validation remain mandatory.
 
 ### Supplemental altitude semantics
 
-Confirm whether the first release stores absolute barometric altitude when
-available or only relative pressure-derived change. The product spec permits a
-supplement but does not define how a relative series is anchored. This does not
-block GPS track recording and should not delay the core vertical slice.
+The first release stores an explicitly anchored relative pressure-derived series.
+The first fresh relative-altitude value associated with a location sample that
+has valid GPS altitude establishes the offset. The app does not claim that this
+is an independent absolute-altitude measurement, and it omits unanchored values.
 
 ## Rejected alternatives
 

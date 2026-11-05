@@ -45,6 +45,56 @@ struct FlightRecordingEngineTests {
         #expect(snapshot.trackSegments.flatMap(\.samples).map(\.observedAt) == [sample.observedAt, repeatedPositionLater.observedAt])
     }
 
+    @Test("Fresh supplemental evidence is associated with the next track sample")
+    func freshSupplementalEvidenceIsAssociated() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let locationTime = fixture.startedAt.addingTimeInterval(2)
+        let location = trackSample(at: locationTime, latitude: 32, altitude: 100)
+
+        await engine.arm()
+        await engine.ingestSupplemental(.relativeBarometricAltitude(meters: 5, observedAt: fixture.startedAt))
+        await engine.ingestSupplemental(.deviceHeading(degrees: 271, accuracyDegrees: 3, observedAt: fixture.startedAt))
+        await engine.ingest(.sample(location, receivedAt: locationTime))
+        let started = try await engine.promoteForStartLeg(
+            at: locationTime,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        let sample = try #require(snapshot.trackSegments.flatMap(\.samples).last)
+        #expect(sample.barometricAltitudeMeters == 100)
+        #expect(sample.deviceHeadingDegrees == 271)
+        #expect(sample.deviceHeadingAccuracyDegrees == 3)
+    }
+
+    @Test("Stale or invalid supplemental evidence is omitted without dropping GPS track")
+    func staleOrInvalidSupplementalEvidenceIsOmitted() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let locationTime = fixture.startedAt.addingTimeInterval(6)
+        let location = trackSample(at: locationTime, latitude: 32, altitude: 100)
+
+        await engine.arm()
+        await engine.ingestSupplemental(.relativeBarometricAltitude(meters: .nan, observedAt: fixture.startedAt))
+        await engine.ingestSupplemental(.deviceHeading(degrees: 361, accuracyDegrees: 3, observedAt: fixture.startedAt))
+        await engine.ingest(.sample(location, receivedAt: locationTime))
+        let started = try await engine.promoteForStartLeg(
+            at: locationTime,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        let sample = try #require(snapshot.trackSegments.flatMap(\.samples).last)
+        #expect(sample.altitudeMeters == 100)
+        #expect(sample.barometricAltitudeMeters == nil)
+        #expect(sample.deviceHeadingDegrees == nil)
+    }
+
     @Test("A known GPS gap closes the segment and fresh delivery reopens another")
     func gapCreatesDistinctSegments() async throws {
         let fixture = makeFixture()
@@ -95,12 +145,15 @@ struct FlightRecordingEngineTests {
         at date: Date,
         latitude: Double,
         accuracy: Double = 20,
-        speed: Double? = 10
+        speed: Double? = 10,
+        altitude: Double? = nil
     ) -> AircraftLocationSample {
         AircraftLocationSample(
             coordinate: WGS84Coordinate(latitudeDegrees: latitude, longitudeDegrees: 34.8),
             observedAt: date,
             horizontalAccuracyMeters: accuracy,
+            altitudeMeters: altitude,
+            verticalAccuracyMeters: altitude == nil ? nil : 5,
             trueCourseDegrees: nil,
             courseAccuracyDegrees: nil,
             groundSpeedMetersPerSecond: speed,

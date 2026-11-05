@@ -13,6 +13,8 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
     let gpsCoverage: String
     var closure: FlightRecordingClosureDTO?
     var nextEventSequence: UInt64
+    var recoveryWindowSeconds: TimeInterval?
+    var lastRecoveryCheckpointAt: Date?
 
     init(recording: FlightRecording) {
         schemaVersion = Self.currentSchemaVersion
@@ -24,6 +26,8 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
         gpsCoverage = recording.gpsCoverage.storageValue
         closure = recording.closure.map(FlightRecordingClosureDTO.init)
         nextEventSequence = recording.nextEventSequence
+        recoveryWindowSeconds = recording.recoveryWindowSeconds
+        lastRecoveryCheckpointAt = recording.lastRecoveryCheckpointAt
     }
 
     func domain(
@@ -50,7 +54,9 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
             navigationState: restoredNavigationState ?? navigationState,
             gpsCoverage: restoredGPSCoverage ?? gpsCoverage,
             closure: closure?.domain,
-            nextEventSequence: nextEventSequence ?? self.nextEventSequence
+            nextEventSequence: nextEventSequence ?? self.nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds ?? 300,
+            lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
         )
     }
 }
@@ -92,7 +98,7 @@ nonisolated struct FlightRecordingClosureDTO: Codable {
 
     init(closure: FlightRecordingClosure) {
         outcome = closure.outcome == .complete ? "complete" : "incomplete"
-        cause = closure.cause == .automatic ? "automatic" : "manual"
+        cause = closure.cause.storageValue
         closedAt = closure.closedAt
         let components = closure.elapsed.components
         elapsedSeconds = components.seconds
@@ -461,7 +467,7 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             successorLegID = nil
             startCause = nil
             outcome = value == .complete ? "complete" : "incomplete"
-            closureCause = cause == .automatic ? "automatic" : "manual"
+            closureCause = cause.storageValue
         }
     }
 
@@ -669,10 +675,23 @@ nonisolated private extension FlightRecordingClosure.Outcome {
 }
 
 nonisolated private extension FlightRecordingClosure.Cause {
+    var storageValue: String {
+        switch self {
+        case .automatic: "automatic"
+        case .manual: "manual"
+        case .recoveryExpired: "recoveryExpired"
+        case .endedDuringRecovery: "endedDuringRecovery"
+        case .supersededDuringRecovery: "supersededDuringRecovery"
+        }
+    }
+
     init?(storageValue: String) {
         switch storageValue {
         case "automatic": self = .automatic
         case "manual": self = .manual
+        case "recoveryExpired": self = .recoveryExpired
+        case "endedDuringRecovery": self = .endedDuringRecovery
+        case "supersededDuringRecovery": self = .supersededDuringRecovery
         default: return nil
         }
     }

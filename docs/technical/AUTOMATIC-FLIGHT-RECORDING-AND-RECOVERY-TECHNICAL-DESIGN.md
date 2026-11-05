@@ -34,8 +34,7 @@ The implementation must:
   durable operational history;
 - keep physical-flight phase and navigation-execution phase independent;
 - isolate one corrupt or unsupported recording from healthy recordings;
-- make export and summary projection read-only snapshots that cannot pause or
-  mutate an active recording;
+- make export available only from immutable snapshots of closed recordings;
 - retain current Cockpit navigation behavior and Position Check disclosure
   boundaries; and
 - keep SwiftUI views declarative and free of sensor, detector, and persistence
@@ -75,11 +74,12 @@ flowchart TD
 
 | Module | Interface responsibility | Implementation hidden behind the interface |
 | --- | --- | --- |
-| `FlightRecordingEngine` | Arm, ingest evidence, commit navigation transitions, close, recover, and produce snapshots. | Provisional buffering, physical detector transitions, event ordering, durability barriers, gap tracking, and correction events. |
+| `FlightRecordingEngine` | Arm, ingest evidence, checkpoint liveness, commit navigation transitions, close, recover, and produce snapshots. | Provisional buffering, physical detector transitions, event ordering, durability barriers, gap tracking, and correction events. |
 | `FlightRecordingStore` | Create, append, synchronize, inspect, snapshot, close, export-read, and remove recording packages. | Package layout, schema versions, atomic replacement, tail recovery, batching, checksums, and file coordination. |
 | `FlightRecordingCoordinator` | Bind the running scene, Cockpit commands, sensor lifetimes, and engine snapshots. | Long-lived task ownership, cancellation, scene transitions, non-blocking warnings, and main-actor publication. |
 | `PhysicalFlightDetector` | Return deterministic phase evidence from ordered samples and elapsed time. | Conservative windows, hysteresis, takeoff/landing/stop candidates, contradictions, and corrections. |
-| `FlightRecordingLibrary` | List recordings, read details, prepare exports, and delete eligible closed recordings. | Per-package fault isolation, summary projection, stable sorting, and active-recording coordination. |
+| `FlightRecoveryReconciler` | Reconcile unclosed packages into no candidate, one bounded candidate, or an explicit ambiguity. | Captured policy evaluation, timestamp validation, legacy fallback, automatic expiration, invariant restoration, and idempotent recovery commands. |
+| `FlightRecordingLibrary` | List recordings, read details, prepare closed-recording exports, and delete eligible closed recordings. | Per-package fault isolation, summary projection, stable sorting, and active-recording coordination. |
 | `GPXExporter` | Produce a temporary GPX 1.1 file from a consistent store snapshot. | Segmentation at gaps, omission of invalid values, XML encoding, metadata, and filename sanitization. |
 | Presentation projectors | Convert snapshots into Cockpit, recovery, row, detail, accessibility, and alert values. | Status vocabulary, formatting, action eligibility, and symbol-plus-text semantics. |
 | SwiftUI views | Render immutable presentation values and emit typed intents. | Native tabs, navigation, lists, sheets, confirmation dialogs, share presentation, focus, and scroll state. |
@@ -124,6 +124,8 @@ struct FlightRecording: Equatable, Sendable, Identifiable {
     let flightID: UUID
     let flightPlanSnapshot: RecordedFlightPlanSnapshot
     let startedAt: Date
+    let recoveryPolicy: FlightRecoveryPolicy
+    private(set) var lastRecoveryCheckpointAt: Date?
     private(set) var physicalState: PhysicalFlightState
     private(set) var navigationState: RecordedNavigationState
     private(set) var gpsCoverage: GPSCoverageState
@@ -148,9 +150,16 @@ enum RecordedNavigationState: Equatable, Sendable {
 }
 ```
 
-`FlightRecordingClosure` records complete or incomplete outcome, automatic or
-manual cause, wall-clock close time, monotonic elapsed duration, and whether
-landing evidence was available. User-facing states such as **GPS Gap** and
+`FlightRecoveryPolicy` captures the effective bounded window when the recording
+starts. Production defaults to five minutes; the interface accepts the future
+bounded Settings values without making a global preference authoritative for an
+existing Flight. A recovery checkpoint is durable liveness evidence and is not
+part of the operational journal or GPX track.
+
+`FlightRecordingClosure` records complete or incomplete outcome, automatic,
+manual, `recoveryExpired`, `endedDuringRecovery`, or
+`supersededDuringRecovery` cause, wall-clock close time, monotonic elapsed
+duration, and whether landing evidence was available. User-facing states such as **GPS Gap** and
 **Navigation Complete — Recording Continues** are projections of these values,
 not extra mutable phases.
 
@@ -332,7 +341,16 @@ atomically renames it. Manifest and summary changes use sibling temporary files
 and atomic replacement. Event appends for operational commands synchronize
 before returning. Track samples accumulate in a bounded batch and synchronize
 at least every five seconds, on background transition when execution time is
-available, before export snapshotting, and on orderly closure.
+available, and on orderly closure.
+
+While a durable recording is owned by the running session, the engine persists
+a recovery checkpoint at an injected interval of approximately 30 seconds. The
+checkpoint update is an atomic manifest replacement independent of location and
+navigation events. Failure preserves the previous checkpoint, publishes a
+degraded-recovery warning, and retries. If the previous durable checkpoint ages
+beyond the captured recovery window, the engine closes the recording incomplete
+and exposes a blocking storage failure rather than continuing without recoverable
+state.
 
 The store reports per-package success, corruption, or unsupported version so one
 bad package cannot prevent list loading. It never deletes unreadable data
@@ -394,26 +412,39 @@ sample.
 
 ## Bootstrap and recovery
 
-Bootstrap runs before the normal app shell becomes interactive:
+`FlightRecoveryReconciler` is the single seam used at bootstrap, before loading a
+new Flight, and before presenting Flights. Bootstrap evaluates recovery before
+the new process writes any checkpoint or recovery bookkeeping. It runs before
+the normal app shell becomes interactive:
 
 1. enumerate packages independently;
 2. validate manifests, immutable snapshots, event sequences, and readable track
    tails;
-3. identify every package without a durable closure;
-4. replay its event journal into `Flight`, recording, and detector state;
-5. project one recovery choice or a list when multiple records are recoverable;
-6. keep unsupported/corrupt packages in Flights with restricted actions; and
-7. enter the normal shell only after the pilot continues or ends the selected
-   recovery, while healthy closed recordings can load concurrently.
+3. identify every package without a durable closure and derive its latest valid
+   previous-session evidence time from checkpoint, event, track sample, or start;
+4. reject future-dated or backward-clock evidence for continuation;
+5. atomically close expired packages at their evidence time with
+   `recoveryExpired`, using the default five-minute policy for legacy packages;
+6. replay only fresh supported candidates into recoverable state;
+7. project no gate, one bounded recovery choice, or an explicit ambiguous list;
+8. keep unsupported/corrupt packages preserved with restricted actions; and
+9. enter the normal shell only after the pilot resolves every fresh candidate
+   and every required closure is durable.
 
-`continueFlight(id:)` appends a recovery event before publishing restored state,
-reestablishes the original monotonic time basis from stored elapsed duration and
-current continuous clock, opens Cockpit, and resumes only from fresh sensor
-samples. Wall-clock changes do not change event order or active timing.
+`continueFlight(id:now:)` revalidates the captured deadline inside the actor and
+is idempotent. A stale command closes with `recoveryExpired`. A valid command
+appends one recovery event before publishing restored state, reestablishes the
+original monotonic time basis from stored elapsed duration and current continuous
+clock, opens Cockpit, closes the pre-interruption track segment, and resumes in a
+new segment from fresh sensor samples. Wall-clock changes do not change event
+order or active timing.
 
-`endAsIncomplete(id:)` appends the manual recovery closure and makes the package
-deletable. Replacing or restarting a recoverable Flight routes through this same
-explicit closure operation before a new Flight is installed.
+`endAsIncomplete(id:)` appends an `endedDuringRecovery` closure and makes the
+package exportable and deletable. When several fresh legacy candidates exist,
+`continueFlight(id:)` closes every other candidate as
+`supersededDuringRecovery` only after explicit confirmation; `endAllAsIncomplete`
+closes all candidates. These commands and automatic expiration are idempotent.
+Any closure failure leaves the recovery gate blocking with Retry.
 
 Transient drafts, sheets, focus, camera, menus, and undo windows are absent from
 the storage DTO and therefore cannot accidentally restore.
@@ -425,10 +456,9 @@ the storage DTO and therefore cannot accidentally restore.
 decisions. Section selection remains presentation only.
 
 Loading a Flight Plan arms the engine after the Cockpit candidate is accepted.
-If confirmation displaces a durable or recoverable recording, confirmation
-first closes it incomplete. The new Cockpit state is installed and armed only
-after closure succeeds. A storage failure leaves the current Flight intact and
-shows a non-blocking error.
+Loading or starting another Flight is unavailable while a recovery gate exists.
+After recovery resolution, the new Cockpit state is installed and armed only
+when reconciliation confirms that at most one operational recording remains.
 
 Cockpit commands become async at the application coordination seam while their
 domain calculations remain synchronous. Views disable only the specific command
@@ -457,9 +487,14 @@ actions. Unavailable evidence uses explicit unavailable text. Export opens the
 system share/save presentation for a temporary snapshot file. Delete uses a
 destructive confirmation naming the Flight.
 
-`FlightRecoveryView` is a launch gate, not a tab. One item emphasizes Continue
-Flight and offers confirmed End as Incomplete. Multiple items use a list with
-the same per-record actions and never auto-select.
+`FlightRecoveryView` is a non-dismissible launch gate, not a tab. One item shows
+Flight Plan identity, route, last durable activity, and a countdown; it emphasizes
+Continue Flight and offers confirmed End Flight as Incomplete. It contains no
+summary, map, export, or delete action. Expiration transitions to a saved result
+with View Flight and Continue to App. Multiple fresh candidates use an explicit
+selection list with confirmed continue-one/close-others and End All actions.
+The visible countdown updates continuously, while VoiceOver announcements are
+limited to initial time, one minute remaining, and expiration.
 
 Cockpit receives a compact `RecordingStatusPresentation` and typed End Recording
 intent. The indicator remains outside the map, never carries coordinates or raw
@@ -476,14 +511,15 @@ status roles.
 
 ## GPX export
 
-Export first asks the store for a synchronized immutable read snapshot. Active
-recording continues into a new batch while export reads the snapshot boundary.
+Export first asks the store for an immutable read snapshot and rejects packages
+without a durable closure. Active and recoverable recordings expose no export
+intent.
 
 `GPXExporter` writes GPX 1.1 with one `trkseg` per stored segment, coordinates
 and timestamps for every readable sample, and optional elevation, speed, and
-course only when valid. Navigation events never become track points or
-waypoints. Metadata contains Flight Plan identity, current status, and explicit
-coverage classification.
+course only when valid. Navigation events and recovery checkpoints never become
+track points or waypoints. Metadata contains Flight Plan identity, closed status,
+closure cause, and explicit coverage classification.
 
 The filename contains a sanitized Flight Plan name, UTC start timestamp, and a
 stable short recording-ID suffix. Generation occurs outside the main actor and
@@ -508,6 +544,9 @@ recalculation without making the recording corrupt.
   published navigation state.
 - Track-write failure preserves committed data, records degradation when storage
   becomes writable, and exposes a restrained warning without blocking Cockpit.
+- Recovery-checkpoint failure preserves the previous checkpoint and warns. Once
+  the captured window elapses without a durable checkpoint, the engine closes
+  incomplete and presents a blocking storage failure.
 - Low storage stops accepting new track batches, attempts the small operational
   journal write, and never deletes another recording.
 - Permission loss closes the segment and preserves action recording.
@@ -561,6 +600,11 @@ sleep delays.
 - store failure leaves published `Flight` unchanged;
 - replay restores every product-specified navigation fact;
 - one and multiple recoverable packages;
+- captured 1, 2, 5, and 10 minute policies, exact-cutoff expiration, command-time
+  revalidation, future timestamps, clock rollback, and start-time fallback;
+- periodic checkpoint success, transient failure, retry, and prolonged failure;
+- idempotent continue/end/end-all and automatic-expiration commands;
+- legacy stale cleanup, ambiguous fresh candidates, and single-active invariant;
 - unsupported schema and corrupt-tail isolation; and
 - cancellation and actor reentrancy generation checks.
 
@@ -570,7 +614,7 @@ sleep delays.
 - event and track append ordering, checksum validation, and torn-tail recovery;
 - five-second maximum configured track synchronization interval;
 - per-package corruption isolation;
-- snapshot-safe export during concurrent append;
+- recovery-policy/checkpoint DTO migration and atomic checkpoint replacement;
 - close/delete preconditions and failed deletion preservation; and
 - migration fixtures for every supported storage version.
 
@@ -578,14 +622,15 @@ sleep delays.
 
 - GPX 1.1 escaping, ordering, optional omission, gap segmentation, metadata,
   filename sanitation, and stable collision suffix;
-- active snapshot boundary without stopping recording;
+- active and recoverable export rejection;
 - distance excludes gaps; and
 - absent altitude, duration, and coverage remain unavailable rather than zero.
 
 ### App, presentation, and UI tests
 
 - tab order and state preservation across section changes;
-- recovery launch gates and destructive confirmations;
+- bounded recovery gate, countdown, foreground revalidation, saved-expiration
+  result, ambiguous candidates, destructive confirmations, and cleanup summary;
 - Flights empty, populated, active, corrupt, and detail states;
 - recording status and navigation-complete Cockpit states;
 - VoiceOver labels and symbol-plus-text semantics;

@@ -63,6 +63,17 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         }
     }
 
+    func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) throws {
+        guard let current = snapshotsByID[recordingID], current.recording.closure == nil else {
+            throw FlightRecordingStoreError.corruptPackage(id: recordingID)
+        }
+        snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
+            recording: current.recording.restoringRecoveryCheckpoint(at: timestamp),
+            events: current.events,
+            trackSegments: current.trackSegments
+        )
+    }
+
     func appendEvent(
         _ event: RecordedFlightEvent,
         recordingID: UUID,

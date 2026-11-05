@@ -549,6 +549,8 @@ private actor ControlledFlightRecordingStore: FlightRecordingStore {
 
     func synchronizeTrack(recordingID: UUID) async throws {}
 
+    func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) async throws {}
+
     func packages() async -> [FlightRecordingPackageResult] { [] }
 
     func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot {

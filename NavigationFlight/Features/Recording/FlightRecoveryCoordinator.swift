@@ -5,8 +5,24 @@ nonisolated struct RecoveryCandidate: Equatable, Sendable, Identifiable {
     let recordingID: UUID
     let flightPlanTitle: String
     let startedAt: Date
+    let lastActivityAt: Date?
+    let expiresAt: Date?
 
     var id: UUID { recordingID }
+
+    init(
+        recordingID: UUID,
+        flightPlanTitle: String,
+        startedAt: Date,
+        lastActivityAt: Date? = nil,
+        expiresAt: Date? = nil
+    ) {
+        self.recordingID = recordingID
+        self.flightPlanTitle = flightPlanTitle
+        self.startedAt = startedAt
+        self.lastActivityAt = lastActivityAt
+        self.expiresAt = expiresAt
+    }
 }
 
 nonisolated enum UnavailableRecoveryPackage: Equatable, Sendable {
@@ -19,6 +35,7 @@ nonisolated enum FlightRecoveryState: Equatable, Sendable {
     case none
     case single(RecoveryCandidate)
     case selectionRequired([RecoveryCandidate])
+    case reconciledExpired(count: Int)
     case unsupported(UnavailableRecoveryPackage)
     case failure(UnavailableRecoveryPackage)
 }
@@ -33,6 +50,7 @@ nonisolated enum FlightRecoveryError: Error, Equatable, Sendable {
     case missingFlightPlanSnapshot
     case invalidFlightPlanSnapshot
     case invalidJournal
+    case recoveryExpired
 }
 
 @MainActor
@@ -40,6 +58,8 @@ nonisolated enum FlightRecoveryError: Error, Equatable, Sendable {
 final class FlightRecoveryCoordinator {
     private let store: any FlightRecordingStore
     private let monotonicUptime: () -> TimeInterval
+    private let now: () -> Date
+    private let defaultRecoveryWindow: TimeInterval
     private var bootstrapUptime: TimeInterval?
     private var persistedElapsedByRecordingID: [UUID: Duration] = [:]
 
@@ -49,10 +69,14 @@ final class FlightRecoveryCoordinator {
 
     init(
         store: any FlightRecordingStore,
-        monotonicUptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        monotonicUptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        now: @escaping () -> Date = Date.init,
+        defaultRecoveryWindow: TimeInterval = 300
     ) {
         self.store = store
         self.monotonicUptime = monotonicUptime
+        self.now = now
+        self.defaultRecoveryWindow = defaultRecoveryWindow
     }
 
     func bootstrap() async {
@@ -65,10 +89,25 @@ final class FlightRecoveryCoordinator {
         }
         var candidates: [RecoveryCandidate] = []
         var invalidAvailablePackages: [UnavailableRecoveryPackage] = []
+        var expiredCount = 0
         for result in packages {
             guard case .available(let snapshot) = result,
                   snapshot.recording.closure == nil else { continue }
             do {
+                let evidenceAt = latestDurableEvidence(in: snapshot)
+                guard evidenceAt <= now() else {
+                    invalidAvailablePackages.append(.corrupt(id: snapshot.recording.id))
+                    continue
+                }
+                guard now().timeIntervalSince(evidenceAt) < recoveryWindow(for: snapshot.recording) else {
+                    try await closeForRecovery(
+                        snapshot: snapshot,
+                        at: evidenceAt,
+                        cause: .recoveryExpired
+                    )
+                    expiredCount += 1
+                    continue
+                }
                 candidates.append(try validatedCandidate(for: snapshot))
             } catch {
                 invalidAvailablePackages.append(.corrupt(id: snapshot.recording.id))
@@ -89,7 +128,9 @@ final class FlightRecoveryCoordinator {
         selectedRecordingID = nil
         switch candidates.count {
         case 0:
-            if let unsupported = unavailablePackages.first(where: {
+            if expiredCount > 0 {
+                state = .reconciledExpired(count: expiredCount)
+            } else if let unsupported = unavailablePackages.first(where: {
                 if case .unsupported = $0 { return true }
                 return false
             }) {
@@ -104,6 +145,54 @@ final class FlightRecoveryCoordinator {
         default:
             state = .selectionRequired(candidates)
         }
+    }
+
+    private func latestDurableEvidence(in snapshot: FlightRecordingReadSnapshot) -> Date {
+        ([snapshot.recording.startedAt]
+            + [snapshot.recording.lastRecoveryCheckpointAt].compactMap { $0 }
+            + snapshot.events.map(\.occurredAt)
+            + snapshot.trackSegments.flatMap(\.samples).map(\.observedAt)).max()
+            ?? snapshot.recording.startedAt
+    }
+
+    private func recoveryWindow(for recording: FlightRecording) -> TimeInterval {
+        recording.recoveryWindowSeconds > 0
+            ? recording.recoveryWindowSeconds
+            : defaultRecoveryWindow
+    }
+
+    private func closeForRecovery(
+        snapshot: FlightRecordingReadSnapshot,
+        at timestamp: Date,
+        cause: FlightRecordingClosure.Cause
+    ) async throws {
+        if let last = snapshot.events.last,
+           last.payload == .recordingClosed(outcome: .incomplete, cause: cause) {
+            try await store.close(
+                id: snapshot.recording.id,
+                closure: FlightRecordingClosure(
+                    outcome: .incomplete,
+                    cause: cause,
+                    closedAt: last.occurredAt,
+                    elapsed: last.elapsed,
+                    landingEvidenceAvailable: false
+                )
+            )
+            return
+        }
+        var recording = snapshot.recording
+        let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(recording.startedAt)))
+        let event = try recording.closeDuringRecovery(
+            at: timestamp,
+            elapsed: elapsed,
+            cause: cause,
+            eventID: UUID()
+        )
+        try await store.appendEvent(event, recordingID: recording.id, synchronize: true)
+        guard let closure = recording.closure else {
+            throw FlightRecordingStoreError.operationFailed(id: recording.id)
+        }
+        try await store.close(id: recording.id, closure: closure)
     }
 
     private func validatedCandidate(
@@ -122,7 +211,11 @@ final class FlightRecoveryCoordinator {
         return RecoveryCandidate(
             recordingID: snapshot.recording.id,
             flightPlanTitle: snapshot.recording.flightPlanSnapshot.title,
-            startedAt: snapshot.recording.startedAt
+            startedAt: snapshot.recording.startedAt,
+            lastActivityAt: latestDurableEvidence(in: snapshot),
+            expiresAt: latestDurableEvidence(in: snapshot).addingTimeInterval(
+                recoveryWindow(for: snapshot.recording)
+            )
         )
     }
 
@@ -145,15 +238,16 @@ final class FlightRecoveryCoordinator {
     ) async throws {
         let snapshot = try await store.readSnapshot(id: id)
         var recording = snapshot.recording
-        let events = try recording.endManually(
+        guard eventIDs.count == 2, let eventID = eventIDs.first else {
+            throw FlightRecording.TransitionError.invalidEventIdentifierCount
+        }
+        let event = try recording.closeDuringRecovery(
             at: timestamp,
             elapsed: elapsed,
-            eventIDs: eventIDs,
-            forcedOutcome: .incomplete
+            cause: .endedDuringRecovery,
+            eventID: eventID
         )
-        for event in events {
-            try await store.appendEvent(event, recordingID: id, synchronize: true)
-        }
+        try await store.appendEvent(event, recordingID: id, synchronize: true)
         guard let closure = recording.closure else {
             throw FlightRecordingStoreError.operationFailed(id: id)
         }
@@ -168,6 +262,13 @@ final class FlightRecoveryCoordinator {
         eventID: UUID
     ) async throws -> RecoveredFlight {
         let snapshot = try await store.readSnapshot(id: id)
+        let evidenceAt = latestDurableEvidence(in: snapshot)
+        guard evidenceAt <= now(), now().timeIntervalSince(evidenceAt) < recoveryWindow(for: snapshot.recording) else {
+            if evidenceAt <= now() {
+                try await closeForRecovery(snapshot: snapshot, at: evidenceAt, cause: .recoveryExpired)
+            }
+            throw FlightRecoveryError.recoveryExpired
+        }
         guard let sourceData = snapshot.recording.flightPlanSnapshot.sourceData else {
             throw FlightRecoveryError.missingFlightPlanSnapshot
         }
@@ -185,6 +286,16 @@ final class FlightRecoveryCoordinator {
             eventID: eventID
         )
         try await store.appendEvent(event, recordingID: id, synchronize: true)
+        for result in await store.packages() {
+            guard case .available(let other) = result,
+                  other.recording.id != id,
+                  other.recording.closure == nil else { continue }
+            try await closeForRecovery(
+                snapshot: other,
+                at: latestDurableEvidence(in: other),
+                cause: .supersededDuringRecovery
+            )
+        }
         state = .none
         selectedRecordingID = nil
         return RecoveredFlight(
@@ -192,6 +303,20 @@ final class FlightRecoveryCoordinator {
             flight: flight,
             recording: recording
         )
+    }
+
+    func endAllAsIncomplete() async throws {
+        for result in await store.packages() {
+            guard case .available(let snapshot) = result,
+                  snapshot.recording.closure == nil else { continue }
+            try await closeForRecovery(
+                snapshot: snapshot,
+                at: latestDurableEvidence(in: snapshot),
+                cause: .endedDuringRecovery
+            )
+        }
+        state = .none
+        selectedRecordingID = nil
     }
 
     private func replayFlight(

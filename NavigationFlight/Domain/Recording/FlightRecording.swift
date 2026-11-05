@@ -50,6 +50,9 @@ nonisolated struct FlightRecordingClosure: Equatable, Sendable {
     enum Cause: Equatable, Sendable {
         case automatic
         case manual
+        case recoveryExpired
+        case endedDuringRecovery
+        case supersededDuringRecovery
     }
 
     let outcome: Outcome
@@ -83,6 +86,8 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
     private(set) var gpsCoverage: GPSCoverageState
     private(set) var closure: FlightRecordingClosure?
     private(set) var nextEventSequence: UInt64
+    private(set) var recoveryWindowSeconds: TimeInterval = 300
+    private(set) var lastRecoveryCheckpointAt: Date? = nil
 
     static func promoteForStartLeg(
         id: UUID,
@@ -90,7 +95,8 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         flightPlanSnapshot: RecordedFlightPlanSnapshot,
         legID: UUID,
         startedAt: Date,
-        eventIDs: [UUID]
+        eventIDs: [UUID],
+        recoveryWindowSeconds: TimeInterval = 300
     ) throws -> FlightRecordingPromotion {
         guard eventIDs.count == 2 else { throw TransitionError.invalidEventIdentifierCount }
         var recording = FlightRecording(
@@ -102,7 +108,8 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: .ready,
             gpsCoverage: .unavailable,
             closure: nil,
-            nextEventSequence: 0
+            nextEventSequence: 0,
+            recoveryWindowSeconds: recoveryWindowSeconds
         )
         let recordingStarted = recording.makeEvent(
             id: eventIDs[0],
@@ -130,7 +137,8 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         startedAt: Date,
         promotedAt: Date,
         partial: Bool,
-        eventID: UUID
+        eventID: UUID,
+        recoveryWindowSeconds: TimeInterval = 300
     ) -> FlightRecordingPromotion {
         var recording = FlightRecording(
             id: id,
@@ -141,7 +149,8 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: .ready,
             gpsCoverage: .available,
             closure: nil,
-            nextEventSequence: 0
+            nextEventSequence: 0,
+            recoveryWindowSeconds: recoveryWindowSeconds
         )
         let elapsed = Duration.seconds(max(0, promotedAt.timeIntervalSince(startedAt)))
         let event = recording.makeEvent(
@@ -232,6 +241,32 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             origin: .recovery,
             payload: .recoveryContinued
         )
+    }
+
+    mutating func closeDuringRecovery(
+        at timestamp: Date,
+        elapsed: Duration,
+        cause: FlightRecordingClosure.Cause,
+        eventID: UUID
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        let closure = FlightRecordingClosure(
+            outcome: .incomplete,
+            cause: cause,
+            closedAt: timestamp,
+            elapsed: elapsed,
+            landingEvidenceAvailable: false
+        )
+        let event = makeEvent(
+            id: eventID,
+            occurredAt: timestamp,
+            elapsed: elapsed,
+            origin: .system,
+            payload: .recordingClosed(outcome: .incomplete, cause: cause)
+        )
+        self.closure = closure
+        return event
     }
 
     mutating func recordPhysicalTransition(
@@ -401,7 +436,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: navigationState,
             gpsCoverage: gpsCoverage,
             closure: closure,
-            nextEventSequence: nextEventSequence ?? self.nextEventSequence
+            nextEventSequence: nextEventSequence ?? self.nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds,
+            lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
         )
     }
 
@@ -418,7 +455,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: navigationState,
             gpsCoverage: gpsCoverage,
             closure: closure,
-            nextEventSequence: nextEventSequence
+            nextEventSequence: nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds,
+            lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
         )
     }
 
@@ -435,7 +474,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: navigationState,
             gpsCoverage: gpsCoverage,
             closure: closure,
-            nextEventSequence: nextEventSequence
+            nextEventSequence: nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds,
+            lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
         )
     }
 
@@ -449,7 +490,25 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             navigationState: navigationState,
             gpsCoverage: gpsCoverage,
             closure: closure,
-            nextEventSequence: nextEventSequence
+            nextEventSequence: nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds,
+            lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
+        )
+    }
+
+    func restoringRecoveryCheckpoint(at timestamp: Date) -> FlightRecording {
+        FlightRecording(
+            id: id,
+            flightID: flightID,
+            flightPlanSnapshot: flightPlanSnapshot,
+            startedAt: startedAt,
+            physicalState: physicalState,
+            navigationState: navigationState,
+            gpsCoverage: gpsCoverage,
+            closure: closure,
+            nextEventSequence: nextEventSequence,
+            recoveryWindowSeconds: recoveryWindowSeconds,
+            lastRecoveryCheckpointAt: timestamp
         )
     }
 }

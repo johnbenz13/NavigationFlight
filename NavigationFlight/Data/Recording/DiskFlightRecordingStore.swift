@@ -74,6 +74,15 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 data.append(0x0A)
                 try writeAndSynchronize(data, to: trackFile(recordingID: seed.recording.id, segmentID: segment.id, root: temporary))
             }
+            let initialSnapshot = FlightRecordingReadSnapshot(
+                recording: seed.recording,
+                events: seed.events,
+                trackSegments: seed.trackSegments
+            )
+            try? writeAndSynchronize(
+                FlightRecordingCoding.encoder.encode(initialSnapshot.evidenceSummary),
+                to: temporary.appending(path: "summary.json")
+            )
             try synchronizeDirectory(temporary)
             try beforeInstall(temporary)
             try fileManager.moveItem(at: temporary, to: destination)
@@ -105,6 +114,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             ))
             try handle.write(contentsOf: Data([0x0A]))
             try handle.close()
+            try? fileManager.removeItem(at: packageDirectory(id: batch.recordingID).appending(path: "summary.json"))
             let last = lastTrackSynchronization[batch.recordingID] ?? .distantPast
             if now().timeIntervalSince(last) >= synchronizationInterval {
                 try synchronizeTrack(recordingID: batch.recordingID)
@@ -154,6 +164,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             try handle.write(contentsOf: Data([0x0A]))
             if synchronize { try handle.synchronize() }
             try handle.close()
+            try? fileManager.removeItem(at: packageDirectory(id: recordingID).appending(path: "summary.json"))
         } catch let error as FlightRecordingStoreError {
             throw error
         } catch {
@@ -207,6 +218,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             manifest.nextEventSequence = UInt64(snapshot.events.count)
             try writeAndSynchronize(FlightRecordingCoding.encoder.encode(manifest), to: temporary)
             _ = try fileManager.replaceItemAt(manifestURL, withItemAt: temporary)
+            try? fileManager.removeItem(at: directory.appending(path: "summary.json"))
             try synchronizeDirectory(directory)
         } catch let error as FlightRecordingStoreError {
             try? fileManager.removeItem(at: temporary)
@@ -273,7 +285,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 default: nil
                 }
             }.first
-            return FlightRecordingReadSnapshot(
+            let snapshot = FlightRecordingReadSnapshot(
                 recording: try manifest.domain(
                     snapshot: plan.domain,
                     physicalState: restoredPhysicalState,
@@ -286,6 +298,25 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 events: events,
                 trackSegments: trackSegments,
                 approximateSizeBytes: approximatePackageSize(at: directory)
+            )
+            let summaryURL = directory.appending(path: "summary.json")
+            let summary: FlightRecordingEvidenceSummary
+            if let data = try? Data(contentsOf: summaryURL),
+               let cached = try? FlightRecordingCoding.decoder.decode(
+                   FlightRecordingEvidenceSummary.self,
+                   from: data
+               ) {
+                summary = cached
+            } else {
+                summary = FlightRecordingSummaryProjector().project(snapshot: snapshot)
+                try? replaceSummary(summary, at: summaryURL, directory: directory)
+            }
+            return FlightRecordingReadSnapshot(
+                recording: snapshot.recording,
+                events: snapshot.events,
+                trackSegments: snapshot.trackSegments,
+                approximateSizeBytes: approximatePackageSize(at: directory),
+                evidenceSummary: summary
             )
         } catch let error as FlightRecordingStoreError {
             throw error
@@ -358,6 +389,21 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         let handle = try FileHandle(forWritingTo: url)
         try handle.synchronize()
         try handle.close()
+    }
+
+    private func replaceSummary(
+        _ summary: FlightRecordingEvidenceSummary,
+        at destination: URL,
+        directory: URL
+    ) throws {
+        let temporary = directory.appending(path: ".summary-\(UUID().uuidString).tmp")
+        try writeAndSynchronize(FlightRecordingCoding.encoder.encode(summary), to: temporary)
+        if fileManager.fileExists(atPath: destination.path) {
+            _ = try fileManager.replaceItemAt(destination, withItemAt: temporary)
+        } else {
+            try fileManager.moveItem(at: temporary, to: destination)
+        }
+        try synchronizeDirectory(directory)
     }
 
     private func synchronizeDirectory(_ url: URL) throws {

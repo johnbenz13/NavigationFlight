@@ -86,6 +86,30 @@ struct DiskFlightRecordingStoreTests {
         #expect(await store.packages() == [.available(snapshot)])
     }
 
+    @Test("Missing or corrupt summary cache is recalculated without corrupting the package")
+    func corruptSummaryCacheFallsBackToEvidence() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+        let summaryURL = root
+            .appending(path: seed.recording.id.uuidString.lowercased(), directoryHint: .isDirectory)
+            .appending(path: "summary.json")
+        try FileManager.default.removeItem(at: summaryURL)
+
+        let missingCacheSnapshot = try await store.readSnapshot(id: seed.recording.id)
+
+        #expect(missingCacheSnapshot.evidenceSummary.distanceMeters == nil)
+        #expect(FileManager.default.fileExists(atPath: summaryURL.path))
+        try Data("not-json".utf8).write(to: summaryURL)
+
+        let snapshot = try await store.readSnapshot(id: seed.recording.id)
+
+        #expect(snapshot.evidenceSummary.distanceMeters == nil)
+        #expect(snapshot.evidenceSummary.duration == nil)
+        #expect(try JSONSerialization.jsonObject(with: Data(contentsOf: summaryURL)) is [String: Any])
+    }
+
     @Test("An active recording cannot be deleted, while a closed recording can")
     func activeRecordingDeletionGuard() async throws {
         let root = temporaryDirectory()

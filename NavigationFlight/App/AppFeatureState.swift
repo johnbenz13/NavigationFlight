@@ -1,15 +1,17 @@
 import Foundation
 
 struct AppFeatureState: Equatable, Sendable {
-    enum AppSection: Hashable, Sendable {
+    enum AppSection: CaseIterable, Hashable, Sendable {
         case cockpit
         case flightPlans
+        case flights
         case settings
     }
 
     private(set) var selectedAppSection: AppSection
     private(set) var cockpit: CockpitFeatureState
     private(set) var flightPlans: FlightPlansFeatureState
+    private(set) var flights: FlightsFeatureState
     private(set) var pendingFlightChange: PendingFlightChange?
     private(set) var cockpitPresentationRequestID: UUID?
     private(set) var positionCheckPermissionEducation: PositionCheckPermissionEducationState
@@ -18,6 +20,7 @@ struct AppFeatureState: Equatable, Sendable {
         selectedAppSection: AppSection = .flightPlans,
         cockpit: CockpitFeatureState = CockpitFeatureState(),
         flightPlans: FlightPlansFeatureState = FlightPlansFeatureState(),
+        flights: FlightsFeatureState = FlightsFeatureState(),
         pendingFlightChange: PendingFlightChange? = nil,
         cockpitPresentationRequestID: UUID? = nil,
         positionCheckPermissionEducation: PositionCheckPermissionEducationState = .notPresented
@@ -25,6 +28,7 @@ struct AppFeatureState: Equatable, Sendable {
         self.selectedAppSection = selectedAppSection
         self.cockpit = cockpit
         self.flightPlans = flightPlans
+        self.flights = flights
         self.pendingFlightChange = pendingFlightChange
         self.cockpitPresentationRequestID = cockpitPresentationRequestID
         self.positionCheckPermissionEducation = positionCheckPermissionEducation
@@ -44,6 +48,10 @@ struct AppFeatureState: Equatable, Sendable {
 
     mutating func updateFlightPlans(_ flightPlans: FlightPlansFeatureState) {
         self.flightPlans = flightPlans
+    }
+
+    mutating func updateFlights(_ flights: FlightsFeatureState) {
+        self.flights = flights
     }
 
     mutating func restoreRecoveredFlight(
@@ -99,8 +107,9 @@ struct AppFeatureState: Equatable, Sendable {
         )
     }
 
-    mutating func returnToCockpit() {
+    mutating func returnToCockpit(presentationRequestID: UUID = UUID()) {
         selectedAppSection = .cockpit
+        cockpitPresentationRequestID = presentationRequestID
     }
 
     mutating func presentPositionCheckPermissionEducation() {

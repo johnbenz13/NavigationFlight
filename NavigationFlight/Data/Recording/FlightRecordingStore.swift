@@ -35,15 +35,18 @@ nonisolated struct FlightRecordingReadSnapshot: Equatable, Sendable {
     let recording: FlightRecording
     let events: [RecordedFlightEvent]
     var trackSegments: [RecordedTrackSegment]
+    let approximateSizeBytes: Int64?
 
     init(
         recording: FlightRecording,
         events: [RecordedFlightEvent],
-        trackSegments: [RecordedTrackSegment] = []
+        trackSegments: [RecordedTrackSegment] = [],
+        approximateSizeBytes: Int64? = nil
     ) {
         self.recording = recording
         self.events = events
         self.trackSegments = trackSegments
+        self.approximateSizeBytes = approximateSizeBytes
     }
 }
 

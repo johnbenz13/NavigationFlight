@@ -6,6 +6,43 @@ private final class AppFeatureFixtureLocator {}
 
 @Suite("App feature state")
 struct AppFeatureStateTests {
+    @Test("Top-level app sections have the approved order")
+    func appSectionOrder() {
+        #expect(AppFeatureState.AppSection.allCases == [
+            .cockpit,
+            .flightPlans,
+            .flights,
+            .settings,
+        ])
+    }
+
+    @Test("Selecting another section preserves Flights state")
+    func sectionSelectionPreservesFlightsState() throws {
+        let row = FlightRecordingSummary(
+            id: try #require(UUID(uuidString: "66666666-6666-6666-6666-666666666666")),
+            flightPlanTitle: "Coastal Navigation",
+            route: "LLHZ → LLHZ",
+            startedAt: Date(timeIntervalSince1970: 1_000),
+            duration: .seconds(600),
+            status: .complete,
+            gpsCoverage: .available,
+            approximateSizeBytes: 1_000,
+            canContinue: false,
+            canDelete: true
+        )
+        var flights = FlightsFeatureState()
+        let requestID = UUID()
+        flights.beginLoading(requestID: requestID)
+        _ = flights.completeLoading(requestID: requestID, rows: [row])
+        var state = AppFeatureState(selectedAppSection: .flights, flights: flights)
+
+        state.selectAppSection(.settings)
+        state.selectAppSection(.flights)
+
+        #expect(state.flights == flights)
+        #expect(state.selectedAppSection == .flights)
+    }
+
     @Test("Fresh launch selects Flight Plans with no active Flight")
     func freshLaunch() {
         let state = AppFeatureState()
@@ -348,7 +385,10 @@ struct AppFeatureStateTests {
         try cockpit.accept(plan, flightID: originalID)
         var state = AppFeatureState(selectedAppSection: .flightPlans, cockpit: cockpit)
 
-        state.returnToCockpit()
+        let presentationRequestID = UUID()
+        state.returnToCockpit(presentationRequestID: presentationRequestID)
+        #expect(state.selectedAppSection == .cockpit)
+        #expect(state.cockpitPresentationRequestID == presentationRequestID)
         #expect(state.cockpit.flight?.id == originalID)
         let decision = try state.restartFlight(flightID: restartID)
         #expect(decision == .loaded)

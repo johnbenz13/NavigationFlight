@@ -82,6 +82,7 @@ struct DiskFlightRecordingStoreTests {
         #expect(snapshot.recording == seed.recording)
         #expect(snapshot.recording.flightPlanSnapshot.sourceData == Data("immutable-plan".utf8))
         #expect(snapshot.events == seed.events)
+        #expect(try #require(snapshot.approximateSizeBytes) > 0)
         #expect(await store.packages() == [.available(snapshot)])
     }
 

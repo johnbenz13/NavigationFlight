@@ -64,6 +64,12 @@ private extension CockpitPresentationData {
             displayFrequencies: populated ? [
                 .init(id: "preview-frequency", phases: [.departure], service: "Very Long Preview Tower Service", serviceType: "Pilot override", frequencyMHz: 118.4, source: .user)
             ] : [],
+            frequencyPlan: populated ? CockpitPresentationAdapter().makeFrequencyPlan(
+                frequencies: [
+                    .departure: [.init(id: "preview-frequency", phase: .departure, role: "Tower", service: "Very Long Preview Tower Service", frequencyMHz: 118.4, source: .user)]
+                ],
+                references: []
+            ) : CockpitFrequencyPlan(entries: []),
             routeEvents: populated ? [
                 .init(id: UUID(), entityIDs: [UUID()], kinds: [.altitudeChange], normalizedX: 0.40, normalizedY: 0.57, position: .init(latitudeDegrees: 32.2, longitudeDegrees: 34.6), timeFromLegStartSeconds: 132, title: "Altitude change", detail: "After passing anchor: 2,500 ft MSL"),
                 .init(id: UUID(), entityIDs: [UUID()], kinds: [.radioFrequencyChange], normalizedX: 0.61, normalizedY: 0.44, position: .init(latitudeDegrees: 32.25, longitudeDegrees: 34.65), timeFromLegStartSeconds: 190, title: "Frequency change", detail: "Very Long Preview Control Service · 120.600 MHz")
@@ -257,6 +263,11 @@ struct CockpitView: View {
             mapToolsPanel
                 .presentationDetents([.large])
         }
+        .sheet(isPresented: compactFrequencyPlanBinding) {
+            frequencyPlanPanel
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .onChange(of: flight.activeLegIndex) { _, _ in
             if isRestoringReach {
                 isRestoringReach = false
@@ -370,7 +381,13 @@ struct CockpitView: View {
             readyETAMetric
             compactHeadingButton
             readyAltitudeMetric
-            frequencyColumn
+            fixedImmediateFrequencyColumn
+            Button("Frequency plan ›") {
+                cockpitPresentationState.setFrequencyPlanPresented(true)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+            .accessibilityIdentifier("open-frequency-plan")
             positionCheckAndProgressionControls
         }
         .padding(.horizontal, 12)
@@ -426,6 +443,17 @@ struct CockpitView: View {
                 mapToolsPanel
                     .frame(width: min(380, mapWidth - 40))
                     .frame(maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
+                    .padding(.vertical, 18)
+                    .padding(.trailing, 18)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .accessibilitySortPriority(95)
+            }
+            if horizontalSizeClass != .compact, cockpitPresentationState.isFrequencyPlanPresented {
+                frequencyPlanPanel
+                    .frame(width: min(380, mapWidth - 40))
+                    .frame(maxHeight: 760)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
                     .padding(.vertical, 18)
@@ -508,6 +536,13 @@ struct CockpitView: View {
         )
     }
 
+    private var compactFrequencyPlanBinding: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass == .compact && cockpitPresentationState.isFrequencyPlanPresented },
+            set: { cockpitPresentationState.setFrequencyPlanPresented($0) }
+        )
+    }
+
     private var mapToolsPanel: some View {
         CockpitMapToolsPanel(
             areDriftLinesVisible: areDriftLinesVisible,
@@ -522,6 +557,13 @@ struct CockpitView: View {
                 onShowPlanInspection()
             },
             onClose: { cockpitPresentationState.setMapToolsPresented(false) }
+        )
+    }
+
+    private var frequencyPlanPanel: some View {
+        CockpitFrequencyPlanView(
+            plan: data.frequencyPlan,
+            onClose: { cockpitPresentationState.setFrequencyPlanPresented(false) }
         )
     }
 
@@ -821,29 +863,30 @@ struct CockpitView: View {
 
     private var compactImmediateFrequencies: some View {
         HStack(spacing: 8) {
-            ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(index == 0 ? "Planned now" : "Planned next")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text("\(cue.frequency.service) · \(Self.frequency(cue.frequency.frequencyMHz)) MHz")
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+            ForEach(0..<2, id: \.self) { index in
+                let entry = immediateFrequencyEntry(at: index)
+                Button {
+                    cockpitPresentationState.setFrequencyPlanPresented(true)
+                } label: {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(index == 0 ? "Planned now" : "Planned next")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(entry.map { "\($0.service) · \(Self.frequency($0.frequencyMHz)) MHz" } ?? "None in imported plan")
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
                 }
-                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-                .padding(.horizontal, 8)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(index == 0 ? "Planned now" : "Planned next"), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz")
+                .buttonStyle(.plain)
+                .accessibilityLabel(immediateFrequencyAccessibilityLabel(entry, index: index))
+                .accessibilityHint("Opens the complete imported frequency plan")
                 .accessibilityIdentifier(index == 0 ? "planned-now" : "planned-next")
             }
         }
-    }
-
-    private var immediateFrequencyCues: [CockpitOperationalCueState.FrequencyCue] {
-        let immediate = orderedFrequencyCues.filter { $0.status == .current || $0.status == .next }
-        return Array((immediate.isEmpty ? orderedFrequencyCues : immediate).prefix(2))
     }
 
     private var compactSummaryButtons: some View {
@@ -1197,16 +1240,25 @@ struct CockpitView: View {
 
     private var fixedImmediateFrequencyRow: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Planned frequencies")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text("Planned frequencies")
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("planned-frequencies")
+                Spacer()
+                Button("Frequency plan ›") {
+                    cockpitPresentationState.setFrequencyPlanPresented(true)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .accessibilityIdentifier("open-frequency-plan")
+            }
+            .font(.caption)
             HStack(spacing: 8) {
-                ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
-                    immediateFrequencyCard(cue, sequence: index == 0 ? "Planned now" : "Planned next")
+                ForEach(0..<2, id: \.self) { index in
+                    immediateFrequencyCard(immediateFrequencyEntry(at: index), index: index)
                 }
             }
         }
-        .accessibilityIdentifier("planned-frequencies")
     }
 
     private var fixedImmediateFrequencyColumn: some View {
@@ -1214,19 +1266,20 @@ struct CockpitView: View {
             Text("Planned frequencies")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
-                immediateFrequencyCard(cue, sequence: index == 0 ? "Planned now" : "Planned next")
+            ForEach(0..<2, id: \.self) { index in
+                immediateFrequencyCard(immediateFrequencyEntry(at: index), index: index)
             }
         }
         .accessibilityIdentifier("planned-frequencies")
     }
 
-    private func immediateFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue, sequence: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+    private func immediateFrequencyCard(_ entry: CockpitFrequencyPlan.Entry?, index: Int) -> some View {
+        let sequence = index == 0 ? "Planned now" : "Planned next"
+        return VStack(alignment: .leading, spacing: 3) {
             Text(sequence)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("\(cue.frequency.service) · \(Self.frequency(cue.frequency.frequencyMHz)) MHz")
+            Text(entry.map { "\($0.service) · \(Self.frequency($0.frequencyMHz)) MHz" } ?? "None in imported plan")
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1235,8 +1288,22 @@ struct CockpitView: View {
         .padding(.horizontal, 12)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(sequence), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz")
+        .accessibilityLabel(immediateFrequencyAccessibilityLabel(entry, index: index))
         .accessibilityIdentifier(sequence == "Planned now" ? "planned-now" : "planned-next")
+    }
+
+    private func immediateFrequencyEntry(at index: Int) -> CockpitFrequencyPlan.Entry? {
+        guard data.frequencyPlan.immediateEntries.indices.contains(index) else { return nil }
+        return data.frequencyPlan.immediateEntries[index]
+    }
+
+    private func immediateFrequencyAccessibilityLabel(
+        _ entry: CockpitFrequencyPlan.Entry?,
+        index: Int
+    ) -> String {
+        let sequence = index == 0 ? "Planned now" : "Planned next"
+        guard let entry else { return "\(sequence), none in imported plan" }
+        return "\(sequence), \(entry.service), \(Self.frequency(entry.frequencyMHz)) megahertz"
     }
 
     private func readyFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {
@@ -1401,11 +1468,12 @@ struct CockpitView: View {
             Divider()
             fixedImmediateFrequencyColumn
             Button("Frequency plan ›") {
-                showsCompactFrequencies = true
+                cockpitPresentationState.setFrequencyPlanPresented(true)
             }
             .font(.caption)
             .buttonStyle(.plain)
             .foregroundStyle(.tint)
+            .accessibilityIdentifier("open-frequency-plan")
             Divider()
             positionCheckAndProgressionControls
         }

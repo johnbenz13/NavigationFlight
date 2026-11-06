@@ -115,8 +115,11 @@ struct NextLegPreparation: Equatable, Sendable {
     }
 
     let legIndex: Int
+    let origin: String
+    let destination: String
     let direction: Direction
     let initialAltitudeFeetMsl: Double
+    let plannedDurationSeconds: Int
     let immediateAltitudeFeetMsl: Double?
     let immediateFrequencyChange: FrequencyChange?
 }
@@ -678,11 +681,22 @@ struct CockpitPresentationAdapter: Sendable {
                 frequencyMHz: $0.frequency.value
             )
         }
+        let plannedDurationSeconds: Int
+        switch flight.executionMode {
+        case .wind:
+            plannedDurationSeconds = resolvedLeg.withWind?.timing.durationSeconds
+                ?? resolvedLeg.noWind.durationSeconds
+        case .noWind:
+            plannedDurationSeconds = resolvedLeg.noWind.durationSeconds
+        }
 
         return NextLegPreparation(
             legIndex: nextIndex,
+            origin: sourceLeg.departure.name,
+            destination: sourceLeg.arrival.name,
             direction: direction,
             initialAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
+            plannedDurationSeconds: plannedDurationSeconds,
             immediateAltitudeFeetMsl: immediateAltitude,
             immediateFrequencyChange: immediateFrequency
         )

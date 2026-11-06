@@ -5,6 +5,7 @@ import UIKit
 
 enum AviationMapFocusMode: Equatable, Sendable {
     case leg
+    case nextLeg
     case waypoint
     case overview
     case timingTarget(AviationMapCoordinate)
@@ -556,6 +557,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 switch focusRequest.mode {
                 case .leg:
                     focusLeg(on: mapView, animated: !reducesMotion)
+                case .nextLeg:
+                    focusNextLeg(on: mapView)
                 case .waypoint:
                     focusWaypoint(on: mapView)
                 case .overview:
@@ -900,6 +903,18 @@ struct OfflineAviationMapView: UIViewRepresentable {
             guard let leg = presentation.activeLeg else { return }
             publishCameraOwnership(isUserControlled: false)
             mapView.setCenter(coordinate(leg.to), animated: !reducesMotion)
+        }
+
+        private func focusNextLeg(on mapView: MLNMapView) {
+            guard let leg = presentation.nextLegPreview else { return }
+            publishCameraOwnership(isUserControlled: false)
+            fitTrackUp(
+                [leg.from, leg.to],
+                on: mapView,
+                direction: AviationMapGeometry.bearing(from: leg.from, to: leg.to),
+                padding: UIEdgeInsets(top: 180, left: 75, bottom: 110, right: 120),
+                animated: !reducesMotion
+            )
         }
 
         private func focusOverview(on mapView: MLNMapView) {

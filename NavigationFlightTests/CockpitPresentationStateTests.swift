@@ -89,6 +89,36 @@ struct CockpitPresentationStateTests {
         #expect(flight == originalFlight)
     }
 
+    @Test("Checklist, Previous Leg, and Next Leg expand exclusively")
+    func operationalDisclosuresExpandExclusively() {
+        var state = CockpitPresentationState()
+
+        state.setChecklistPresented(true)
+        #expect(state.activeDisclosure == .checklist)
+
+        state.setPreviousLegPresented(true)
+        #expect(state.activeDisclosure == .previousLeg)
+        #expect(!state.isChecklistPresented)
+
+        state.setNextLegPresented(true)
+        #expect(state.activeDisclosure == .nextLeg)
+        #expect(!state.isPreviousLegPresented)
+        #expect(state.isNextLegPresented)
+    }
+
+    @Test("Closing the Next Leg map preview restores active-leg map focus")
+    func nextLegMapPreviewRestoresActiveLeg() {
+        var state = CockpitPresentationState()
+
+        state.setNextLegMapPreviewPresented(true)
+        #expect(state.isNextLegMapPreviewPresented)
+        #expect(state.mapFocusRequest?.mode == .nextLeg)
+
+        state.setNextLegMapPreviewPresented(false)
+        #expect(!state.isNextLegMapPreviewPresented)
+        #expect(state.mapFocusRequest?.mode == .leg)
+    }
+
     @Test("Whole-leg and destination recovery produce distinct map intents")
     func recoveryMapIntentsAreDistinct() {
         let wholeLeg = AviationMapFocusRequest(mode: .leg)

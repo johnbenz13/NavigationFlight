@@ -1143,31 +1143,78 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         app.buttons["reached-now"].tap()
 
-        let timer = app.descendants(matching: .any)["cockpit-time"]
-        XCTAssertTrue(timer.waitForExistence(timeout: 2))
-        XCTAssertTrue(timer.label.contains("Running from pilot start"))
-        let previousLeg = app.buttons["previous-leg-tab"]
-        XCTAssertTrue(previousLeg.waitForExistence(timeout: 2))
-        let collapseChecklist = app.buttons["Collapse start of leg checklist"]
-        if collapseChecklist.exists {
+        let collapseChecklist = app.buttons["leg-start-checklist-close"]
+        if collapseChecklist.waitForExistence(timeout: 2) {
             collapseChecklist.tap()
         }
+
+        let timer = app.descendants(matching: .any)["cockpit-time"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 2))
+        XCTAssertTrue(timer.label.contains("Leg timer"))
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
+        let previousLeg = app.buttons["previous-leg-tab"]
+        XCTAssertTrue(previousLeg.waitForExistence(timeout: 2))
         previousLeg.tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["previous-leg-drawer"].waitForExistence(timeout: 2))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'PREVIOUS LEG · LEG 1'")).firstMatch.exists)
-        XCTAssertTrue(app.staticTexts["TARGET HISTORY"].exists)
+        XCTAssertTrue(app.staticTexts["Previous leg"].exists)
+        XCTAssertTrue(app.staticTexts["TARGET OUTCOMES"].exists)
         XCTAssertTrue(app.staticTexts["HEADING HISTORY"].exists)
-        XCTAssertTrue(app.staticTexts["Review only · current leg continues unchanged"].exists)
+        XCTAssertTrue(app.staticTexts["Reviewing history does not change the current leg, map, or timer."].exists)
         XCTAssertTrue(app.buttons["leg-start-checklist-chip"].exists)
-        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
 
         let drawer = app.descendants(matching: .any)["previous-leg-drawer"]
         XCTAssertTrue(app.buttons["undo-reach"].exists)
-        drawer.swipeLeft()
+        app.buttons["Close previous leg"].tap()
         XCTAssertFalse(drawer.exists)
-        XCTAssertTrue(timer.label.contains("Running from pilot start"))
-        XCTAssertTrue(app.buttons["previous-leg-tab"].label.contains("Leg 1"))
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
+        XCTAssertTrue(app.buttons["previous-leg-tab"].label.contains("Previous"))
+    }
+
+    @MainActor
+    func testClosedChecklistPreviousAndNextLegDisclosuresCoexist() throws {
+        let app = launchCockpit(planData: try threeLegPlanData())
+
+        app.buttons["start-leg"].tap()
+        app.buttons["reached-now"].tap()
+        let collapseChecklist = app.buttons["leg-start-checklist-close"]
+        if collapseChecklist.waitForExistence(timeout: 2) {
+            collapseChecklist.tap()
+        }
+
+        XCTAssertTrue(app.buttons["leg-start-checklist-chip"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["previous-leg-tab"].exists)
+        XCTAssertTrue(app.buttons["next-leg-preview"].exists)
+    }
+
+    @MainActor
+    func testNextLegPreviewShowsPlannedInformationWithoutProgression() throws {
+        let app = launchCockpit(planData: try threeLegPlanData())
+        app.buttons["start-leg"].tap()
+        app.buttons["reached-now"].tap()
+        let collapseChecklist = app.buttons["leg-start-checklist-close"]
+        if collapseChecklist.waitForExistence(timeout: 2) {
+            collapseChecklist.tap()
+        }
+        let timer = app.descendants(matching: .any)["cockpit-time"]
+
+        app.buttons["next-leg-preview"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["next-leg-card"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Next leg"].exists)
+        XCTAssertTrue(app.staticTexts["Heading"].exists)
+        XCTAssertTrue(app.staticTexts["Altitude"].exists)
+        XCTAssertTrue(app.staticTexts["Leg time"].exists)
+        XCTAssertTrue(app.staticTexts["PLANNED COMMUNICATION"].exists)
+        app.buttons["show-next-leg-on-map"].tap()
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
+        XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
+
+        app.buttons["Close next leg"].tap()
+        XCTAssertFalse(app.descendants(matching: .any)["next-leg-card"].exists)
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
+        XCTAssertTrue(app.buttons["next-leg-preview"].exists)
     }
 
     @MainActor
@@ -1847,6 +1894,45 @@ final class NavigationFlightUITests: XCTestCase {
         var resolvedSecondLeg = resolvedLegs[0]
         resolvedSecondLeg["legId"] = secondLegID
         resolvedLegs.append(resolvedSecondLeg)
+        execution["legs"] = resolvedLegs
+
+        object["navigation"] = navigation
+        object["execution"] = execution
+        return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func threeLegPlanData() throws -> Data {
+        let data = try twoLegPlanData()
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var navigation = try XCTUnwrap(object["navigation"] as? [String: Any])
+        var route = try XCTUnwrap(navigation["route"] as? [String: Any])
+        var waypoints = try XCTUnwrap(route["waypoints"] as? [[String: Any]])
+        var fourthWaypoint = waypoints[2]
+        let fourthWaypointID = "00000000-0000-4000-8000-000000000030"
+        fourthWaypoint["id"] = fourthWaypointID
+        fourthWaypoint["name"] = "Fourth waypoint"
+        fourthWaypoint["position"] = ["latitude": 0.04, "longitude": 0.015]
+        waypoints.append(fourthWaypoint)
+        route["waypoints"] = waypoints
+        route["waypointOrder"] = try waypoints.map { waypoint in
+            try XCTUnwrap(waypoint["id"] as? String)
+        }
+
+        var sourceLegs = try XCTUnwrap(route["legs"] as? [[String: Any]])
+        var thirdLeg = sourceLegs[1]
+        let thirdLegID = "00000000-0000-4000-8000-000000000031"
+        thirdLeg["id"] = thirdLegID
+        thirdLeg["departureWaypointId"] = try XCTUnwrap(waypoints[2]["id"] as? String)
+        thirdLeg["arrivalWaypointId"] = fourthWaypointID
+        sourceLegs.append(thirdLeg)
+        route["legs"] = sourceLegs
+        navigation["route"] = route
+
+        var execution = try XCTUnwrap(object["execution"] as? [String: Any])
+        var resolvedLegs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+        var resolvedThirdLeg = resolvedLegs[1]
+        resolvedThirdLeg["legId"] = thirdLegID
+        resolvedLegs.append(resolvedThirdLeg)
         execution["legs"] = resolvedLegs
 
         object["navigation"] = navigation

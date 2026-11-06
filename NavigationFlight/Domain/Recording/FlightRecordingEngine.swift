@@ -205,18 +205,24 @@ actor FlightRecordingEngine {
                         synchronize: true
                     )) != nil {
                         recording = resumedRecording
+                        if storageDegradations.contains(.lowStorage) {
+                            segmentNeedsReopening = false
+                        }
                     }
                 }
-                if segmentNeedsReopening || activeSegmentID == nil {
-                    activeSegmentID = UUID()
-                    segmentNeedsReopening = false
+                if !storageDegradations.contains(.lowStorage) {
+                    if segmentNeedsReopening || activeSegmentID == nil {
+                        activeSegmentID = UUID()
+                        segmentNeedsReopening = false
+                    }
+                    if let segmentID = activeSegmentID {
+                        try? await store.appendTrackBatch(RecordedTrackBatch(
+                            recordingID: currentRecording.id,
+                            segmentID: segmentID,
+                            samples: [sample]
+                        ))
+                    }
                 }
-                guard let segmentID = activeSegmentID else { return .none }
-                try? await store.appendTrackBatch(RecordedTrackBatch(
-                    recordingID: currentRecording.id,
-                    segmentID: segmentID,
-                    samples: [sample]
-                ))
                 var candidateDetector = detector
                 let physicalEvents = candidateDetector.process(sourceSample, monotonicTime: monotonicTime)
                 guard let physicalEvent = physicalEvents.first else {
@@ -483,6 +489,11 @@ actor FlightRecordingEngine {
                         (.pilot, .waypointReached(legID: departingLegID)),
                         (.automatic, .finalWaypointReached(legID: departingLegID))
                     ], .reachedFinalWaypoint)
+                }
+                if candidate.legState == .ready {
+                    return ([
+                        (.pilot, .waypointReached(legID: departingLegID))
+                    ], .ready)
                 }
                 let successorLegID = candidate.legIDs[candidate.activeLegIndex]
                 return ([

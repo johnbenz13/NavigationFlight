@@ -377,13 +377,16 @@ struct CockpitFeatureView: View {
         restoration: CockpitRestoration
     ) {
         guard let timing = recordingTiming() else { return }
+        let eventIDs = state.flight?.progressionPolicy == .manualNextLeg
+            ? [UUID()]
+            : [UUID(), UUID()]
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reachCurrentWaypoint(
                     orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
                     at: timing.now,
                     elapsed: timing.elapsed,
-                    eventIDs: [UUID(), UUID()]
+                    eventIDs: eventIDs
                 ))
                 state.installCommittedWaypointReach(
                     transition.flight,

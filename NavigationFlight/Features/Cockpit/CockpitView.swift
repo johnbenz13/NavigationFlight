@@ -247,7 +247,9 @@ struct CockpitView: View {
                 VStack(spacing: 0) {
                     mapSurface(isLandscape: false, mapWidth: geometry.size.width)
                         .frame(height: geometry.size.height * 0.66)
-                    portraitControlPanel
+                    ScrollView {
+                        portraitControlPanel
+                    }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
@@ -656,6 +658,10 @@ struct CockpitView: View {
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(recordingStatusColor(recordingStatus.tone))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .frame(minHeight: 44)
+                .background(recordingStatusBackground(recordingStatus.tone), in: Capsule())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(recordingStatus.title)
@@ -694,8 +700,15 @@ struct CockpitView: View {
     private func recordingStatusColor(_ tone: RecordingStatusPresentation.Tone) -> Color {
         switch tone {
         case .neutral: Color.secondary
-        case .caution: Color(.systemOrange)
-        case .destructive: Color(.systemRed)
+        case .caution, .destructive: Color.primary
+        }
+    }
+
+    private func recordingStatusBackground(_ tone: RecordingStatusPresentation.Tone) -> Color {
+        switch tone {
+        case .neutral: Color(.secondarySystemBackground)
+        case .caution: Color(.systemOrange).opacity(0.14)
+        case .destructive: Color(.systemRed).opacity(0.14)
         }
     }
 

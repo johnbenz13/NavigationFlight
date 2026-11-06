@@ -178,6 +178,53 @@ struct FlightRecordingCoordinatorTests {
         #expect(await store.packages().count == 1)
     }
 
+    @Test("Manual successor leg reuses the recording with one durable start event")
+    func manualSuccessorLegReusesRecording() async throws {
+        let planID = UUID()
+        let legIDs = [UUID(), UUID()]
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let flight = Flight(
+            flightPlanID: planID,
+            legIDs: legIDs,
+            activeLegIndex: 0,
+            executionMode: .noWind,
+            progressionPolicy: .manualNextLeg
+        )
+        let snapshot = RecordedFlightPlanSnapshot(
+            id: planID,
+            title: "Two-leg training flight",
+            legIDs: legIDs
+        )
+        let store = InMemoryFlightRecordingStore()
+        let coordinator = FlightRecordingCoordinator(store: store)
+        let first = try await coordinator.startLeg(
+            flight: flight,
+            flightPlanSnapshot: snapshot,
+            at: startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        let reached = try await coordinator.commitNavigation(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [],
+            at: startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            eventIDs: [UUID()]
+        ))
+
+        let second = try await coordinator.startLeg(
+            flight: reached.flight,
+            flightPlanSnapshot: snapshot,
+            at: startedAt.addingTimeInterval(90),
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        #expect(second.recording.id == first.recording.id)
+        #expect(second.flight.activeLegIndex == 1)
+        #expect(second.flight.legState == .active)
+        #expect(await store.packages().count == 1)
+    }
+
     @Test("Failed automatic promotion never publishes a non-durable recording")
     func automaticPromotionFailureRemainsPrepared() async {
         let fixture = makeFixture()
@@ -376,6 +423,33 @@ struct FlightRecordingCoordinatorTests {
         let presentation = RecordingStatusPresentation(status: coordinator.status)
         #expect(presentation.compactTitle == "REC · WARNING")
         #expect(presentation.showsEndRecordingAction)
+    }
+
+    @Test("Low storage has explicit symbol-and-text status semantics")
+    func lowStorageHasExplicitStatusSemantics() async throws {
+        let fixture = makeFixture()
+        let coordinator = FlightRecordingCoordinator(store: InMemoryFlightRecordingStore())
+        _ = try await coordinator.startLeg(
+            flight: fixture.flight,
+            flightPlanSnapshot: fixture.snapshot,
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+
+        try await coordinator.recordStorageDegradation(
+            .lowStorage,
+            at: fixture.startedAt.addingTimeInterval(5),
+            elapsed: .seconds(5),
+            eventID: UUID()
+        )
+
+        #expect(coordinator.status == .recordingLowStorage)
+        let presentation = RecordingStatusPresentation(status: coordinator.status)
+        #expect(presentation.title == "Recording · Low Storage")
+        #expect(presentation.compactTitle == "REC · LOW STORAGE")
+        #expect(presentation.systemImage == "externaldrive.badge.exclamationmark")
+        #expect(presentation.detail == "New GPS track samples are paused. Saved evidence is preserved and navigation actions continue to be recorded when possible.")
     }
 
     private func makeFixture() -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {

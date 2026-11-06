@@ -68,6 +68,14 @@ struct FlightsFeatureView: View {
     }
 
     private var recordingsList: some View {
+        ViewThatFits(in: .horizontal) {
+            wideRecordingsList
+                .frame(minWidth: 900)
+            compactRecordingsList
+        }
+    }
+
+    private var compactRecordingsList: some View {
         List {
             let current = state.rows.filter(\.canContinue)
             if !current.isEmpty {
@@ -109,6 +117,71 @@ struct FlightsFeatureView: View {
         .accessibilityIdentifier("flights.list")
     }
 
+    private var wideRecordingsList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                let current = state.rows.filter(\.canContinue)
+                if !current.isEmpty {
+                    Text("In Progress")
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                    ForEach(current) { row in
+                        VStack(alignment: .leading, spacing: 10) {
+                            FlightRecordingRow(summary: row)
+                            Button("Continue Flight", systemImage: "arrow.right") {
+                                onContinue(row.id)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .accessibilityIdentifier("flights.continue.\(row.id.uuidString)")
+                        }
+                    }
+                }
+
+                let recent = state.rows.filter { !$0.canContinue }
+                if !recent.isEmpty {
+                    Text("Recent Flights")
+                        .font(.title3.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    LazyVGrid(
+                        columns: [
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
+                        ],
+                        alignment: .leading,
+                        spacing: 16
+                    ) {
+                        ForEach(recent) { row in
+                            FlightRecordingRow(summary: row)
+                                .padding(.horizontal, 16)
+                                .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color(.separator), lineWidth: 0.5)
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    if row.canDelete {
+                                        Button("Delete", systemImage: "trash", role: .destructive) {
+                                            state.requestDeletion(of: row.id)
+                                        }
+                                        .accessibilityIdentifier("flights.delete.\(row.id.uuidString)")
+                                    }
+                                }
+                        }
+                    }
+                }
+
+                Text("On-device · Recordings stay here unless you export them.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 48)
+            .padding(.vertical, 24)
+        }
+        .background(Color(.secondarySystemBackground))
+        .accessibilityIdentifier("flights.list")
+    }
+
     @MainActor
     private func loadRows() async {
         let requestID = UUID()
@@ -120,12 +193,14 @@ struct FlightsFeatureView: View {
     @MainActor
     private func delete(_ id: UUID) async {
         guard isDeleting, state.pendingDeletionID == id else { return }
-        defer { isDeleting = false }
         do {
             try await library.delete(id: id)
             state.completeDeletion(id: id)
+            isDeleting = false
         } catch {
             state.failDeletion(id: id)
+            await Task.yield()
+            isDeleting = false
         }
     }
 

@@ -126,7 +126,7 @@ final class FlightRecordingCoordinator {
         publishedRecording = recovered.recording
         startRecoveryCheckpointing()
         storageDegradations = degradations
-        status = Self.status(for: recovered.recording, hasDegradation: !degradations.isEmpty)
+        status = Self.status(for: recovered.recording, degradations: degradations)
         lastError = nil
     }
 
@@ -252,10 +252,13 @@ final class FlightRecordingCoordinator {
             )
         }
         do {
+            let startEventIDs = publishedRecording == nil
+                ? eventIDs
+                : Array(eventIDs.prefix(1))
             let transition = try await candidateEngine.promoteForStartLeg(
                 at: timestamp,
                 recordingID: recordingID,
-                eventIDs: eventIDs
+                eventIDs: startEventIDs
             )
             engine = candidateEngine
             publishedFlight = transition.flight
@@ -301,9 +304,10 @@ final class FlightRecordingCoordinator {
 
     private static func status(
         for recording: FlightRecording,
-        hasDegradation: Bool
+        degradations: Set<RecordingStorageDegradation>
     ) -> RecordingStatus {
-        if hasDegradation { return .recordingDegraded }
+        if degradations.contains(.lowStorage) { return .recordingLowStorage }
+        if !degradations.isEmpty { return .recordingDegraded }
         if let closure = recording.closure {
             return closure.outcome == .complete ? .closedComplete : .closedIncomplete
         }
@@ -363,7 +367,7 @@ final class FlightRecordingCoordinator {
         eventID: UUID
     ) async throws {
         storageDegradations.insert(reason)
-        status = .recordingDegraded
+        status = reason == .lowStorage ? .recordingLowStorage : .recordingDegraded
         _ = try await commitNavigation(.recordStorageDegradation(
             reason: reason,
             at: timestamp,

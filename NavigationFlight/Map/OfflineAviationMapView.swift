@@ -1979,6 +1979,7 @@ private struct TimingTargetCalloutContent: View {
     let onShowCheck: (NavigationTimingTargetKey) -> Void
     let onHideCheck: (NavigationTimingTargetKey) -> Void
     let onResetPosition: () -> Void
+    @State private var displayedDraftSeconds: Int?
 
     var body: some View {
         let isFocusedRevision = context?.pilotETAState.isEditing == true
@@ -2126,7 +2127,7 @@ private struct TimingTargetCalloutContent: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.top, 16)
-            Text(AviationMapSymbology.formatDuration(context.pilotETAState.draftSeconds))
+            Text(AviationMapSymbology.formatDuration(displayedDraftSeconds ?? context.pilotETAState.draftSeconds))
                 .font(.largeTitle.bold().monospacedDigit())
             Text("Minimum now · \(AviationMapSymbology.formatDuration(context.minimumETASeconds))")
                 .font(.caption)
@@ -2136,9 +2137,14 @@ private struct TimingTargetCalloutContent: View {
                 etaAdjustmentButton(
                     "− 5 sec",
                     delta: -visualStyle.etaAdjustmentStepSeconds,
+                    context: context,
                     disabled: context.pilotETAState.draftSeconds <= context.minimumETASeconds
                 )
-                etaAdjustmentButton("+ 5 sec", delta: visualStyle.etaAdjustmentStepSeconds)
+                etaAdjustmentButton(
+                    "+ 5 sec",
+                    delta: visualStyle.etaAdjustmentStepSeconds,
+                    context: context
+                )
             }
             .padding(.top, 16)
             editorButton(
@@ -2159,8 +2165,21 @@ private struct TimingTargetCalloutContent: View {
         .padding(20)
     }
 
-    private func etaAdjustmentButton(_ title: LocalizedStringKey, delta: Int, disabled: Bool = false) -> some View {
-        RepeatingActionButton(action: { onAdjust(target.id, delta) }) {
+    private func etaAdjustmentButton(
+        _ title: LocalizedStringKey,
+        delta: Int,
+        context: AviationMapTimingTargetContext,
+        disabled: Bool = false
+    ) -> some View {
+        RepeatingActionButton(
+            action: {
+                let currentDraft = displayedDraftSeconds ?? context.pilotETAState.draftSeconds
+                displayedDraftSeconds = max(context.minimumETASeconds, currentDraft + delta)
+            },
+            onSequenceEnded: { stepCount in
+                onAdjust(target.id, delta * stepCount)
+            }
+        ) {
             Text(title)
         }
             .font(.subheadline.weight(.semibold).monospacedDigit())

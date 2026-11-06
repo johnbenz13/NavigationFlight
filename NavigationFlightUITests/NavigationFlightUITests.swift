@@ -1090,6 +1090,13 @@ final class NavigationFlightUITests: XCTestCase {
 
         XCTAssertFalse(headingEditor.matching(NSPredicate(format: "label == 'Revise heading'")).firstMatch.exists)
         XCTAssertTrue(heading.label.contains(repeatedHeading))
+        let confirmation = app.descendants(matching: .any)["heading-commit-confirmation"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 2))
+        expectation(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: confirmation
+        )
+        waitForExpectations(timeout: 5)
         heading.tap()
         XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains(repeatedHeading))
         XCTAssertEqual(app.buttons["commit-heading"].label, "Commit revised heading")

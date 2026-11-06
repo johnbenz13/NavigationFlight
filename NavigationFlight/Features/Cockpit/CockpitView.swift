@@ -319,6 +319,14 @@ struct CockpitView: View {
             guard !Task.isCancelled else { return }
             cockpitPresentationState.hideQuickFocusControlsIfExpired(at: .now)
         }
+        .task(id: showsHeadingCommitConfirmation) {
+            guard showsHeadingCommitConfirmation else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation {
+                showsHeadingCommitConfirmation = false
+            }
+        }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
         }

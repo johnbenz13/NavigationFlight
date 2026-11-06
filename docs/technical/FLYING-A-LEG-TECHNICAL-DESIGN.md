@@ -4,10 +4,10 @@
 
 This document defines the implementation design for the approved **Flying a Leg** paired baseline.
 
-- Product behavior authority: [`FLYING-A-LEG_SPEC.md`](../features/FLYING-A-LEG_SPEC.md), approved revision [`6033067`](https://github.com/johnbenz13/NavigationFlight/blob/60330670950c53cabf7645b7984c72c998c80237/docs/features/FLYING-A-LEG_SPEC.md).
-- Design authority: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I), approved through Iteration 07.
-- Coverage authority: [Design Coverage Audit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=106-3), which traces all 125 product invariants and the device and accessibility baseline.
-- Approval: John, 2026-10-25.
+- Product behavior authority: [`FLYING-A-LEG_SPEC.md`](../features/FLYING-A-LEG_SPEC.md), approved revision [`eca78b2`](https://github.com/johnbenz13/NavigationFlight/blob/eca78b2082e5ff61bf1af0fc25432983996109c8/docs/features/FLYING-A-LEG_SPEC.md).
+- Design authority: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I), approved through Iterations 09–10. The primary iPad frame is [node `190:96`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=190-96), landscape is [node `194:24`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-24), and iPhone portrait is [node `194:73`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-73).
+- Coverage authority: [Design Coverage Audit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=201-921), which traces all 132 product invariants and the device and accessibility baseline.
+- Approval: John, 2026-11-06.
 - Technical-design status: proposed for implementation.
 
 The product spec continues to own behavior, state transitions, calculations, and terminology. The approved Figma nodes continue to own layout, hierarchy, spatial relationships, and interaction presentation. This document selects implementation seams and data structures; it does not change either approved authority.
@@ -24,6 +24,8 @@ The design covers the complete first-release Flying a Leg behavior:
 - atomic 20-second undo for identification-point and arrival reach reports;
 - canonical track-up map focus and successor-leg rotation;
 - checklist templates separated into definition, value resolution, and rendering;
+- a reduced-density resting cockpit with fixed operational values and presentation-only disclosures;
+- transient one-tap whole-leg and destination map recovery after map interaction;
 - approved cockpit, map, VOR/DME, device-adaptation, Dynamic Type, and accessibility behavior.
 
 Durable active-flight persistence, GPS-derived behavior, a heading cross-check, Reference Heading, user-authored checklist templates, and general historical editing remain out of scope.
@@ -64,9 +66,10 @@ The modules and their interfaces are:
 | `DriftLineGeometry` | Derive two map polylines from resolved leg endpoints and imported drift angle. | Great-circle/local projection math, intersection, and degenerate-input handling. |
 | `ChecklistTemplateRenderer` | Render a selected validated template from a leg/session context. | Variable lookup, validation, ordering, and failure reporting. |
 | Presentation adapters | Return immutable display snapshots from plan and runtime state. | Labels, availability, formatting, semantic state, and history projection. |
-| SwiftUI and MapLibre views | Render snapshots and emit typed intents. | Layout, local selection, camera animation, callout placement, and accessibility presentation. |
+| `CockpitPresentationState` | Accept presentation intents and expose one coherent local UI state. | Active disclosure, transient map-recovery visibility, preview-only map mode, selection, and cancellation of presentation tasks. |
+| SwiftUI and MapLibre views | Render snapshots and emit typed intents. | Layout, camera animation, callout placement, and accessibility presentation. |
 
-These are in-process modules. No new protocol seam is needed: there is one production implementation and deterministic tests can exercise the same value-type interfaces. Time enters commands as an explicit `Date`, preserving deterministic tests without adding a clock protocol.
+These are in-process modules. Domain time enters commands as an explicit `Date`. The four-second transient-control deadline is presentation timing and uses an injected `Clock` only in `CockpitPresentationState`; production supplies `ContinuousClock`, while tests supply a controllable clock. No clock or presentation dependency enters `Flight`.
 
 ## State ownership
 
@@ -75,10 +78,25 @@ These are in-process modules. No new protocol seam is needed: there is one produ
 | Imported plan, resolved target order, planned values, coordinates, drift angle, and VOR/DME | `FlightPlan` and navigation domain values | Loaded plan; immutable |
 | Leg lifecycle, observations, target outcomes, ETA revisions/check disclosures, heading revisions, and completed history | `Flight` | Current in-memory flight |
 | Progression policy, selected checklist template, checklist state, drift-line visibility, and pending undo transaction | `CockpitFeatureState` | Current in-memory feature session |
-| Selected callout, expanded editor/panel, callout offsets, and current camera | `CockpitView` | Current cockpit view identity |
+| Active disclosure, transient map-recovery deadline, selected callout, expanded editor, preview-only map mode, callout offsets, and current camera | `CockpitPresentationState` retained by `CockpitView` | Current cockpit view identity |
 | Map annotations, callout data, console values, and history rows | Presentation values | Re-derived snapshots |
 
 Domain facts must not be inferred from view state. In particular, selecting a callout, focusing the map, expanding history, or moving a label cannot mutate `Flight` or invalidate undo.
+
+`CockpitPresentationState` uses enums rather than independent Boolean flags:
+
+```swift
+enum CockpitDisclosure: Equatable {
+    case mapTools, appSections, frequencyPlan, checklist, previousLeg, nextLeg
+}
+
+enum CockpitMapMode: Equatable {
+    case activeLeg
+    case nextLegPreview
+}
+```
+
+`activeDisclosure` is optional, so at most one disclosure is expanded while every applicable closed chip remains independently visible. `nextLegPreview` changes only map presentation; it cannot dispatch a progression or timing command. Navigation selected through **App Sections** is sent to the app shell, which retains the current `CockpitFeatureState`; elapsed time continues to derive from the flight's stored start date.
 
 ## Canonical identifiers and target order
 
@@ -341,9 +359,10 @@ The implementation performs the construction in a local tangent-plane projection
 
 `AviationMapPresentation` adds the active leg's canonical track-up bearing and successor-transition metadata. `OfflineAviationMapView.Coordinator` remains the MapLibre adapter and performs camera changes.
 
-- Starting or focusing a leg fits its endpoints and rotates the planned track vertically from bottom to top.
+- Starting a leg or choosing **Show Whole Active Leg** fits its endpoints and rotates the planned track vertically from bottom to top.
 - User pan or rotation sets the existing user-controlled camera state; ordinary state refresh does not overwrite it.
-- **Focus Leg** clears user ownership and reapplies canonical track-up.
+- **Show Whole Active Leg** clears user ownership and reapplies canonical track-up.
+- **Show Destination Waypoint** centers the arrival waypoint without restoring whole-leg framing or canonical rotation.
 - Arrival progression creates a new focus request with the successor bearing. The coordinator normalizes the angular delta into `-180...180` and animates through that shortest direction.
 - Arrival undo sends the captured restoration request and removes successor presentation in the same SwiftUI update.
 - No camera or annotation is labeled as live aircraft position, heading, or track.
@@ -358,6 +377,10 @@ enum SelectedMapCallout: Equatable {
 ```
 
 This makes the “at most one callout” invariant structural. Map-background tap and pan-begin set it to `nil`. Callout selection and dragging remain presentation-only. The VOR/DME label offset remains keyed local state and never modifies the imported reference.
+
+Map tap, pan, pinch, or rotation also sends `mapInteractionOccurred` to `CockpitPresentationState`. That intent immediately reveals the two distinct quick-focus controls, cancels the prior hide task, and starts a new four-second deadline. Expiry hides only those controls. A later interaction repeats the same sequence. The controls use separate presentation intents and remain independent from lower-frequency **Map Tools** actions.
+
+The authoritative quick-control states are [visible, node `206:719`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-719), and [auto-hidden, node `206:780`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-780). Closed-disclosure coexistence is [node `206:984`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-984).
 
 ## Checklist templates
 
@@ -410,13 +433,17 @@ This template follows the supplied cockpit reference:
 
 Keep formatting and availability outside views:
 
-- `CockpitPresentationAdapter` derives the operational heading, source label, timer/Next ETA/altitude instruments, planned frequencies, arrival action, undo banner, checklist, and complete previous-leg history.
-- `AviationMapPresentationFactory` derives ordered target annotations, target outcome badges, ETA callout state, VOR/DME content, drift lines, and canonical focus geometry.
+- `CockpitPresentationAdapter` derives the operational heading, source label, timer/Next ETA/altitude instruments, **Planned now** and **Planned next**, the complete frequency plan, arrival action, undo banner, checklist, previous-leg history, and next-leg preview.
+- `AviationMapPresentationFactory` derives ordered target annotations, target outcome badges, ETA callout state, planned VOR/DME content, drift lines, canonical focus geometry, destination focus, and next-leg preview geometry.
 - Shared formatting helpers produce elapsed durations, `001°...360°`, magnetic labels, and signed pilot-language differences such as “10 seconds late.”
 
 Presentation enums should model meaningful states rather than expose Boolean combinations. For example, a target callout uses cases for future display, ETA editing, committed ETA with Check availability, reached result, and passed-without-report. This prevents impossible combinations such as a passed point with an editor or Actual ETA.
 
 Views receive presentation values and typed intent closures. They do not receive mutable session bindings and do not calculate target eligibility, Reference ETA, operational heading, or undo validity.
+
+Planned VOR/DME presentation is optional and contains station identifier, service/type, frequency, radial, distance, arrival association, and planned provenance. Its compact map label and expanded waypoint/frequency-plan details derive from the same value. Absence produces `nil` and omits the presentation entirely; it never creates placeholder or error UI. Label offset is presentation state only.
+
+The authoritative VOR/DME states are [compact, node `211:913`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913), and [details, node `211:965`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965).
 
 ## SwiftUI composition and adaptive layout
 
@@ -424,8 +451,11 @@ Views receive presentation values and typed intent closures. They do not receive
 
 - `CockpitMapSurface`
 - `ActiveLegInstruments`
-- `PlannedFrequenciesView`
+- `PlannedFrequencySummary`
 - `ArrivalActionView`
+- `CockpitDisclosureStrip`
+- `CockpitDisclosurePanel`
+- `MapRecoveryControls`
 - `ETAEditorView`
 - `HeadingEditorView`
 - `ReachUndoBanner`
@@ -440,18 +470,19 @@ Adaptive composition follows the approved nodes:
 
 | Target | Composition rule |
 | --- | --- |
-| iPad Pro 11-inch portrait | Primary design: map above the three-row lower console. |
-| iPad Pro 11-inch landscape | Wide adaptation: map and instruments share horizontal space without changing commands or state. |
-| iPhone portrait | Compact vertical layout with scrollable/expandable secondary content and the same operational actions. |
-| Larger Text | Instruments and actions reflow vertically; values are not clipped or reduced below semantic Dynamic Type sizing. |
+| iPad Pro 11-inch portrait | Map above a fixed, non-scrolling two-level lower console. Closed disclosures occupy one compact strip above it. |
+| iPad Pro 11-inch landscape | Map remains primary and the fixed operational console moves to a side rail; an expanded disclosure temporarily occupies part of the map area. |
+| iPhone portrait | The resting map keeps approximately two thirds of usable height. The closed disclosure strip scrolls horizontally; expanded disclosures overlay the map as sheets. |
+| Larger Text | Persistent scan values remain available; disclosure content may scroll internally and actions reflow without clipping or reducing semantic Dynamic Type sizing. |
 
 Use size class and available width, not only `width > height`, to choose compact versus regular composition. iPhone landscape remains unsupported by the product baseline and must not acquire a separate interaction model accidentally.
 
 ## Accessibility
 
 - Every control has a human-readable label, value, and hint where consequence is not evident.
+- The transient map controls retain at least 44-by-44-point targets and announce **Show whole active leg** and **Show destination waypoint**; icon shape is not their only distinction.
 - Map targets expose the same state and actions through VoiceOver as their visual callouts; **Reached** is an explicit action, never triggered by focus.
-- VoiceOver order follows operational hierarchy: active leg, map context and selected target, active instruments, planned frequencies, arrival action, chips, then undo banner as positioned in the approved adaptation notes.
+- VoiceOver order follows operational hierarchy: route, heading, timer, Next ETA, planned altitude, Planned now, Planned next, primary report action, disclosures, then undo as positioned in the approved adaptation notes.
 - Heading and ETA values announce their kind and magnetic/elapsed-time context.
 - Early/late differences announce direction, not just a signed number.
 - Passed without report, Identified, Complete, and undo remaining are textual accessibility values.
@@ -476,9 +507,10 @@ Expected implementation changes are intentionally localized:
 | `NavigationFlight/Domain/Flight/DriftLineGeometry.swift` | New pure drift-line geometry module. |
 | `NavigationFlight/Domain/Flight/ChecklistTemplate.swift` | New template, variable, context, validation, and rendering types. |
 | `NavigationFlight/Features/Cockpit/CockpitFeatureState.swift` | Ordered plan-context commands, drift visibility, atomic reach undo, checklist restoration, and exact map restoration requests. |
-| `NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift` | Operational instruments, complete history, undo, heading editor, and checklist projections. |
-| `NavigationFlight/Map/AviationMapPresentation.swift` | Outcome-aware targets, ETA callout states, drift polylines, VOR/DME, and canonical orientation. |
-| `NavigationFlight/Map/OfflineAviationMapView.swift` | Drift layers, single callout selection, target states, canonical focus, and shortest-turn animation. |
+| `NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift` | Operational instruments, compact and complete frequency projections, disclosure content, history, undo, heading editor, checklist, and next-leg preview. |
+| `NavigationFlight/Features/Cockpit/CockpitPresentationState.swift` | New presentation-only disclosure, transient-control, selection, and preview coordination with injectable timing. |
+| `NavigationFlight/Map/AviationMapPresentation.swift` | Outcome-aware targets, ETA callout states, drift polylines, planned VOR/DME, active/destination focus, preview geometry, and canonical orientation. |
+| `NavigationFlight/Map/OfflineAviationMapView.swift` | Drift layers, single callout selection, map-interaction reporting, distinct focus requests, target states, and shortest-turn animation. |
 | `NavigationFlight/Features/Cockpit/CockpitView.swift` | Approved adaptive composition and intent wiring; extraction into focused view files when useful. |
 | `NavigationFlight/Features/Cockpit/CockpitFeatureView.swift` | Command dispatch, explicit operational error handling, and restoration wiring. |
 | `NavigationFlightTests/NavigationFlightTests.swift` | Deterministic domain, feature-state, presentation, geometry, and template tests. |
@@ -497,6 +529,7 @@ Each checkpoint leaves the project buildable and preserves current behavior outs
    - Expand target presentation and focused tests.
 2. **Drift lines and map behavior**
    - Add deterministic geometry, presentation layers, visibility preference, and focus/callout rules.
+   - Add distinct whole-leg and destination focus requests plus deterministic transient visibility.
    - Validate canonical track-up without implying live position.
 3. **Revised Heading**
    - Add editor state, commit history, normalization, operational projection, and arrival reset.
@@ -504,9 +537,10 @@ Each checkpoint leaves the project buildable and preserves current behavior outs
    - Expand completed history.
    - Add copy–mutate–commit reach transactions, real-time expiry, invalidation, and atomic restoration.
    - Add successor shortest-turn animation and undo restoration.
-5. **Checklist templates and complete approved UI**
+5. **Reduced-density cockpit and disclosures**
    - Separate template definition, resolution, and rendering.
-   - Implement the approved portrait, landscape, iPhone, Larger Text, and accessibility adaptations.
+   - Add the compact frequency summary, disclosure strip and panels, preview-only next leg, and app-shell routing.
+   - Implement the approved portrait, landscape, iPhone, Larger Text, and accessibility adaptations from issues [#111](https://github.com/johnbenz13/NavigationFlight/issues/111)–[#119](https://github.com/johnbenz13/NavigationFlight/issues/119).
 6. **End-to-end validation**
    - Exercise automatic, manual, and final-leg flows; background-return expiry; exceptions; and full history.
    - Compare simulator results against the approved Figma nodes.
@@ -530,7 +564,10 @@ The interface of each deep module is its test surface. Tests use explicit UUIDs 
 - undo before the deadline restores the exact prior state for both progression policies and final-leg completion;
 - undo at/after the deadline is unavailable; passive actions preserve it; later flight-state actions invalidate it;
 - rejected actions leave the entire feature snapshot unchanged;
-- checklist rendering resolves every supported variable and rejects unresolved bundled content.
+- checklist rendering resolves every supported variable and rejects unresolved bundled content;
+- opening or closing any disclosure and previewing the next leg leave the flight snapshot unchanged;
+- leaving the cockpit through App Sections does not change the stored leg start date or elapsed-time result;
+- transient map controls reveal immediately, reset their absolute deadline on repeated interaction, and hide after four seconds under a controllable clock.
 
 ### Presentation tests
 
@@ -538,6 +575,8 @@ The interface of each deep module is its test surface. Tests use explicit UUIDs 
 - Planned, Revised, Reference, and Actual labels and signed differences are correct;
 - operational heading selects imported baseline or latest commit correctly;
 - VOR/DME content is complete when present and wholly omitted when absent;
+- fixed frequency presentation contains only Planned now and Planned next, while Frequency Plan preserves the complete imported sequence;
+- closed Checklist, Previous Leg, and Next Leg projections remain independently available;
 - Previous Leg contains complete target and heading history without retroactive checks;
 - undo, checklist, and Previous Leg chips coexist in the approved hierarchy.
 
@@ -549,7 +588,11 @@ The interface of each deep module is its test surface. Tests use explicit UUIDs 
 - automatic/manual/final arrival, successor rotation, undo, and expiration after background return;
 - drift visibility across leg changes and reset on a newly opened flight;
 - target-callout exclusivity and dismissal on map pan;
-- iPad portrait, iPad landscape, iPhone portrait, Larger Text, Reduce Motion, and VoiceOver order.
+- distinct transient whole-leg and destination controls, auto-hide, and reappearance after map interaction;
+- closed disclosure coexistence and expanded Map Tools, App Sections, Frequency Plan, Checklist, Previous Leg, and Next Leg states;
+- previewing the next leg without progression or timer mutation;
+- planned VOR/DME compact, detailed, absent, and draggable-label states;
+- iPad portrait, iPad landscape, iPhone portrait map prominence, Larger Text, Reduce Motion, and VoiceOver order.
 
 Use Swift Testing for deterministic domain and presentation coverage and XCUIAutomation for end-to-end interactions. Simulator review is required for the affected SwiftUI behavior and supported orientations.
 
@@ -564,9 +607,10 @@ Use Swift Testing for deterministic domain and presentation coverage and XCUIAut
 | Invariants 69–76 | completed-history projection | history completeness tests |
 | Invariants 77–87 | feature-level reach transaction | deadline, invalidation, and exact restoration tests |
 | Invariants 88–94 | feature/view lifetime and command validation | navigation/background and rejected-command tests |
-| Invariants 95–108 | map and cockpit presentation | presentation and UI tests |
+| Invariants 95–108 | reduced-density cockpit, map recovery, frequencies, reporting, and VOR/DME | projection, transient-control, map-focus, and UI tests |
 | Invariants 109–116 | map focus and checklist renderer | camera/focus and template tests |
 | Invariants 117–125 | progression presentation and map aids | automatic/manual/final UI flows and simulator comparison |
+| Invariants 126–132 | disclosures, app routing, preview-only next leg, and adaptive map prominence | non-mutation, timer-continuity, adaptation, and simulator-comparison tests |
 
 ## Risks and mitigations
 
@@ -577,8 +621,10 @@ Use Swift Testing for deterministic domain and presentation coverage and XCUIAut
 | Histories diverge from current operational values | Store append-only commits once and derive both current and historical projections from them. |
 | Callout Boolean state permits two open targets | Replace parallel selections with one `SelectedMapCallout?`. |
 | Camera refresh fights pilot pan/rotation | Preserve explicit user-camera ownership until a focus command. |
+| Transient-control tasks race after repeated map gestures | Keep one cancellable task in `CockpitPresentationState`, compare the captured deadline before hiding, and test with a controllable clock. |
 | Timer or undo pauses in background | Derive both from stored dates and current wall time, never accumulated UI ticks. |
-| Large `CockpitView` becomes a second state machine | Extract rendering views with value inputs and intents while keeping mutation in feature/domain modules. |
+| Independent disclosure Booleans create impossible overlapping panels | Represent expansion as one optional `CockpitDisclosure` and keep closed-chip availability in immutable presentation. |
+| Large `CockpitView` becomes a second state machine | Centralize only local coordination in `CockpitPresentationState`; extract rendering views with value inputs and intents while keeping operational mutation in feature/domain modules. |
 | Figma pixel measurements harm adaptation | Implement approved hierarchy with semantic SwiftUI layout, fonts, colors, and controls; verify visually on each approved target. |
 
 ## Resolved implementation decisions
@@ -586,7 +632,8 @@ Use Swift Testing for deterministic domain and presentation coverage and XCUIAut
 - The first release bundles the Hebrew **צא כיוון + גמ״ד** checklist from the supplied reference and the equivalent English **Establish Heading + cruise check** template defined above.
 - Arrival undo restores an exact, framework-independent pre-transition camera snapshot plus reach-caused callout/focus changes. Canonical active-leg focus is a fallback only when no snapshot is available.
 - Revised ETA editing and commitment cannot select or commit a value earlier than the running leg timer; the five-second editor uses the rounded-up current elapsed time as its floor.
+- **Show Whole Active Leg** and **Show Destination Waypoint** are separate camera intents. Their transient visibility is presentation-only and does not participate in undo invalidation.
+- Only one disclosure expands at a time. Closed Checklist, Previous Leg, and Next Leg chips remain simultaneously visible when applicable, and expanded content never owns flight state.
+- Planned VOR/DME has one optional projection shared by the compact map label and detailed disclosures; dragging persists only its local label offset.
 
-The paired baseline now has no open technical-design question that blocks the first implementation checkpoint.
-
-The Revised ETA timer-floor rule is a newly confirmed observable product constraint that is not yet present in approved product-spec revision `6033067`. Before implementing that rule, update `FLYING-A-LEG_SPEC.md`, mark the paired baseline for review, and reconcile the affected ETA editor/check Figma states under the product-spec/Figma workflow. The technical design records the intended implementation but does not supersede the product authority.
+The reconciled paired baseline has no open technical-design question that blocks the first implementation checkpoint. Final cross-device visual acceptance remains a human judgment gate under [issue #16](https://github.com/johnbenz13/NavigationFlight/issues/16).

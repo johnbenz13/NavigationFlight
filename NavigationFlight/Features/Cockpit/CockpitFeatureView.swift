@@ -18,6 +18,7 @@ struct CockpitFeatureView: View {
     @State private var pendingPositionCheckAcceptanceFeedback = false
     @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
+    @State private var progressionNotice: CockpitProgressionNotice?
     private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
     private let presentationRequestID: UUID?
@@ -199,6 +200,7 @@ struct CockpitFeatureView: View {
                         operationalCues: operationalCues,
                         emphasizedCueEvents: emphasizedCueEvents,
                         pendingReachUndo: state.pendingReachUndo,
+                        progressionNotice: progressionNotice,
                         positionCheck: positionCheck,
                         recordingStatus: RecordingStatusPresentation(status: recordingCoordinator.status),
                         isRecordingCommitInFlight: recordingCoordinator.isCommitting,
@@ -394,8 +396,19 @@ struct CockpitFeatureView: View {
                     cockpitRestoration: restoration,
                     at: timing.now
                 )
+                progressionNotice = .arrivalReached(
+                    waypoint: mapPresentation.destinationTarget.name,
+                    progressionPolicy: transition.flight.progressionPolicy,
+                    hasSuccessor: transition.flight.legState != .completed
+                )
             } catch {
-                presentNavigationCommitFailure("Reach Waypoint")
+                if let transitionError = error as? Flight.TransitionError {
+                    progressionNotice = progressionRejection(for: transitionError)
+                } else if error as? FlightRecordingCoordinator.CoordinationError == .commandInFlight {
+                    progressionNotice = .rejected(.actionUnavailable)
+                } else {
+                    presentNavigationCommitFailure("Reach Waypoint")
+                }
             }
         }
     }
@@ -484,7 +497,10 @@ struct CockpitFeatureView: View {
     private func undoMostRecentReach(at timestamp: Date) async -> CockpitRestoration? {
         guard let undo = state.availableReachUndo(at: timestamp),
               let originalEventID = undo.originalEventID,
-              let timing = recordingTiming() else { return nil }
+              let timing = recordingTiming() else {
+            progressionNotice = .rejected(.undoExpired)
+            return nil
+        }
         do {
             _ = try await recordingCoordinator.commitNavigation(.undoReach(
                 originalEventID: originalEventID,
@@ -492,10 +508,25 @@ struct CockpitFeatureView: View {
                 elapsed: timing.elapsed,
                 eventID: UUID()
             ))
-            return state.undoMostRecentReach(at: timestamp)
+            let restoration = state.undoMostRecentReach(at: timestamp)
+            progressionNotice = nil
+            return restoration
         } catch {
             presentNavigationCommitFailure("Undo Reach")
             return nil
+        }
+    }
+
+    private func progressionRejection(
+        for error: Flight.TransitionError
+    ) -> CockpitProgressionNotice {
+        switch error {
+        case .waypointAlreadyReached, .identificationPointAlreadyReached:
+            .rejected(.alreadyReportedReached)
+        case .timestampPrecedesStart:
+            .rejected(.invalidTimestamp)
+        default:
+            .rejected(.actionUnavailable)
         }
     }
 

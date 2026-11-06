@@ -1,5 +1,80 @@
 import Foundation
 
+enum CockpitProgressionNotice: Equatable, Sendable {
+    enum Rejection: Equatable, Sendable {
+        case alreadyReportedReached
+        case undoExpired
+        case actionUnavailable
+        case invalidTimestamp
+    }
+
+    case automaticSuccessor(String)
+    case manualSuccessor(String)
+    case navigationComplete
+    case rejected(Rejection)
+
+    var title: String {
+        switch self {
+        case .automaticSuccessor(let waypoint):
+            "\(waypoint) reached · successor started"
+        case .manualSuccessor(let waypoint):
+            "\(waypoint) reached · next leg ready"
+        case .navigationComplete:
+            "Navigation complete"
+        case .rejected(.alreadyReportedReached):
+            "Already reported reached"
+        case .rejected(.undoExpired):
+            "Undo expired"
+        case .rejected(.actionUnavailable):
+            "Action unavailable"
+        case .rejected(.invalidTimestamp):
+            "Invalid report time"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .automaticSuccessor:
+            "Automatic progression · Undo restores the departing leg atomically."
+        case .manualSuccessor:
+            "Manual progression · no successor timing until Start next leg."
+        case .navigationComplete:
+            "Final leg recorded. No successor timer was started."
+        case .rejected(.alreadyReportedReached):
+            "No timing, target, focus, checklist, or history state changed."
+        case .rejected(.undoExpired):
+            "The 20-second undo window has ended. Navigation state was not changed."
+        case .rejected(.actionUnavailable):
+            "This action is not available in the current navigation state."
+        case .rejected(.invalidTimestamp):
+            "The report time precedes the active leg start. Navigation state was not changed."
+        }
+    }
+
+    var supportsUndo: Bool {
+        switch self {
+        case .automaticSuccessor, .manualSuccessor, .navigationComplete:
+            true
+        case .rejected:
+            false
+        }
+    }
+
+    static func arrivalReached(
+        waypoint: String,
+        progressionPolicy: Flight.ProgressionPolicy,
+        hasSuccessor: Bool
+    ) -> CockpitProgressionNotice {
+        guard hasSuccessor else { return .navigationComplete }
+        switch progressionPolicy {
+        case .automaticNextLeg:
+            return .automaticSuccessor(waypoint)
+        case .manualNextLeg:
+            return .manualSuccessor(waypoint)
+        }
+    }
+}
+
 enum CockpitMapTool: CaseIterable, Equatable, Sendable {
     case showFullRoute
     case toggleDriftLines

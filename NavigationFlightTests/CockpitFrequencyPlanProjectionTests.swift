@@ -76,7 +76,6 @@ struct CockpitFrequencyPlanProjectionTests {
             slantRangeNauticalMiles: 18.6,
             source: .automatic
         )
-
         let plan = adapter.makeFrequencyPlan(frequencies: frequencies, references: [reference])
 
         #expect(plan.entries.map(\.id) == ["tower", "control", "arrival-tower", "bgn"])
@@ -88,6 +87,57 @@ struct CockpitFrequencyPlanProjectionTests {
         #expect(navigationAid.frequencyMHz == 113.5)
         #expect(navigationAid.association == "RAMAT")
         #expect(plan.immediateEntries.map(\.id) == ["tower", "control"])
+    }
+
+    @Test("Arrival VOR DME appears once when imported frequency phases repeat the same reference")
+    func repeatedArrivalReferenceAppearsOnce() throws {
+        let referenceID = try #require(UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB"))
+        let reference = CockpitPresentationData.PlannedReference(
+            id: referenceID,
+            endpointName: "MEGIDDO JUNCTION",
+            station: "NAT",
+            frequencyMHz: 112.4,
+            magneticRadialFromDegrees: 33,
+            slantRangeNauticalMiles: 18.2,
+            source: .automatic
+        )
+        let departureReference = CockpitPresentationData.PlannedReference(
+            id: try #require(UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")),
+            endpointName: "HADERA",
+            station: "NAT",
+            frequencyMHz: 112.4,
+            magneticRadialFromDegrees: 210,
+            slantRangeNauticalMiles: 8.1,
+            source: .automatic
+        )
+        let duplicatedReference = frequency(
+            id: "nat-arrival-copy",
+            phase: .arrival,
+            service: "NAT",
+            value: 112.4,
+            role: "VOR/DME",
+            source: .vorDme
+        )
+        let plan = adapter.makeFrequencyPlan(
+            frequencies: [
+                .enRoute: [frequency(
+                    id: "nat-enroute-copy",
+                    phase: .enRoute,
+                    service: "NAT",
+                    value: 112.4,
+                    role: "VOR/DME",
+                    source: .vorDme
+                )],
+                .arrival: [duplicatedReference]
+            ],
+            references: [departureReference, reference]
+        )
+
+        let navigationAid = try #require(plan.entries.first)
+        #expect(plan.entries.count == 1)
+        #expect(navigationAid.id == "nat-arrival-copy")
+        #expect(navigationAid.kind == .navigationAid)
+        #expect(navigationAid.association == "MEGIDDO JUNCTION")
     }
 
     private func frequency(

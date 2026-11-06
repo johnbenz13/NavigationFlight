@@ -34,10 +34,15 @@ nonisolated struct FPLNavDecoder: Sendable {
             } catch {
                 throw FPLNavDecoderError.invalidV5Document(String(describing: error))
             }
-        case 7:
+        case 7, 8:
             do {
                 try validateStrictExecutionObjects(in: data)
-                return try FPLNavV7Mapper().map(decoder.decode(FPLNavV7DTO.self, from: data))
+                let overrides = metadata.formatVersion == 8
+                    ? try decoder.decode(FPLNavV8SourceSpeeds.self, from: data).overrides
+                    : nil
+                return try FPLNavV7Mapper().map(
+                    decoder.decode(FPLNavV7DTO.self, from: data), planningAirspeedOverrides: overrides
+                )
             } catch let error as FPLNavV7ValidationError {
                 throw FPLNavDecoderError.invalidV7Execution(error)
             } catch let error as FPLNavMappingError {

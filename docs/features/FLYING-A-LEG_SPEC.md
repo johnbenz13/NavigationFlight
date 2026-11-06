@@ -66,8 +66,14 @@ The first release does not:
 ## Figma
 
 - Stable proposal: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I)
-- Approved product-spec revision: [`6033067`](https://github.com/johnbenz13/NavigationFlight/blob/60330670950c53cabf7645b7984c72c998c80237/docs/features/FLYING-A-LEG_SPEC.md)
-- Current main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
+- Current approved cockpit direction: [Iteration 10 — Complete Cockpit Coverage](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=198-2)
+- Current iPad portrait baseline: [Iteration 09 — Reduced-Density Cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=190-96)
+- Current adaptations: [iPad landscape](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-24) and [iPhone portrait](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-73)
+- Current interaction coverage: [Iteration 10 coverage index](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=201-921)
+- Current map-focus behavior: [transient controls visible](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-719), [auto-hidden](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-780), and [closed disclosures coexisting](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-984)
+- Current VOR/DME coverage: [compact planned reference](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913) and [complete destination details](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965)
+- Previous approved product-spec revision: [`6033067`](https://github.com/johnbenz13/NavigationFlight/blob/60330670950c53cabf7645b7984c72c998c80237/docs/features/FLYING-A-LEG_SPEC.md)
+- Previous main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
 - Main-screen frame: [iPad Pro 11-inch portrait — IP2 reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-3)
 - Direction notes: [Iteration 02 review decisions](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-96)
 - Design coverage: [Iteration 03 coverage plan](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=24-4)
@@ -111,12 +117,12 @@ The first release does not:
 - Iteration 08 ETA floor: [Rounded up — timer 02:52, minimum 02:55](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-117)
 - Iteration 08 ETA floor: [Timer advanced — stale draft cannot commit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-227)
 - Iteration 08 notes: [ETA timer-floor behavior contract](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=113-337)
-- Final review: [Design coverage audit — 125 invariants covered](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=106-3)
+- Previous final review: [Design coverage audit — 125 invariants covered](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=106-3)
 - Previous direction: [Iteration 01 — abstract-map iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=9-2)
 - Archived exploration: [iPhone portrait direction draft](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-19)
 - Archive note: [Device priority corrected](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=1-72)
-- Product-spec status: `approved` by John — 2026-10-25
-- Design status: `approved · Iteration 08 ETA timer-floor states` by John — 2026-10-25
+- Product-spec status: `approved` by John — 2026-11-06
+- Design status: `approved · Iteration 10 complete cockpit coverage` by John — 2026-11-06
 - Cross-feature pre-flight review authority: [App Navigation and Flight Plans Library · Iteration 04](https://www.figma.com/design/FDSRcz1yl7bkSoziKvGzQ1?node-id=41-76), approved by John — 2026-11-03. It owns the loaded-Flight-Plan review action hierarchy and replaces the legacy `PlanInspectionView` presentation without changing the cockpit-ready or explicit-start invariants below.
 - Approved design checkpoints:
     - Iteration 02 — iPad portrait main-screen direction;
@@ -127,11 +133,14 @@ The first release does not:
     - Iteration 05 — Revised Heading lifecycle, including IP continuity and arrival-only reset; and
     - Iteration 06 — exceptions, unavailable actions, empty states, preference visibility, and background return; and
     - Iteration 07 — iPad landscape, iPhone portrait, Larger Text, and accessibility interaction order; and
-    - Iteration 08 — exact-increment, rounded-up, and stale-draft ETA timer-floor states.
-- Human approver: John — 2026-10-25
-- Coverage-audit result: all 125 behavioral invariants and the workflow's device and accessibility requirements are traced to approved design evidence; no unresolved product/design conflicts remain.
-- Current paired-baseline status: `approved` by John — 2026-10-25, pairing this product-spec revision with Iterations 02–08. The documentation checkpoint commit will supply the immutable product-spec revision identifier.
-- Previous paired baseline: product-spec revision `6033067` paired with Iterations 02–07.
+    - Iteration 08 — exact-increment, rounded-up, and stale-draft ETA timer-floor states; and
+    - Iteration 09 — reduced-density map-first cockpit direction and primary adaptations; and
+    - Iteration 10 — complete cockpit options, operational and exception states, transient map-focus controls, closed disclosures, and planned VOR/DME presentation.
+- Human product-spec and design approver: John — 2026-11-06
+- Previous coverage-audit result: all 125 invariants in the Iterations 02–08 paired baseline were traced to approved design evidence.
+- Current coverage-audit status: `approved` by John — 2026-11-06; the revised invariants are paired with the approved Iterations 09–10 evidence.
+- Current paired-baseline status: `approved` by John — 2026-11-06. The documentation checkpoint commit will supply the immutable product-spec revision identifier.
+- Previous paired baseline: approved product-spec revision `6033067` paired with Iterations 02–08.
 
 The Navigation Editor screenshot supplied during product discovery remains a contextual example of drift-line intent, not a pixel-accurate UI contract.
 
@@ -418,35 +427,35 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 99. An identification point's **Reached** action is available only from that identification point's open callout. The lower cockpit console does not provide an identification-point reach action.
 
-100. The map provides distinct controls for focusing the active leg, focusing the applicable waypoint, showing the route overview, and opening plan inspection. When the Position Check capability is present, its deliberate, time-bounded control is provided separately in the lower cockpit console as defined by [Position Check](POSITION-CHECK_SPEC.md); it is not another map-focus control and does not change the meaning of any pilot-reported position fix.
+100. After a map tap, pan, pinch, or rotation, the map presents two distinct one-tap controls: **Show Whole Active Leg**, which fits the entire active leg, and **Show Destination Waypoint**, which centers the arrival waypoint. Both controls remain available while map interaction is recent, auto-hide after four seconds without map interaction, and reappear on the next map interaction. Their icons and VoiceOver labels remain distinct. Less-frequent route-overview, chart-aid, chart-layer, and plan-inspection actions are provided through **Map Tools**. When the Position Check capability is present, its deliberate, time-bounded control is provided separately in the lower cockpit console as defined by [Position Check](POSITION-CHECK_SPEC.md); it is not another map-focus control and does not change the meaning of any pilot-reported position fix.
 
 101. Magnetic reference is communicated as part of the label for each applicable heading, course, or radial value. The cockpit does not present a standalone **Magnetic** control or status chip.
 
-102. The portrait lower console is organized into three rows:
-    - **Active Leg Instruments**, containing operational heading, leg timer, next ETA, and altitude;
-    - **Planned Frequencies**, containing imported communication and applicable navigation-aid frequencies; and
-    - an arrival-waypoint call-to-action row.
+102. The portrait lower console uses a fixed, non-scrolling two-level hierarchy:
+    - an operational scan line containing operational heading, leg timer, next ETA, and planned altitude; and
+    - an immediate-reference and report level containing **Planned now**, **Planned next**, access to the complete **Frequency Plan**, and the arrival-waypoint report actions.
+    The map consumes the remaining height and remains the primary working surface. Altitude and the two immediate planned frequencies are not hidden by default.
 
 103. The leg timer is visually distinguishable from the adjacent Next ETA value without suggesting a warning or abnormal condition. Its distinction does not rely on color alone.
 
 104. Planned frequencies do not claim that a frequency is tuned, active, or inactive unless a future feature introduces an explicit trustworthy source for that state. The cockpit does not display **Not tuned** based only on imported plan data.
 
-105. Before the arrival waypoint is identified, the lower-console arrival action presents **Waypoint Identified** and a subordinate **Reached now** action. After identification, it presents **Waypoint Reached**. These actions apply only to the arrival waypoint and preserve the separate identification and reach observations defined above.
+105. Before the arrival waypoint is identified, the lower-console actions are **Report Destination Identified** and **Report Destination Reached**. After identification, the primary action is **Report Destination Reached**. These explicit actions apply only to the arrival waypoint and preserve the separate identification and reach observations defined above.
 
 106. When the arrival waypoint has an imported VOR/DME reference, the cockpit displays:
-    - the station identifier, service, and frequency in **Planned Frequencies**;
-    - a compact station, magnetic radial, and DME-distance label beside the arrival waypoint on the map; and
-    - the complete station, frequency, magnetic radial, and DME distance in the arrival waypoint's callout.
+    - the station identifier, service, frequency, and arrival-waypoint association in **Frequency Plan**;
+    - a compact, draggable station, magnetic-radial, and DME-distance label beside the arrival waypoint on the map, explicitly labeled **Planned VOR/DME Reference**; and
+    - the complete station, service, frequency, magnetic radial, and DME distance in the arrival waypoint's callout, followed by the statement **Imported planning reference—not live avionics data**.
 
 107. VOR/DME values are planned waypoint-confirmation information, not live avionics measurements. The presentation must not imply that the app receives, tunes, or verifies the station signal or current aircraft distance.
 
-108. When an arrival waypoint has no imported VOR/DME reference, the map, waypoint callout, and Planned Frequencies row omit the corresponding VOR/DME presentation without showing an error or placeholder.
+108. When an arrival waypoint has no imported VOR/DME reference, the map, waypoint callout, and **Frequency Plan** omit the corresponding VOR/DME presentation without showing an error or placeholder.
 
 ### Active-leg map orientation and checklist templates
 
 109. Starting a leg focuses the active leg in a canonical track-up presentation: the departure waypoint is at the bottom, the arrival waypoint is at the top, and the planned track is vertical from bottom to top.
 
-110. A pilot may subsequently pan or rotate the map. Those manual changes persist until the pilot chooses **Focus Leg**, which restores the canonical track-up presentation for the active leg.
+110. A pilot may subsequently pan, zoom, or rotate the map. Those manual changes persist until the pilot chooses **Show Whole Active Leg**, which restores the canonical track-up presentation for the active leg. **Show Destination Waypoint** changes only the map viewport and does not restore the whole-leg framing.
 
 111. Track-up presentation aligns the imported planned leg for visual navigation. It does not claim a live aircraft heading, position, or ground track.
 
@@ -468,7 +477,7 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 119. Undoing an arrival-reach transition restores the departing leg, its timer, target state, checklist state, map focus, and pre-transition map orientation atomically. The successor leg and its rotated map presentation are removed together.
 
-120. After a leg completes, the cockpit presents a compact **Previous Leg** chip by default. The chip identifies the completed leg without covering the active navigation instruments and opens a detailed history panel on explicit pilot request. It is independent from the current leg's checklist: after that checklist is noted, its folded checklist chip and the **Previous Leg** chip remain simultaneously visible and independently actionable. When bounded undo is also visible, the two chips occupy a separate row above the undo banner rather than replacing or covering one another.
+120. After a leg completes, the cockpit presents a compact **Previous Leg** chip by default. The chip identifies the completed leg without covering the active navigation instruments and opens a detailed history panel on explicit pilot request. It is independent from the current leg's closed **Checklist** chip and the preview-only **Next Leg** chip: all applicable closed disclosures remain simultaneously visible and independently actionable in one compact strip. When bounded undo is also visible, the disclosure strip remains separate from the undo banner rather than replacing or covering it.
 
 121. The expanded Previous Leg panel is review-only. It presents the completed route, planned and actual completion timing, target-by-target outcomes, and applicable heading history; opening, closing, or collapsing it does not change the current leg, timer, map orientation, target state, or progression policy.
 
@@ -479,6 +488,22 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 124. A visible map control toggles drift-line overlays. Drift lines are visible by default for each newly opened flight, the control indicates whether they are currently visible, and using it does not alter the planned track, target state, or any timing value.
 
 125. Arrival-state badges and their corresponding actions use the same semantic color while retaining explicit text labels: **Identified** and its waypoint-identification action are blue; **Complete** and **Navigation Complete** are green. The badge shape, spacing, and contrast distinguish status from ordinary map labels, and color is not the sole carrier of state.
+
+### Cockpit disclosure and adaptive-density behavior
+
+126. **Map Tools**, **App Sections**, **Frequency Plan**, **Checklist**, **Previous Leg**, and **Next Leg** are explicit disclosure surfaces. Opening, closing, expanding, or collapsing one changes presentation only and does not start or complete a leg, report a target, revise a value, alter the timer, or change progression policy.
+
+127. **App Sections** provides access to the cockpit, Flight Plans, Flight History, and Settings without turning those destinations into a persistent cockpit tab bar. Leaving the cockpit through this disclosure does not pause an active leg timer.
+
+128. The fixed console shows only **Planned now** and **Planned next** frequencies. **Frequency Plan** reveals the complete imported communication and navigation-aid sequence. Every value remains labeled as planned; the presentation never claims that a radio or navigation receiver is tuned.
+
+129. The expanded **Checklist** renders the selected template. Closing or noting it returns it to a compact chip. Noting the checklist records only that the pilot dismissed the rendered checklist; it does not certify each item as completed.
+
+130. **Next Leg** is a preview-only disclosure showing the successor route and applicable planned course, altitude, leg time, and communication reference. Opening it or choosing **Show Next Leg on Map** does not start successor timing, advance progression, or replace the active leg. The successor starts only through the established automatic or explicit manual progression action.
+
+131. Closed **Checklist**, **Previous Leg**, and **Next Leg** disclosures share one compact strip above the fixed console. On compact widths the strip may scroll horizontally, but it does not stack into persistent rows that materially reduce the resting map height.
+
+132. On iPhone portrait, the resting cockpit keeps approximately two thirds of the usable height for the map. Expanded disclosures temporarily overlay the map as sheets rather than permanently shrinking it. On iPad landscape, the fixed operational console remains in a side rail and disclosure panels temporarily occupy part of the map area. In every supported presentation, heading, timer, ETA, planned altitude, **Planned now**, **Planned next**, and the primary report action remain available in the resting cockpit.
 
 ## Complete desired leg flow
 
@@ -586,6 +611,26 @@ Given a successful reach report, when 20 real seconds pass—even while the app 
 ### Completed history
 
 Given a completed leg with reached, revised, checked, and passed-without-report targets plus several committed headings, the previous-leg panel shows the full target and leg-wide heading history. It does not fabricate Actual ETA for missed points or reveal reference results that the pilot never requested.
+
+### Transient map-focus controls
+
+Given an active leg whose map has been panned, zoomed, or rotated, the **Show Whole Active Leg** and **Show Destination Waypoint** controls appear immediately. Choosing the first restores canonical whole-leg track-up framing; choosing the second centers the arrival waypoint without changing flight state. If no further map interaction occurs, both controls hide after four seconds and reappear on the next map interaction.
+
+### Disclosure surfaces do not mutate flight state
+
+Given an active leg, opening and closing **Map Tools**, **App Sections**, **Frequency Plan**, **Checklist**, **Previous Leg**, or **Next Leg** does not change the active leg, timer, target outcomes, revisions, map orientation, or progression policy. Navigating to another app section does not pause the active timer.
+
+### Closed disclosures coexist
+
+Given a successor leg with a noted checklist and completed predecessor, the cockpit can simultaneously present compact **Checklist**, **Previous Leg**, and **Next Leg** disclosures. Opening and closing any one leaves the other applicable disclosures available and does not cover or replace the operational scan line or an active undo banner.
+
+### Next-leg preview
+
+Given an active leg with a successor, opening **Next Leg** or choosing **Show Next Leg on Map** reveals the successor's planned information without starting its timer or advancing progression. Closing the preview restores the active-leg map context.
+
+### Planned VOR/DME reference
+
+Given an arrival waypoint with an imported VOR/DME reference, the map presents a draggable compact label containing the station, magnetic radial, and planned DME distance; **Frequency Plan** presents the station, service, frequency, and arrival association; and the destination callout presents the complete reference with explicit planned-data provenance. Dragging or opening the reference changes presentation only. Given no imported VOR/DME reference, all three presentations omit it without an error or placeholder.
 
 ## As-is gaps and delivery phases
 

@@ -10,6 +10,9 @@ enum CockpitMapTool: CaseIterable, Equatable, Sendable {
 enum CockpitDisclosure: Equatable, Sendable {
     case mapTools
     case frequencyPlan
+    case checklist
+    case previousLeg
+    case nextLeg
 }
 
 struct CockpitPresentationState: Equatable, Sendable {
@@ -18,6 +21,8 @@ struct CockpitPresentationState: Equatable, Sendable {
     private(set) var areQuickFocusControlsVisible = false
     private(set) var quickFocusHideDeadline: Date?
     private(set) var activeDisclosure: CockpitDisclosure?
+    private(set) var isNextLegMapPreviewPresented = false
+    private(set) var mapFocusRequest: AviationMapFocusRequest?
 
     var isMapToolsPresented: Bool {
         activeDisclosure == .mapTools
@@ -26,6 +31,10 @@ struct CockpitPresentationState: Equatable, Sendable {
     var isFrequencyPlanPresented: Bool {
         activeDisclosure == .frequencyPlan
     }
+
+    var isChecklistPresented: Bool { activeDisclosure == .checklist }
+    var isPreviousLegPresented: Bool { activeDisclosure == .previousLeg }
+    var isNextLegPresented: Bool { activeDisclosure == .nextLeg }
 
     mutating func mapInteractionOccurred(at date: Date) {
         areQuickFocusControlsVisible = true
@@ -44,6 +53,26 @@ struct CockpitPresentationState: Equatable, Sendable {
 
     mutating func setFrequencyPlanPresented(_ isPresented: Bool) {
         setDisclosure(.frequencyPlan, isPresented: isPresented)
+    }
+
+    mutating func setChecklistPresented(_ isPresented: Bool) {
+        setDisclosure(.checklist, isPresented: isPresented)
+    }
+
+    mutating func setPreviousLegPresented(_ isPresented: Bool) {
+        setDisclosure(.previousLeg, isPresented: isPresented)
+    }
+
+    mutating func setNextLegPresented(_ isPresented: Bool) {
+        setDisclosure(.nextLeg, isPresented: isPresented)
+        if !isPresented, isNextLegMapPreviewPresented {
+            setNextLegMapPreviewPresented(false)
+        }
+    }
+
+    mutating func setNextLegMapPreviewPresented(_ isPresented: Bool) {
+        isNextLegMapPreviewPresented = isPresented
+        mapFocusRequest = AviationMapFocusRequest(mode: isPresented ? .nextLeg : .leg)
     }
 
     private mutating func setDisclosure(_ disclosure: CockpitDisclosure, isPresented: Bool) {

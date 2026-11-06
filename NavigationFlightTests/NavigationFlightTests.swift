@@ -750,8 +750,11 @@ struct NavigationFlightTests {
 
         let next = try #require(try adapter.makeNextLegPreparation(flightPlan: flightPlan, flight: flight))
         #expect(next.legIndex == 1)
+        #expect(next.origin == flightPlan.legs[1].departure.name)
+        #expect(next.destination == flightPlan.legs[1].arrival.name)
         #expect(next.direction == .heading(355))
         #expect(next.initialAltitudeFeetMsl == 2000)
+        #expect(next.plannedDurationSeconds == 40)
         #expect(next.immediateAltitudeFeetMsl == nil)
         #expect(next.immediateFrequencyChange == nil)
 

@@ -211,8 +211,6 @@ struct CockpitView: View {
     @State private var preservedMapCamera: AviationMapCameraState?
     @State private var isMapCameraUserControlled = false
     @State private var timingTargetCalloutOffsets: [NavigationTimingTargetKey: AviationMapCalloutOffset] = [:]
-    @State private var isNextPreparationPresented = false
-    @State private var isPreviousDrawerPresented = false
     @State private var selectedMapCallout: SelectedMapCallout?
     @State private var identificationPointCalloutOffsets: [IdentificationPointKey: AviationMapCalloutOffset] = [:]
     @State private var vorDMECalloutOffsets: [UUID: AviationMapCalloutOffset] = [:]
@@ -283,13 +281,35 @@ struct CockpitView: View {
                 .presentationDragIndicator(.visible)
             }
         }
+        .sheet(isPresented: compactPreviousLegBinding) {
+            if let previousLegSummary {
+                PreviousLegSummaryCard(summary: previousLegSummary) {
+                    cockpitPresentationState.setPreviousLegPresented(false)
+                }
+                .padding()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+            }
+        }
+        .sheet(isPresented: compactNextLegBinding) {
+            if let nextLegPreparation {
+                NextLegPreparationCard(
+                    preparation: nextLegPreparation,
+                    onShowOnMap: showNextLegOnMap,
+                    onCollapse: { cockpitPresentationState.setNextLegPresented(false) }
+                )
+                .padding()
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onChange(of: flight.activeLegIndex) { _, _ in
             if isRestoringReach {
                 isRestoringReach = false
                 return
             }
-            isNextPreparationPresented = false
-            isPreviousDrawerPresented = false
+            cockpitPresentationState.setNextLegPresented(false)
+            cockpitPresentationState.setPreviousLegPresented(false)
             selectedMapCallout = nil
             showsHeadingCommitConfirmation = false
             showsCompactFrequencies = false
@@ -328,7 +348,12 @@ struct CockpitView: View {
             }
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
-            isPreviousDrawerPresented = false
+            cockpitPresentationState.setPreviousLegPresented(false)
+        }
+        .onChange(of: cockpitPresentationState.mapFocusRequest) { _, request in
+            if let request {
+                mapFocusRequest = request
+            }
         }
         .onChange(of: mapPresentation.gpsDisclosureOverlay) { oldValue, newValue in
             if let newValue, oldValue == nil {
@@ -494,13 +519,6 @@ struct CockpitView: View {
                     .padding(.top, horizontalSizeClass == .compact ? 58 : 80)
                     .accessibilitySortPriority(85)
             }
-            NextLegPreparationOverlay(
-                preparation: flight.destinationIdentifiedAt == nil ? nil : nextLegPreparation,
-                isPresented: Binding(
-                    get: { isNextPreparationPresented && selectedIdentificationPointID == nil },
-                    set: { isNextPreparationPresented = $0 }
-                )
-            )
             if let pendingReachUndo {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     if context.date < pendingReachUndo.expiresAt {
@@ -514,28 +532,52 @@ struct CockpitView: View {
                 }
                 .frame(width: 430, height: 88, alignment: .bottomLeading)
             }
-            PreviousLegDrawer(
-                summary: previousLegSummary,
-                isPresented: $isPreviousDrawerPresented,
-                bottomInset: pendingReachUndo == nil ? 0 : 60,
-                onOpen: {
-                    selectedMapCallout = nil
+            if horizontalSizeClass != .compact,
+               cockpitPresentationState.isPreviousLegPresented,
+               let previousLegSummary {
+                PreviousLegSummaryCard(summary: previousLegSummary) {
+                    cockpitPresentationState.setPreviousLegPresented(false)
                 }
-            )
-            LegStartChecklistOverlay(
-                checklist: legStartChecklist,
-                state: checklistState,
-                legStartedAt: flight.legStartedAt,
-                isCompact: horizontalSizeClass == .compact,
-                onCollapse: onCollapseChecklist,
-                onReopen: {
-                    if horizontalSizeClass == .compact {
-                        isCompactChecklistPresented = true
-                    }
-                    onReopenChecklist()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(18)
+            }
+            if horizontalSizeClass != .compact,
+               cockpitPresentationState.isNextLegPresented,
+               let nextLegPreparation {
+                NextLegPreparationCard(
+                    preparation: nextLegPreparation,
+                    onShowOnMap: showNextLegOnMap,
+                    onCollapse: { cockpitPresentationState.setNextLegPresented(false) }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(18)
+            }
+            if checklistState?.presentationState == .expanded {
+                LegStartChecklistOverlay(
+                    checklist: legStartChecklist,
+                    state: checklistState,
+                    legStartedAt: flight.legStartedAt,
+                    isCompact: horizontalSizeClass == .compact,
+                    onCollapse: onCollapseChecklist,
+                    onReopen: onReopenChecklist,
+                    onNoted: onNoteChecklist
+                )
+            }
+            CockpitDisclosureStrip(
+                checklistTitle: checklistState?.presentationState == .collapsed
+                    ? (checklistState?.reviewState == .noted ? "Checklist · Noted" : "Checklist")
+                    : nil,
+                previousLeg: previousLegSummary,
+                nextLeg: nextLegPreparation,
+                onChecklist: openChecklistDisclosure,
+                onPreviousLeg: {
+                    selectedMapCallout = nil
+                    cockpitPresentationState.setPreviousLegPresented(true)
                 },
-                onNoted: onNoteChecklist
+                onNextLeg: { cockpitPresentationState.setNextLegPresented(true) }
             )
+            .padding(.bottom, pendingReachUndo == nil ? 12 : 100)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         }
         .clipped()
     }
@@ -598,6 +640,35 @@ struct CockpitView: View {
                 }
             }
         )
+    }
+
+    private var compactPreviousLegBinding: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass == .compact && cockpitPresentationState.isPreviousLegPresented },
+            set: { cockpitPresentationState.setPreviousLegPresented($0) }
+        )
+    }
+
+    private var compactNextLegBinding: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass == .compact && cockpitPresentationState.isNextLegPresented },
+            set: { cockpitPresentationState.setNextLegPresented($0) }
+        )
+    }
+
+    private func openChecklistDisclosure() {
+        cockpitPresentationState.setChecklistPresented(true)
+        if horizontalSizeClass == .compact {
+            isCompactChecklistPresented = true
+        }
+        onReopenChecklist()
+    }
+
+    private func showNextLegOnMap() {
+        cockpitPresentationState.setNextLegMapPreviewPresented(true)
+        if let request = cockpitPresentationState.mapFocusRequest {
+            mapFocusRequest = request
+        }
     }
 
     private var mapToolsPanel: some View {
@@ -1821,7 +1892,7 @@ struct CockpitView: View {
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
                     Button {
-                        isNextPreparationPresented = false
+                        cockpitPresentationState.setNextLegPresented(false)
                         onWaypointReached(cockpitRestoration)
                     } label: {
                         Text("Report Destination Reached")
@@ -1962,7 +2033,7 @@ struct CockpitView: View {
             return
         }
         selectedMapCallout = .identificationPoint(id)
-        isNextPreparationPresented = false
+        cockpitPresentationState.setNextLegPresented(false)
         onCollapseChecklist()
     }
 
@@ -1996,7 +2067,7 @@ struct CockpitView: View {
             selectedMapCallout = .timingTarget(key)
         }
         if selectedTimingTargetKey != nil {
-            isNextPreparationPresented = false
+            cockpitPresentationState.setNextLegPresented(false)
             onCollapseChecklist()
             onOpenPilotETA(target)
             focusMap(on: target)
@@ -2551,6 +2622,66 @@ private struct LegStartStaticItem: View {
     }
 }
 
+private struct CockpitDisclosureStrip: View {
+    let checklistTitle: String?
+    let previousLeg: PreviousLegSummary?
+    let nextLeg: NextLegPreparation?
+    let onChecklist: () -> Void
+    let onPreviousLeg: () -> Void
+    let onNextLeg: () -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if let checklistTitle {
+                    disclosureButton(checklistTitle, identifier: "leg-start-checklist-chip", action: onChecklist)
+                }
+                if let previousLeg {
+                    disclosureButton(
+                        "Previous · \(previousLeg.origin)–\(previousLeg.destination)",
+                        identifier: "previous-leg-tab",
+                        action: onPreviousLeg
+                    )
+                }
+                if let nextLeg {
+                    disclosureButton(
+                        "Next · \(nextLeg.origin)–\(nextLeg.destination)",
+                        identifier: "next-leg-preview",
+                        action: onNextLeg
+                    )
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+        }
+        .accessibilityIdentifier("cockpit-disclosure-strip")
+    }
+
+    private func disclosureButton(
+        _ title: String,
+        identifier: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tint)
+            }
+            .padding(.horizontal, 12)
+            .frame(minHeight: 40)
+        }
+        .buttonStyle(.plain)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 13))
+        .overlay { RoundedRectangle(cornerRadius: 13).stroke(Color(.separator)) }
+        .shadow(color: .black.opacity(0.14), radius: 3.5, y: 2)
+        .accessibilityIdentifier(identifier)
+    }
+}
+
 private struct NextLegPreparationOverlay: View {
     let preparation: NextLegPreparation?
     @Binding var isPresented: Bool
@@ -2560,9 +2691,13 @@ private struct NextLegPreparationOverlay: View {
         if let preparation {
             VStack(alignment: .trailing, spacing: 6) {
                 if isPresented {
-                    NextLegPreparationCard(preparation: preparation) {
-                        withAnimation(.easeOut(duration: 0.2)) { isPresented = false }
-                    }
+                    NextLegPreparationCard(
+                        preparation: preparation,
+                        onShowOnMap: {},
+                        onCollapse: {
+                            withAnimation(.easeOut(duration: 0.2)) { isPresented = false }
+                        }
+                    )
                 } else {
                     Button {
                         withAnimation(.easeOut(duration: 0.2)) { isPresented = true }
@@ -2590,32 +2725,51 @@ private struct NextLegPreparationOverlay: View {
 
 private struct NextLegPreparationCard: View {
     let preparation: NextLegPreparation
+    let onShowOnMap: () -> Void
     let onCollapse: () -> Void
     private let style = AviationMapVisualStyle.default
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Text("NEXT · LEG \(preparation.legIndex + 1)")
-                    .font(.caption.weight(.bold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Next leg")
+                        .font(.title2.bold())
+                    Text("\(preparation.origin) → \(preparation.destination) · preview only · no timing starts")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button(action: onCollapse) {
-                    Image(systemName: "chevron.down")
-                        .frame(width: 28, height: 28)
+                    Text("Close")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Collapse next leg")
+                .accessibilityLabel("Close next leg")
             }
             preparationRow(label: directionLabel, value: directionValue)
-            preparationRow(label: "ALT", value: altitudeValue)
-            preparationRow(label: "FREQ", value: frequencyValue)
+            preparationRow(label: "Altitude", value: altitudeValue)
+            preparationRow(label: "Leg time", value: duration(preparation.plannedDurationSeconds))
+            Divider()
+            Text("PLANNED COMMUNICATION")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            preparationRow(label: frequencyService, value: frequencyValue)
+            Button("Show next leg on map", action: onShowOnMap)
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityIdentifier("show-next-leg-on-map")
+            Text("Previewing never starts timing or advances the flight.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .padding(12)
-        .frame(width: 224)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(20)
+        .frame(width: 380, alignment: .leading)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 20))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(uiColor: style.nextLegAccentColor), lineWidth: 2)
+                .stroke(Color(.separator), lineWidth: 1)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("next-leg-card")
@@ -2631,8 +2785,8 @@ private struct NextLegPreparationCard: View {
 
     private var directionLabel: String {
         switch preparation.direction {
-        case .heading: "HDG"
-        case .course: "COURSE"
+        case .heading: "Heading"
+        case .course: "Course"
         }
     }
 
@@ -2650,9 +2804,17 @@ private struct NextLegPreparationCard: View {
     }
 
     private var frequencyValue: String {
-        guard let change = preparation.immediateFrequencyChange else { return "No change" }
+        guard let change = preparation.immediateFrequencyChange else { return "No planned change" }
         let frequency = change.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))
-        return "→ \(change.service) \(frequency)"
+        return frequency
+    }
+
+    private var frequencyService: String {
+        preparation.immediateFrequencyChange?.service ?? "Communication"
+    }
+
+    private func duration(_ seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 }
 
@@ -2733,103 +2895,95 @@ private struct PreviousLegDrawer: View {
 private struct PreviousLegSummaryCard: View {
     let summary: PreviousLegSummary
     let onClose: () -> Void
-    private let style = AviationMapVisualStyle.default
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            HStack {
-                Text("PREVIOUS LEG · LEG \(summary.legIndex + 1)")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(uiColor: style.previousLegAccentColor))
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Previous leg")
+                        .font(.title2.bold())
+                    Text("\(summary.origin) → \(summary.destination) · review only · current leg continues")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
                 Spacer()
                 Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 20, weight: .regular))
-                        .frame(width: 24, height: 28)
+                    Text("Close")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minWidth: 44, minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Close previous leg")
-            }.frame(width: 378, height: 28)
-                .offset(x: 24, y: 14)
-            Text("\(summary.origin) → \(summary.destination)")
-                .font(.system(size: 23, weight: .semibold))
-                .lineLimit(1).minimumScaleFactor(0.8)
-                .frame(width: 340, height: 30, alignment: .leading)
-                .offset(x: 24, y: 48)
-            Rectangle()
-                .fill(.primary.opacity(0.14))
-                .frame(width: 372, height: 1)
-                .offset(x: 24, y: 88)
-            sectionLabel("TIMING")
-                .offset(x: 24, y: 108)
-            Text("Planned \(duration(summary.plannedDurationSeconds))     Actual \(duration(summary.actualDurationSeconds))     \(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds))")
-                .font(.system(size: 14))
-                .monospacedDigit()
-                .frame(width: 372, height: 20, alignment: .leading)
-                .offset(x: 24, y: 130)
-            sectionLabel("TARGET HISTORY")
-                .offset(x: 24, y: 170)
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(summary.targets) { target in
-                    targetHistory(target)
-                }
             }
-            .frame(width: 205, height: 90, alignment: .topLeading)
-            .offset(x: 24, y: 192)
-            sectionLabel("HEADING HISTORY")
-                .offset(x: 244, y: 170)
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 8) {
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    sectionLabel("COMPLETED")
+                    HStack {
+                        Text("Planned \(duration(summary.plannedDurationSeconds))")
+                        Spacer()
+                        Text("Actual \(duration(summary.actualDurationSeconds))")
+                            .fontWeight(.semibold)
+                    }
+                    .font(.body)
+                    .monospacedDigit()
+                    Text("\(CockpitPresentationFormatter.signedDuration(summary.deltaSeconds)) \(summary.deltaSeconds >= 0 ? "late" : "early")")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(summary.deltaSeconds >= 0 ? Color.orange : Color.green)
+                    Divider()
+                    sectionLabel("TARGET OUTCOMES")
+                    ForEach(summary.targets) { target in
+                        targetHistory(target)
+                    }
+                    Divider()
+                    sectionLabel("HEADING HISTORY")
                     historyLine(
                         CockpitPresentationFormatter.aviationDegrees(Double(summary.headingHistory.baselineDegrees)),
-                        detail: "planned"
+                        detail: "planned magnetic"
                     )
                     ForEach(Array(summary.headingHistory.commits.enumerated()), id: \.offset) { _, degrees in
-                        historyLine(CockpitPresentationFormatter.aviationDegrees(Double(degrees)), detail: "revised")
+                        historyLine(
+                            CockpitPresentationFormatter.aviationDegrees(Double(degrees)),
+                            detail: "revised"
+                        )
                     }
                 }
             }
-            .frame(width: 152, height: 90, alignment: .topLeading)
-            .offset(x: 244, y: 192)
-            Text("Review only · current leg continues unchanged")
-                .font(.system(size: 12))
-                .foregroundStyle(Color(red: 87 / 255, green: 94 / 255, blue: 107 / 255))
-                .frame(width: 340, height: 18, alignment: .leading)
-                .offset(x: 24, y: 302)
+            Text("Reviewing history does not change the current leg, map, or timer.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .frame(width: 420, height: 336, alignment: .topLeading)
-        .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 20))
+        .padding(20)
+        .frame(maxWidth: 380, maxHeight: 760, alignment: .topLeading)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 20))
         .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.16), radius: 10, y: 3)
+        .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("previous-leg-drawer")
     }
 
     private func targetHistory(_ target: PreviousLegSummary.Target) -> some View {
-        HStack(spacing: 8) {
-            Text(target.name).fontWeight(.semibold)
+        Group {
             switch target.outcome {
-            case .reached(let actualETASeconds, _):
-                Text("Reached \(duration(actualETASeconds))")
+            case .reached(let actualETASeconds, let differenceSeconds):
+                Text("\(target.name) · Reached \(duration(actualETASeconds)) · \(CockpitPresentationFormatter.signedDuration(differenceSeconds))")
             case .passedWithoutReport:
-                Text("Passed without report")
+                Text("\(target.name) · Passed without report")
             }
         }
-        .font(.system(size: 14))
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
+        .font(.subheadline)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(Color(red: 87 / 255, green: 94 / 255, blue: 107 / 255))
-            .frame(height: 16, alignment: .leading)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
     }
 
     private func historyLine(_ value: String, detail: String) -> some View {
-        Text("\(value) · \(detail)")
-            .font(.system(size: 14))
+        Text("\(detail.capitalized) \(value)")
+            .font(.subheadline)
             .monospacedDigit()
             .fixedSize(horizontal: false, vertical: true)
     }

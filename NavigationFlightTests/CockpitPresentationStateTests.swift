@@ -147,4 +147,51 @@ struct CockpitPresentationStateTests {
 
         #expect(flight == originalFlight)
     }
+
+    @Test(
+        "Progression results use the approved operational copy",
+        arguments: [
+            (CockpitProgressionNotice.automaticSuccessor("RAMAT"), "RAMAT reached · successor started", "Automatic progression · Undo restores the departing leg atomically."),
+            (CockpitProgressionNotice.manualSuccessor("RAMAT"), "RAMAT reached · next leg ready", "Manual progression · no successor timing until Start next leg."),
+            (CockpitProgressionNotice.navigationComplete, "Navigation complete", "Final leg recorded. No successor timer was started."),
+            (CockpitProgressionNotice.rejected(.alreadyReportedReached), "Already reported reached", "No timing, target, focus, checklist, or history state changed.")
+        ]
+    )
+    func progressionResultCopy(
+        _ notice: CockpitProgressionNotice,
+        _ title: String,
+        _ detail: String
+    ) {
+        #expect(notice.title == title)
+        #expect(notice.detail == detail)
+    }
+
+    @Test("Only successful reach results expose bounded undo")
+    func progressionResultUndoAvailability() {
+        #expect(CockpitProgressionNotice.automaticSuccessor("RAMAT").supportsUndo)
+        #expect(CockpitProgressionNotice.manualSuccessor("RAMAT").supportsUndo)
+        #expect(CockpitProgressionNotice.navigationComplete.supportsUndo)
+        #expect(!CockpitProgressionNotice.rejected(.alreadyReportedReached).supportsUndo)
+        #expect(!CockpitProgressionNotice.rejected(.undoExpired).supportsUndo)
+        #expect(!CockpitProgressionNotice.rejected(.actionUnavailable).supportsUndo)
+    }
+
+    @Test("Arrival result selection follows progression policy and successor availability")
+    func progressionResultSelection() {
+        #expect(CockpitProgressionNotice.arrivalReached(
+            waypoint: "RAMAT",
+            progressionPolicy: .automaticNextLeg,
+            hasSuccessor: true
+        ) == .automaticSuccessor("RAMAT"))
+        #expect(CockpitProgressionNotice.arrivalReached(
+            waypoint: "RAMAT",
+            progressionPolicy: .manualNextLeg,
+            hasSuccessor: true
+        ) == .manualSuccessor("RAMAT"))
+        #expect(CockpitProgressionNotice.arrivalReached(
+            waypoint: "RAMAT",
+            progressionPolicy: .automaticNextLeg,
+            hasSuccessor: false
+        ) == .navigationComplete)
+    }
 }

@@ -1,33 +1,41 @@
 import SwiftUI
 
-private struct ReachUndoBanner: View {
-    let label: String
-    let expiresAt: Date
+private struct ProgressionNoticeBanner: View {
+    let notice: CockpitProgressionNotice
+    let expiresAt: Date?
     let now: Date
     let onUndo: () -> Void
 
     private var remainingSeconds: Int {
-        max(0, Int(ceil(expiresAt.timeIntervalSince(now))))
+        max(0, Int(ceil(expiresAt?.timeIntervalSince(now) ?? 0)))
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(label)
-                .foregroundStyle(.white)
-                .accessibilityIdentifier("reach-undo-banner")
+            Circle()
+                .fill(Color(.systemGreen))
+                .frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(notice.title)
+                    .font(.headline)
+                    .accessibilityIdentifier("progression-notice-title")
+                Text(notice.detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("progression-notice-detail")
+            }
             Spacer(minLength: 12)
-            Button("Undo · 00:\(remainingSeconds, format: .number.precision(.integerLength(2)))", action: onUndo)
-                .foregroundStyle(Color(red: 89 / 255, green: 178 / 255, blue: 1))
-                .accessibilityLabel("Undo reach report")
-                .accessibilityValue("\(remainingSeconds) seconds remaining")
-                .accessibilityIdentifier("undo-reach")
+            if notice.supportsUndo {
+                Button("Undo · 00:\(remainingSeconds, format: .number.precision(.integerLength(2)))", action: onUndo)
+                    .accessibilityLabel("Undo reach report")
+                    .accessibilityValue("\(remainingSeconds) seconds remaining")
+                    .accessibilityIdentifier("undo-reach")
+            }
         }
-        .font(.subheadline.weight(.semibold))
-        .padding(.horizontal, 13)
-        .frame(width: 390, height: 48)
-        .background(Color(red: 14 / 255, green: 17 / 255, blue: 22 / 255), in: RoundedRectangle(cornerRadius: 14))
-        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(Color(.separator)) }
-        .padding(20)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, minHeight: 76)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.16), radius: 8, y: 5)
         .accessibilityElement(children: .contain)
     }
 }
@@ -176,6 +184,7 @@ struct CockpitView: View {
     var operationalCues: CockpitOperationalCueState? = nil
     var emphasizedCueEvents: Set<CockpitOperationalCueState.DueEvent> = []
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
+    var progressionNotice: CockpitProgressionNotice? = nil
     var positionCheck: PositionCheckPresentation? = nil
     var recordingStatus: RecordingStatusPresentation? = nil
     var isRecordingCommitInFlight = false
@@ -519,18 +528,30 @@ struct CockpitView: View {
                     .padding(.top, horizontalSizeClass == .compact ? 58 : 80)
                     .accessibilitySortPriority(85)
             }
-            if let pendingReachUndo {
+            if let pendingReachUndo, let progressionNotice, progressionNotice.supportsUndo {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     if context.date < pendingReachUndo.expiresAt {
-                        ReachUndoBanner(
-                            label: pendingReachUndo.kind.label,
+                        ProgressionNoticeBanner(
+                            notice: progressionNotice,
                             expiresAt: pendingReachUndo.expiresAt,
                             now: context.date,
                             onUndo: { restoreReach(at: context.date) }
                         )
                     }
                 }
-                .frame(width: 430, height: 88, alignment: .bottomLeading)
+                .padding(.horizontal, 18)
+                .padding(.bottom, 18)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            } else if let progressionNotice, !progressionNotice.supportsUndo {
+                ProgressionNoticeBanner(
+                    notice: progressionNotice,
+                    expiresAt: nil,
+                    now: .now,
+                    onUndo: {}
+                )
+                .padding(.horizontal, 18)
+                .padding(.bottom, 18)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
             if horizontalSizeClass != .compact,
                cockpitPresentationState.isPreviousLegPresented,
@@ -576,7 +597,12 @@ struct CockpitView: View {
                 },
                 onNextLeg: { cockpitPresentationState.setNextLegPresented(true) }
             )
-            .padding(.bottom, pendingReachUndo == nil ? 12 : 100)
+            .padding(
+                .bottom,
+                progressionNotice?.supportsUndo == true
+                    ? (pendingReachUndo == nil ? 12 : 100)
+                    : (progressionNotice == nil ? 12 : 100)
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
         }
         .clipped()
@@ -963,7 +989,7 @@ struct CockpitView: View {
                 portraitOperationalMetric(
                     label: "Leg timer",
                     value: Self.duration(max(0, Int(context.date.timeIntervalSince(legStartedAt)))),
-                    detail: "Elapsed from leg start",
+                    detail: activeTimerDetail,
                     identifier: "cockpit-time"
                 )
             }
@@ -971,7 +997,7 @@ struct CockpitView: View {
             portraitOperationalMetric(
                 label: "Leg timer",
                 value: "–:––",
-                detail: "Starts on Start Leg",
+                    detail: readyTimerDetail,
                 identifier: "cockpit-time"
             )
         }
@@ -1070,13 +1096,13 @@ struct CockpitView: View {
                 compactInstrument(
                     label: "Leg timer",
                     value: elapsed,
-                    detail: "Elapsed from leg start",
+                    detail: activeTimerDetail,
                     identifier: "cockpit-time"
                 )
-                .accessibilityLabel("Leg timer, \(elapsed), Running from pilot start")
+                .accessibilityLabel("Leg timer, \(elapsed), \(activeTimerDetail)")
             }
         } else {
-            compactInstrument(label: "Leg timer", value: "–:––", detail: "Starts on Start Leg", identifier: "cockpit-time")
+            compactInstrument(label: "Leg timer", value: "–:––", detail: readyTimerDetail, identifier: "cockpit-time")
         }
     }
 
@@ -1195,7 +1221,7 @@ struct CockpitView: View {
                 readyInstrumentCard(
                     title: "LEG TIMER",
                     value: Self.duration(max(0, Int(context.date.timeIntervalSince(legStartedAt)))),
-                    detail: "Running from pilot start",
+                    detail: activeTimerDetail,
                     valueColor: Color(.systemTeal),
                     accessibilityIdentifier: "cockpit-time",
                     highlighted: true
@@ -1330,11 +1356,25 @@ struct CockpitView: View {
         readyInstrumentCard(
             title: "LEG TIMER",
             value: "–:––",
-            detail: "Starts when Start Leg is pressed",
+            detail: readyTimerDetail,
             valueColor: Color(.systemTeal),
             accessibilityIdentifier: "cockpit-time",
             highlighted: true
         )
+    }
+
+    private var activeTimerDetail: String {
+        if case .automaticSuccessor(let waypoint) = progressionNotice {
+            return "Started at \(waypoint) reach"
+        }
+        return "Elapsed from leg start"
+    }
+
+    private var readyTimerDetail: String {
+        if case .manualSuccessor = progressionNotice {
+            return "Starts when Start next leg is pressed"
+        }
+        return "Starts when Start Leg is pressed"
     }
 
     private var readyETAMetric: some View {

@@ -1110,7 +1110,11 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.buttons["reached-now"].waitForExistence(timeout: 2))
         app.buttons["reached-now"].tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+        let noticeTitle = app.staticTexts["progression-notice-title"]
+        XCTAssertTrue(noticeTitle.waitForExistence(timeout: 2))
+        XCTAssertTrue(noticeTitle.label.contains("successor started"))
+        XCTAssertTrue(app.staticTexts["progression-notice-detail"].label.contains("Automatic progression"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Started at"))
         XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
     }
 
@@ -1120,9 +1124,9 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         app.buttons["reached-now"].tap()
 
-        let banner = app.staticTexts["reach-undo-banner"]
+        let banner = app.staticTexts["progression-notice-title"]
         XCTAssertTrue(banner.waitForExistence(timeout: 2))
-        XCTAssertEqual(banner.label, "Final arrival reached")
+        XCTAssertEqual(banner.label, "Navigation complete")
         let undo = app.buttons["undo-reach"]
         XCTAssertTrue(undo.exists)
         XCTAssertEqual(undo.label, "Undo reach report")
@@ -1130,7 +1134,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(undoValue == "20 seconds remaining" || undoValue == "19 seconds remaining")
         undo.tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Elapsed from leg start"))
         XCTAssertFalse(app.descendants(matching: .any)["navigation-complete"].exists)
         XCTAssertFalse(banner.exists)
     }
@@ -1224,11 +1228,12 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         app.buttons["waypoint-identified"].tap()
 
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Elapsed from leg start"))
         XCTAssertTrue(app.buttons["waypoint-reached"].isEnabled)
         app.buttons["waypoint-reached"].tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["navigation-complete"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["progression-notice-detail"].label.contains("No successor timer was started"))
     }
 
     @MainActor
@@ -1252,13 +1257,17 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         app.buttons["reached-now"].tap()
 
+        let noticeTitle = app.staticTexts["progression-notice-title"]
+        XCTAssertTrue(noticeTitle.waitForExistence(timeout: 2))
+        XCTAssertTrue(noticeTitle.label.contains("next leg ready"))
+        XCTAssertTrue(app.staticTexts["progression-notice-detail"].label.contains("no successor timing until Start next leg"))
         XCTAssertTrue(app.descendants(matching: .any)["leg-status"].label.contains("READY · SUCCESSOR TRACK-UP"))
         XCTAssertTrue(app.buttons["start-leg"].isEnabled)
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Starts when Start Leg is pressed"))
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Starts when Start next leg is pressed"))
         app.buttons["start-leg"].tap()
         let timer = app.descendants(matching: .any)["cockpit-time"]
         expectation(
-            for: NSPredicate(format: "label CONTAINS 'Running from pilot start'"),
+            for: NSPredicate(format: "label CONTAINS 'Elapsed from leg start'"),
             evaluatedWith: timer
         )
         waitForExpectations(timeout: 3)

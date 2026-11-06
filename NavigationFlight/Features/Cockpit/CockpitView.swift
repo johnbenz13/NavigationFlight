@@ -231,6 +231,7 @@ struct CockpitView: View {
     var body: some View {
         GeometryReader { geometry in
             restingCockpitLayout(in: geometry.size)
+                .accessibilityHidden(activeHeadingState?.isEditing == true)
         }
         .background(Color(.systemBackground))
         .overlay {
@@ -317,6 +318,14 @@ struct CockpitView: View {
             }
             guard !Task.isCancelled else { return }
             cockpitPresentationState.hideQuickFocusControlsIfExpired(at: .now)
+        }
+        .task(id: showsHeadingCommitConfirmation) {
+            guard showsHeadingCommitConfirmation else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation {
+                showsHeadingCommitConfirmation = false
+            }
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -838,6 +847,7 @@ struct CockpitView: View {
         HStack(alignment: .top, spacing: 0) {
             Button {
                 showsHeadingCommitConfirmation = false
+                onCollapseChecklist()
                 onOpenPilotHeading(importedHeadingDegrees)
             } label: {
                 portraitOperationalMetric(
@@ -853,12 +863,17 @@ struct CockpitView: View {
             portraitInstrumentDivider
             portraitTimerInstrument
             portraitInstrumentDivider
-            portraitOperationalMetric(
-                label: "Next ETA · \(data.destination)",
-                value: Self.duration(mapPresentation.currentETATarget.committedETASeconds ?? data.legDurationSeconds),
-                detail: mapPresentation.currentETATarget.committedETASeconds == nil ? "Planned · elapsed" : "Revised · elapsed",
-                identifier: "cockpit-eta"
-            )
+            Button {
+                selectTimingTarget(mapPresentation.destinationTarget.id)
+            } label: {
+                portraitOperationalMetric(
+                    label: "Next ETA · \(data.destination)",
+                    value: Self.duration(mapPresentation.operationalDestinationETASeconds),
+                    detail: mapPresentation.isDestinationETARevised ? "Revised · elapsed" : "Planned · elapsed",
+                    identifier: "cockpit-eta"
+                )
+            }
+            .buttonStyle(.plain)
             portraitInstrumentDivider
             portraitOperationalMetric(
                 label: "Planned altitude",
@@ -935,7 +950,12 @@ struct CockpitView: View {
                 compactTimerInstrument
             }
             HStack(spacing: 8) {
-                compactInstrument(label: "Next ETA · \(data.destination)", value: Self.duration(mapPresentation.currentETATarget.committedETASeconds ?? data.legDurationSeconds), detail: mapPresentation.currentETATarget.committedETASeconds == nil ? "Planned · elapsed" : "Revised · elapsed", identifier: "cockpit-eta")
+                Button {
+                    selectTimingTarget(mapPresentation.destinationTarget.id)
+                } label: {
+                    compactInstrument(label: "Next ETA · \(data.destination)", value: Self.duration(mapPresentation.operationalDestinationETASeconds), detail: mapPresentation.isDestinationETARevised ? "Revised · elapsed" : "Planned · elapsed", identifier: "cockpit-eta")
+                }
+                .buttonStyle(.plain)
                 compactInstrument(label: "Planned altitude", value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft", detail: "MSL", identifier: "cockpit-altitude")
             }
 
@@ -954,6 +974,7 @@ struct CockpitView: View {
     private var compactHeadingInstrument: some View {
         Button {
             showsHeadingCommitConfirmation = false
+            onCollapseChecklist()
             onOpenPilotHeading(importedHeadingDegrees)
         } label: {
             compactInstrument(
@@ -1059,6 +1080,7 @@ struct CockpitView: View {
     private var compactHeadingButton: some View {
         Button {
             showsHeadingCommitConfirmation = false
+            onCollapseChecklist()
             onOpenPilotHeading(importedHeadingDegrees)
         } label: {
             Text("HEADING \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees))")
@@ -1116,6 +1138,7 @@ struct CockpitView: View {
     private var readyHeadingMetric: some View {
         Button {
             showsHeadingCommitConfirmation = false
+            onCollapseChecklist()
             onOpenPilotHeading(importedHeadingDegrees)
         } label: {
             readyInstrumentCard(
@@ -1155,83 +1178,75 @@ struct CockpitView: View {
     }
 
     private func headingEditor(state: Flight.PilotHeadingState) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("REVISED HEADING · MAGNETIC")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.blue)
-            Text(state.commits.isEmpty ? "Set pilot-calculated heading" : "Revise current segment heading")
-                .font(.headline)
-            Divider()
-            Text("IMPORTED BASELINE")
-                .font(.caption2.weight(.bold))
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Revise heading")
+                .font(.title3.bold())
+            Text("Pilot-authored · magnetic")
+                .font(.caption)
                 .foregroundStyle(.secondary)
-            HStack(spacing: 8) {
-                Text(state.commits.isEmpty
-                    ? "\(data.magneticHeadingDegrees == nil ? "No-wind magnetic course" : "Planned magnetic heading") · \(Self.heading(state.baselineDegrees))"
-                    : "Current revised \(Self.heading(state.operationalDegrees)) · baseline \(Self.heading(state.baselineDegrees))")
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                Spacer(minLength: 4)
-                if state.draftDegrees != state.operationalDegrees {
-                    Text("NOT COMMITTED")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(Color(.systemOrange))
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 6)
-                        .background(Color(.systemOrange).opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                }
-            }
-            Text("DRAFT HEADING")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.blue)
+                .padding(.top, 4)
+            Divider()
+                .padding(.top, 14)
+
             HStack {
-                headingAdjustmentButton(title: "−1°", delta: -1)
+                Text("Imported baseline")
+                    .foregroundStyle(.secondary)
                 Spacer()
-                Text(Self.heading(state.draftDegrees))
-                    .font(.title.weight(.bold))
+                Text(Self.heading(state.baselineDegrees))
+                    .font(.title3.bold())
                     .monospacedDigit()
-                    .accessibilityIdentifier("heading-draft")
-                Spacer()
-                headingAdjustmentButton(title: "+1°", delta: 1)
             }
-            .padding()
-            .background(Color(.systemBlue).opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-            HStack {
-                Button("Cancel", action: onCancelPilotHeading)
-                    .buttonStyle(.bordered)
-                    .frame(maxWidth: .infinity)
-                Button("Commit Heading") {
+            .font(.caption)
+            .padding(.top, 14)
+
+            Text("Draft")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+            Text(Self.heading(state.draftDegrees))
+                .font(.largeTitle.bold())
+                .monospacedDigit()
+                .accessibilityIdentifier("heading-draft")
+
+            HStack(spacing: 12) {
+                headingAdjustmentButton(title: "− 1°", delta: -1)
+                headingAdjustmentButton(title: "+ 1°", delta: 1)
+            }
+            .padding(.top, 12)
+
+            Button("Commit revised heading") {
                     onCommitPilotHeading()
                     showsHeadingCommitConfirmation = true
                 }
-                    .buttonStyle(.borderedProminent)
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("commit-heading")
-            }
-            Text("Pilot-calculated · no Check or recommendation")
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .buttonStyle(.borderedProminent)
+                .padding(.top, 16)
+                .accessibilityIdentifier("commit-heading")
+
+            Button("Cancel", action: onCancelPilotHeading)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            if !state.commits.isEmpty {
-                Divider()
-                Text("THIS SEGMENT")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-                Text("Committed \(state.commits.map { Self.heading($0.degrees) }.joined(separator: " → "))")
-                    .font(.caption)
-            }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("cancel-heading")
         }
         .padding(20)
-        .frame(width: 370)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 20))
-        .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color(.separator)) }
-        .shadow(color: .black.opacity(0.2), radius: 12, y: 5)
+        .frame(width: 344)
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.2), radius: 11, y: 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: horizontalSizeClass == .compact ? .center : .topTrailing)
+        .padding(.top, horizontalSizeClass == .compact ? 0 : 96)
+        .padding(.trailing, horizontalSizeClass == .compact ? 0 : 24)
     }
 
     private func headingAdjustmentButton(title: String, delta: Int) -> some View {
-        Button(title) { onAdjustPilotHeading(delta) }
-            .font(.headline)
-            .frame(minWidth: 64, minHeight: 44)
+        RepeatingActionButton(action: { onAdjustPilotHeading(delta) }) {
+            Text(title)
+        }
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .buttonStyle(.bordered)
             .accessibilityLabel(delta < 0 ? "Decrease magnetic heading by one degree" : "Increase magnetic heading by one degree")
             .accessibilityIdentifier(delta < 0 ? "decrease-heading" : "increase-heading")
     }

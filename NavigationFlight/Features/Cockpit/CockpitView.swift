@@ -222,37 +222,7 @@ struct CockpitView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(spacing: 0) {
-                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
-                        .frame(height: geometry.size.height * 0.47)
-                    compactControlPanel
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            } else if horizontalSizeClass == .regular, geometry.size.width > geometry.size.height {
-                HStack(spacing: 0) {
-                    mapSurface(isLandscape: true, mapWidth: geometry.size.width * 0.64)
-                        .frame(width: geometry.size.width * 0.64)
-                    landscapeControlPanel
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            } else if horizontalSizeClass == .compact {
-                VStack(spacing: 0) {
-                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
-                        .frame(height: geometry.size.height * 0.64)
-                    compactControlPanel
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            } else {
-                VStack(spacing: 0) {
-                    mapSurface(isLandscape: false, mapWidth: geometry.size.width)
-                        .frame(height: geometry.size.height * 0.66)
-                    ScrollView {
-                        portraitControlPanel
-                    }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            }
+            restingCockpitLayout(in: geometry.size)
         }
         .background(Color(.systemBackground))
         .overlay {
@@ -332,6 +302,66 @@ struct CockpitView: View {
             positionCheckRestoration = nil
             onPositionCheckMapRestored(command.id)
         }
+    }
+
+    @ViewBuilder
+    private func restingCockpitLayout(in size: CGSize) -> some View {
+        let layout = CockpitRestingLayoutPolicy.layout(
+            for: .init(
+                width: size.width,
+                height: size.height,
+                horizontalSizeClass: horizontalSizeClass == .compact ? .compact : .regular
+            )
+        )
+
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 0) {
+                mapSurface(isLandscape: false, mapWidth: size.width)
+                    .frame(height: size.height * 0.47)
+                ScrollView {
+                    accessibilityControlPanel
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("compact-cockpit-console")
+            }
+        } else if layout.composition == .sideRail {
+            HStack(spacing: 0) {
+                mapSurface(isLandscape: true, mapWidth: layout.mapExtent)
+                    .frame(width: layout.mapExtent)
+                landscapeControlPanel
+                    .frame(width: layout.consoleExtent)
+                    .frame(maxHeight: .infinity)
+            }
+        } else {
+            VStack(spacing: 0) {
+                mapSurface(isLandscape: false, mapWidth: size.width)
+                    .frame(height: layout.mapExtent)
+                if horizontalSizeClass == .compact {
+                    compactControlPanel
+                        .frame(height: layout.consoleExtent)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    portraitControlPanel
+                        .frame(height: layout.consoleExtent)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+
+    private var accessibilityControlPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            activeLegInstrumentsHeader
+            portraitTimerMetric
+            readyETAMetric
+            compactHeadingButton
+            readyAltitudeMetric
+            frequencyColumn
+            positionCheckAndProgressionControls
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(Color(.systemBackground))
     }
 
     private func mapSurface(isLandscape: Bool, mapWidth: CGFloat) -> some View {
@@ -713,7 +743,7 @@ struct CockpitView: View {
     }
 
     private var portraitControlPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             activeLegInstrumentsHeader
 
             HStack(alignment: .top, spacing: 12) {
@@ -724,45 +754,116 @@ struct CockpitView: View {
             }
 
             Divider()
-            readyFrequencyRow
+            fixedImmediateFrequencyRow
             Divider()
             portraitActionRow
         }
         .padding(.horizontal, 18)
-        .padding(.top, 10)
-        .padding(.bottom, 12)
+        .padding(.vertical, 5)
         .background(Color(.systemBackground))
     }
 
     private var compactControlPanel: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                activeLegInstrumentsHeader
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Active leg")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
 
-                if dynamicTypeSize.isAccessibilitySize {
-                    portraitTimerMetric
-                    readyETAMetric
-                    compactHeadingButton
-                    readyAltitudeMetric
-                } else {
-                    HStack(alignment: .top, spacing: 8) {
-                        portraitTimerMetric
-                        readyETAMetric
-                    }
-                    HStack(alignment: .top, spacing: 8) {
-                        compactHeadingButton
-                        readyAltitudeMetric
-                    }
-                }
-
-                frequencyColumn
-                positionCheckAndProgressionControls
+            HStack(spacing: 8) {
+                compactHeadingInstrument
+                compactTimerInstrument
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            HStack(spacing: 8) {
+                compactInstrument(label: "Next ETA · \(data.destination)", value: Self.duration(mapPresentation.currentETATarget.committedETASeconds ?? data.legDurationSeconds), detail: mapPresentation.currentETATarget.committedETASeconds == nil ? "Planned · elapsed" : "Revised · elapsed", identifier: "cockpit-eta")
+                compactInstrument(label: "Planned altitude", value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft", detail: "MSL", identifier: "cockpit-altitude")
+            }
+
+            compactImmediateFrequencies
+            waypointReachedButton
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .background(Color(.systemBackground))
-        .accessibilityIdentifier("compact-cockpit-console")
+    }
+
+    private var headingProvenance: String {
+        activeHeadingState?.committedDegrees == nil ? "Planned · magnetic" : "Revised · magnetic"
+    }
+
+    private var compactHeadingInstrument: some View {
+        Button {
+            showsHeadingCommitConfirmation = false
+            onOpenPilotHeading(importedHeadingDegrees)
+        } label: {
+            compactInstrument(
+                label: "Operational heading",
+                value: Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees),
+                detail: headingProvenance,
+                identifier: "cockpit-heading"
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(flight.legState != .active)
+        .accessibilityLabel("Operational heading, \(Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees)), \(headingProvenance)")
+        .accessibilityHint("Opens the magnetic heading editor")
+        .accessibilityIdentifier("cockpit-heading")
+    }
+
+    @ViewBuilder
+    private var compactTimerInstrument: some View {
+        if flight.legState == .active, let legStartedAt = flight.legStartedAt {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                let elapsed = Self.duration(max(0, Int(context.date.timeIntervalSince(legStartedAt))))
+                compactInstrument(
+                    label: "Leg timer",
+                    value: elapsed,
+                    detail: "Elapsed from leg start",
+                    identifier: "cockpit-time"
+                )
+                .accessibilityLabel("Leg timer, \(elapsed), Running from pilot start")
+            }
+        } else {
+            compactInstrument(label: "Leg timer", value: "–:––", detail: "Starts on Start Leg", identifier: "cockpit-time")
+        }
+    }
+
+    private func compactInstrument(label: String, value: String, detail: String, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(label).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            Text(value).font(.headline).monospacedDigit().lineLimit(1)
+            Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(identifier)
+    }
+
+    private var compactImmediateFrequencies: some View {
+        HStack(spacing: 8) {
+            ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(index == 0 ? "Planned now" : "Planned next")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("\(cue.frequency.service) · \(Self.frequency(cue.frequency.frequencyMHz)) MHz")
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                .padding(.horizontal, 8)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(index == 0 ? "Planned now" : "Planned next"), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz")
+                .accessibilityIdentifier(index == 0 ? "planned-now" : "planned-next")
+            }
+        }
+    }
+
+    private var immediateFrequencyCues: [CockpitOperationalCueState.FrequencyCue] {
+        let immediate = orderedFrequencyCues.filter { $0.status == .current || $0.status == .next }
+        return Array((immediate.isEmpty ? orderedFrequencyCues : immediate).prefix(2))
     }
 
     private var compactSummaryButtons: some View {
@@ -1114,6 +1215,50 @@ struct CockpitView: View {
         .accessibilitySortPriority(60)
     }
 
+    private var fixedImmediateFrequencyRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Planned frequencies")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
+                    immediateFrequencyCard(cue, sequence: index == 0 ? "Planned now" : "Planned next")
+                }
+            }
+        }
+        .accessibilityIdentifier("planned-frequencies")
+    }
+
+    private var fixedImmediateFrequencyColumn: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Planned frequencies")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(Array(immediateFrequencyCues.enumerated()), id: \.element.id) { index, cue in
+                immediateFrequencyCard(cue, sequence: index == 0 ? "Planned now" : "Planned next")
+            }
+        }
+        .accessibilityIdentifier("planned-frequencies")
+    }
+
+    private func immediateFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue, sequence: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(sequence)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("\(cue.frequency.service) · \(Self.frequency(cue.frequency.frequencyMHz)) MHz")
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+        .padding(.horizontal, 12)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(sequence), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz")
+        .accessibilityIdentifier(sequence == "Planned now" ? "planned-now" : "planned-next")
+    }
+
     private func readyFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {
         let frequency = cue.frequency
         let isEmphasized = cue.status == .current && containsFrequencyEmphasis
@@ -1198,23 +1343,8 @@ struct CockpitView: View {
         case .ready:
             readyStartRow
         case .active:
-            HStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("ARRIVAL CALL TO ACTION · \(data.destination.uppercased())")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.secondary)
-                    Text(arrivalPrimaryGuidance)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(arrivalSecondaryGuidance)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                positionCheckAndProgressionControls
-                    .frame(maxWidth: 520)
-            }
+            positionCheckAndProgressionControls
+                .frame(maxWidth: .infinity)
         case .completed:
             HStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 5) {
@@ -1280,24 +1410,27 @@ struct CockpitView: View {
     }
 
     private var landscapeControlPanel: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                activeLegInstrumentsHeader
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                    readyHeadingMetric
-                    portraitTimerMetric
-                    readyETAMetric
-                    readyAltitudeMetric
-                }
-                Divider()
-                frequencyColumn
-                    .frame(minHeight: 130)
-                Divider()
-                positionCheckAndProgressionControls
+        VStack(alignment: .leading, spacing: 12) {
+            activeLegInstrumentsHeader
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                readyHeadingMetric
+                portraitTimerMetric
+                readyETAMetric
+                readyAltitudeMetric
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 20)
+            Divider()
+            fixedImmediateFrequencyColumn
+            Button("Frequency plan ›") {
+                showsCompactFrequencies = true
+            }
+            .font(.caption)
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+            Divider()
+            positionCheckAndProgressionControls
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 18)
         .background(Color(.systemBackground)).overlay(alignment: .leading) { Divider() }
     }
 
@@ -1475,26 +1608,29 @@ struct CockpitView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Text("◉")
-                            Text("Waypoint Identified")
+                            Text("Report Destination Identified")
                         }
-                        .font(.headline).frame(maxWidth: .infinity, minHeight: 46)
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
                     }
                     .buttonStyle(.borderedProminent)
+                    .controlSize(horizontalSizeClass == .compact ? .small : .regular)
                     .tint(Color(uiColor: visualStyle.primaryActionColor))
+                    .accessibilityLabel("Report Destination Identified")
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
                     Button {
                         isNextPreparationPresented = false
                         onWaypointReached(cockpitRestoration)
                     } label: {
-                        Text("Reached now")
-                            .padding(.vertical, 15)
-                            .frame(maxWidth: .infinity)
+                        Text("Report Destination Reached")
+                            .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                     .contentShape(Rectangle())
+                    .accessibilityLabel("Report Destination Reached")
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")
                     .accessibilityIdentifier("reached-now")
                 }
@@ -1502,12 +1638,13 @@ struct CockpitView: View {
                 Button {
                     onWaypointReached(cockpitRestoration)
                 } label: {
-                    Label("Waypoint Reached", systemImage: "checkmark.circle.fill")
+                    Label("Report Destination Reached", systemImage: "checkmark.circle.fill")
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color(uiColor: visualStyle.primaryActionColor))
                 .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
+                .accessibilityLabel("Report Destination Reached")
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
                 .accessibilityIdentifier("waypoint-reached")
             }

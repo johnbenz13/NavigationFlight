@@ -1253,6 +1253,30 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testFrequencyPlanDisclosureOpensAndClosesWithoutReplacingRestingReferences() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        app.buttons["start-leg"].tap()
+
+        let plannedNow = app.descendants(matching: .any)["planned-now"]
+        let plannedNext = app.descendants(matching: .any)["planned-next"]
+        XCTAssertTrue(plannedNow.waitForExistence(timeout: 3))
+        XCTAssertTrue(plannedNext.exists)
+
+        plannedNow.tap()
+
+        let panel = app.staticTexts["frequency-plan-title"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 3))
+        XCTAssertEqual(panel.label, "Frequency plan")
+        XCTAssertTrue(app.staticTexts["Imported planning data—not live radio state"].exists)
+
+        app.buttons["close-frequency-plan"].tap()
+
+        XCTAssertTrue(panel.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(plannedNow.exists)
+        XCTAssertTrue(plannedNext.exists)
+    }
+
+    @MainActor
     func testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions() throws {
         let app = launchCockpit(
             planData: try oneLegPlanData(),

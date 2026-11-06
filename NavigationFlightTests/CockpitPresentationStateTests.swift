@@ -64,6 +64,31 @@ struct CockpitPresentationStateTests {
         #expect(!state.isMapToolsPresented)
     }
 
+    @Test("Frequency Plan opens exclusively and closes without mutating Flight")
+    func frequencyPlanDisclosureState() {
+        let flight = Flight(
+            flightPlanID: UUID(),
+            legIDs: [UUID()],
+            activeLegIndex: 0,
+            executionMode: .wind
+        )
+        let originalFlight = flight
+        var state = CockpitPresentationState()
+
+        state.setMapToolsPresented(true)
+        state.setFrequencyPlanPresented(true)
+
+        #expect(state.activeDisclosure == .frequencyPlan)
+        #expect(!state.isMapToolsPresented)
+        #expect(state.isFrequencyPlanPresented)
+
+        state.setFrequencyPlanPresented(false)
+
+        #expect(state.activeDisclosure == nil)
+        #expect(!state.isFrequencyPlanPresented)
+        #expect(flight == originalFlight)
+    }
+
     @Test("Whole-leg and destination recovery produce distinct map intents")
     func recoveryMapIntentsAreDistinct() {
         let wholeLeg = AviationMapFocusRequest(mode: .leg)

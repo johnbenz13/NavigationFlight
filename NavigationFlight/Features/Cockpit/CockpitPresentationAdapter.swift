@@ -63,7 +63,37 @@ struct CockpitPresentationData: Equatable, Sendable {
     let references: [PlannedReference]
     let frequencies: [FlightPhase: [Frequency]]
     let displayFrequencies: [DisplayFrequency]
+    let frequencyPlan: CockpitFrequencyPlan
     let routeEvents: [RouteEvent]
+}
+
+struct CockpitFrequencyPlan: Equatable, Sendable {
+    struct Entry: Identifiable, Equatable, Sendable {
+        enum Sequence: Equatable, Sendable {
+            case now
+            case next
+            case later
+        }
+
+        enum Kind: Equatable, Sendable {
+            case communication
+            case navigationAid
+        }
+
+        let id: String
+        let sequence: Sequence
+        let kind: Kind
+        let service: String
+        let role: String?
+        let frequencyMHz: Double
+        let association: String
+    }
+
+    let entries: [Entry]
+
+    var immediateEntries: [Entry] {
+        Array(entries.prefix(2))
+    }
 }
 
 enum CockpitPresentationError: Error, Equatable, Sendable {
@@ -365,6 +395,36 @@ struct PositionCheckPresentation: Equatable, Sendable {
 }
 
 struct CockpitPresentationAdapter: Sendable {
+    func makeFrequencyPlan(
+        frequencies: [FlightPhase: [CockpitPresentationData.Frequency]],
+        references: [CockpitPresentationData.PlannedReference]
+    ) -> CockpitFrequencyPlan {
+        let orderedFrequencies = FlightPhase.allCases.flatMap { frequencies[$0] ?? [] }
+        let entries = orderedFrequencies.enumerated().map { index, frequency in
+            let reference = references.first {
+                $0.station == frequency.service && $0.frequencyMHz == frequency.frequencyMHz
+            }
+            return CockpitFrequencyPlan.Entry(
+                id: frequency.id,
+                sequence: index == 0 ? .now : (index == 1 ? .next : .later),
+                kind: frequency.source == .vorDme ? .navigationAid : .communication,
+                service: frequency.service,
+                role: frequency.role,
+                frequencyMHz: frequency.frequencyMHz,
+                association: reference?.endpointName ?? Self.phaseName(frequency.phase)
+            )
+        }
+        return CockpitFrequencyPlan(entries: entries)
+    }
+
+    private static func phaseName(_ phase: FlightPhase) -> String {
+        switch phase {
+        case .departure: "Departure"
+        case .enRoute: "En route"
+        case .arrival: "Arrival"
+        }
+    }
+
     func makePositionCheckPresentation(
         for availability: LocationAvailability,
         state: PositionCheckState,
@@ -831,6 +891,7 @@ struct CockpitPresentationAdapter: Sendable {
         })
 
         let displayFrequencies = makeDisplayFrequencies(from: frequencies)
+        let frequencyPlan = makeFrequencyPlan(frequencies: frequencies, references: references)
 
         let sourcePoints = Dictionary(uniqueKeysWithValues: flightPlan.identificationPoints.map { ($0.id, $0) })
         let altitudeChanges = Dictionary(uniqueKeysWithValues: flightPlan.altitudeChanges.map { ($0.id, $0) })
@@ -902,6 +963,7 @@ struct CockpitPresentationAdapter: Sendable {
             references: references,
             frequencies: frequencies,
             displayFrequencies: displayFrequencies,
+            frequencyPlan: frequencyPlan,
             routeEvents: routeEvents
         )
     }

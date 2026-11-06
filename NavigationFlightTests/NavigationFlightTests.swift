@@ -2236,6 +2236,46 @@ struct NavigationFlightTests {
         #expect(actual - points[0].plannedElapsedSeconds == 13)
     }
 
+    @Test("Lower-console arrival ETA uses the committed destination revision")
+    func lowerConsoleArrivalETAUsesDestinationRevision() {
+        let legID = UUID()
+        let destinationKey = NavigationTimingTargetKey(
+            legID: legID,
+            kind: .destination,
+            targetID: UUID()
+        )
+        let pointKey = IdentificationPointKey(legID: legID, identificationPointID: UUID())
+        let presentation = AviationMapPresentation(
+            waypoints: [],
+            legs: [],
+            activeLegIndex: 0,
+            nextLegPreview: nil,
+            endpointReferences: [],
+            plannedDurationSeconds: 600,
+            minuteMarkers: [],
+            identificationPoints: [
+                AviationMapIdentificationPoint(
+                    id: pointKey,
+                    name: "IP 1",
+                    coordinate: .init(latitude: 1, longitude: 1),
+                    plannedElapsedSeconds: 300,
+                    isReached: false,
+                    committedETASeconds: 320
+                )
+            ],
+            destinationTarget: .init(
+                id: destinationKey,
+                name: "Arrival",
+                plannedElapsedSeconds: 600,
+                committedETASeconds: 645
+            ),
+            driftReferenceArms: []
+        )
+
+        #expect(presentation.operationalDestinationETASeconds == 645)
+        #expect(presentation.isDestinationETARevised)
+    }
+
     @Test func pilotETARoundsAndAdjustsWithoutMutatingPlan() {
         let legID = UUID()
         let targetID = NavigationTimingTargetKey(legID: legID, kind: .destination, targetID: UUID())

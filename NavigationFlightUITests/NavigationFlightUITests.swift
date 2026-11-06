@@ -1066,24 +1066,33 @@ final class NavigationFlightUITests: XCTestCase {
         let app = launchCockpit(planData: try Data(contentsOf: fixture))
 
         app.buttons["start-leg"].tap()
+        let checklistNoted = app.buttons["leg-start-checklist-noted"]
+        XCTAssertTrue(checklistNoted.waitForExistence(timeout: 2))
+        checklistNoted.tap()
         let heading = app.buttons["cockpit-heading"]
         XCTAssertTrue(heading.waitForExistence(timeout: 2))
-        XCTAssertTrue(heading.label.contains("PLANNED HEADING"))
+        XCTAssertTrue(heading.label.contains("Operational heading"))
         XCTAssertTrue(heading.label.contains("033°"))
         heading.tap()
 
-        XCTAssertTrue(app.staticTexts["REVISED HEADING · MAGNETIC"].waitForExistence(timeout: 2))
+        let headingEditor = app.descendants(matching: .any)
+        XCTAssertTrue(headingEditor.matching(NSPredicate(format: "label == 'Revise heading'")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(headingEditor.matching(NSPredicate(format: "label == 'Pilot-authored · magnetic'")).firstMatch.exists)
+        XCTAssertTrue(headingEditor.matching(NSPredicate(format: "label == 'Imported baseline'")).firstMatch.exists)
+        XCTAssertTrue(headingEditor.matching(NSPredicate(format: "label == 'Draft'")).firstMatch.exists)
         XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("033°"))
-        app.buttons["increase-heading"].tap()
-        app.buttons["increase-heading"].tap()
-        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("035°"))
+        let headingDraft = app.descendants(matching: .any)["heading-draft"]
+        app.buttons["increase-heading"].press(forDuration: 0.8)
+        let repeatedHeading = headingDraft.label
+        XCTAssertNotEqual(repeatedHeading, "033°")
+        XCTAssertNotEqual(repeatedHeading, "034°")
         app.buttons["commit-heading"].tap()
 
-        XCTAssertFalse(app.staticTexts["REVISED HEADING · MAGNETIC"].exists)
-        XCTAssertTrue(heading.label.contains("035°"))
+        XCTAssertFalse(headingEditor.matching(NSPredicate(format: "label == 'Revise heading'")).firstMatch.exists)
+        XCTAssertTrue(heading.label.contains(repeatedHeading))
         heading.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains("035°"))
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Committed 035°'")).firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["heading-draft"].label.contains(repeatedHeading))
+        XCTAssertEqual(app.buttons["commit-heading"].label, "Commit revised heading")
     }
 
     @MainActor

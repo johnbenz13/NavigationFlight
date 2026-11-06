@@ -1120,9 +1120,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let anchor = mapView.convert(coordinate(destination), toPointTo: mapView)
             let halfWidth = calloutSize.width / 2
             let halfHeight = calloutSize.height / 2
-            let usableBounds = mapView.bounds.inset(
-                by: UIEdgeInsets(top: 125, left: 12, bottom: 12, right: 82)
-            )
+            let usableBounds = calloutUsableBounds(for: calloutSize, on: mapView)
             let minimumX = usableBounds.minX + halfWidth - anchor.x
             let maximumX = usableBounds.maxX - halfWidth - anchor.x
             let minimumY = usableBounds.minY + halfHeight - anchor.y
@@ -1140,9 +1138,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             on mapView: MLNMapView
         ) -> AviationMapCalloutOffset {
             let anchor = mapView.convert(coordinate(point.coordinate), toPointTo: mapView)
-            let usableBounds = mapView.bounds.inset(
-                by: UIEdgeInsets(top: 126, left: 12, bottom: 12, right: 82)
-            )
+            let usableBounds = calloutUsableBounds(for: calloutSize, on: mapView)
             let halfWidth = calloutSize.width / 2
             let halfHeight = calloutSize.height / 2
             var constrained = AviationMapCalloutOffset(
@@ -1178,6 +1174,20 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 y: candidate.midY - anchor.y
             )
             return constrained
+        }
+
+        private func calloutUsableBounds(for size: CGSize, on mapView: MLNMapView) -> CGRect {
+            let preferredTop: CGFloat = 125
+            let preferredRight: CGFloat = 82
+            let margin: CGFloat = 12
+            return mapView.bounds.inset(
+                by: UIEdgeInsets(
+                    top: size.height > mapView.bounds.height - preferredTop - margin ? margin : preferredTop,
+                    left: margin,
+                    bottom: margin,
+                    right: size.width > mapView.bounds.width - margin - preferredRight ? margin : preferredRight
+                )
+            )
         }
 
         private func restore(_ camera: AviationMapCameraState, on mapView: MLNMapView) {
@@ -1294,6 +1304,7 @@ private final class VORDMECalloutAnnotationView: MLNAnnotationView, UIGestureRec
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
+        pan.cancelsTouchesInView = false
         addGestureRecognizer(pan)
         isEnabled = true
         isAccessibilityElement = true
@@ -1407,6 +1418,10 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         waypointLabel.frame = CGRect(x: diameter + 8, y: bounds.midY - 10, width: waypointSize.width, height: 20)
         addSubview(waypointLabel)
         centerOffset = CGVector(dx: bounds.midX - diameter / 2, dy: bounds.midY - diameter / 2)
+        isAccessibilityElement = true
+        accessibilityLabel = "\(annotation.waypointName), arrival ETA target"
+        accessibilityTraits = .button
+        accessibilityIdentifier = "destination-eta-target"
     }
 
     required init?(coder: NSCoder) {
@@ -1515,6 +1530,17 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
     private let onSelect: (NavigationTimingTargetKey) -> Void
     private let targetID: NavigationTimingTargetKey
     private let isExpanded: Bool
+    private var hostingController: UIHostingController<TimingTargetCalloutContent>?
+
+    override var isAccessibilityElement: Bool {
+        get { false }
+        set {}
+    }
+
+    override var accessibilityElements: [Any]? {
+        get { hostingController.map { [$0.view as Any] } }
+        set {}
+    }
 
     init(
         annotation: DestinationCalloutAnnotation,
@@ -1567,20 +1593,24 @@ private final class DestinationCalloutAnnotationView: MLNAnnotationView, UIGestu
             , onResetPosition: { [weak self] in self?.resetPosition() }
         )
         let host = UIHostingController(rootView: content)
+        hostingController = host
         host.view.backgroundColor = .clear
-        let fittingSize = host.sizeThatFits(in: CGSize(width: 300, height: 560))
+        isAccessibilityElement = false
+        host.view.accessibilityViewIsModal = isExpanded
+        let fittingSize = host.sizeThatFits(in: CGSize(width: 360, height: 560))
         frame = CGRect(origin: .zero, size: fittingSize)
         host.view.frame = bounds
         addSubview(host.view)
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
+        pan.cancelsTouchesInView = false
         addGestureRecognizer(pan)
         if !isExpanded {
             addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectTarget)))
         }
         isEnabled = true
-        apply(offset: offset)
+        apply(offset: offsetHandler(offset, bounds.size))
     }
 
     @objc private func selectTarget() { onSelect(targetID) }
@@ -1776,6 +1806,25 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
     private let isExpanded: Bool
     private var hostingController: UIHostingController<IdentificationPointCalloutContent>?
 
+    override var isAccessibilityElement: Bool {
+        get { false }
+        set {}
+    }
+
+    override var accessibilityElements: [Any]? {
+        get { hostingController.map { [$0.view as Any] } }
+        set {}
+    }
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let hostedView = hostingController?.view else {
+            return super.hitTest(point, with: event)
+        }
+        let hostedPoint = convert(point, to: hostedView)
+        return hostedView.hitTest(hostedPoint, with: event)
+            ?? super.hitTest(point, with: event)
+    }
+
     init(
         annotation: IdentificationPointLabelAnnotation,
         visualStyle: AviationMapVisualStyle,
@@ -1831,7 +1880,9 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
         let host = UIHostingController(rootView: content)
         hostingController = host
         host.view.backgroundColor = .clear
-        let fittingSize = host.sizeThatFits(in: CGSize(width: 300, height: 560))
+        isAccessibilityElement = false
+        host.view.accessibilityViewIsModal = isExpanded
+        let fittingSize = host.sizeThatFits(in: CGSize(width: 360, height: 560))
         frame = CGRect(origin: .zero, size: fittingSize)
         host.view.frame = bounds
         addSubview(host.view)
@@ -1839,6 +1890,9 @@ private final class IdentificationPointLabelAnnotationView: MLNAnnotationView, U
 
         let pan = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
         pan.delegate = self
+        pan.cancelsTouchesInView = false
+        pan.delaysTouchesBegan = false
+        pan.delaysTouchesEnded = false
         addGestureRecognizer(pan)
         if !isExpanded {
             addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectPoint)))
@@ -1957,10 +2011,10 @@ private struct TimingTargetCalloutContent: View {
         .frame(
             width: context == nil
                 ? (collapsedReferenceText == nil ? 154 : 236)
-                : (isFocusedRevision ? 338 : (isCommittedRevision ? 322 : 286)),
+                : ((isFocusedRevision || isCommittedRevision) ? 344 : 286),
             height: isFocusedRevision
-                ? (context?.observationBasis == nil ? 326 : 352)
-                : (isCommittedRevision ? (isCommittedCheckVisible ? 390 : 282) : nil)
+                ? 430
+                : (isCommittedRevision ? (isCommittedCheckVisible ? 400 : 330) : nil)
         )
         .background(
             Color(uiColor: visualStyle.etaCalloutBackgroundColor)
@@ -2061,99 +2115,59 @@ private struct TimingTargetCalloutContent: View {
 
     private func focusedRevisionEditor(_ context: AviationMapTimingTargetContext) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(
-                context.targetIdentifier
-                    + " · "
-                    + (context.observationBasis == nil ? "REVISE ETA" : "REVISE NEXT ETA")
-            )
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
-                .frame(height: 20, alignment: .leading)
-            Text(editorTitle(context))
-                .font(.body.weight(.semibold))
-                .frame(height: 20, alignment: .leading)
+            Text("Revise ETA · \(context.targetIdentifier)")
+                .font(.title3.bold())
+            Text("Pilot-authored elapsed time")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+            Divider().padding(.top, 14)
+            Text("Draft")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+            Text(AviationMapSymbology.formatDuration(context.pilotETAState.draftSeconds))
+                .font(.largeTitle.bold().monospacedDigit())
+            Text("Minimum now · \(AviationMapSymbology.formatDuration(context.minimumETASeconds))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 .padding(.top, 2)
-            Divider().padding(.top, 8)
-            if let observationBasis = context.observationBasis {
-                Text("OBSERVATION BASIS")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(height: 20, alignment: .leading)
-                    .padding(.top, 12)
-                Text(observationBasis)
-                    .font(.footnote)
-                    .frame(height: 20, alignment: .leading)
-            } else {
-                Text("PLANNED")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(height: 20, alignment: .leading)
-                    .padding(.top, 12)
-                Text(AviationMapSymbology.formatDuration(target.plannedElapsedSeconds))
-                    .font(.body.weight(.semibold).monospacedDigit())
-                    .frame(height: 20, alignment: .leading)
-            }
-            Text("DRAFT REVISED ETA")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
-                .frame(height: 20, alignment: .leading)
-                .padding(.top, 15)
-            HStack(spacing: 0) {
-                stepperButton(
-                    "−5s",
+            HStack(spacing: 12) {
+                etaAdjustmentButton(
+                    "− 5 sec",
                     delta: -visualStyle.etaAdjustmentStepSeconds,
                     disabled: context.pilotETAState.draftSeconds <= context.minimumETASeconds
                 )
-                Text(AviationMapSymbology.formatDuration(context.pilotETAState.draftSeconds))
-                    .font(.title2.weight(.bold).monospacedDigit())
-                    .frame(maxWidth: .infinity)
-                stepperButton("+5s", delta: visualStyle.etaAdjustmentStepSeconds)
+                etaAdjustmentButton("+ 5 sec", delta: visualStyle.etaAdjustmentStepSeconds)
             }
-            .frame(height: 62)
-            .background(Color(uiColor: .systemBlue).opacity(0.09), in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(Color(uiColor: .systemGray4)) }
-
-            HStack(spacing: 10) {
-                editorButton("Cancel", foreground: .primary, background: Color(uiColor: .systemGray6)) {
-                    onCollapseOrExpand()
-                }
-                editorButton(
-                    "Commit Revision",
-                    foreground: .white,
-                    background: Color(uiColor: visualStyle.primaryActionColor),
-                    disabled: !context.canCommit
-                ) {
-                    onCommit(target.id)
-                }
+            .padding(.top, 16)
+            editorButton(
+                "Commit revised ETA",
+                foreground: .white,
+                background: Color(uiColor: visualStyle.primaryActionColor),
+                disabled: !context.canCommit
+            ) {
+                onCommit(target.id)
             }
-            .padding(.top, 17)
-            if context.observationBasis != nil {
-                editorButton("Check", foreground: .white, background: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor)) {
-                    onCommit(target.id)
-                    onShowCheck(target.id)
-                }
-                .padding(.top, 12)
-            } else {
-                Text(minimumDescription(context))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(height: 20, alignment: .leading)
-                    .padding(.top, 10)
-            }
+            .padding(.top, 16)
+            Button("Cancel keeps the earlier operational value.", action: onCollapseOrExpand)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .buttonStyle(.plain)
         }
-        .padding(.horizontal, 17)
-        .padding(.top, 15)
-        .padding(.bottom, 17)
+        .padding(20)
     }
 
-    private func stepperButton(_ title: LocalizedStringKey, delta: Int, disabled: Bool = false) -> some View {
-        Button(title) { onAdjust(target.id, delta) }
-            .font(.title3.weight(.semibold).monospacedDigit())
-            .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
-            .frame(width: 82, height: 62)
-            .buttonStyle(.plain)
+    private func etaAdjustmentButton(_ title: LocalizedStringKey, delta: Int, disabled: Bool = false) -> some View {
+        RepeatingActionButton(action: { onAdjust(target.id, delta) }) {
+            Text(title)
+        }
+            .font(.subheadline.weight(.semibold).monospacedDigit())
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .buttonStyle(.bordered)
             .disabled(disabled)
-            .opacity(disabled ? 0.35 : 1)
+            .accessibilityIdentifier(delta < 0 ? "decrease-eta" : "increase-eta")
     }
 
     private func editorButton(
@@ -2173,22 +2187,6 @@ private struct TimingTargetCalloutContent: View {
         .background(background, in: RoundedRectangle(cornerRadius: 12))
         .disabled(disabled)
         .opacity(disabled ? 0.45 : 1)
-    }
-
-    private func editorTitle(_ context: AviationMapTimingTargetContext) -> String {
-        if !context.canCommit { return "Timer advanced · draft now invalid" }
-        if context.pilotETAState.draftSeconds == context.minimumETASeconds,
-           context.minimumETASeconds > target.plannedElapsedSeconds {
-            return "Raised to current timer floor"
-        }
-        return context.observationBasis == nil ? "Draft from Planned ETA" : "Draft from Revised ETA"
-    }
-
-    private func minimumDescription(_ context: AviationMapTimingTargetContext) -> String {
-        let minimum = AviationMapSymbology.formatDuration(context.minimumETASeconds)
-        return context.canCommit
-            ? "Minimum · current leg time \(minimum)."
-            : "Minimum now \(minimum) · adjust before commit."
     }
 
     private func adjustmentButton(_ title: String, _ delta: Int) -> some View {
@@ -2382,8 +2380,8 @@ private struct IdentificationPointCalloutContent: View {
         }
         .padding(context == nil ? (isPassed ? 8 : 2) : (isDesignedExpanded ? 0 : 12))
         .frame(
-            width: context == nil ? (isPassed ? 180 : 42) : (isFutureExpanded ? 310 : (isReachedExpanded ? 330 : 286)),
-            height: isFutureExpanded ? 218 : (isReachedExpanded ? 294 : nil)
+            width: context == nil ? (isPassed ? 180 : 42) : (isFutureExpanded ? 344 : (isReachedExpanded ? 330 : 286)),
+            height: isFutureExpanded ? 330 : (isReachedExpanded ? 294 : nil)
         )
         .background(
             Color(uiColor: visualStyle.identificationPointCalloutBackgroundColor)
@@ -2408,76 +2406,61 @@ private struct IdentificationPointCalloutContent: View {
         _ operationalState: AviationMapIdentificationPointOperationalState
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(kicker(for: operationalState))
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(Color(uiColor: visualStyle.primaryActionColor))
-                .frame(height: 20, alignment: .leading)
-
-            Text("Planned ETA \(AviationMapSymbology.formatDuration(operationalState.plannedElapsedSeconds))")
-                .font(.body.weight(.semibold).monospacedDigit())
-                .frame(height: 20, alignment: .leading)
-                .padding(.top, 2)
-
-            Divider()
-                .padding(.top, 8)
-
-            Group {
-                if let committed = operationalState.committedETASeconds {
-                    Text("Revised ETA \(AviationMapSymbology.formatDuration(committed))")
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                } else {
-                    Text("No revision committed")
-                }
-            }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .frame(height: 20, alignment: .leading)
-            .padding(.top, 13)
-
-            HStack(spacing: 10) {
-                calloutActionButton(
-                    operationalState.committedETASeconds == nil ? "Revise ETA" : "Edit ETA",
-                    color: Color(uiColor: visualStyle.primaryActionColor)
-                ) {
-                    let targetKey = NavigationTimingTargetKey(
-                        legID: point.id.legID,
-                        kind: .identificationPoint,
-                        targetID: point.id.identificationPointID
-                    )
-                    if operationalState.committedETASeconds != nil { onEdit(targetKey) }
-                    onRevise(targetKey)
-                }
-                .accessibilityIdentifier("edit-identification-point-eta")
-
-                calloutActionButton(
-                    "Reached",
-                    color: Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor),
-                    action: onReach
-                )
-                .accessibilityIdentifier("identification-point-reached")
-            }
-            .padding(.top, 14)
-
-            Text("Reached is available only inside this callout.")
+            Text(point.name)
+                .font(.title3.bold())
+            Text("Future target · pilot report only")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(height: 20, alignment: .leading)
-                .padding(.top, 10)
-        }
-        .padding(.horizontal, 17)
-        .padding(.top, 15)
-        .padding(.bottom, 15)
-        .overlay(alignment: .trailing) {
-            Button(action: onCollapseOrExpand) {
-                Image(systemName: "line.3.horizontal")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 44)
+                .padding(.top, 4)
+            Divider().padding(.top, 14)
+            timingValueRow("Planned ETA", seconds: operationalState.plannedElapsedSeconds)
+                .padding(.top, 14)
+            if let committed = operationalState.committedETASeconds {
+                timingValueRow("Revised ETA", seconds: committed)
+                    .padding(.top, 12)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Collapse identification point callout")
+            let targetKey = NavigationTimingTargetKey(
+                legID: point.id.legID,
+                kind: .identificationPoint,
+                targetID: point.id.identificationPointID
+            )
+            calloutSecondaryActionButton(operationalState.committedETASeconds == nil ? "Revise ETA" : "Edit ETA") {
+                if operationalState.committedETASeconds != nil { onEdit(targetKey) }
+                onRevise(targetKey)
+            }
+            .padding(.top, 20)
+            .accessibilityIdentifier("edit-identification-point-eta")
+            calloutActionButton(
+                "Report \(point.name) reached",
+                color: Color(uiColor: visualStyle.primaryActionColor),
+                action: onReach
+            )
+            .padding(.top, 8)
+            .accessibilityIdentifier("identification-point-reached")
         }
+        .padding(20)
+    }
+
+    private func timingValueRow(_ title: String, seconds: Int) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(AviationMapSymbology.formatDuration(seconds))
+                .font(.title3.bold().monospacedDigit())
+        }
+    }
+
+    private func calloutSecondaryActionButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.horizontal, 14)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .accessibilityAddTraits(.isButton)
+        .background(Color(uiColor: .systemGray6), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func reachedResultCallout(
@@ -2545,14 +2528,13 @@ private struct IdentificationPointCalloutContent: View {
         color: Color,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+        Text(title)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .accessibilityAddTraits(.isButton)
         .background(color, in: RoundedRectangle(cornerRadius: 12))
     }
 

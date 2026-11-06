@@ -273,6 +273,14 @@ struct AviationMapPresentation: Equatable, Sendable {
         AviationMapSymbology.formatDuration(plannedDurationSeconds)
     }
 
+    var operationalDestinationETASeconds: Int {
+        destinationTarget.committedETASeconds ?? destinationTarget.plannedElapsedSeconds
+    }
+
+    var isDestinationETARevised: Bool {
+        destinationTarget.committedETASeconds != nil
+    }
+
     func nextETATarget(after identificationPointID: IdentificationPointKey) -> AviationMapETATarget? {
         guard let reachedIndex = identificationPoints.firstIndex(where: { $0.id == identificationPointID }) else {
             return nil

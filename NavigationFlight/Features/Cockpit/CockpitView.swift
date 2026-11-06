@@ -219,6 +219,7 @@ struct CockpitView: View {
     @State private var isCompactMapChromeVisible = true
     @State private var compactMapChromeVisibilityID = 0
     @State private var positionCheckRestoration: CockpitRestoration?
+    @State private var cockpitPresentationState = CockpitPresentationState()
 
     var body: some View {
         GeometryReader { geometry in
@@ -252,6 +253,10 @@ struct CockpitView: View {
         } message: {
             Text("Chart presentation is a later delivery. The imported plan remains unchanged.")
         }
+        .sheet(isPresented: compactMapToolsBinding) {
+            mapToolsPanel
+                .presentationDetents([.large])
+        }
         .onChange(of: flight.activeLegIndex) { _, _ in
             if isRestoringReach {
                 isRestoringReach = false
@@ -275,6 +280,15 @@ struct CockpitView: View {
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled else { return }
             isCompactMapChromeVisible = false
+        }
+        .task(id: cockpitPresentationState.quickFocusHideDeadline) {
+            guard let deadline = cockpitPresentationState.quickFocusHideDeadline else { return }
+            let remaining = deadline.timeIntervalSinceNow
+            if remaining > 0 {
+                try? await Task.sleep(for: .seconds(remaining))
+            }
+            guard !Task.isCancelled else { return }
+            cockpitPresentationState.hideQuickFocusControlsIfExpired(at: .now)
         }
         .onChange(of: previousLegSummary?.legIndex) { _, _ in
             isPreviousDrawerPresented = false
@@ -388,19 +402,36 @@ struct CockpitView: View {
                 onEditPilotETA: onEditPilotETA,
                 onShowPilotETACheck: onShowPilotETACheck,
                 onHidePilotETACheck: onHidePilotETACheck,
-                onMapInteraction: revealCompactMapChrome
+                onMapInteraction: mapInteractionOccurred
                 )
                 .id(mapIdentity)
                 .accessibilityIdentifier("aviation-map")
                 .accessibilitySortPriority(90)
             }
             if shouldShowMapChrome {
-                mapControls
-                    .accessibilitySortPriority(80)
-                driftLinesControl
-                    .accessibilitySortPriority(81)
                 legHeader
                     .accessibilitySortPriority(100)
+            }
+            if cockpitPresentationState.areQuickFocusControlsVisible {
+                MapQuickFocusControls(
+                    onShowWholeActiveLeg: { focusMap(.leg) },
+                    onShowDestinationWaypoint: { focusMap(.waypoint) }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .padding(.top, horizontalSizeClass == .compact ? 72 : 100)
+                .padding(.trailing, horizontalSizeClass == .compact ? 12 : 20)
+                .accessibilitySortPriority(80)
+            }
+            if horizontalSizeClass != .compact, cockpitPresentationState.isMapToolsPresented {
+                mapToolsPanel
+                    .frame(width: min(380, mapWidth - 40))
+                    .frame(maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
+                    .padding(.vertical, 18)
+                    .padding(.trailing, 18)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .accessibilitySortPriority(95)
             }
             if let recovery = positionCheck?.recovery {
                 PositionCheckRecoveryGuidanceView(recovery: recovery)
@@ -460,6 +491,40 @@ struct CockpitView: View {
         compactMapChromeVisibilityID += 1
     }
 
+    private func mapInteractionOccurred() {
+        revealCompactMapChrome()
+        cockpitPresentationState.mapInteractionOccurred(at: .now)
+    }
+
+    private func focusMap(_ mode: AviationMapFocusMode) {
+        isMapCameraUserControlled = false
+        mapFocusRequest = AviationMapFocusRequest(mode: mode)
+    }
+
+    private var compactMapToolsBinding: Binding<Bool> {
+        Binding(
+            get: { horizontalSizeClass == .compact && cockpitPresentationState.isMapToolsPresented },
+            set: { cockpitPresentationState.setMapToolsPresented($0) }
+        )
+    }
+
+    private var mapToolsPanel: some View {
+        CockpitMapToolsPanel(
+            areDriftLinesVisible: areDriftLinesVisible,
+            onShowFullRoute: {
+                focusMap(.overview)
+                cockpitPresentationState.setMapToolsPresented(false)
+            },
+            onToggleDriftLines: onToggleDriftLines,
+            onShowChartLayers: { showsChartsUnavailable = true },
+            onInspectFlightPlan: {
+                cockpitPresentationState.setMapToolsPresented(false)
+                onShowPlanInspection()
+            },
+            onClose: { cockpitPresentationState.setMapToolsPresented(false) }
+        )
+    }
+
     @ViewBuilder
     private var legHeader: some View {
         if horizontalSizeClass == .compact, !dynamicTypeSize.isAccessibilitySize {
@@ -495,8 +560,8 @@ struct CockpitView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Button { showsChartsUnavailable = true } label: {
-                    Label("Charts", systemImage: "map")
+                Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
+                    Label("Map tools", systemImage: "map")
                         .font(.subheadline.weight(.semibold))
                         .frame(minHeight: 44)
                 }
@@ -534,8 +599,8 @@ struct CockpitView: View {
                 }
             }
             Spacer(minLength: 8)
-            Button { showsChartsUnavailable = true } label: {
-                Label("Charts", systemImage: "map").font(.headline).frame(minHeight: 44).padding(.horizontal, 12)
+            Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
+                Label("Map tools", systemImage: "map").font(.headline).frame(minHeight: 44).padding(.horizontal, 12)
             }
             .buttonStyle(.plain).foregroundStyle(.primary)
         }
@@ -548,7 +613,7 @@ struct CockpitView: View {
                     .font(.subheadline.weight(.bold))
                     .accessibilityIdentifier("leg-status")
                 Spacer()
-                Button("Charts", systemImage: "map") { showsChartsUnavailable = true }
+                Button("Map tools", systemImage: "map") { cockpitPresentationState.setMapToolsPresented(true) }
                     .frame(minHeight: 44)
                     .buttonStyle(.plain)
             }
@@ -560,91 +625,6 @@ struct CockpitView: View {
                 .environment(\.layoutDirection, .leftToRight)
                 .accessibilityLabel("From \(data.origin) to \(data.destination)")
         }
-    }
-
-    private var mapControls: some View {
-        VStack(spacing: 8) {
-            mapFocusButton(icon: "⌖", label: "Focus Leg", mode: .leg)
-            mapFocusButton(icon: "◎", label: "Focus Waypoint", mode: .waypoint)
-            mapFocusButton(icon: "▱", label: "Route Overview", mode: .overview)
-            Button(action: onShowPlanInspection) {
-                mapControlIcon("≣")
-            }
-            .buttonStyle(.plain).accessibilityLabel("Plan Inspection").accessibilityIdentifier("show-plan-inspection")
-        }
-        .padding(6)
-        .background(Color.white.opacity(0.96), in: RoundedRectangle(cornerRadius: 17))
-        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-        .padding(.top, 96).padding(.trailing, 20)
-    }
-
-    private var driftLinesControl: some View {
-        Button(action: onToggleDriftLines) {
-            Label(
-                areDriftLinesVisible ? "Drift lines on" : "Drift lines off",
-                systemImage: "wind"
-            )
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(areDriftLinesVisible ? .primary : .secondary)
-            .frame(width: 150)
-            .frame(minHeight: 44)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.16), radius: 5, y: 3)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(
-            areDriftLinesVisible
-                ? "Hide drift lines, manual calculation aid"
-                : "Show drift lines, manual calculation aid"
-        )
-        .accessibilityHint("Does not show the aircraft’s actual track.")
-        .accessibilityIdentifier("toggle-drift-lines")
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.top, 96)
-        .padding(.leading, 20)
-    }
-
-    private func mapFocusButton(
-        icon: String,
-        label: String,
-        mode: AviationMapFocusMode
-    ) -> some View {
-        Button {
-            isMapCameraUserControlled = false
-            mapFocusRequest = AviationMapFocusRequest(mode: mode)
-        } label: {
-            mapControlIcon(icon)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-        .accessibilityIdentifier(mapControlIdentifier(for: mode))
-    }
-
-    private func mapControlIcon(_ icon: String) -> some View {
-        Text(icon)
-            .font(.system(size: 20, weight: .medium))
-            .foregroundStyle(.black)
-            .frame(width: 44, height: 44)
-            .background(Color(red: 246 / 255, green: 247 / 255, blue: 250 / 255), in: RoundedRectangle(cornerRadius: 10))
-    }
-
-    private func mapControlIdentifier(for mode: AviationMapFocusMode) -> String {
-        switch mode {
-        case .leg: "focus-leg"
-        case .waypoint: "focus-waypoint"
-        case .overview: "route-overview"
-        case .timingTarget: "focus-timing-target"
-        case .positionCheck: "focus-position-check"
-        }
-    }
-
-    private func disabledMapControl(icon: String, label: String) -> some View {
-        Button {} label: {
-            Image(systemName: icon).font(.headline).frame(width: 44, height: 44)
-                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 9))
-        }
-        .buttonStyle(.plain).disabled(true).accessibilityLabel(label)
     }
 
     @ViewBuilder

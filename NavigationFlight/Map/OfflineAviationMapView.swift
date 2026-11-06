@@ -349,8 +349,17 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 DispatchQueue.main.async { [weak self] in
                     self?.isCameraUserControlled.wrappedValue = true
                     self?.onDismissCallout()
+                    self?.onMapInteraction()
                 }
             }
+        }
+
+        func mapViewRegionIsChanging(_ mapView: MLNMapView) {
+            let hasActiveGesture = mapView.gestureRecognizers?.contains {
+                $0.state == .began || $0.state == .changed
+            } ?? false
+            guard hasActiveGesture else { return }
+            onMapInteraction()
         }
 
         @objc func didTapMapBackground() {
@@ -890,31 +899,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private func focusWaypoint(on mapView: MLNMapView) {
             guard let leg = presentation.activeLeg else { return }
             publishCameraOwnership(isUserControlled: false)
-            if legState == .ready {
-                let outgoing = AviationMapGeometry.interpolate(from: leg.from, to: leg.to, fraction: 0.38)
-                fitTrackUp(
-                    [leg.from, outgoing],
-                    on: mapView,
-                    direction: 0,
-                    padding: UIEdgeInsets(top: 170, left: 105, bottom: 130, right: 145),
-                    animated: !reducesMotion
-                )
-                return
-            }
-            let inbound = AviationMapGeometry.interpolate(from: leg.from, to: leg.to, fraction: 0.55)
-            var coordinates = [inbound, leg.to]
-            if let next = presentation.nextLegPreview {
-                coordinates.append(
-                    AviationMapGeometry.interpolate(from: next.from, to: next.to, fraction: 0.15)
-                )
-            }
-            fitTrackUp(
-                coordinates,
-                on: mapView,
-                direction: AviationMapGeometry.bearing(from: leg.from, to: leg.to),
-                padding: UIEdgeInsets(top: 210, left: 95, bottom: 120, right: 135),
-                animated: !reducesMotion
-            )
+            mapView.setCenter(coordinate(leg.to), animated: !reducesMotion)
         }
 
         private func focusOverview(on mapView: MLNMapView) {

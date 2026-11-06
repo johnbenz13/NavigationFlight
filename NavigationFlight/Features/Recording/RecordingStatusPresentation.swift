@@ -9,6 +9,7 @@ nonisolated enum RecordingStatus: Equatable, Sendable {
     case gpsResumed
     case recordingGPSUnavailable
     case recordingDegraded
+    case recordingLowStorage
     case navigationCompleteRecordingContinues
     case landedAwaitingStop
     case physicalPhaseCorrected
@@ -86,6 +87,13 @@ nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
             compactTitle = "REC · WARNING"
             detail = "Some track data could not be saved. Navigation actions remain available."
             systemImage = "exclamationmark.triangle.fill"
+            tone = .caution
+            showsEndRecordingAction = true
+        case .recordingLowStorage:
+            title = "Recording · Low Storage"
+            compactTitle = "REC · LOW STORAGE"
+            detail = "New GPS track samples are paused. Saved evidence is preserved and navigation actions continue to be recorded when possible."
+            systemImage = "externaldrive.badge.exclamationmark"
             tone = .caution
             showsEndRecordingAction = true
         case .navigationCompleteRecordingContinues:

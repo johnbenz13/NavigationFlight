@@ -56,6 +56,7 @@ struct RootView: View {
         case "partial": .partialRecording
         case "landed": .landedAwaitingStop
         case "corrected": .physicalPhaseCorrected
+        case "low-storage": .recordingLowStorage
         case "closed-complete": .closedComplete
         case "closed-incomplete": .closedIncomplete
         default: nil

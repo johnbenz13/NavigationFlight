@@ -45,6 +45,53 @@ struct FlightRecordingEngineTests {
         #expect(snapshot.trackSegments.flatMap(\.samples).map(\.observedAt) == [sample.observedAt, repeatedPositionLater.observedAt])
     }
 
+    @Test("Low storage preserves committed track, stops new track evidence, and keeps operational events")
+    func lowStorageStopsTrackButKeepsOperationalEvents() async throws {
+        let fixture = makeFixture()
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let committed = trackSample(at: fixture.startedAt, latitude: 32)
+        let afterLowStorage = trackSample(at: fixture.startedAt.addingTimeInterval(10), latitude: 33)
+
+        await engine.arm()
+        await engine.ingest(.sample(committed, receivedAt: committed.observedAt))
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        _ = try await engine.commit(.recordStorageDegradation(
+            reason: .lowStorage,
+            at: fixture.startedAt.addingTimeInterval(5),
+            elapsed: .seconds(5),
+            eventID: UUID()
+        ))
+
+        await engine.ingest(.signalLost)
+        await engine.ingest(.sample(afterLowStorage, receivedAt: afterLowStorage.observedAt))
+        await engine.ingest(.sample(
+            trackSample(at: fixture.startedAt.addingTimeInterval(12), latitude: 34),
+            receivedAt: fixture.startedAt.addingTimeInterval(12)
+        ))
+        _ = try await engine.commit(.requestPositionCheck(
+            at: fixture.startedAt.addingTimeInterval(11),
+            elapsed: .seconds(11),
+            eventID: UUID()
+        ))
+
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.trackSegments.flatMap(\.samples).map(\.coordinate.latitudeDegrees) == [32])
+        #expect(snapshot.events.contains { event in
+            event.payload == .storageDegraded(reason: .lowStorage)
+        })
+        #expect(snapshot.events.contains { event in
+            event.payload == .positionCheckRequested
+        })
+        #expect(snapshot.events.count { event in
+            event.payload == .locationAvailabilityChanged(.resumed)
+        } == 1)
+    }
+
     @Test("Fresh supplemental evidence is associated with the next track sample")
     func freshSupplementalEvidenceIsAssociated() async throws {
         let fixture = makeFixture()

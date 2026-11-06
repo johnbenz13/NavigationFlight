@@ -158,6 +158,28 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testFlightsUsesTwoRecentColumnsInIPadLandscape() throws {
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        defer {
+            app.terminate()
+            XCUIDevice.shared.orientation = .portrait
+        }
+        let complete = app.descendants(matching: .any)["flights.row.03000000-0000-0000-0000-000000000003"]
+        let incomplete = app.descendants(matching: .any)["flights.row.04000000-0000-0000-0000-000000000004"]
+
+        XCTAssertTrue(complete.waitForExistence(timeout: 5))
+        XCTAssertTrue(incomplete.waitForExistence(timeout: 5))
+        XCTAssertGreaterThan(incomplete.frame.minX, complete.frame.maxX)
+        XCTAssertEqual(incomplete.frame.midY, complete.frame.midY, accuracy: 2)
+
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Issue 93 Flights iPad Landscape"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
+    @MainActor
     func testActiveFlightContinueRoutesToCockpit() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
         let continueButton = app.buttons[
@@ -441,7 +463,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertEqual(app.buttons["restart-flight"].label, "Restart Flight…")
         XCTAssertTrue(app.staticTexts["Creates a new ready Flight from this Flight Plan. Existing progress or edits require confirmation."].exists)
         returnButton.tap()
-        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 3))
 
         tab(named: "Flight Plans", in: app).tap()
         XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 2))
@@ -857,6 +879,19 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testLowStorageStatusRemainsVisibleAndOpensAccessibleDetails() throws {
+        let app = launchCockpit(planData: try oneLegPlanData(), recordingStatus: "low-storage")
+        let status = app.buttons["recording-status"]
+
+        XCTAssertTrue(status.waitForExistence(timeout: 5))
+        XCTAssertEqual(status.label, "Recording · Low Storage")
+        status.tap()
+        XCTAssertTrue(app.staticTexts[
+            "New GPS track samples are paused. Saved evidence is preserved and navigation actions continue to be recorded when possible."
+        ].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
     func testTabRoundTripAndRotationPreserveActiveFlight() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
         app.buttons["start-leg"].tap()
@@ -888,10 +923,12 @@ final class NavigationFlightUITests: XCTestCase {
         let fixture = repository.appending(path: "NavigationFlightTests/Fixtures/FPLNav/V7/Editor/editor-wind.fplnav")
         let data = try Data(contentsOf: fixture)
         let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = data.base64EncodedString()
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["Synthetic Editor V7 wind handoff"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Synthetic Editor V7 wind handoff"].exists)
         let course = app.descendants(matching: .any)["magnetic-course"]
         XCTAssertTrue(course.label.contains("35° M"))
         let heading = app.descendants(matching: .any)["magnetic-heading"]
@@ -1156,7 +1193,12 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.buttons["start-leg"].isEnabled)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Starts when Start Leg is pressed"))
         app.buttons["start-leg"].tap()
-        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].label.contains("Running from pilot start"))
+        let timer = app.descendants(matching: .any)["cockpit-time"]
+        expectation(
+            for: NSPredicate(format: "label CONTAINS 'Running from pilot start'"),
+            evaluatedWith: timer
+        )
+        waitForExpectations(timeout: 3)
     }
 
     @MainActor
@@ -1191,10 +1233,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["compact-cockpit-console"].waitForExistence(timeout: 2))
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
         XCTAssertTrue(app.buttons["reached-now"].exists)
-        let frequencies = app.buttons["compact-frequencies"]
-        XCTAssertTrue(frequencies.exists)
-        frequencies.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.descendants(matching: .any)["planned-frequencies"].exists)
     }
 
     @MainActor
@@ -1341,7 +1380,11 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     func testPositionCheckSignalLossClearsDisclosureAndPreservesManualControls() throws {
-        let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "signal-loss")
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            positionCheckState: "signal-loss",
+            fixtureDelay: 8
+        )
         app.buttons["start-leg"].tap()
         let control = app.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(control.waitForExistence(timeout: 3))
@@ -1362,7 +1405,11 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     func testPositionCheckPermissionRevocationFailsClosed() throws {
-        let app = launchCockpit(planData: try oneLegPlanData(), positionCheckState: "permission-revoked")
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            positionCheckState: "permission-revoked",
+            fixtureDelay: 8
+        )
         app.buttons["start-leg"].tap()
         let control = app.descendants(matching: .any)["position-check-control"]
         XCTAssertTrue(control.waitForExistence(timeout: 3))

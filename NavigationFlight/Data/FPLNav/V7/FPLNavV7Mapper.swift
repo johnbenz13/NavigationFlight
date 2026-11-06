@@ -6,8 +6,8 @@ nonisolated struct FPLNavV7ValidationError: Error, Equatable, Sendable {
 }
 
 nonisolated struct FPLNavV7Mapper {
-    func map(_ source: FPLNavV7DTO) throws -> FlightPlan {
-        guard source.format == "fpl-navigation-project", source.formatVersion == 7 else {
+    func map(_ source: FPLNavV7DTO, planningAirspeedOverrides: [Double?]? = nil) throws -> FlightPlan {
+        guard source.format == "fpl-navigation-project", source.formatVersion == (planningAirspeedOverrides == nil ? 7 : 8) else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)
         }
 
@@ -26,7 +26,11 @@ nonisolated struct FPLNavV7Mapper {
             )
         )
         let base = try FPLNavV5Mapper().map(legacy)
-        let plannedNavigation = try mapExecution(source, base: base)
+        if let overrides = planningAirspeedOverrides {
+            try require(overrides.count == source.navigation.route.legs.count,
+                        "navigation.route.legs", "speed overrides must match source route order")
+        }
+        let plannedNavigation = try mapExecution(source, base: base, planningAirspeedOverrides: planningAirspeedOverrides)
         return FlightPlan(
             id: base.id,
             title: base.title,
@@ -46,7 +50,8 @@ nonisolated struct FPLNavV7Mapper {
         )
     }
 
-    private func mapExecution(_ source: FPLNavV7DTO, base: FlightPlan) throws -> PlannedNavigation {
+    private func mapExecution(_ source: FPLNavV7DTO, base: FlightPlan,
+                              planningAirspeedOverrides: [Double?]?) throws -> PlannedNavigation {
         try validateConsumedSource(source)
         let execution = source.execution
         try require(!execution.calculationVersion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -66,8 +71,14 @@ nonisolated struct FPLNavV7Mapper {
             try positive(leg.distanceNauticalMiles, path + ".distanceNauticalMiles")
             try nonnegative(leg.initialAltitudeFeetMsl, path + ".initialAltitudeFeetMsl")
             try timing(leg.noWind, path + ".noWind")
-            try require(leg.noWind.plannedGroundSpeedKnots == source.navigation.parameters.planningAirspeedKnots,
-                        path + ".noWind.plannedGroundSpeedKnots", "must equal planning airspeed")
+            let override = planningAirspeedOverrides?[index]
+            if let override {
+                try positive(override, "navigation.route.legs[\(index)].planningAirspeedOverrideKnots")
+            }
+            let effectiveSpeed = override ?? source.navigation.parameters.planningAirspeedKnots
+            try require(leg.noWind.plannedGroundSpeedKnots == effectiveSpeed,
+                        path + ".noWind.plannedGroundSpeedKnots", planningAirspeedOverrides == nil
+                            ? "must equal planning airspeed" : "must equal effective planning airspeed")
             let windEnabled = source.navigation.presentation.navigationLog.windEnabled
             try require(windEnabled == (leg.withWind != nil), path + ".withWind",
                         "must be present exactly when wind planning is enabled")

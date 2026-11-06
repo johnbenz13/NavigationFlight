@@ -1,7 +1,11 @@
-# FPLNav V7 integration
+# FPLNav V7 and V8 integration
 
 Status: `@johnbenz13/fplnav-spec@0.2.0` is published and Navigation Flight reads
-V5 and V7. The pinned registry artifact has gitHead
+V5, V7, and V8. V8 fixtures are vendored from shared source commit
+`49f61537d3d07aefdc05945185e578a5a30c4b18`, merged by PR #20 at
+`983762cdfe620880fe6010d49d4033bd165e1d4d`; proposed package 0.3.0 is
+unpublished. See [V8 provenance](../NavigationFlightTests/Fixtures/FPLNav/V8/PROVENANCE-V8.md).
+The pinned 0.2.0 registry artifact has gitHead
 `c6c904aedad0cf72192b4e0b02e6edce52fd2e70`. The package's generic decoder and
 current-version facade intentionally remain V6; development tooling imports the
 explicit `schema/navigation-project-v7` validator.
@@ -10,9 +14,9 @@ explicit `schema/navigation-project-v7` validator.
 
 `FPLNavDecoder` reads metadata first. V5 continues through its frozen DTO/mapper
 and is explicitly unavailable for execution. V6 and unknown versions are rejected.
-V7 maps source navigation plus the saved execution snapshot into immutable,
-`Equatable`/`Sendable` domain values. An empty V7 is represented separately from
-a nonempty execution-eligible V7.
+V7 and V8 map source navigation plus the saved execution snapshot into immutable,
+`Equatable`/`Sendable` domain values. An empty plan is represented separately from
+a nonempty execution-eligible plan.
 
 Flight consumes saved course, distance, initial MSL altitude, no-wind timing,
 optional complete wind solutions, resolved annotation positions and timings,
@@ -30,6 +34,14 @@ Errors identify a field path and reason. This is intentionally described as
 consumed-boundary validation, not a complete Swift implementation of JSON Schema.
 The published runtime validator remains authoritative in development tooling.
 
+V8 additionally validates a present source leg `planningAirspeedOverrideKnots`
+as a positive finite number; omission inherits the global planning airspeed.
+No-wind saved ground speed must equal that effective speed. V8 source speeds are
+decoded separately, retaining V5/V7 handling of unknown source fields. Retained
+execution rules share the existing V7 DTO/mapper and typed execution errors;
+the source speed supplement does not enter or redesign the domain model. Saved
+speeds and durations flow unchanged into planned navigation.
+
 ## Development tooling and fixtures
 
 `npm run contract:refresh` verifies the published gitHead, performs `npm ci`,
@@ -44,11 +56,16 @@ Node dependencies, scripts, schemas, and all synthetic fixtures are development
 or unit-test inputs only; none are members of the application target. The fixtures
 are regression/training data and never operational flight plans.
 
+The existing npm verification command covers V5/V7 only. V8 uses the exact
+shared golden and invalid fixtures recorded with SHA-256 in the provenance file.
+[The reader delivery plan](features/V8-LEG-SPEED-READER.md) records focused Swift
+compatibility evidence. No claim of a published V8 package is made here.
+
 ## Cockpit inspection delivery
 
 Navigation Flight now opens `.fplnav` files with the platform document picker,
 balances security-scoped access, decodes the complete candidate before replacing
-the current plan, and admits only execution-eligible V7 plans. Cancellation and
+the current plan, and admits execution-eligible V7/V8 plans. Cancellation and
 failure preserve the current plan, selected leg, and calculation mode. Legacy V5
 plans explain that they need resaving in Navigation Editor; empty V7 plans explain
 that route legs are required.

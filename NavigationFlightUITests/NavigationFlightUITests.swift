@@ -1223,6 +1223,48 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCompactChecklistPresentsAsDismissibleSheet() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+
+        app.buttons["start-leg"].tap()
+
+        let checklist = app.descendants(matching: .any)["leg-start-checklist"]
+        XCTAssertTrue(checklist.waitForExistence(timeout: 2))
+        let done = app.buttons["leg-start-checklist-close"]
+        let noted = app.buttons["leg-start-checklist-noted"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        XCTAssertTrue(noted.exists)
+        XCTAssertGreaterThanOrEqual(done.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(done.frame.height, 44)
+        XCTAssertGreaterThanOrEqual(noted.frame.minX - checklist.frame.minX, 19.5)
+        XCTAssertGreaterThanOrEqual(checklist.frame.maxX - noted.frame.maxX, 19.5)
+        done.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+
+        let chip = app.buttons["leg-start-checklist-chip"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 5))
+        XCTAssertEqual(chip.label, "Checklist")
+    }
+
+    @MainActor
+    func testChecklistActionsRemainReachableWithAccessibilityText() throws {
+        let app = launchCockpit(
+            planData: try oneLegPlanData(),
+            preferredContentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL"
+        )
+
+        app.buttons["start-leg"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["leg-start-checklist"].waitForExistence(timeout: 2))
+        let done = app.buttons["leg-start-checklist-close"]
+        let noted = app.buttons["leg-start-checklist-noted"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5))
+        XCTAssertGreaterThanOrEqual(done.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(done.frame.height, 44)
+        XCTAssertTrue(noted.exists)
+        XCTAssertGreaterThanOrEqual(noted.frame.height, 44)
+    }
+
+    @MainActor
     func testCompactRestingCockpitKeepsMapAndOperationalScanVisibleWithoutScrolling() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
         app.buttons["start-leg"].tap()

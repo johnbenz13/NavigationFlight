@@ -223,6 +223,7 @@ struct CockpitView: View {
     @State private var showsCompactFrequencies = false
     @State private var isRecordingStatusPresented = false
     @State private var isCompactMapChromeVisible = true
+    @State private var isCompactChecklistPresented = false
     @State private var compactMapChromeVisibilityID = 0
     @State private var positionCheckRestoration: CockpitRestoration?
     @State private var cockpitPresentationState = CockpitPresentationState()
@@ -268,6 +269,19 @@ struct CockpitView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: compactChecklistBinding) {
+            if let legStartChecklist,
+               let legStartedAt = flight.legStartedAt {
+                CompactLegStartChecklistSheet(
+                    checklist: legStartChecklist,
+                    legStartedAt: legStartedAt,
+                    onCollapse: onCollapseChecklist,
+                    onNoted: onNoteChecklist
+                )
+                .presentationDetents([.fraction(0.84), .large])
+                .presentationDragIndicator(.visible)
+            }
+        }
         .onChange(of: flight.activeLegIndex) { _, _ in
             if isRestoringReach {
                 isRestoringReach = false
@@ -283,6 +297,9 @@ struct CockpitView: View {
             guard horizontalSizeClass == .compact else { return }
             isCompactMapChromeVisible = newValue != .active
             compactMapChromeVisibilityID += 1
+        }
+        .onChange(of: checklistState, initial: true) { _, newValue in
+            syncCompactChecklistPresentation(with: newValue)
         }
         .task(id: compactMapChromeVisibilityID) {
             guard horizontalSizeClass == .compact,
@@ -500,9 +517,14 @@ struct CockpitView: View {
                 checklist: legStartChecklist,
                 state: checklistState,
                 legStartedAt: flight.legStartedAt,
-                isLandscape: isLandscape,
+                isCompact: horizontalSizeClass == .compact,
                 onCollapse: onCollapseChecklist,
-                onReopen: onReopenChecklist,
+                onReopen: {
+                    if horizontalSizeClass == .compact {
+                        isCompactChecklistPresented = true
+                    }
+                    onReopenChecklist()
+                },
                 onNoted: onNoteChecklist
             )
         }
@@ -511,6 +533,20 @@ struct CockpitView: View {
 
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active || isCompactMapChromeVisible
+    }
+
+    private func syncCompactChecklistPresentation(
+        with state: CockpitFeatureState.LegStartChecklistState?
+    ) {
+        guard horizontalSizeClass == .compact,
+              let state,
+              state.phaseState == .available,
+              state.presentationState == .expanded,
+              legStartChecklist?.legID == state.legID else {
+            isCompactChecklistPresented = false
+            return
+        }
+        isCompactChecklistPresented = true
     }
 
     private func revealCompactMapChrome() {
@@ -540,6 +576,18 @@ struct CockpitView: View {
         Binding(
             get: { horizontalSizeClass == .compact && cockpitPresentationState.isFrequencyPlanPresented },
             set: { cockpitPresentationState.setFrequencyPlanPresented($0) }
+        )
+    }
+
+    private var compactChecklistBinding: Binding<Bool> {
+        Binding(
+            get: { isCompactChecklistPresented },
+            set: { isPresented in
+                isCompactChecklistPresented = isPresented
+                if !isPresented {
+                    onCollapseChecklist()
+                }
+            }
         )
     }
 
@@ -765,24 +813,114 @@ struct CockpitView: View {
     }
 
     private var portraitControlPanel: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            activeLegInstrumentsHeader
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Active leg")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
 
-            HStack(alignment: .top, spacing: 12) {
-                readyHeadingMetric
-                portraitTimerMetric
-                readyETAMetric
-                readyAltitudeMetric
+            portraitOperationalScanLine
+            Divider()
+
+            HStack(alignment: .top, spacing: 18) {
+                fixedImmediateFrequencyRow
+                    .frame(width: 408)
+                waypointReachedButton
+                    .frame(maxWidth: .infinity)
             }
-
-            Divider()
-            fixedImmediateFrequencyRow
-            Divider()
-            portraitActionRow
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
         .background(Color(.systemBackground))
+    }
+
+    private var portraitOperationalScanLine: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Button {
+                showsHeadingCommitConfirmation = false
+                onOpenPilotHeading(importedHeadingDegrees)
+            } label: {
+                portraitOperationalMetric(
+                    label: "Operational heading",
+                    value: Self.heading(activeHeadingState?.operationalDegrees ?? importedHeadingDegrees),
+                    detail: headingProvenance,
+                    identifier: "cockpit-heading"
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(flight.legState != .active)
+
+            portraitInstrumentDivider
+            portraitTimerInstrument
+            portraitInstrumentDivider
+            portraitOperationalMetric(
+                label: "Next ETA · \(data.destination)",
+                value: Self.duration(mapPresentation.currentETATarget.committedETASeconds ?? data.legDurationSeconds),
+                detail: mapPresentation.currentETATarget.committedETASeconds == nil ? "Planned · elapsed" : "Revised · elapsed",
+                identifier: "cockpit-eta"
+            )
+            portraitInstrumentDivider
+            portraitOperationalMetric(
+                label: "Planned altitude",
+                value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft",
+                detail: "MSL",
+                identifier: "cockpit-altitude"
+            )
+        }
+        .frame(height: 84)
+    }
+
+    @ViewBuilder
+    private var portraitTimerInstrument: some View {
+        if flight.legState == .active, let legStartedAt = flight.legStartedAt {
+            TimelineView(.periodic(from: .now, by: 1)) { context in
+                portraitOperationalMetric(
+                    label: "Leg timer",
+                    value: Self.duration(max(0, Int(context.date.timeIntervalSince(legStartedAt)))),
+                    detail: "Elapsed from leg start",
+                    identifier: "cockpit-time"
+                )
+            }
+        } else {
+            portraitOperationalMetric(
+                label: "Leg timer",
+                value: "–:––",
+                detail: "Starts on Start Leg",
+                identifier: "cockpit-time"
+            )
+        }
+    }
+
+    private func portraitOperationalMetric(
+        label: String,
+        value: String,
+        detail: String,
+        identifier: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(value)
+                .font(.title2.bold())
+                .monospacedDigit()
+                .lineLimit(1)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(identifier)
+    }
+
+    private var portraitInstrumentDivider: some View {
+        Rectangle()
+            .fill(Color(.separator))
+            .frame(width: 1, height: 70)
     }
 
     private var compactControlPanel: some View {
@@ -2131,7 +2269,7 @@ private struct LegStartChecklistOverlay: View {
     let checklist: LegStartChecklistPresentation?
     let state: CockpitFeatureState.LegStartChecklistState?
     let legStartedAt: Date?
-    let isLandscape: Bool
+    let isCompact: Bool
     let onCollapse: () -> Void
     let onReopen: () -> Void
     let onNoted: () -> Void
@@ -2143,54 +2281,53 @@ private struct LegStartChecklistOverlay: View {
            checklist.legID == state.legID,
            let legStartedAt {
             Group {
-                if state.presentationState == .expanded {
+                if state.presentationState == .expanded, !isCompact {
                     LegStartChecklistCard(
                         checklist: checklist,
-                        reviewState: state.reviewState,
                         legStartedAt: legStartedAt,
+                        isCompact: false,
                         onCollapse: onCollapse,
                         onNoted: onNoted
                     )
-                } else {
+                } else if state.presentationState == .collapsed {
                     Button(action: onReopen) {
                         HStack(spacing: 8) {
-                            if state.reviewState == .noted {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(Color(red: 0, green: 133 / 255, blue: 102 / 255))
-                            }
-                            Text(checklist.template.collapsedTitle)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
-                                .lineLimit(1)
-                            Image(systemName: "chevron.up")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(Color(red: 77 / 255, green: 87 / 255, blue: 102 / 255))
+                            Text(state.reviewState == .noted ? "Checklist · Noted" : "Checklist")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Color(red: 18 / 255, green: 20 / 255, blue: 26 / 255))
+                                .lineLimit(2)
+                            Spacer(minLength: 8)
+                            Text("›")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(Color(red: 0, green: 97 / 255, blue: 224 / 255))
+                                .frame(width: 14)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(width: 254, height: 46)
+                        .padding(.horizontal, 13)
+                        .frame(width: 230, height: 40)
                     }
                     .buttonStyle(.plain)
-                    .background(Color(red: 251 / 255, green: 252 / 255, blue: 1).opacity(0.96), in: Capsule())
-                    .overlay { Capsule().stroke(Color(red: 31 / 255, green: 41 / 255, blue: 56 / 255).opacity(0.2)) }
-                    .shadow(color: .black.opacity(0.14), radius: 6, y: 4)
-                    .accessibilityLabel(state.reviewState == .noted
-                        ? "Review noted start of leg checklist"
-                        : "Open start of leg checklist")
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 13))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 13)
+                            .stroke(Color(red: 209 / 255, green: 212 / 255, blue: 217 / 255))
+                    }
+                    .shadow(color: .black.opacity(0.14), radius: 3.5, y: 2)
+                    .accessibilityLabel(state.reviewState == .noted ? "Checklist · Noted" : "Checklist")
+                    .accessibilityHint("Opens the start of leg checklist")
                     .accessibilityIdentifier("leg-start-checklist-chip")
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.trailing, isLandscape ? 32 : 24)
-            .padding(.bottom, isLandscape ? 74 : 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: state.presentationState == .expanded ? .topTrailing : .bottomLeading)
+            .padding(.horizontal, 18)
+            .padding(.vertical, state.presentationState == .expanded ? 34 : 14)
         }
     }
 }
 
 private struct LegStartChecklistCard: View {
     let checklist: LegStartChecklistPresentation
-    let reviewState: CockpitFeatureState.LegStartChecklistState.ReviewState
     let legStartedAt: Date
+    let isCompact: Bool
     let onCollapse: () -> Void
     let onNoted: () -> Void
     private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
@@ -2201,25 +2338,23 @@ private struct LegStartChecklistCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(checklist.template.featureTitle)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(secondaryText)
-                    Text(checklist.template.displayName)
-                        .font(.system(size: 15, weight: .semibold))
+                    Text("Checklist")
+                        .font(.title2.bold())
                         .foregroundStyle(primaryText)
+                    Text("Selected template · \(checklist.template.displayName)")
+                        .font(.subheadline)
+                        .foregroundStyle(secondaryText)
                 }
                 Spacer(minLength: 4)
                 Button(action: onCollapse) {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color(red: 51 / 255, green: 61 / 255, blue: 77 / 255))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    Text(isCompact ? "Done" : "Close")
+                        .font(.subheadline.weight(.semibold))
                 }
                 .buttonStyle(.plain)
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 46, minHeight: 46)
                 .contentShape(Rectangle())
-                .accessibilityLabel("Collapse start of leg checklist")
+                .accessibilityLabel(isCompact ? "Done" : "Close checklist")
+                .accessibilityIdentifier("leg-start-checklist-close")
             }
 
             ScrollView {
@@ -2237,18 +2372,23 @@ private struct LegStartChecklistCard: View {
             .frame(maxHeight: 320)
 
             Button(action: onNoted) {
-                Label("Noted", systemImage: reviewState == .noted ? "checkmark.circle.fill" : "checkmark")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                Text("Mark checklist noted")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 32)
             }
             .buttonStyle(.borderedProminent)
             .tint(actionBlue)
             .accessibilityLabel("Mark leg start checklist noted")
-            .accessibilityHint("Records that the checklist review is finished")
+            .accessibilityHint("Dismisses the rendered checklist without certifying completion of individual items")
             .accessibilityIdentifier("leg-start-checklist-noted")
+            Text("Noting folds the checklist into a compact chip; it does not certify completion of each item.")
+                .font(.subheadline)
+                .foregroundStyle(secondaryText)
         }
-        .padding(14)
-        .frame(width: 280)
+        .padding(.horizontal, isCompact ? 20 : 22)
+        .padding(.vertical, isCompact ? 16 : 14)
+        .frame(width: isCompact ? nil : 380, height: isCompact ? nil : 760, alignment: .topLeading)
+        .frame(maxWidth: isCompact ? .infinity : nil, maxHeight: isCompact ? .infinity : nil, alignment: .topLeading)
         .background(
             Color(red: 251 / 255, green: 252 / 255, blue: 1).opacity(0.97),
             in: RoundedRectangle(cornerRadius: 14)
@@ -2257,6 +2397,30 @@ private struct LegStartChecklistCard: View {
         .shadow(color: .black.opacity(0.18), radius: 9, y: 6)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("leg-start-checklist")
+    }
+}
+
+private struct CompactLegStartChecklistSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let checklist: LegStartChecklistPresentation
+    let legStartedAt: Date
+    let onCollapse: () -> Void
+    let onNoted: () -> Void
+
+    var body: some View {
+        LegStartChecklistCard(
+            checklist: checklist,
+            legStartedAt: legStartedAt,
+            isCompact: true,
+            onCollapse: {
+                dismiss()
+                onCollapse()
+            },
+            onNoted: {
+                dismiss()
+                onNoted()
+            }
+        )
     }
 }
 
@@ -2271,20 +2435,20 @@ private struct LegStartFlightCheckSection: View {
         VStack(alignment: .leading, spacing: 9) {
             if let timerItem = checklist.template.item(.timer) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(timerItem.title).font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
+                    Text(timerItem.title).font(.caption.weight(.bold)).foregroundStyle(secondaryText)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text("Started · \(duration(from: legStartedAt, to: context.date))")
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(primaryText).monospacedDigit()
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(primaryText).monospacedDigit()
                     }
                 }
             }
             if let directionItem = checklist.template.item(.direction) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(directionLabel(templateTitle: directionItem.title))
-                        .font(.system(size: 11, weight: .bold)).foregroundStyle(secondaryText)
-                    Text(directionValue).font(.system(size: 22, weight: .bold)).foregroundStyle(headingBlue).monospacedDigit()
+                        .font(.caption.weight(.bold)).foregroundStyle(secondaryText)
+                    Text(directionValue).font(.title2.bold()).foregroundStyle(headingBlue).monospacedDigit()
                     if let instruction = directionItem.instruction {
-                        Text(instruction).font(.system(size: 12)).foregroundStyle(secondaryText)
+                        Text(instruction).font(.caption).foregroundStyle(secondaryText)
                     }
                 }
             }
@@ -2318,7 +2482,7 @@ private struct LegStartCruiseSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 if let title = section.title {
                     Text(title)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(secondaryText)
                         .frame(maxWidth: .infinity, alignment: checklist.template.layoutDirection == .rightToLeft ? .trailing : .leading)
                 }
@@ -2363,10 +2527,10 @@ private struct LegStartStaticItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(title).font(.system(size: 11, weight: .semibold))
+            Text(title).font(.caption.weight(.semibold))
                 .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
             Text(lines.joined(separator: "\n"))
-                .font(.system(size: 11, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255))
         }
     }

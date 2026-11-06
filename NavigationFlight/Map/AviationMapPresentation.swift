@@ -123,6 +123,30 @@ struct AviationMapVORDMEReference: Identifiable, Equatable, Sendable {
     let frequencyMHz: Double
     let magneticRadialFromDegrees: Double
     let slantRangeNauticalMiles: Double
+
+    var compactLabel: String {
+        "\(stationIdentifier) · \(radialLabel) · \(distanceLabel)"
+    }
+
+    var serviceAndFrequencyLabel: String {
+        "VOR/DME · \(frequencyMHz.formatted(.number.precision(.fractionLength(3)))) MHz"
+    }
+
+    var radialAndDistanceLabel: String {
+        "\(radialLabel) · \(distanceLabel)"
+    }
+
+    var provenanceLabel: String {
+        "Imported planning reference—not live avionics data."
+    }
+
+    private var radialLabel: String {
+        "R-\(String(format: "%03d", Int(magneticRadialFromDegrees.rounded())))°M"
+    }
+
+    private var distanceLabel: String {
+        "\(slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+    }
 }
 
 struct AviationMapMinuteMarker: Equatable, Sendable {

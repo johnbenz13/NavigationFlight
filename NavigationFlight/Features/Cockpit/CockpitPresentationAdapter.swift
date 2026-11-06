@@ -402,9 +402,22 @@ struct CockpitPresentationAdapter: Sendable {
         frequencies: [FlightPhase: [CockpitPresentationData.Frequency]],
         references: [CockpitPresentationData.PlannedReference]
     ) -> CockpitFrequencyPlan {
-        let orderedFrequencies = FlightPhase.allCases.flatMap { frequencies[$0] ?? [] }
+        let orderedFrequencies = FlightPhase.allCases
+            .flatMap { frequencies[$0] ?? [] }
+            .reduce(into: [CockpitPresentationData.Frequency]()) { result, frequency in
+                guard frequency.source == .vorDme,
+                      let duplicateIndex = result.firstIndex(where: {
+                          $0.source == .vorDme &&
+                          $0.service == frequency.service &&
+                          $0.frequencyMHz == frequency.frequencyMHz
+                      }) else {
+                    result.append(frequency)
+                    return
+                }
+                result[duplicateIndex] = frequency
+            }
         let entries = orderedFrequencies.enumerated().map { index, frequency in
-            let reference = references.first {
+            let reference = references.last {
                 $0.station == frequency.service && $0.frequencyMHz == frequency.frequencyMHz
             }
             return CockpitFrequencyPlan.Entry(

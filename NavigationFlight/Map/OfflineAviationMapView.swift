@@ -1269,8 +1269,7 @@ private final class VORDMECalloutAnnotation: MLNPointAnnotation {
     let titleText: String
 
     init(waypoint: AviationMapWaypoint, reference: AviationMapVORDMEReference) {
-        let radial = Int(reference.magneticRadialFromDegrees.rounded())
-        titleText = "\(reference.stationIdentifier) R-\(radial)°M · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+        titleText = reference.compactLabel
         super.init()
         coordinate = CLLocationCoordinate2D(
             latitude: waypoint.coordinate.latitude,
@@ -1307,7 +1306,7 @@ private final class VORDMECalloutAnnotationView: MLNAnnotationView, UIGestureRec
         let subtitle = UILabel(frame: CGRect(x: 14, y: 28, width: 190, height: 14))
         subtitle.font = .systemFont(ofSize: 10, weight: .medium)
         subtitle.textColor = UIColor(red: 87 / 255, green: 94 / 255, blue: 107 / 255, alpha: 1)
-        subtitle.text = "Planned VOR/DME confirmation"
+        subtitle.text = "Planned VOR/DME reference"
         addSubview(subtitle)
 
         let handle = UIImageView(image: UIImage(systemName: "ellipsis"))
@@ -1323,7 +1322,7 @@ private final class VORDMECalloutAnnotationView: MLNAnnotationView, UIGestureRec
         addGestureRecognizer(pan)
         isEnabled = true
         isAccessibilityElement = true
-        accessibilityLabel = "VOR DME reference, \(annotation.titleText)"
+        accessibilityLabel = "Planned VOR DME reference, \(annotation.titleText)"
         accessibilityHint = "Drag to reposition, or use the Reset position action"
         accessibilityCustomActions = [
             UIAccessibilityCustomAction(name: "Reset position", target: self, selector: #selector(resetPosition))
@@ -1519,8 +1518,12 @@ private final class DestinationCalloutAnnotation: MLNPointAnnotation {
         self.committedETASeconds = committedETASeconds
         committedETAText = committedETASeconds.map(AviationMapSymbology.formatDuration)
         if let reference {
-            let radial = Int(reference.magneticRadialFromDegrees.rounded())
-            referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
+            referenceText = [
+                reference.stationIdentifier,
+                reference.serviceAndFrequencyLabel,
+                reference.radialAndDistanceLabel,
+                reference.provenanceLabel
+            ].joined(separator: " · ")
         } else {
             referenceText = nil
         }
@@ -2008,6 +2011,13 @@ private struct TimingTargetCalloutContent: View {
                     focusedRevisionEditor(context)
                 } else if let committed = context.pilotETAState.committedSeconds {
                     committedRevision(context, committed: committed)
+                }
+                if let collapsedReferenceText {
+                    Text(collapsedReferenceText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("destination-vor-dme-details")
                 }
             } else {
                 Text(target.name).font(.caption.weight(.semibold)).lineLimit(1)

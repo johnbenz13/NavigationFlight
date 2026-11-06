@@ -1223,6 +1223,36 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCompactRestingCockpitKeepsMapAndOperationalScanVisibleWithoutScrolling() throws {
+        let app = launchCockpit(planData: try oneLegPlanData())
+        app.buttons["start-leg"].tap()
+
+        let requiredElements = [
+            ("map", app.descendants(matching: .any)["aviation-map"]),
+            ("heading", app.buttons["cockpit-heading"]),
+            ("timer", app.descendants(matching: .any)["cockpit-time"]),
+            ("ETA", app.descendants(matching: .any)["cockpit-eta"]),
+            ("altitude", app.descendants(matching: .any)["cockpit-altitude"]),
+            ("Planned now", app.descendants(matching: .any)["planned-now"]),
+            ("Planned next", app.descendants(matching: .any)["planned-next"])
+        ]
+
+        for (name, element) in requiredElements {
+            XCTAssertTrue(element.waitForExistence(timeout: 3), "Missing \(name)")
+            XCTAssertTrue(element.frame.intersects(app.frame), "Off-screen \(name)")
+        }
+
+        let identified = app.buttons["waypoint-identified"]
+        let reached = app.buttons["reached-now"]
+        XCTAssertEqual(identified.label, "Report Destination Identified")
+        XCTAssertEqual(reached.label, "Report Destination Reached")
+        XCTAssertTrue(identified.isHittable)
+        XCTAssertTrue(reached.isHittable)
+        let mapFrame = app.descendants(matching: .any)["aviation-map"].frame
+        XCTAssertGreaterThan(mapFrame.height, reached.frame.maxY - mapFrame.maxY)
+    }
+
+    @MainActor
     func testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions() throws {
         let app = launchCockpit(
             planData: try oneLegPlanData(),

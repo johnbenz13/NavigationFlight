@@ -920,7 +920,7 @@ struct CockpitView: View {
 
     private var portraitControlPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Active leg")
+            Text(portraitConsoleTitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityAddTraits(.isHeader)
@@ -931,7 +931,7 @@ struct CockpitView: View {
             HStack(alignment: .top, spacing: 18) {
                 fixedImmediateFrequencyRow
                     .frame(width: 408)
-                waypointReachedButton
+                portraitDestinationActions
                     .frame(maxWidth: .infinity)
             }
         }
@@ -982,6 +982,17 @@ struct CockpitView: View {
         .frame(height: 84)
     }
 
+    private var portraitConsoleTitle: String {
+        switch flight.legState {
+        case .ready:
+            "Ready · \(data.legPosition)"
+        case .active:
+            "Active leg"
+        case .completed:
+            "Complete · \(data.legPosition)"
+        }
+    }
+
     @ViewBuilder
     private var portraitTimerInstrument: some View {
         if flight.legState == .active, let legStartedAt = flight.legStartedAt {
@@ -993,11 +1004,18 @@ struct CockpitView: View {
                     identifier: "cockpit-time"
                 )
             }
+        } else if flight.legState == .ready {
+            portraitOperationalMetric(
+                label: "Leg timer",
+                value: "00:00",
+                detail: "Not started",
+                identifier: "cockpit-time"
+            )
         } else {
             portraitOperationalMetric(
                 label: "Leg timer",
                 value: "–:––",
-                    detail: readyTimerDetail,
+                detail: readyTimerDetail,
                 identifier: "cockpit-time"
             )
         }
@@ -1055,17 +1073,74 @@ struct CockpitView: View {
                 .buttonStyle(.plain)
                 compactInstrument(label: "Planned altitude", value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft", detail: "MSL", identifier: "cockpit-altitude")
             }
+            .padding(.top, 4)
 
             compactImmediateFrequencies
-            waypointReachedButton
+                .padding(.top, 4)
+            compactDestinationAction
+                .padding(.top, 4)
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.top, 2)
+        .padding(.bottom, 2)
         .background(Color(.systemBackground))
     }
 
     private var headingProvenance: String {
         activeHeadingState?.committedDegrees == nil ? "Planned · magnetic" : "Revised · magnetic"
+    }
+
+    @ViewBuilder
+    private var compactDestinationAction: some View {
+        switch flight.legState {
+        case .ready:
+            compactPrimaryAction("Start leg", action: onStartLeg)
+                .accessibilityHint("Starts timing the current navigation leg")
+                .accessibilityIdentifier("start-leg")
+                .disabled(isRecordingCommitInFlight)
+        case .active where flight.destinationIdentifiedAt == nil:
+            compactPrimaryAction("Report destination identified") {
+                selectedMapCallout = nil
+                onIdentifyDestination()
+            }
+            .accessibilityHint("Records identifying the current destination without changing the active leg")
+            .accessibilityIdentifier("waypoint-identified")
+        case .active:
+            compactPrimaryAction("Report destination reached") {
+                onWaypointReached(cockpitRestoration)
+            }
+            .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
+            .accessibilityIdentifier("waypoint-reached")
+        case .completed:
+            if isNavigationCompletionCommitted {
+                Text("Navigation complete · Recording continues")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .accessibilityIdentifier("navigation-complete-committed")
+            } else {
+                compactPrimaryAction("Navigation complete", action: onNavigationComplete)
+                    .accessibilityHint("Commits navigation completion while recording continues")
+                    .accessibilityIdentifier("navigation-complete")
+            }
+        }
+    }
+
+    private func compactPrimaryAction(
+        _ title: LocalizedStringKey,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background(
+                    Color(uiColor: visualStyle.primaryActionColor),
+                    in: RoundedRectangle(cornerRadius: 14)
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private var compactHeadingInstrument: some View {
@@ -1520,6 +1595,7 @@ struct CockpitView: View {
             HStack(spacing: 8) {
                 ForEach(0..<2, id: \.self) { index in
                     immediateFrequencyCard(immediateFrequencyEntry(at: index), index: index)
+                        .frame(width: 190)
                 }
             }
         }
@@ -1548,8 +1624,9 @@ struct CockpitView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
-        .frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
+        .padding(.vertical, 8)
         .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(immediateFrequencyAccessibilityLabel(entry, index: index))
@@ -1898,19 +1975,108 @@ struct CockpitView: View {
     private static let cueAmber = Color(red: 176 / 255, green: 80 / 255, blue: 0 / 255)
     private static let cueAmberBackground = Color(red: 255 / 255, green: 240 / 255, blue: 209 / 255)
 
+    private var portraitDestinationActions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Destination · \(data.destination)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(height: 16, alignment: .leading)
+
+            switch flight.legState {
+            case .ready:
+                portraitPrimaryAction("Start leg", action: onStartLeg)
+                    .accessibilityHint("Starts timing the current navigation leg")
+                    .accessibilityIdentifier("start-leg")
+                    .disabled(isRecordingCommitInFlight)
+
+                Button("Choose starting leg", action: onShowPlanInspection)
+                    .font(.headline)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tint)
+                    .accessibilityHint("Opens the flight plan to choose a starting leg")
+                    .accessibilityIdentifier("choose-starting-leg")
+            case .active where flight.destinationIdentifiedAt == nil:
+                portraitPrimaryAction("Report destination identified") {
+                    selectedMapCallout = nil
+                    onIdentifyDestination()
+                }
+                .accessibilityHint("Records identifying the current destination without changing the active leg")
+                .accessibilityIdentifier("waypoint-identified")
+
+                Button("Report destination reached") {
+                    cockpitPresentationState.setNextLegPresented(false)
+                    onWaypointReached(cockpitRestoration)
+                }
+                .font(.headline)
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .accessibilityHint("Records reaching the waypoint now without identifying it first")
+                .accessibilityIdentifier("reached-now")
+            case .active:
+                portraitPrimaryAction("Report destination reached") {
+                    onWaypointReached(cockpitRestoration)
+                }
+                .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
+                .accessibilityIdentifier("waypoint-reached")
+
+                Color.clear
+                    .frame(height: 22)
+                    .accessibilityHidden(true)
+            case .completed:
+                waypointReachedButton
+            }
+        }
+        .frame(height: 126, alignment: .top)
+    }
+
+    private func portraitPrimaryAction(
+        _ title: LocalizedStringKey,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, minHeight: 54)
+                .background(
+                    Color(uiColor: visualStyle.primaryActionColor),
+                    in: RoundedRectangle(cornerRadius: 14)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
     @ViewBuilder
     private var waypointReachedButton: some View {
         switch flight.legState {
         case .ready:
-            Button(action: onStartLeg) {
-                Label("Start Leg", systemImage: "play.fill")
-                    .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Destination · \(data.destination)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(action: onStartLeg) {
+                    Text("Start leg")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 54)
+                        .foregroundStyle(.white)
+                        .background(
+                            Color(uiColor: visualStyle.primaryActionColor),
+                            in: RoundedRectangle(cornerRadius: 14)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Starts timing the current navigation leg")
+                .accessibilityIdentifier("start-leg")
+                .disabled(isRecordingCommitInFlight)
+
+                Button("Choose starting leg", action: onShowPlanInspection)
+                    .font(.headline)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tint)
+                    .accessibilityHint("Opens the flight plan to choose a starting leg")
+                    .accessibilityIdentifier("choose-starting-leg")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Color(uiColor: visualStyle.primaryActionColor))
-            .accessibilityHint("Starts timing the current navigation leg")
-            .accessibilityIdentifier("start-leg")
-            .disabled(isRecordingCommitInFlight)
         case .active:
             if flight.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {

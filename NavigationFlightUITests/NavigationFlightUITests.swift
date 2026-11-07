@@ -948,8 +948,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertFalse(cockpitHeading.label.contains("° M"))
         let readyTimer = app.descendants(matching: .any)["cockpit-time"]
         XCTAssertTrue(readyTimer.label.contains("LEG TIMER"))
-        XCTAssertTrue(readyTimer.label.contains("Starts when Start Leg is pressed"))
+        XCTAssertTrue(readyTimer.label.contains("00:00"))
+        XCTAssertTrue(readyTimer.label.contains("Not started"))
         XCTAssertFalse(readyTimer.label.contains("ELAPSED"))
+        XCTAssertTrue(app.buttons["choose-starting-leg"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].label.contains("09:16"))
         let compactFrequencies = app.buttons["compact-frequencies"]
         if compactFrequencies.exists {

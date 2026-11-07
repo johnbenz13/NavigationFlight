@@ -6,8 +6,10 @@ nonisolated struct FPLNavV7ValidationError: Error, Equatable, Sendable {
 }
 
 nonisolated struct FPLNavV7Mapper {
-    func map(_ source: FPLNavV7DTO, planningAirspeedOverrides: [Double?]? = nil) throws -> FlightPlan {
-        guard source.format == "fpl-navigation-project", source.formatVersion == (planningAirspeedOverrides == nil ? 7 : 8) else {
+    func map(_ source: FPLNavV7DTO, expectedFormatVersion: Int = 7,
+             planningAirspeedOverrides: [Double?]? = nil) throws -> FlightPlan {
+        guard source.format == "fpl-navigation-project", source.formatVersion == expectedFormatVersion,
+              (expectedFormatVersion == 7) == (planningAirspeedOverrides == nil) else {
             throw FPLNavMappingError.unexpectedFormat(source.format, version: source.formatVersion)
         }
 

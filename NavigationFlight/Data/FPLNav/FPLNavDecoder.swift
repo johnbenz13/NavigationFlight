@@ -5,6 +5,7 @@ nonisolated enum FPLNavDecoderError: Error, Equatable, Sendable {
     case unsupportedFormatVersion(Int)
     case invalidV5Document(String)
     case invalidV7Document(String)
+    case invalidV9Document(String)
     case invalidV7Execution(FPLNavV7ValidationError)
     case mapping(FPLNavMappingError)
 }
@@ -34,14 +35,19 @@ nonisolated struct FPLNavDecoder: Sendable {
             } catch {
                 throw FPLNavDecoderError.invalidV5Document(String(describing: error))
             }
-        case 7, 8:
+        case 7, 8, 9:
             do {
                 try validateStrictExecutionObjects(in: data)
-                let overrides = metadata.formatVersion == 8
+                if metadata.formatVersion == 9 {
+                    try FPLNavV9ChartTextValidator().validate(data)
+                }
+                let overrides = metadata.formatVersion >= 8
                     ? try decoder.decode(FPLNavV8SourceSpeeds.self, from: data).overrides
                     : nil
                 return try FPLNavV7Mapper().map(
-                    decoder.decode(FPLNavV7DTO.self, from: data), planningAirspeedOverrides: overrides
+                    decoder.decode(FPLNavV7DTO.self, from: data),
+                    expectedFormatVersion: metadata.formatVersion,
+                    planningAirspeedOverrides: overrides
                 )
             } catch let error as FPLNavV7ValidationError {
                 throw FPLNavDecoderError.invalidV7Execution(error)

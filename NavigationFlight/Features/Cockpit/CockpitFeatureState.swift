@@ -551,7 +551,7 @@ struct FPLNavFileLoader: Sendable {
             .malformedPlan("The file doesn’t contain valid format metadata.")
         case .invalidV7Execution(let issue):
             .malformedPlan("\(issue.path): \(issue.reason).")
-        case .invalidV5Document(let detail), .invalidV7Document(let detail):
+        case .invalidV5Document(let detail), .invalidV7Document(let detail), .invalidV9Document(let detail):
             .malformedPlan(detail)
         case .mapping(let issue):
             .malformedPlan(String(describing: issue))

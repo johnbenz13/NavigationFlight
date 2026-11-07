@@ -32,7 +32,7 @@ struct FPLNavV8DecoderTests {
         #expect(throws: (any Error).self) { try FPLNavDecoder().decode(Data(mutated.utf8)) }
     }
 
-    @Test(arguments: [6, 9])
+    @Test(arguments: [6, 10])
     func unsupportedVersionsAreRejected(_ version: Int) throws {
         var object = try fixtureObject("representative-v8")
         object["formatVersion"] = version

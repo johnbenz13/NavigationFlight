@@ -60,6 +60,11 @@ enum CockpitProgressionNotice: Equatable, Sendable {
         }
     }
 
+    var isRejection: Bool {
+        if case .rejected = self { return true }
+        return false
+    }
+
     static func arrivalReached(
         waypoint: String,
         progressionPolicy: Flight.ProgressionPolicy,

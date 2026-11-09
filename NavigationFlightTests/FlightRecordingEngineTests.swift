@@ -552,6 +552,7 @@ struct FlightRecordingEngineTests {
 
         _ = try await engine.commit(.undoReach(
             originalEventID: reachID,
+            restoredFlight: started.flight,
             at: fixture.startedAt.addingTimeInterval(31),
             elapsed: .seconds(31),
             eventID: undoID
@@ -560,6 +561,58 @@ struct FlightRecordingEngineTests {
         let events = try await store.readSnapshot(id: started.recording.id).events
         #expect(events.contains { $0.id == reachID && $0.payload == .waypointReached(legID: fixture.snapshot.legIDs[0]) })
         #expect(events.last?.payload == .reachUndone(originalEventID: reachID))
+    }
+
+    @Test("Undoing arrival restores the leg so its identification point and destination can be reported")
+    func undoArrivalAllowsIdentificationPointAndDestinationRetry() async throws {
+        let fixture = makeFixture(legCount: 2)
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(
+            at: fixture.startedAt,
+            recordingID: UUID(),
+            eventIDs: [UUID(), UUID()]
+        )
+        let firstLegID = fixture.snapshot.legIDs[0]
+        let point = IdentificationPointKey(legID: firstLegID, identificationPointID: UUID())
+        let reachID = UUID()
+
+        _ = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [point],
+            at: fixture.startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            eventIDs: [reachID, UUID()]
+        ))
+        let undone = try await engine.commit(.undoReach(
+            originalEventID: reachID,
+            restoredFlight: started.flight,
+            at: fixture.startedAt.addingTimeInterval(31),
+            elapsed: .seconds(31),
+            eventID: UUID()
+        ))
+
+        #expect(undone.flight.activeLegIndex == 0)
+        #expect(undone.flight.identificationPointState(for: point) == .future)
+
+        _ = try await engine.commit(.reachIdentificationPoint(
+            key: point,
+            orderedActiveLegPointKeys: [point],
+            at: fixture.startedAt.addingTimeInterval(32),
+            elapsed: .seconds(32),
+            eventID: UUID(),
+            nextETATarget: nil,
+            nextETAPlannedElapsedSeconds: nil
+        ))
+        let retriedArrival = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [point],
+            at: fixture.startedAt.addingTimeInterval(33),
+            elapsed: .seconds(33),
+            eventIDs: [UUID(), UUID()]
+        ))
+
+        #expect(retriedArrival.flight.activeLegIndex == 1)
+        let events = try await store.readSnapshot(id: started.recording.id).events
+        #expect(events.contains { $0.payload == .identificationPointReached(key: point) })
     }
 
     @Test("Position Check request survives acquisition failure and successful end stores only the qualified sample")

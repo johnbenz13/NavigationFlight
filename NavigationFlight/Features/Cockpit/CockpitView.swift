@@ -13,7 +13,7 @@ private struct ProgressionNoticeBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(Color(.systemGreen))
+                .fill(Color(notice.isRejection ? .systemRed : .systemGreen))
                 .frame(width: 10, height: 10)
             VStack(alignment: .leading, spacing: 3) {
                 Text(notice.title)

@@ -504,6 +504,7 @@ struct CockpitFeatureView: View {
         do {
             _ = try await recordingCoordinator.commitNavigation(.undoReach(
                 originalEventID: originalEventID,
+                restoredFlight: undo.flight,
                 at: timing.now,
                 elapsed: timing.elapsed,
                 eventID: UUID()

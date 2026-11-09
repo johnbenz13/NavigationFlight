@@ -174,6 +174,8 @@ struct CockpitPresentationStateTests {
         #expect(!CockpitProgressionNotice.rejected(.alreadyReportedReached).supportsUndo)
         #expect(!CockpitProgressionNotice.rejected(.undoExpired).supportsUndo)
         #expect(!CockpitProgressionNotice.rejected(.actionUnavailable).supportsUndo)
+        #expect(CockpitProgressionNotice.rejected(.actionUnavailable).isRejection)
+        #expect(!CockpitProgressionNotice.automaticSuccessor("RAMAT").isRejection)
     }
 
     @Test("Arrival result selection follows progression policy and successor availability")

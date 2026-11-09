@@ -36,7 +36,13 @@ nonisolated enum RecordedNavigationCommand: Sendable {
         elapsed: Duration,
         eventID: UUID
     )
-    case undoReach(originalEventID: UUID, at: Date, elapsed: Duration, eventID: UUID)
+    case undoReach(
+        originalEventID: UUID,
+        restoredFlight: Flight,
+        at: Date,
+        elapsed: Duration,
+        eventID: UUID
+    )
     case requestPositionCheck(at: Date, elapsed: Duration, eventID: UUID)
     case endPositionCheck(outcome: PositionCheckRecordedOutcome, at: Date, elapsed: Duration, eventID: UUID)
     case recordStorageDegradation(reason: RecordingStorageDegradation, at: Date, elapsed: Duration, eventID: UUID)
@@ -603,13 +609,24 @@ actor FlightRecordingEngine {
                     committedDegrees: Flight.normalizedHeading(committedDegrees)
                 ))], nil)
             }
-        case .undoReach(let originalEventID, let timestamp, let elapsed, let eventID):
-            return try await appendOperationalEvent(
+        case .undoReach(let originalEventID, let restoredFlight, let timestamp, let elapsed, let eventID):
+            guard restoredFlight.id == flight.id,
+                  restoredFlight.flightPlanID == flight.flightPlanID,
+                  restoredFlight.legIDs == flight.legIDs else {
+                throw Flight.TransitionError.legNotActive
+            }
+            let transition = try await appendOperationalEvent(
                 .reachUndone(originalEventID: originalEventID),
                 origin: .pilot,
                 at: timestamp,
                 elapsed: elapsed,
                 eventID: eventID
+            )
+            flight = restoredFlight
+            return CommittedNavigationTransition(
+                flight: restoredFlight,
+                recording: transition.recording,
+                eventIDs: transition.eventIDs
             )
         case .requestPositionCheck(let timestamp, let elapsed, let eventID):
             return try await appendOperationalEvent(

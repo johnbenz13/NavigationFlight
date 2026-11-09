@@ -237,14 +237,58 @@ struct CockpitView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            restingCockpitLayout(in: geometry.size)
-                .accessibilityHidden(activeHeadingState?.isEditing == true)
+            ZStack {
+                restingCockpitLayout(in: geometry.size)
+                    .accessibilityHidden(activeHeadingState?.isEditing == true)
+                if isPilotETAEditing {
+                    etaConsoleDismissBackdrop(in: geometry.size)
+                }
+            }
         }
         .background(Color(.systemBackground))
         .overlay {
             ZStack {
                 if let headingState = activeHeadingState, headingState.isEditing {
+                    ModalDismissBackdrop(onDismiss: onCancelPilotHeading)
                     headingEditor(state: headingState)
+                }
+                if horizontalSizeClass != .compact,
+                   cockpitPresentationState.isPreviousLegPresented,
+                   let previousLegSummary {
+                    ModalDismissBackdrop {
+                        cockpitPresentationState.setPreviousLegPresented(false)
+                    }
+                    PreviousLegSummaryCard(summary: previousLegSummary) {
+                        cockpitPresentationState.setPreviousLegPresented(false)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(18)
+                }
+                if horizontalSizeClass != .compact,
+                   cockpitPresentationState.isNextLegPresented,
+                   let nextLegPreparation {
+                    ModalDismissBackdrop {
+                        cockpitPresentationState.setNextLegPresented(false)
+                    }
+                    NextLegPreparationCard(
+                        preparation: nextLegPreparation,
+                        onShowOnMap: showNextLegOnMap,
+                        onCollapse: { cockpitPresentationState.setNextLegPresented(false) }
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(18)
+                }
+                if horizontalSizeClass != .compact,
+                   checklistState?.presentationState == .expanded {
+                    LegStartChecklistOverlay(
+                        checklist: legStartChecklist,
+                        state: checklistState,
+                        legStartedAt: flight.legStartedAt,
+                        isCompact: false,
+                        onCollapse: onCollapseChecklist,
+                        onReopen: onReopenChecklist,
+                        onNoted: onNoteChecklist
+                    )
                 }
                 if showsHeadingCommitConfirmation,
                    let committed = activeHeadingState?.committedDegrees {
@@ -485,7 +529,7 @@ struct CockpitView: View {
                 .accessibilityIdentifier("aviation-map")
                 .accessibilitySortPriority(90)
             }
-            if shouldShowMapChrome {
+            if shouldShowMapChrome, !isPilotETAEditing {
                 legHeader
                     .accessibilitySortPriority(100)
             }
@@ -553,27 +597,8 @@ struct CockpitView: View {
                 .padding(.bottom, 18)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
-            if horizontalSizeClass != .compact,
-               cockpitPresentationState.isPreviousLegPresented,
-               let previousLegSummary {
-                PreviousLegSummaryCard(summary: previousLegSummary) {
-                    cockpitPresentationState.setPreviousLegPresented(false)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(18)
-            }
-            if horizontalSizeClass != .compact,
-               cockpitPresentationState.isNextLegPresented,
-               let nextLegPreparation {
-                NextLegPreparationCard(
-                    preparation: nextLegPreparation,
-                    onShowOnMap: showNextLegOnMap,
-                    onCollapse: { cockpitPresentationState.setNextLegPresented(false) }
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .padding(18)
-            }
-            if checklistState?.presentationState == .expanded {
+            if horizontalSizeClass == .compact,
+               checklistState?.presentationState == .expanded {
                 LegStartChecklistOverlay(
                     checklist: legStartChecklist,
                     state: checklistState,
@@ -584,32 +609,63 @@ struct CockpitView: View {
                     onNoted: onNoteChecklist
                 )
             }
-            CockpitDisclosureStrip(
-                checklistTitle: checklistState?.presentationState == .collapsed
-                    ? (checklistState?.reviewState == .noted ? "Checklist · Noted" : "Checklist")
-                    : nil,
-                previousLeg: previousLegSummary,
-                nextLeg: nextLegPreparation,
-                onChecklist: openChecklistDisclosure,
-                onPreviousLeg: {
-                    selectedMapCallout = nil
-                    cockpitPresentationState.setPreviousLegPresented(true)
-                },
-                onNextLeg: { cockpitPresentationState.setNextLegPresented(true) }
-            )
-            .padding(
-                .bottom,
-                progressionNotice?.supportsUndo == true
-                    ? (pendingReachUndo == nil ? 12 : 100)
-                    : (progressionNotice == nil ? 12 : 100)
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            if !isPilotETAEditing {
+                CockpitDisclosureStrip(
+                    checklistTitle: checklistState?.presentationState == .collapsed
+                        ? (checklistState?.reviewState == .noted ? "Checklist · Noted" : "Checklist")
+                        : nil,
+                    previousLeg: previousLegSummary,
+                    nextLeg: nextLegPreparation,
+                    onChecklist: openChecklistDisclosure,
+                    onPreviousLeg: {
+                        selectedMapCallout = nil
+                        cockpitPresentationState.setPreviousLegPresented(true)
+                    },
+                    onNextLeg: { cockpitPresentationState.setNextLegPresented(true) }
+                )
+                .padding(
+                    .bottom,
+                    progressionNotice?.supportsUndo == true
+                        ? (pendingReachUndo == nil ? 12 : 100)
+                        : (progressionNotice == nil ? 12 : 100)
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            }
         }
         .clipped()
     }
 
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active || isCompactMapChromeVisible
+    }
+
+    private var isPilotETAEditing: Bool {
+        guard let selectedTimingTargetKey else { return false }
+        return flight.pilotETAState(targetKey: selectedTimingTargetKey)?.isEditing == true
+    }
+
+    @ViewBuilder
+    private func etaConsoleDismissBackdrop(in size: CGSize) -> some View {
+        let layout = CockpitRestingLayoutPolicy.layout(
+            for: .init(
+                width: size.width,
+                height: size.height,
+                horizontalSizeClass: horizontalSizeClass == .compact ? .compact : .regular
+            )
+        )
+        if dynamicTypeSize.isAccessibilitySize {
+            ModalDismissBackdrop(onDismiss: dismissMapCallout)
+                .frame(height: size.height * 0.53)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        } else if layout.composition == .sideRail {
+            ModalDismissBackdrop(onDismiss: dismissMapCallout)
+                .frame(width: layout.consoleExtent)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+        } else {
+            ModalDismissBackdrop(onDismiss: dismissMapCallout)
+                .frame(height: layout.consoleExtent)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
     }
 
     private func syncCompactChecklistPresentation(
@@ -700,8 +756,8 @@ struct CockpitView: View {
     private var mapToolsPanel: some View {
         CockpitMapToolsPanel(
             areDriftLinesVisible: areDriftLinesVisible,
-            onShowFullRoute: {
-                focusMap(.overview)
+            onCheckPosition: {
+                handlePositionCheckAction(.holdCompleted)
                 cockpitPresentationState.setMapToolsPresented(false)
             },
             onToggleDriftLines: onToggleDriftLines,
@@ -1393,6 +1449,8 @@ struct CockpitView: View {
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 8))
+                .tint(Color(uiColor: visualStyle.primaryActionColor))
                 .padding(.top, 16)
                 .accessibilityIdentifier("commit-heading")
 
@@ -2138,6 +2196,7 @@ struct CockpitView: View {
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 8))
                 .tint(Color(uiColor: visualStyle.cockpitProgressionActionBackgroundColor))
                 .foregroundStyle(.white)
                 .accessibilityHint("Commits navigation completion while recording continues")
@@ -2574,13 +2633,17 @@ private struct LegStartChecklistOverlay: View {
            let legStartedAt {
             Group {
                 if state.presentationState == .expanded, !isCompact {
-                    LegStartChecklistCard(
-                        checklist: checklist,
-                        legStartedAt: legStartedAt,
-                        isCompact: false,
-                        onCollapse: onCollapse,
-                        onNoted: onNoted
-                    )
+                    ZStack {
+                        ModalDismissBackdrop(onDismiss: onCollapse)
+                        LegStartChecklistCard(
+                            checklist: checklist,
+                            legStartedAt: legStartedAt,
+                            isCompact: false,
+                            onCollapse: onCollapse,
+                            onNoted: onNoted
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    }
                 } else if state.presentationState == .collapsed {
                     Button(action: onReopen) {
                         HStack(spacing: 8) {
@@ -2616,6 +2679,17 @@ private struct LegStartChecklistOverlay: View {
     }
 }
 
+private struct ModalDismissBackdrop: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onDismiss)
+            .accessibilityHidden(true)
+    }
+}
+
 private struct LegStartChecklistCard: View {
     let checklist: LegStartChecklistPresentation
     let legStartedAt: Date
@@ -2624,7 +2698,7 @@ private struct LegStartChecklistCard: View {
     let onNoted: () -> Void
     private let primaryText = Color(red: 20 / 255, green: 26 / 255, blue: 36 / 255)
     private let secondaryText = Color(red: 87 / 255, green: 99 / 255, blue: 117 / 255)
-    private let actionBlue = Color(red: 0, green: 107 / 255, blue: 199 / 255)
+    private let visualStyle = AviationMapVisualStyle.default
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -2669,7 +2743,8 @@ private struct LegStartChecklistCard: View {
                     .frame(maxWidth: .infinity, minHeight: 32)
             }
             .buttonStyle(.borderedProminent)
-            .tint(actionBlue)
+            .buttonBorderShape(.roundedRectangle(radius: 8))
+            .tint(Color(uiColor: visualStyle.primaryActionColor))
             .accessibilityLabel("Mark leg start checklist noted")
             .accessibilityHint("Dismisses the rendered checklist without certifying completion of individual items")
             .accessibilityIdentifier("leg-start-checklist-noted")
@@ -2963,7 +3038,9 @@ private struct NextLegPreparationCard: View {
                 .foregroundStyle(.secondary)
             preparationRow(label: frequencyService, value: frequencyValue)
             Button("Show next leg on map", action: onShowOnMap)
-                .buttonStyle(.bordered)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 8))
+                .tint(Color(uiColor: style.primaryActionColor))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("show-next-leg-on-map")
             Text("Previewing never starts timing or advances the flight.")

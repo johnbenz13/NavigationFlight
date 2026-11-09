@@ -341,6 +341,7 @@ private struct FlightPlanInspectionView: View {
                             .frame(maxWidth: .infinity, minHeight: 34)
                     }
                     .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle(radius: 8))
                     .disabled(isActionDisabled)
                     .accessibilityIdentifier(identifier(for: presentation.primaryAction.action))
 

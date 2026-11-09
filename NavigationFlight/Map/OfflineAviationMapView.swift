@@ -2228,7 +2228,7 @@ private struct TimingTargetCalloutContent: View {
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.plain)
-        .background(background, in: RoundedRectangle(cornerRadius: 12))
+        .background(background, in: RoundedRectangle(cornerRadius: 8))
         .disabled(disabled)
         .opacity(disabled ? 0.45 : 1)
     }

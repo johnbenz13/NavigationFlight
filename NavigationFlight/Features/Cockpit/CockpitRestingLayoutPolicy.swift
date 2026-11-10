@@ -32,7 +32,7 @@ struct CockpitRestingLayoutPolicy: Equatable, Sendable {
         }
 
         if context.horizontalSizeClass == .compact {
-            let consoleExtent: CGFloat = min(278, context.height)
+            let consoleExtent: CGFloat = min(248, context.height)
             return CockpitRestingLayoutPolicy(
                 composition: .lowerConsole,
                 mapExtent: max(0, context.height - consoleExtent),

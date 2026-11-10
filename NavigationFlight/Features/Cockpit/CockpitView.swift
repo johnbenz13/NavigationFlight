@@ -467,7 +467,7 @@ struct CockpitView: View {
                     .frame(height: layout.mapExtent)
                 if horizontalSizeClass == .compact {
                     compactControlPanel
-                        .frame(height: layout.consoleExtent)
+                        .frame(height: layout.consoleExtent, alignment: .top)
                         .frame(maxWidth: .infinity)
                 } else {
                     portraitControlPanel
@@ -800,31 +800,38 @@ struct CockpitView: View {
     }
 
     private var compactLegHeader: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text(legStatusText)
-                    .font(.caption.weight(.bold))
-                    .lineLimit(1)
-                    .accessibilityIdentifier("leg-status")
-                Text("·").foregroundStyle(.secondary)
-                Text(data.legPosition.uppercased())
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
-                    Label("Map tools", systemImage: "map")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary)
-            }
-            Text("\(data.origin) → \(data.destination)")
-                .font(.subheadline.weight(.semibold))
+        HStack(spacing: 6) {
+            Text(legStatusText)
+                .font(.caption.weight(.bold))
                 .lineLimit(1)
-                .environment(\.layoutDirection, .leftToRight)
-                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+                .accessibilityIdentifier("leg-status")
+            Text("·").foregroundStyle(.secondary)
+            Text(data.legPosition.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text("·").foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                Text("\(data.origin) → \(data.destination)")
+                    .fixedSize(horizontal: true, vertical: false)
+                Text(data.destination)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .environment(\.layoutDirection, .leftToRight)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("From \(data.origin) to \(data.destination)")
+            Spacer(minLength: 4)
+            Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
+                Image(systemName: "map")
+                    .font(.headline)
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .accessibilityLabel("Map tools")
         }
     }
 
@@ -919,11 +926,8 @@ struct CockpitView: View {
                         .font(.caption2)
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(recordingStatusColor(recordingStatus.tone))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .frame(minHeight: 44)
-                .background(recordingStatusBackground(recordingStatus.tone), in: Capsule())
+                .foregroundStyle(recordingStatusControlColor(recordingStatus))
+                .padding(.horizontal, 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(recordingStatus.title)
@@ -966,20 +970,22 @@ struct CockpitView: View {
         }
     }
 
-    private func recordingStatusBackground(_ tone: RecordingStatusPresentation.Tone) -> Color {
-        switch tone {
-        case .neutral: Color(.secondarySystemBackground)
-        case .caution: Color(.systemOrange).opacity(0.14)
-        case .destructive: Color(.systemRed).opacity(0.14)
-        }
+    private func recordingStatusControlColor(_ recordingStatus: RecordingStatusPresentation) -> Color {
+        recordingStatus.showsEndRecordingAction
+            ? Color(.systemRed)
+            : recordingStatusColor(recordingStatus.tone)
     }
 
     private var portraitControlPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(portraitConsoleTitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .center, spacing: 10) {
+                Text(portraitConsoleTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                recordingStatusControl
+            }
 
             portraitOperationalScanLine
             Divider()
@@ -1111,10 +1117,14 @@ struct CockpitView: View {
 
     private var compactControlPanel: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Active leg")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .center, spacing: 8) {
+                Text("Active leg")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                recordingStatusControl
+            }
 
             HStack(spacing: 8) {
                 compactHeadingInstrument
@@ -1137,7 +1147,7 @@ struct CockpitView: View {
                 .padding(.top, 4)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 2)
+        .padding(.top, 10)
         .padding(.bottom, 2)
         .background(Color(.systemBackground))
     }

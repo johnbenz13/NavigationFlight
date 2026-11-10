@@ -919,11 +919,8 @@ struct CockpitView: View {
                         .font(.caption2)
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(recordingStatusColor(recordingStatus.tone))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .frame(minHeight: 44)
-                .background(recordingStatusBackground(recordingStatus.tone), in: Capsule())
+                .foregroundStyle(recordingStatusControlColor(recordingStatus))
+                .padding(.horizontal, 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(recordingStatus.title)
@@ -966,20 +963,22 @@ struct CockpitView: View {
         }
     }
 
-    private func recordingStatusBackground(_ tone: RecordingStatusPresentation.Tone) -> Color {
-        switch tone {
-        case .neutral: Color(.secondarySystemBackground)
-        case .caution: Color(.systemOrange).opacity(0.14)
-        case .destructive: Color(.systemRed).opacity(0.14)
-        }
+    private func recordingStatusControlColor(_ recordingStatus: RecordingStatusPresentation) -> Color {
+        recordingStatus.showsEndRecordingAction
+            ? Color(.systemRed)
+            : recordingStatusColor(recordingStatus.tone)
     }
 
     private var portraitControlPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(portraitConsoleTitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .center, spacing: 10) {
+                Text(portraitConsoleTitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                recordingStatusControl
+            }
 
             portraitOperationalScanLine
             Divider()
@@ -1111,10 +1110,14 @@ struct CockpitView: View {
 
     private var compactControlPanel: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Active leg")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .center, spacing: 8) {
+                Text("Active leg")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                recordingStatusControl
+            }
 
             HStack(spacing: 8) {
                 compactHeadingInstrument

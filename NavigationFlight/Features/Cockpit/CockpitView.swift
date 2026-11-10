@@ -467,7 +467,7 @@ struct CockpitView: View {
                     .frame(height: layout.mapExtent)
                 if horizontalSizeClass == .compact {
                     compactControlPanel
-                        .frame(height: layout.consoleExtent)
+                        .frame(height: layout.consoleExtent, alignment: .top)
                         .frame(maxWidth: .infinity)
                 } else {
                     portraitControlPanel
@@ -800,31 +800,38 @@ struct CockpitView: View {
     }
 
     private var compactLegHeader: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text(legStatusText)
-                    .font(.caption.weight(.bold))
-                    .lineLimit(1)
-                    .accessibilityIdentifier("leg-status")
-                Text("·").foregroundStyle(.secondary)
-                Text(data.legPosition.uppercased())
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
-                    Label("Map tools", systemImage: "map")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(minHeight: 44)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.primary)
-            }
-            Text("\(data.origin) → \(data.destination)")
-                .font(.subheadline.weight(.semibold))
+        HStack(spacing: 6) {
+            Text(legStatusText)
+                .font(.caption.weight(.bold))
                 .lineLimit(1)
-                .environment(\.layoutDirection, .leftToRight)
-                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+                .accessibilityIdentifier("leg-status")
+            Text("·").foregroundStyle(.secondary)
+            Text(data.legPosition.uppercased())
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text("·").foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                Text("\(data.origin) → \(data.destination)")
+                    .fixedSize(horizontal: true, vertical: false)
+                Text(data.destination)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .environment(\.layoutDirection, .leftToRight)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("From \(data.origin) to \(data.destination)")
+            Spacer(minLength: 4)
+            Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
+                Image(systemName: "map")
+                    .font(.headline)
+            }
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .foregroundStyle(.primary)
+            .accessibilityLabel("Map tools")
         }
     }
 
@@ -1140,7 +1147,7 @@ struct CockpitView: View {
                 .padding(.top, 4)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 2)
+        .padding(.top, 10)
         .padding(.bottom, 2)
         .background(Color(.systemBackground))
     }

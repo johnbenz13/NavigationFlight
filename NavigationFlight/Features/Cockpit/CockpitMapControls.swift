@@ -43,7 +43,6 @@ struct MapQuickFocusControls: View {
 
 struct CockpitMapToolsPanel: View {
     let areDriftLinesVisible: Bool
-    let onCheckPosition: () -> Void
     let onToggleDriftLines: () -> Void
     let onShowChartLayers: () -> Void
     let onInspectFlightPlan: () -> Void
@@ -58,8 +57,6 @@ struct CockpitMapToolsPanel: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.top, 16)
-            toolButton("Check Position", identifier: "map-tools-check-position", action: onCheckPosition)
-                .padding(.top, 8)
             toolButton(
                 areDriftLinesVisible ? "Drift lines · On" : "Drift lines · Off",
                 identifier: "map-tools-toggle-drift-lines",

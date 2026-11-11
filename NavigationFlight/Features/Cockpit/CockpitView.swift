@@ -480,6 +480,7 @@ struct CockpitView: View {
 
     private var accessibilityControlPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
+            positionCheckAndProgressionControls
             activeLegInstrumentsHeader
             portraitTimerMetric
             readyETAMetric
@@ -492,7 +493,6 @@ struct CockpitView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.tint)
             .accessibilityIdentifier("open-frequency-plan")
-            positionCheckAndProgressionControls
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
@@ -756,10 +756,6 @@ struct CockpitView: View {
     private var mapToolsPanel: some View {
         CockpitMapToolsPanel(
             areDriftLinesVisible: areDriftLinesVisible,
-            onCheckPosition: {
-                handlePositionCheckAction(.holdCompleted)
-                cockpitPresentationState.setMapToolsPresented(false)
-            },
             onToggleDriftLines: onToggleDriftLines,
             onShowChartLayers: { showsChartsUnavailable = true },
             onInspectFlightPlan: {
@@ -992,8 +988,8 @@ struct CockpitView: View {
 
             HStack(alignment: .top, spacing: 18) {
                 fixedImmediateFrequencyRow
-                    .frame(width: 408)
-                portraitDestinationActions
+                    .frame(width: 382)
+                portraitPositionCheckAndDestinationActions
                     .frame(maxWidth: .infinity)
             }
         }
@@ -1143,7 +1139,7 @@ struct CockpitView: View {
 
             compactImmediateFrequencies
                 .padding(.top, 4)
-            compactDestinationAction
+            compactPositionCheckAndDestinationAction
                 .padding(.top, 4)
         }
         .padding(.horizontal, 12)
@@ -1157,6 +1153,24 @@ struct CockpitView: View {
     }
 
     @ViewBuilder
+    private var compactPositionCheckAndDestinationAction: some View {
+        if let positionCheck {
+            HStack(alignment: .top, spacing: 10) {
+                PositionCheckControl(
+                    presentation: positionCheck,
+                    onAction: handlePositionCheckAction
+                )
+                .frame(width: 174)
+
+                compactDestinationAction
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            compactDestinationAction
+        }
+    }
+
+    @ViewBuilder
     private var compactDestinationAction: some View {
         switch flight.legState {
         case .ready:
@@ -1165,12 +1179,26 @@ struct CockpitView: View {
                 .accessibilityIdentifier("start-leg")
                 .disabled(isRecordingCommitInFlight)
         case .active where flight.destinationIdentifiedAt == nil:
-            compactPrimaryAction("Report destination identified") {
-                selectedMapCallout = nil
-                onIdentifyDestination()
+            VStack(spacing: 2) {
+                compactPrimaryAction("Report destination identified") {
+                    selectedMapCallout = nil
+                    onIdentifyDestination()
+                }
+                .accessibilityHint("Records identifying the current destination without changing the active leg")
+                .accessibilityIdentifier("waypoint-identified")
+
+                Button("Report destination reached") {
+                    cockpitPresentationState.setNextLegPresented(false)
+                    onWaypointReached(cockpitRestoration)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+                .frame(maxWidth: .infinity, minHeight: 22)
+                .contentShape(Rectangle())
+                .accessibilityHint("Records reaching the waypoint now without identifying it first")
+                .accessibilityIdentifier("reached-now")
             }
-            .accessibilityHint("Records identifying the current destination without changing the active leg")
-            .accessibilityIdentifier("waypoint-identified")
         case .active:
             compactPrimaryAction("Report destination reached") {
                 onWaypointReached(cockpitRestoration)
@@ -1200,7 +1228,7 @@ struct CockpitView: View {
             Text(title)
                 .font(.headline)
                 .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 50)
+                .frame(maxWidth: .infinity, minHeight: 58)
                 .background(
                     Color(uiColor: visualStyle.primaryActionColor),
                     in: RoundedRectangle(cornerRadius: 14)
@@ -2043,6 +2071,25 @@ struct CockpitView: View {
     private static let cueAmber = Color(red: 176 / 255, green: 80 / 255, blue: 0 / 255)
     private static let cueAmberBackground = Color(red: 255 / 255, green: 240 / 255, blue: 209 / 255)
 
+    @ViewBuilder
+    private var portraitPositionCheckAndDestinationActions: some View {
+        if let positionCheck {
+            HStack(alignment: .top, spacing: 12) {
+                PositionCheckControl(
+                    presentation: positionCheck,
+                    onAction: handlePositionCheckAction
+                )
+                .frame(width: 174)
+                .padding(.top, 24)
+
+                portraitDestinationActions
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            portraitDestinationActions
+        }
+    }
+
     private var portraitDestinationActions: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Destination · \(data.destination)")
@@ -2075,7 +2122,7 @@ struct CockpitView: View {
                     cockpitPresentationState.setNextLegPresented(false)
                     onWaypointReached(cockpitRestoration)
                 }
-                .font(.headline)
+                .font(.caption.weight(.semibold))
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
                 .accessibilityHint("Records reaching the waypoint now without identifying it first")
@@ -2105,7 +2152,7 @@ struct CockpitView: View {
             Text(title)
                 .font(.headline)
                 .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, minHeight: 54)
+                .frame(maxWidth: .infinity, minHeight: 58)
                 .background(
                     Color(uiColor: visualStyle.primaryActionColor),
                     in: RoundedRectangle(cornerRadius: 14)

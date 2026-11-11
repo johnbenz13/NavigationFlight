@@ -34,7 +34,7 @@ struct PositionCheckControl: View {
                         }
                         .frame(height: 4)
                     }
-                    .onLongPressGesture(minimumDuration: 1, maximumDistance: 0) {
+                    .onLongPressGesture(minimumDuration: 1, maximumDistance: 20) {
                         onAction(.holdCompleted)
                     } onPressingChanged: { pressing in
                         isHolding = pressing
@@ -43,7 +43,7 @@ struct PositionCheckControl: View {
                 Button { onAction(.end) } label: { content }
                     .buttonStyle(.plain)
                     .highPriorityGesture(
-                        LongPressGesture(minimumDuration: 1, maximumDistance: 0)
+                        LongPressGesture(minimumDuration: 1, maximumDistance: 20)
                             .onEnded { _ in
                                 onAction(.holdCompleted)
                             }
@@ -77,9 +77,9 @@ struct PositionCheckControl: View {
                 .foregroundStyle(statusColor)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 74 : 60, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: dynamicTypeSize.isAccessibilitySize ? 74 : 58, alignment: .leading)
         .padding(.horizontal, 14)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(backgroundColor, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
                 .stroke(borderColor, lineWidth: 1.5)
@@ -138,6 +138,12 @@ struct PositionCheckControl: View {
         presentation.status == .ready
             ? Color(red: 255 / 255, green: 138 / 255, blue: 0)
             : statusColor
+    }
+
+    private var backgroundColor: Color {
+        presentation.status == .ready
+            ? Color(red: 1, green: 244 / 255, blue: 229 / 255)
+            : Color(.systemBackground)
     }
 
     private var holdColor: Color {

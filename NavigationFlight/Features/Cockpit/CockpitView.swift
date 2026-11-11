@@ -584,7 +584,7 @@ struct CockpitView: View {
                     }
                 }
                 .padding(.horizontal, 18)
-                .padding(.bottom, 18)
+                .padding(.bottom, 72)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             } else if let progressionNotice, !progressionNotice.supportsUndo {
                 ProgressionNoticeBanner(
@@ -594,7 +594,7 @@ struct CockpitView: View {
                     onUndo: {}
                 )
                 .padding(.horizontal, 18)
-                .padding(.bottom, 18)
+                .padding(.bottom, 72)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
             if horizontalSizeClass == .compact,
@@ -623,12 +623,7 @@ struct CockpitView: View {
                     },
                     onNextLeg: { cockpitPresentationState.setNextLegPresented(true) }
                 )
-                .padding(
-                    .bottom,
-                    progressionNotice?.supportsUndo == true
-                        ? (pendingReachUndo == nil ? 12 : 100)
-                        : (progressionNotice == nil ? 12 : 100)
-                )
+                .padding(.bottom, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
         }

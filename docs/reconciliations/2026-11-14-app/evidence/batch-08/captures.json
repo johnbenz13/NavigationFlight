@@ -1,0 +1,418 @@
+{
+  "date": "2026-11-14",
+  "timezone": "Asia/Jerusalem",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": {
+    "name": "iPad Pro 11-inch M5",
+    "id": "C6E23861-74E2-469C-8748-10245EAC330E",
+    "os": "iOS 27.0 (24A434)",
+    "viewport": "834x1210 portrait"
+  },
+  "records": [
+    {
+      "id": "01-empty-flights",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/01-empty-flights.txt",
+      "logsPath": "evidence/batch-08/01-empty-flights.log",
+      "screenshotPath": "assets/current/batch-08/01-empty-flights.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-empty-1794659558791",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "empty"
+      },
+      "action": "Supported empty Flights fixture.",
+      "screenshotPathSHA256": "8887d8aeffb68e3aeb4b9e8d046145c67382451ed6516fafd54c4149bc5b28da",
+      "hierarchyPathSHA256": "77dc3e1c72b6a57d947dcf944e2cdbcf00cb445274f00e0c726420484af1674f",
+      "logsPathSHA256": "0e56fa4e15e802afb5d184274ec8b2a7f40476cccda9248373a5aa633eaac23b"
+    },
+    {
+      "id": "02-recording-status",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/02-recording-status.txt",
+      "logsPath": "evidence/batch-08/02-recording-status.log",
+      "screenshotPath": "assets/current/batch-08/02-recording-status.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Actual Start opens recording status under lifecycle sensor fixture.",
+      "screenshotPathSHA256": "e7b9e8c25f3df338cd35d936bb8792fb4b1f845ca13997b833a14b5c16bf66dc",
+      "hierarchyPathSHA256": "f8bb30129159442423b0a71f4bc83d7745b78e6219c8028622ed1739f8f2550e",
+      "logsPathSHA256": "40c8246d48527c2f503d1ac3cc58b7e42855918b801536c054d46fc22c94012a"
+    },
+    {
+      "id": "03-end-cancel-confirm",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/03-end-cancel-confirm.txt",
+      "logsPath": "evidence/batch-08/03-end-cancel-confirm.log",
+      "screenshotPath": "assets/current/batch-08/03-end-cancel-confirm.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "End Recording confirmation before final reach.",
+      "screenshotPathSHA256": "2ee1fdc8c763ae8f0e132fc9fa886c99b606c89cc5814815bd934fcd14522cb1",
+      "hierarchyPathSHA256": "8ca6147ef9b8b63e8e017834df8e7e6d2e038f399c40ecfb67f979fe6c447a52",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "04-end-cancelled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/04-end-cancelled.txt",
+      "logsPath": "evidence/batch-08/04-end-cancelled.log",
+      "screenshotPath": "assets/current/batch-08/04-end-cancelled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Keep Recording cancels closure.",
+      "screenshotPathSHA256": "519149211c05ed3e6fec32bdea6dc6cc95fd8cc4267e3c4b65c3327fcd7488bf",
+      "hierarchyPathSHA256": "8449b9ca6598a75066ae0de4a857f337c6ae3f5268b93fcdfc804f4703080511",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "05-ip-reached-undo-check",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/05-ip-reached-undo-check.txt",
+      "logsPath": "evidence/batch-08/05-ip-reached-undo-check.log",
+      "screenshotPath": "assets/current/batch-08/05-ip-reached-undo-check.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Fresh reach IP, inspect Undo availability immediately.",
+      "screenshotPathSHA256": "30ea3fefa6e8a02d97df573e8db32555e6a3438f222d6a7655a55f30d9d7c526",
+      "hierarchyPathSHA256": "f720af8fb65bb4c08f08eb714832107d1cf3ada37c41657c04016090b7f3b174",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "06-ip-dismissed-no-undo",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/06-ip-dismissed-no-undo.txt",
+      "logsPath": "evidence/batch-08/06-ip-dismissed-no-undo.log",
+      "screenshotPath": "assets/current/batch-08/06-ip-dismissed-no-undo.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Dismiss reached IP within seconds; inspect Undo banner absent.",
+      "screenshotPathSHA256": "9d7bf2339f131ada301c612d048914cdc5464eca49105f87a88dfa238647ff22",
+      "hierarchyPathSHA256": "8be707a5534bc95b1e254c774eb03164cf254c57170cea7e72d789991d5ce71c",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "07-check-after-commit",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/07-check-after-commit.txt",
+      "logsPath": "evidence/batch-08/07-check-after-commit.log",
+      "screenshotPath": "assets/current/batch-08/07-check-after-commit.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Commit ETA after reached IP; inspect Check.",
+      "screenshotPathSHA256": "ee55d796bdba285fc136a1d5d45cc2a012110cf0a6518d7a5d1f2b0542bd3a88",
+      "hierarchyPathSHA256": "3ff89d7ad93ee88783f7d2ee91bb91babd501eafdb5855f1dbf8df40aca1e693",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "08-check-result",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/08-check-result.txt",
+      "logsPath": "evidence/batch-08/08-check-result.log",
+      "screenshotPath": "assets/current/batch-08/08-check-result.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Check against reached IP.",
+      "screenshotPathSHA256": "d9069f242c7c455322bea26ca8417cd6c321d4ee99d8a19327662bcbfb8d853b",
+      "hierarchyPathSHA256": "d7cb5ea651d6c4a4a3bc63c6296a2ef336afae7c2c0ae1a5cbbe5ad88b3f6891",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "09-navigation-complete",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/09-navigation-complete.txt",
+      "logsPath": "evidence/batch-08/09-navigation-complete.log",
+      "screenshotPath": "assets/current/batch-08/09-navigation-complete.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Report final destination reached.",
+      "screenshotPathSHA256": "79027150a362fc5eb065845437f297179f9ea916ff593da4cf7fa8b31bb1d5dd",
+      "hierarchyPathSHA256": "1467aebcafe95c59c04e9ab9b7b1a51981fa4ad3cfdc0fa10cdb2e7bf8f62bbd",
+      "logsPathSHA256": "cdecc538fb63be0de4470d34c2b260ba4daa0d8d457626bee783e5ca5fb7c937"
+    },
+    {
+      "id": "10-end-complete-confirm",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/10-end-complete-confirm.txt",
+      "logsPath": "evidence/batch-08/10-end-complete-confirm.log",
+      "screenshotPath": "assets/current/batch-08/10-end-complete-confirm.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Final reached but recording continues; End confirmation.",
+      "screenshotPathSHA256": "108afb39c8b4ac62cb3742ca9c0ef438cddfcaa7135ca39d0ebfcae723c1cfdb",
+      "hierarchyPathSHA256": "2be765235c035ebcbbc6a75d0c43687b29fe7c63966b98ccabb5aa0b861aca78",
+      "logsPathSHA256": "aa3906e061ef5c6d790b5908d6205c0dae90f4739277515a9ce3774751aeae2d"
+    },
+    {
+      "id": "11-closed-complete",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/11-closed-complete.txt",
+      "logsPath": "evidence/batch-08/11-closed-complete.log",
+      "screenshotPath": "assets/current/batch-08/11-closed-complete.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Confirm End Recording after navigation complete. Actual status Recording ended \u00b7 Incomplete; screenshot file historical name closed-complete is misleading, actual outcome incomplete.",
+      "screenshotPathSHA256": "688606a2d5ddade687a4fb31a517c0967f023a2690b9dcdc4b53f0b6ce9452ab",
+      "hierarchyPathSHA256": "de93cdbe3bda8e29bdb66608dbdf2d79c236e1049c65e335ab6a919791a148a7",
+      "logsPathSHA256": "aa3906e061ef5c6d790b5908d6205c0dae90f4739277515a9ce3774751aeae2d"
+    },
+    {
+      "id": "12-actual-saved-flight",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/12-actual-saved-flight.txt",
+      "logsPath": "evidence/batch-08/12-actual-saved-flight.log",
+      "screenshotPath": "assets/current/batch-08/12-actual-saved-flight.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Flights after actual started/completed/closed recording.",
+      "screenshotPathSHA256": "a7d1141a753161b3192cb10f35f91ea28e7961ce00eab67891908e299d564143",
+      "hierarchyPathSHA256": "cb19d70c4a6b5e02bd83c5a63762fc1fd9a00c4875ef0a16026f943d14c56740",
+      "logsPathSHA256": "c2413264d61d313edcec774eed51db95f9f27ad42815ccbac85ee70f59f83ae9"
+    },
+    {
+      "id": "13-actual-closed-detail",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/13-actual-closed-detail.txt",
+      "logsPath": "evidence/batch-08/13-actual-closed-detail.log",
+      "screenshotPath": "assets/current/batch-08/13-actual-closed-detail.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-lifecycle-1794659562719",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recording-lifecycle"
+      },
+      "action": "Inspect saved completion/coverage after end promised complete.",
+      "screenshotPathSHA256": "d8de1d3baa8c2611f4823feb828c30420c18b759984b513d9f3e2a70cf78c012",
+      "hierarchyPathSHA256": "976c2435a6f29ef7ad941240969e69e76d23bb83a5cd00b622613bd59bbe7d4b",
+      "logsPathSHA256": "d31370e21492dade56776cde0151bd8abac6445fb3e47a63bdfd33caf951369f"
+    },
+    {
+      "id": "14-recording-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/14-recording-failure.txt",
+      "logsPath": "evidence/batch-08/14-recording-failure.log",
+      "screenshotPath": "assets/current/batch-08/14-recording-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-failure-1794659686422",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECORDING_FAILURE": "1"
+      },
+      "action": "Open cockpit then Start under RECORDING_FAILURE=1. Alert Couldn\u2019t Start Leg: recording couldn\u2019t be saved, leg remains ready. Earlier taps had not opened cockpit; replaced with actual failure capture.",
+      "screenshotPathSHA256": "2ea23c4e5587a3bbbc76cf5ab8dc2a6a1b79f6e5dfc6cd182cee58b792ab7546",
+      "hierarchyPathSHA256": "b85370ec256cc512ee56c9871a09a3a1f707fc358ae0e253603b0cf0f6ceacdd",
+      "logsPathSHA256": "c6f3866554360a9c9acb4c1b43166cbd16d7e00868ac3aab0963712a599add05"
+    },
+    {
+      "id": "15-recording-degradation",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/15-recording-degradation.txt",
+      "logsPath": "evidence/batch-08/15-recording-degradation.log",
+      "screenshotPath": "assets/current/batch-08/15-recording-degradation.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-degrade-1794659823592",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECORDING_DEGRADATION": "1"
+      },
+      "action": "Start with RECORDING_DEGRADATION=1, close checklist, inspect degraded recording status.",
+      "screenshotPathSHA256": "438b4201d20cfd8efa14d78c51512431825cad645fc2d6b8a81b19642feab09b",
+      "hierarchyPathSHA256": "e315650ae486901d2d931f1febd89c3dd471f702766a14a0dc37c7ebd43c7db3",
+      "logsPathSHA256": "db9e793defb7f29cc68339f293addd4b7b0f90bde31fbe2427f72da26ef009aa"
+    },
+    {
+      "id": "16-active-record-detail",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/16-active-record-detail.txt",
+      "logsPath": "evidence/batch-08/16-active-record-detail.log",
+      "screenshotPath": "assets/current/batch-08/16-active-record-detail.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-errors-1794659856256",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Open seeded In Progress recording to inspect export eligibility.",
+      "screenshotPathSHA256": "51cf9d9a3d75fe4cc82e843c64a1c6847d884ee03077238f983f426c70885444",
+      "hierarchyPathSHA256": "1bc4235dcdac8dfba058440291bf7eaf6480117b6fa136c3cfc6c205f45fa7d0",
+      "logsPathSHA256": "9736243239a013ad59108a5f2e659dcd84b98108b989b026127abddffe1e5102"
+    },
+    {
+      "id": "17-active-record-bottom",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/17-active-record-bottom.txt",
+      "logsPath": "evidence/batch-08/17-active-record-bottom.log",
+      "screenshotPath": "assets/current/batch-08/17-active-record-bottom.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-errors-1794659856256",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Scroll active record bottom: inspect delete/export unavailability.",
+      "screenshotPathSHA256": "d64569ecd64d27debee99241cdf74ddb8304d08dbd7c4f494288b1e7a5f98832",
+      "hierarchyPathSHA256": "adcf0ee80a5cb570f5fc23fa2fe2929a42f7ce6a8d1cf972ea201ca218c760ca",
+      "logsPathSHA256": "9736243239a013ad59108a5f2e659dcd84b98108b989b026127abddffe1e5102"
+    },
+    {
+      "id": "18-export-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/18-export-failure.txt",
+      "logsPath": "evidence/batch-08/18-export-failure.log",
+      "screenshotPath": "assets/current/batch-08/18-export-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-errors-1794659856256",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Open Northern Hills Training partial closed flight; Export partial GPX with injected EXPORT_FAILURE.",
+      "screenshotPathSHA256": "ef4e3bb298e6fc998ed714b94699ab23c37fb30f442e95147b84c618c2e84bf1",
+      "hierarchyPathSHA256": "b3f282eb505533154cf3950b74c7bc09b65be48586b4df21f085b52c26452d5f",
+      "logsPathSHA256": "52c1a7a5efcd454656b0fe4772ae782a5d92a13672bbbe54dcbf3fc45a55e956"
+    },
+    {
+      "id": "19-delete-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-08/19-delete-failure.txt",
+      "logsPath": "evidence/batch-08/19-delete-failure.log",
+      "screenshotPath": "assets/current/batch-08/19-delete-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch08-errors-1794659856256",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Confirm Delete Northern Hills Training with DELETE_FAILURE=1; observe failure and retained detail.",
+      "screenshotPathSHA256": "97bd843c2dac7ecdb4372fe0c7ff082ae4a8406482535c9236fa1bcda39e6fe9",
+      "hierarchyPathSHA256": "44dac4fc47e3969c81e49eb6bd808ffc806622e06f19b2b81f41ffb441960704",
+      "logsPathSHA256": "52c1a7a5efcd454656b0fe4772ae782a5d92a13672bbbe54dcbf3fc45a55e956"
+    }
+  ],
+  "findings": [
+    "End confirmation claims action-only recording closes complete, but recording-lifecycle fixture has GPS; result is Incomplete/Manual/Partial5%. Treat misleading confirmation as finding, not proof saved completion wrong without landing evidence.",
+    "Navigation Complete \u00b7 Recording Continues text remains after recording ended Incomplete.",
+    "Reached IP has no Undo in immediate callout and full cockpit within9seconds.",
+    "ETA Check enabled after IP reached and explicit committed ETA; Check reference01:05 does not replace revised00:50.",
+    "RECORDING_FAILURE prevents Start with explicit alert and keeps ready00:00.",
+    "RECORDING_DEGRADATION allows active navigation and explains some track data not saved.",
+    "Active recording detail has Continue, no export/delete across full scroll.",
+    "Injected export/delete failure alerts keep recording detail."
+  ],
+  "limits": [
+    "Real sensors, landing detection, real storage exhaustion and background acquisition not validated.",
+    "Low-storage status override not captured separately; degradation captured.",
+    "System share sending not performed.",
+    "No source edits, tests or Git actions. Runtime session closed."
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

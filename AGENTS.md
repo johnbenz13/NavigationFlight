@@ -54,6 +54,12 @@ Do not skip required skill instructions or mandatory verification.
 
 ## Agent skills
 
+### Product reconciliation and planning setup
+
+For product reconciliation, feature planning, or ticket preparation, read
+[`docs/architecture/planning-configuration.md`](docs/architecture/planning-configuration.md)
+for shared destinations, authority, and review setup.
+
 ### Issue tracker
 
 Track work as GitHub issues in `johnbenz13/NavigationFlight`. See

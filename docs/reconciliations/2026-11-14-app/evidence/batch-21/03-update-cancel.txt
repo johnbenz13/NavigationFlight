@@ -1,0 +1,164 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 23298, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+             NavigationBar, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Coastal training navigation', hitPoint: {201.0, 89.0}
+              Button, {{16.0, 62.0}, {44.0, 44.0}}, identifier: 'BackButton', label: 'Flight Plans', hitPoint: {38.0, 84.0}
+              StaticText, {{95.0, 73.7}, {211.7, 20.7}}, label: 'Coastal training navigation', hitPoint: {200.8, 84.0}
+             Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+               Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                 CollectionView, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'flight-plan-inspection', hitPoint: {201.0, 437.0}
+                  Other, {{-16.0, -1632.0}, {434.0, 1910.0}}, hitPoint: {201.0, 139.0}
+                  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                   Other, {{0.0, 0.0}, {402.0, 156.0}}, hitPoint: {201.0, 78.0}
+                   Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+                  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                   Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+                  Cell, {{16.0, 116.0}, {370.0, 40.3}}, hitPoint: {201.0, 136.2}
+                   Other, {{16.0, 116.0}, {370.0, 40.3}}, hitPoint: {201.0, 136.2}
+                   Other, {{16.0, 116.0}, {370.0, 40.3}}, hitPoint: {201.0, 136.2}
+                    Other, {{16.0, 116.0}, {370.0, 40.3}}, hitPoint: {201.0, 136.2}
+                     Other, {{16.0, 116.0}, {370.0, 40.3}}, hitPoint: {201.0, 136.2}
+                      StaticText, {{16.0, 116.0}, {370.0, 40.3}}, label: 'Route', hitPoint: {201.0, 136.2}
+                  Cell, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                   Other, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                    Other, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                   Other, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                    Other, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                     Other, {{16.0, 156.3}, {370.0, 52.0}}, hitPoint: {201.0, 182.3}
+                      StaticText, {{16.0, 156.3}, {370.0, 52.0}}, label: 'Departure, Synthetic waypoint 1', hitPoint: {201.0, 182.3}
+                      StaticText, {{32.0, 172.2}, {76.7, 20.3}}, label: 'Departure', hitPoint: {70.3, 182.3}
+                  Cell, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                   Other, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                    Other, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                   Other, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                    Other, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                     Other, {{16.0, 208.3}, {370.0, 52.0}}, hitPoint: {201.0, 234.3}
+                      StaticText, {{16.0, 208.3}, {370.0, 52.0}}, label: 'Destination, Synthetic waypoint 2', hitPoint: {201.0, 234.3}
+                      StaticText, {{32.0, 224.2}, {86.3, 20.3}}, label: 'Destination', hitPoint: {75.2, 234.3}
+                  Other, {{32.0, 207.3}, {338.0, 1.0}}, hitPoint: {201.0, 207.8}
+                  Other, {{-16.0, 278.0}, {434.0, 162.0}}, hitPoint: {201.0, 359.0}
+                  Cell, {{16.0, 278.0}, {370.0, 40.3}}, hitPoint: {201.0, 298.2}
+                   Other, {{16.0, 278.0}, {370.0, 40.3}}, hitPoint: {201.0, 298.2}
+                   Other, {{16.0, 278.0}, {370.0, 40.3}}, hitPoint: {201.0, 298.2}
+                    Other, {{16.0, 278.0}, {370.0, 40.3}}, hitPoint: {201.0, 298.2}
+                     Other, {{16.0, 278.0}, {370.0, 40.3}}, hitPoint: {201.0, 298.2}
+                      StaticText, {{16.0, 278.0}, {370.0, 40.3}}, label: 'Flight Plan', hitPoint: {201.0, 298.2}
+                  Cell, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                   Other, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                    Other, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                   Other, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                    Other, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                     Other, {{16.0, 318.3}, {370.0, 52.0}}, hitPoint: {201.0, 344.3}
+                      StaticText, {{16.0, 318.3}, {370.0, 52.0}}, label: 'Revision, 27/08/2026, 12:01', hitPoint: {201.0, 344.3}
+                      StaticText, {{32.0, 334.2}, {63.7, 20.3}}, label: 'Revision', hitPoint: {63.8, 344.3}
+                  Cell, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                   Other, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                    Other, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                   Other, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                    Other, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                     Other, {{16.0, 370.3}, {370.0, 52.0}}, hitPoint: {201.0, 396.3}
+                      StaticText, {{16.0, 370.3}, {370.0, 52.0}}, label: 'Imported, 14/11/2026, 18:16', hitPoint: {201.0, 396.3}
+                      StaticText, {{32.0, 386.2}, {69.3, 20.3}}, label: 'Imported', hitPoint: {66.7, 396.3}
+                  Other, {{32.0, 369.3}, {338.0, 1.0}}, hitPoint: {201.0, 369.8}
+                  Other, {{-16.0, 439.7}, {434.0, 208.7}}, hitPoint: {201.0, 544.0}
+                  Cell, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                   Other, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                    Other, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                   Other, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                    Other, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                     Other, {{16.0, 457.3}, {370.0, 121.7}}, hitPoint: {201.0, 518.2}
+                      Button, {{32.0, 472.3}, {338.0, 48.0}}, identifier: 'return-to-cockpit', label: 'Continue to Cockpit', hitPoint: {201.0, 496.3}
+                      StaticText, {{32.0, 530.3}, {309.3, 33.7}}, identifier: 'continue-to-cockpit-consequence', label: 'Keeps the current Flight and returns to the cockpit without changing timing or progress.', hitPoint: {186.7, 547.2}
+                  Cell, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                   Other, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                    Other, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                   Other, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                    Other, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                     Other, {{16.0, 579.0}, {370.0, 52.0}}, hitPoint: {201.0, 605.0}
+                      Button, {{16.0, 579.0}, {370.0, 52.0}}, identifier: 'load-updated-plan', label: 'Load Updated Plan', hitPoint: {201.0, 605.0}
+                  Other, {{32.0, 578.0}, {338.0, 1.0}}, hitPoint: {201.0, 578.5}
+                  Other, {{-16.0, 648.3}, {434.0, 169.7}}, hitPoint: {201.0, 733.2}
+                  Cell, {{16.0, 648.3}, {370.0, 40.3}}, hitPoint: {201.0, 668.5}
+                   Other, {{16.0, 648.3}, {370.0, 40.3}}, hitPoint: {201.0, 668.5}
+                   Other, {{16.0, 648.3}, {370.0, 40.3}}, hitPoint: {201.0, 668.5}
+                    Other, {{16.0, 648.3}, {370.0, 40.3}}, hitPoint: {201.0, 668.5}
+                     Other, {{16.0, 648.3}, {370.0, 40.3}}, hitPoint: {201.0, 668.5}
+                      StaticText, {{16.0, 648.3}, {370.0, 40.3}}, label: 'Flight Actions', hitPoint: {201.0, 668.5}
+                  Cell, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                   Other, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                    Other, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                   Other, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                    Other, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                     Other, {{16.0, 688.7}, {370.0, 111.7}}, hitPoint: {201.0, 744.5}
+                      Button, {{32.0, 713.5}, {114.7, 20.3}}, identifier: 'restart-flight', label: 'Restart Flight…', hitPoint: {89.3, 723.7}
+                      StaticText, {{32.0, 751.7}, {293.0, 33.7}}, identifier: 'restart-flight-consequence', label: 'Creates a new ready Flight from this Flight Plan. Existing progress or edits require confirmation.', hitPoint: {178.5, 768.5}
+                  Other, {{-16.0, 818.0}, {434.0, 1912.3}}, hitPoint: {201.0, 846.0}
+                  Cell, {{16.0, 818.0}, {370.0, 40.3}}, hitPoint: {201.0, 838.2}
+                   Other, {{16.0, 818.0}, {370.0, 40.3}}, hitPoint: {201.0, 838.2}
+                   Other, {{16.0, 818.0}, {370.0, 40.3}}, hitPoint: {201.0, 838.2}
+                    Other, {{16.0, 818.0}, {370.0, 40.3}}, hitPoint: {201.0, 838.2}
+                     Other, {{16.0, 818.0}, {370.0, 40.3}}, hitPoint: {201.0, 838.2}
+                      StaticText, {{16.0, 818.0}, {370.0, 40.3}}, label: 'Flight Plan Actions', hitPoint: {201.0, 838.2}
+                  Cell, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                   Other, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                    Other, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                   Other, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                    Other, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                     Other, {{16.0, 858.3}, {370.0, 52.0}}, hitPoint: {201.0, 866.2}
+                      Button, {{16.0, 858.3}, {370.0, 52.0}}, identifier: 'remove-flight-plan', label: 'Remove from Flight Plans…', hitPoint: {201.0, 866.2}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 119.0}, {3.0, 549.0}}, hitPoint: {397.5, 393.5}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 119.0}, {3.0, 549.0}}, hitPoint: {397.5, 393.5}
+             Toolbar, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {97.7, 54.0}}, hitPoint: {69.8, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {97.7, 54.0}}, label: 'Cockpit', hitPoint: {73.8, 822.0}
+              Image, {{59.3, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {73.8, 814.8}
+             Button, {{109.8, 795.0}, {97.7, 54.0}}, label: 'Flight Plans', Selected, hitPoint: {158.6, 822.0}
+              Image, {{142.4, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {158.4, 814.8}
+             Button, {{194.6, 795.0}, {97.7, 54.0}}, label: 'Flights', hitPoint: {243.4, 822.0}
+              Image, {{229.2, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {243.1, 815.0}
+             Button, {{279.3, 795.0}, {97.7, 54.0}}, label: 'Settings', hitPoint: {328.2, 822.0}
+              Image, {{314.0, 801.0}, {28.0, 28.0}}, identifier: 'gearshape.fill', label: 'Gear shape, filled', hitPoint: {328.0, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+             Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+              Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+              Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+               Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+                Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+                 Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+                Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+               Other, {{109.8, 795.0}, {97.7, 54.0}}, hitPoint: {158.6, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

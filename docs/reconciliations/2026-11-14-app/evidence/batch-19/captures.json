@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-window-resize",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-19/01-window-resize.txt",
+      "logsPath": "evidence/batch-19/01-window-resize.log",
+      "screenshotPath": "assets/current/batch-19/01-window-resize.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Drag current SpringBoard resize-grabber8241200 inward to600850.",
+      "screenshotPathSHA256": "47ae02abf6fb024386486059804fbef9acc77a4f322639d32c4caff07ff299cb",
+      "hierarchyPathSHA256": "72815ca39d15b57fad807b6dd6e539c572def0be33bcda9ca53bb6cfd0358b44",
+      "logsPathSHA256": "a7a02ca5f88a16570c9e13006376dae55ec54d19e11e73ed8dd43597c7544222"
+    }
+  ],
+  "notes": "Window resize attempt blocked: resize-grabber is owned bySpringBoard; required activating owner brought Home, so drag did not resize app. No app resizability conclusion; no settings changed.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

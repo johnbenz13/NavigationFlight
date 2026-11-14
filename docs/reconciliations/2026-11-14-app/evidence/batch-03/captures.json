@@ -1,0 +1,266 @@
+{
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "date": "2026-11-14 Asia/Jerusalem",
+  "device": "iPad Pro11 M5 iOS27.0 24A434 portrait834x1210",
+  "records": [
+    {
+      "id": "01-start-checklist",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/01-start-checklist.txt",
+      "logsPath": "evidence/batch-03/01-start-checklist.log",
+      "screenshotPath": "assets/current/batch-03/01-start-checklist.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Open cockpit from injected Plan Inspection; tap Start leg; timer starts and checklist opens.",
+      "hierarchyPathSHA256": "9e8b75881207d4476657e10bde000cc9170440e39ec34f8e51a57d39d22996da",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "d77119ab30ed2f81c7a40f552ead3d9a996d51a265c1d494fcd25ad4555f8f7b"
+    },
+    {
+      "id": "02-heading-editor",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/02-heading-editor.txt",
+      "logsPath": "evidence/batch-03/02-heading-editor.log",
+      "screenshotPath": "assets/current/batch-03/02-heading-editor.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Mark checklist noted; chip remains. Tap operational heading to edit draft.",
+      "hierarchyPathSHA256": "f4c4ec6b70071300643210401f8656756aa4541a99447ab86ac11b55e4d194d3",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "8af9e2a98ce811d083a7dcfdefa9f562044ae0bbff9a6f959b1af0bf86e5a247"
+    },
+    {
+      "id": "03-heading-committed",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/03-heading-committed.txt",
+      "logsPath": "evidence/batch-03/03-heading-committed.log",
+      "screenshotPath": "assets/current/batch-03/03-heading-committed.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Increase draft 355 to356 magnetic; Commit revised heading. Cockpit shows Revised magnetic 356; timer continues.",
+      "hierarchyPathSHA256": "a03e70de512dee2650ab78598d2cf4279e1ad12d26b481f77cf712fded2cbf15",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "0460ffbcefdddc30311a9beb0d84a343e88b05809793382426f9f89dbe2d2cde"
+    },
+    {
+      "id": "04-eta-editor",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/04-eta-editor.txt",
+      "logsPath": "evidence/batch-03/04-eta-editor.log",
+      "screenshotPath": "assets/current/batch-03/04-eta-editor.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Tap next ETA to revise current selected target ETA.",
+      "hierarchyPathSHA256": "9581e19e3ff6c873d7ef643c1ef3f8e8f79bf4e86494cb55d33768e47fa94617",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "a3fadd1a5c100eb9bd4a023e3fc6723a3e81f2df47557ea60a09c1fcb45d9ea8"
+    },
+    {
+      "id": "05-eta-committed",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/05-eta-committed.txt",
+      "logsPath": "evidence/batch-03/05-eta-committed.log",
+      "screenshotPath": "assets/current/batch-03/05-eta-committed.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Increase ETA 00:40 to00:45 then commit; operational ETA revised, timer unaffected.",
+      "hierarchyPathSHA256": "2a0d5c7ed0712a99ec11e9970a36371a13caddb60fe6dd6491341a4e5f05db5d",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "bca9fbfc94292d58bcc05e86d2c324396bac3a02a3448f9c250d393c25b97ba9"
+    },
+    {
+      "id": "06-frequency-plan",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/06-frequency-plan.txt",
+      "logsPath": "evidence/batch-03/06-frequency-plan.log",
+      "screenshotPath": "assets/current/batch-03/06-frequency-plan.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Open Frequency plan during running flight; imported phase sections disclosed, no radio tuning.",
+      "hierarchyPathSHA256": "7136c0ae9770c34e928d4c5b1802ea699409999cca50717add55607e43c6fe0f",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "cfa3f814ab603dc0bf9aad94524ebaf2c76a5f2acbeb5dc5ebc6a60e6fa7a5f2"
+    },
+    {
+      "id": "07-destination-identified",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/07-destination-identified.txt",
+      "logsPath": "evidence/batch-03/07-destination-identified.log",
+      "screenshotPath": "assets/current/batch-03/07-destination-identified.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Close frequency panel; Report destination identified. Active timer continues; reached action available.",
+      "hierarchyPathSHA256": "e36488470e2cb557ded74177f70cb9c8a9e4d22e0e25d0db581aed175b356878",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "375a6751f28d9d338642d378224ac50198ff7c7e01e3b98922ccadf87e86deda"
+    },
+    {
+      "id": "08-final-reach-complete",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/08-final-reach-complete.txt",
+      "logsPath": "evidence/batch-03/08-final-reach-complete.log",
+      "screenshotPath": "assets/current/batch-03/08-final-reach-complete.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Report destination reached; navigation complete, no successor timer, Undo reach report available.",
+      "hierarchyPathSHA256": "96dd24e7555a2f61a697987c0168306bb12281d5217f6d2401ae223443755216",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "2419565ac6142fc61c858e84328ed7d997ec7781e803ecf975e18ddc96a080a5"
+    },
+    {
+      "id": "09-undo-restores-active",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/09-undo-restores-active.txt",
+      "logsPath": "evidence/batch-03/09-undo-restores-active.log",
+      "screenshotPath": "assets/current/batch-03/09-undo-restores-active.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Undo within20 seconds restores active destination-identified state, revised heading356 and ETA00:45; timer resumes elapsed.",
+      "hierarchyPathSHA256": "d66d3f197a74dbba930a8d97683d8c77ff55bdcaeac846748db3b1c6155ad115",
+      "logsPathSHA256": "b8524c5b7d7a9375e30c07539ebbf306e7d33266648d87a1d19bc697ae41c160",
+      "screenshotPathSHA256": "3b6f29749977cec7b4d71c0fdc725ddca991c9f5f2dcef8333df9ed7841e2844"
+    },
+    {
+      "id": "10-chart-layers",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/10-chart-layers.txt",
+      "logsPath": "evidence/batch-03/10-chart-layers.log",
+      "screenshotPath": "assets/current/batch-03/10-chart-layers.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-active-1794657170852",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Map tools: toggle drift lines Off (orange rays disappear); open Chart layers during running flight. Timer/progression unchanged.",
+      "hierarchyPathSHA256": "19e43397e136876fee6f136854e2b3052ae1aa4f9603f8f7314dec5d42337898",
+      "logsPathSHA256": "b2ae7b80761b9f3a58f52796d5f03545528666e1eaa7ac8d96b18e7b48462a7e",
+      "screenshotPathSHA256": "5dd2f64e977f02165c4ce9963e520f694614ba26cc133802364ba51287c89367"
+    },
+    {
+      "id": "11-next-leg-preview",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/11-next-leg-preview.txt",
+      "logsPath": "evidence/batch-03/11-next-leg-preview.log",
+      "screenshotPath": "assets/current/batch-03/11-next-leg-preview.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-two-leg-1794657300136",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Two-leg fixture start then close checklist; open next-leg preview. Explicit preview-only note, no timing starts.",
+      "hierarchyPathSHA256": "7fb96c4a98272c2cf19131e3ce62fcbe0b9708ed616e23b8ee35227965ae7fcc",
+      "logsPathSHA256": "cbbb4f69048c7486c1e1380f65f7c05933d280641318c40a3e07731f75048efb",
+      "screenshotPathSHA256": "a69f7c4584a8ebadd2755c3fb775c43206d83bfa92c85910d273192493671483"
+    },
+    {
+      "id": "12-successor-auto-started",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/12-successor-auto-started.txt",
+      "logsPath": "evidence/batch-03/12-successor-auto-started.log",
+      "screenshotPath": "assets/current/batch-03/12-successor-auto-started.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-two-leg-1794657300136",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Show next leg on map then close preview; directly report destination reached; successor leg2 automatically starts.",
+      "hierarchyPathSHA256": "23239140158b734b906cbbf1eb9b35c5c49e9c750d2b381dd30985577f299cef",
+      "logsPathSHA256": "cbbb4f69048c7486c1e1380f65f7c05933d280641318c40a3e07731f75048efb",
+      "screenshotPathSHA256": "b66dd80850efe03f734a4c7e7a10faaa441f39c27f4588c189e4fccaabc47e03"
+    },
+    {
+      "id": "13-previous-leg-history",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-03/13-previous-leg-history.txt",
+      "logsPath": "evidence/batch-03/13-previous-leg-history.log",
+      "screenshotPath": "assets/current/batch-03/13-previous-leg-history.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch03-two-leg-1794657300136",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Close successor checklist then previous-leg tab: recorded duration/target outcomes/heading history; current leg2 timer continues.",
+      "hierarchyPathSHA256": "cb742d48f293efe941447665096272224cf6a0566ca5d8a73d758ff2f00b9817",
+      "logsPathSHA256": "cbbb4f69048c7486c1e1380f65f7c05933d280641318c40a3e07731f75048efb",
+      "screenshotPathSHA256": "b9f0c427fac0ab045d06972c0c70c258d04428d0814b362f1920b5f37bb60b24"
+    }
+  ],
+  "findings": [
+    "Frequency plan panel labels Planned now SYN113.500/next120.500 while bottom live console now120.50/nextNone at same elapsed44sec.",
+    "Chart layers is enabled but opens Charts Unavailable later-delivery message.",
+    "Legacy inspection entry produces overlapping app tabs/header; overlay titles may also sit under tabs.",
+    "Complete-state timer becomes --:-- with Starts when Start Leg is pressed and altitude/frequency revert to initial cues despite Navigation Complete; captured state08. Product judgment needed."
+  ],
+  "limits": [
+    "No real sensor/radio/flight behavior validated.",
+    "Heading/ETA cancel and revert, IP report/check, manual progression and starting-leg selection unverified this batch.",
+    "Two-leg fixture mirrors test helper and clones saved execution; artificial route geometry/calculations not real operational data.",
+    "No source edits/tests/Git operations."
+  ]
+}

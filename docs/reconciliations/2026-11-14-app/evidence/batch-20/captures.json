@@ -1,0 +1,109 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPhone17 iOS27(24A434)402x874portrait",
+  "records": [
+    {
+      "id": "01-phone-ready",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-20/01-phone-ready.txt",
+      "logsPath": "evidence/batch-20/01-phone-ready.log",
+      "screenshotPath": "assets/current/batch-20/01-phone-ready.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch20-phone-1794672781870",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "iPhone17 iOS27(24A434)402x874portrait ready.",
+      "screenshotPathSHA256": "15ee7197c344fa45ed3b92e62ea76be8b6fc8cd4337cf559678c7bb83373a359",
+      "hierarchyPathSHA256": "99de20e93f541ac61f9a93162150fa359955a6545bf1767cb715f1a0c6337987",
+      "logsPathSHA256": "a0b6f2d10ed8e5985de08cc7201762034106c69fb65cbd86e347eafb41a16448"
+    },
+    {
+      "id": "02-phone-start-checklist",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-20/02-phone-start-checklist.txt",
+      "logsPath": "evidence/batch-20/02-phone-start-checklist.log",
+      "screenshotPath": "assets/current/batch-20/02-phone-start-checklist.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch20-phone-1794672781870",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "TapStartleg.",
+      "screenshotPathSHA256": "1d38c1a0578986200ea0d2b1f1ac409b107b793b3c08f78c981c043e8c9a3f8b",
+      "hierarchyPathSHA256": "c486d5a5c71a05c6c9c6a288be21a789804eecd53897764c374c99f5166310fd",
+      "logsPathSHA256": "51158da6170bf7cd8254d5c41f549328437c24da46da07090da16fd8b30c55ae"
+    },
+    {
+      "id": "03-phone-active",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-20/03-phone-active.txt",
+      "logsPath": "evidence/batch-20/03-phone-active.log",
+      "screenshotPath": "assets/current/batch-20/03-phone-active.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch20-phone-1794672781870",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Dismisschecklist; activephone cockpit.",
+      "screenshotPathSHA256": "6ac7ca641436044b872c69c15f00a5b335ad98ba078196f77c0120137119abf8",
+      "hierarchyPathSHA256": "52e5b6ccb7f35e9e967bc5141accdf561c45aeccee84db99a03e9f4dd6f6e885",
+      "logsPathSHA256": "51158da6170bf7cd8254d5c41f549328437c24da46da07090da16fd8b30c55ae"
+    },
+    {
+      "id": "04-phone-position",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-20/04-phone-position.txt",
+      "logsPath": "evidence/batch-20/04-phone-position.log",
+      "screenshotPath": "assets/current/batch-20/04-phone-position.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch20-phone-1794672781870",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Phone holdPositionCheck.",
+      "screenshotPathSHA256": "93cabbd4daa2000b6e96550c899fe548e423ec57d66e4c92f3912b1cb2ac0b61",
+      "hierarchyPathSHA256": "181744517d9db1ccae43dfc6fb2045beba39e7157ad6fcca73e63aa4f9c41b93",
+      "logsPathSHA256": "51158da6170bf7cd8254d5c41f549328437c24da46da07090da16fd8b30c55ae"
+    },
+    {
+      "id": "05-phone-heading",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-20/05-phone-heading.txt",
+      "logsPath": "evidence/batch-20/05-phone-heading.log",
+      "screenshotPath": "assets/current/batch-20/05-phone-heading.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch20-phone-1794672781870",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "CancelPositionCheck then openheading.",
+      "screenshotPathSHA256": "6f9b0b2e76b430262c8310d961ec0950656e4581b44365207b1249556465f293",
+      "hierarchyPathSHA256": "dabdd42e1c2ff8cc37689656883c212f0160c7095c11754a32edcad9246c407b",
+      "logsPathSHA256": "51158da6170bf7cd8254d5c41f549328437c24da46da07090da16fd8b30c55ae"
+    }
+  ],
+  "notes": "Actualdevice iPhone17 UUID6627D21B-1C30-41AC-B43E-08B525640BDA iOS27(24A434)402x874portrait, NOT defaultmanifest iPad header. CanonicaliPhone16Pro unavailable in eligible device list; substitute explicit. Ready transient mapcollapsed01, active map normal03. Activephone route header absent03; altDUEvisible. Checklist sheet readable. Position disclosure and heading captured. No claim iPhone16Pro verified.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

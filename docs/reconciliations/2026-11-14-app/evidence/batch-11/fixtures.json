@@ -1,0 +1,37 @@
+[
+  {
+    "path": "3d301bef0e68.fplnav",
+    "bytes": 10852,
+    "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+  },
+  {
+    "path": "4e9b0bfa0387.fplnav",
+    "bytes": 7723,
+    "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+  },
+  {
+    "path": "Alpha.fplnav",
+    "bytes": 7228,
+    "sha256": "2cf572d7a0c8f18cd0630e07a814734781f3d66c537ffb524f47d468b572b7a4"
+  },
+  {
+    "path": "Bravo.fplnav",
+    "bytes": 7230,
+    "sha256": "0123528d40967b9949170e52a7c9d5aba8925a42feece1003b37866274c0ff77"
+  },
+  {
+    "path": "Zulu.fplnav",
+    "bytes": 7227,
+    "sha256": "8964a0f2ae16b9b25d09aaa03a1815b60dc3a1703d39c41c597b465423d9ebc4"
+  },
+  {
+    "path": "b2c2f53a35c0.fplnav",
+    "bytes": 7723,
+    "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+  },
+  {
+    "path": "two-leg.fplnav",
+    "bytes": 7483,
+    "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+  }
+]

@@ -1,0 +1,272 @@
+{
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "date": "2026-11-14 Asia/Jerusalem",
+  "device": "iPad Pro 11-inch M5, iOS 27.0 (24A434), portrait 834x1210 points",
+  "records": [
+    {
+      "id": "01-picker-cancelled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/01-picker-cancelled.txt",
+      "logsPath": "evidence/batch-02/01-picker-cancelled.log",
+      "screenshotPath": "assets/current/batch-02/01-picker-cancelled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-files-1794656954888"
+      },
+      "action": "Add, picker opens; misreported Cancel hitpoint opened View Options; X fallback once dismissed menu, second X dismissed picker; empty library unchanged.",
+      "hierarchyPathSHA256": "4f7bf8722e0cb90e2cb09d89bf3eb60842df824ab9a0bd95d65c1eaf32dfa5c9",
+      "logsPathSHA256": "4dc5cabb428706a0fa8202d96a9a88c850593062ed15e2ab24672712b431ce61",
+      "screenshotPathSHA256": "4f4f0d42107559c59692e7c55d03570de1fe05ae137068fbf4e7aef07be571c1"
+    },
+    {
+      "id": "02-injected-import-success",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/02-injected-import-success.txt",
+      "logsPath": "evidence/batch-02/02-injected-import-success.log",
+      "screenshotPath": "assets/current/batch-02/02-injected-import-success.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Launch IMPORT_PLAN base fixture auto-imports; Flight Plan added confirmation.",
+      "hierarchyPathSHA256": "a04086027a684e3787623f404a4dc7b95022fee66b338ea0bae2b934464eb9b2",
+      "logsPathSHA256": "4ea4a8ead27225d3dc2d8dec43fbd71cb4a28e4ff14c68b6d9217cd3f44f7a92",
+      "screenshotPathSHA256": "eab15f32c11c9044f43a36db5aea5c3e543733a9ab8e2521ee6ab16f66ad003c"
+    },
+    {
+      "id": "03-persisted-after-relaunch",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/03-persisted-after-relaunch.txt",
+      "logsPath": "evidence/batch-02/03-persisted-after-relaunch.log",
+      "screenshotPath": "assets/current/batch-02/03-persisted-after-relaunch.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901"
+      },
+      "action": "Relaunch same library ID, without seed/import; saved plan remains.",
+      "hierarchyPathSHA256": "783e652575d57f9194ad8290d559c9025366a714c8f7e7494230aba84faae1be",
+      "logsPathSHA256": "f38e5c11f52b4209b0826986423abb4efeef12a26067cb3ad598f8fe24ea571d",
+      "screenshotPathSHA256": "a60446b40c620c3e900136bf6eedf6a68e79cfcd0f7e98a9c6084c02726b0140"
+    },
+    {
+      "id": "04-same-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/04-same-revision.txt",
+      "logsPath": "evidence/batch-02/04-same-revision.log",
+      "screenshotPath": "assets/current/batch-02/04-same-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Re-import identical base revision into persisted library.",
+      "hierarchyPathSHA256": "1cca70a7a43332b2ebff2ebef7be93f9ce2cff5a3381ee194c73529953e0fb55",
+      "logsPathSHA256": "065a8949dd6f2c43de9b78e1013d0067be0524f65e6c26fefd69bd75b56f6249",
+      "screenshotPathSHA256": "d54d3da588aac2ca5d79a4da9467dfaba845eaf1a9051b203f32ec053a25b82c"
+    },
+    {
+      "id": "05-newer-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/05-newer-revision.txt",
+      "logsPath": "evidence/batch-02/05-newer-revision.log",
+      "screenshotPath": "assets/current/batch-02/05-newer-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "newer.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        }
+      },
+      "action": "Import newer timestamp +60 seconds into persisted library.",
+      "hierarchyPathSHA256": "89c6cbacf049a89193e0aabe2041e10c818b755114e9b40847400d16fff9978c",
+      "logsPathSHA256": "9b5b8b1304f68f3b9c1a1c37a7a288e76d238ebf36653e00b2ab3da296c361de",
+      "screenshotPathSHA256": "02f6e8ba186b82710b3c9099a92d4cfe148f34c01976864b0d5063a01382a1f7"
+    },
+    {
+      "id": "06-older-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/06-older-revision.txt",
+      "logsPath": "evidence/batch-02/06-older-revision.log",
+      "screenshotPath": "assets/current/batch-02/06-older-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "older.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Newer confirmation Cancel returned list; then import older timestamp -60 seconds into original persisted library.",
+      "hierarchyPathSHA256": "ffcad1acd2a57271758480422feb85ee39da4922af3accc687b8994e58482fd4",
+      "logsPathSHA256": "7287d8c53aa4e1ec1e9d38e0c35850da379e11aa6b3cfac5c976a6374f02e209",
+      "screenshotPathSHA256": "222252a87f506c16fd49c63992d1eb114e2ead516c14fc1f93182c625f802c1c"
+    },
+    {
+      "id": "07-cancellations-preserve-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/07-cancellations-preserve-revision.txt",
+      "logsPath": "evidence/batch-02/07-cancellations-preserve-revision.log",
+      "screenshotPath": "assets/current/batch-02/07-cancellations-preserve-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-import-1794656998901",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "older.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Cancel older replacement then inspect row; original revision 27/08/2026 12:00 retained after both cancellations.",
+      "hierarchyPathSHA256": "2128b2490156d23276922b613107cdefe836a3444172e9b896a960c7035e0dad",
+      "logsPathSHA256": "da46244ccb5e3b54388a5ae24e1d0cbdef0fd2ee92a50a754253377135d19978",
+      "screenshotPathSHA256": "edd71f36e07a1c5fd9bce5aaaa447992c2baed4ff0e30180f9ad4ce461049172"
+    },
+    {
+      "id": "08-invalid-import",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/08-invalid-import.txt",
+      "logsPath": "evidence/batch-02/08-invalid-import.log",
+      "screenshotPath": "assets/current/batch-02/08-invalid-import.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-invalid-1794657077760",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": "bm90IGEgdmFsaWQgZnBsbmF2IGRvY3VtZW50"
+      },
+      "action": "Import invalid bytes through supported debug import hook.",
+      "hierarchyPathSHA256": "37dee6d6e0cfcdb423c4d8b1c20b4b3e3b628228a52b7ff957f2c114317f3522",
+      "logsPathSHA256": "566ebc86c7ad67494d2fa1f440efd108d2a56fc1ac34ade87bfb953c2a27ca63",
+      "screenshotPathSHA256": "377d8889923ddaf65c6c6f560ac2dcd67518fe5a108b3bd37ba13333a1ad2fea"
+    },
+    {
+      "id": "09-storage-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/09-storage-failure.txt",
+      "logsPath": "evidence/batch-02/09-storage-failure.log",
+      "screenshotPath": "assets/current/batch-02/09-storage-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-storage-1794657091882",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_STORAGE_FAILURE": "1"
+      },
+      "action": "Import valid base with injected store install failure.",
+      "hierarchyPathSHA256": "ebe709528ee151fd7b0f745fe7c76db4ee9d373bbdebb7cff5bea6cf18069d88",
+      "logsPathSHA256": "1afc1a950c493aea9431211368084549c81190d7cde9af7afc1f444be84d3be5",
+      "screenshotPathSHA256": "c824ded02e773e4366bf2c63f58aa9b4347d23b9289517b1616534e8ba6af628"
+    },
+    {
+      "id": "10-protected-restart",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/10-protected-restart.txt",
+      "logsPath": "evidence/batch-02/10-protected-restart.log",
+      "screenshotPath": "assets/current/batch-02/10-protected-restart.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-protected-1794657104182",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Loaded fixture started via PROTECTED_FLIGHT; tap Restart Flight.",
+      "hierarchyPathSHA256": "c8dd1996ff82819d1892ff7bfa3d3f5f47004db0474967facfddf5900921606a",
+      "logsPathSHA256": "e35cf8a27527a47c035de5c51ad3c648ad129dfddded433e5130df633b29277a",
+      "screenshotPathSHA256": "3adc84c9cb69098a140f76dd79da3803d768fcf37aa512a28f0217db77798070"
+    },
+    {
+      "id": "11-loaded-removal-warning",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/11-loaded-removal-warning.txt",
+      "logsPath": "evidence/batch-02/11-loaded-removal-warning.log",
+      "screenshotPath": "assets/current/batch-02/11-loaded-removal-warning.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-protected-1794657104182",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Cancel protected restart returns retained review; tap Remove from Flight Plans.",
+      "hierarchyPathSHA256": "8ba1a715f0e2f12e0b7ae7142bd4b93a8a13aad50cd07391aea502dd8180f1bc",
+      "logsPathSHA256": "e35cf8a27527a47c035de5c51ad3c648ad129dfddded433e5130df633b29277a",
+      "screenshotPathSHA256": "357b0b6e7aa859f4a6e0f775a87e6a70e3aaaaa0a1f3b7bb3e7501189afdd923"
+    },
+    {
+      "id": "12-removed-library-empty",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/12-removed-library-empty.txt",
+      "logsPath": "evidence/batch-02/12-removed-library-empty.log",
+      "screenshotPath": "assets/current/batch-02/12-removed-library-empty.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-protected-1794657104182",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Confirm Remove; saved library becomes empty.",
+      "hierarchyPathSHA256": "6ddf73b9ff7cc256b439d9d9ec6c6ec53ef0896e662303ebd2565c393f25080f",
+      "logsPathSHA256": "ecebe265d5433513560a34e4b24efd5ae124f6111d3f9d809a1093cc3641bdf5",
+      "screenshotPathSHA256": "b03e136d0509d0077a3a6357d8243c56ef826ac59071f96dda2021ff837f1791"
+    },
+    {
+      "id": "13-cockpit-retained-after-removal",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-02/13-cockpit-retained-after-removal.txt",
+      "logsPath": "evidence/batch-02/13-cockpit-retained-after-removal.log",
+      "screenshotPath": "assets/current/batch-02/13-cockpit-retained-after-removal.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch02-protected-1794657104182",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "After removal, Cockpit tab opens retained legacy inspection; toolbar Cockpit shows still active flight and huge fixture timer (started epoch 1000). Restart cancellation did not reset.",
+      "hierarchyPathSHA256": "c01015b66053a67d796a82cd09e412beb7a4604929dab81fad4823cc1e84cd58",
+      "logsPathSHA256": "eb862300b6663cb5ec04ddf6ee88d82e3b19650fe2a8ef0c1fce9f2a0651cba7",
+      "screenshotPathSHA256": "f8a96d0f418d9f94880bf7d8d9b296a62aaa2f1fdb042c403126191bdc9308f4"
+    }
+  ],
+  "limits": [
+    "Real Files import unverified: sandbox simctl cannot access CoreSimulator service to stage disposable file. Existing user files not opened.",
+    "Supported debug IMPORT_PLAN auto-imports on launch; this exercises decoder/library flow, not file-provider handoff.",
+    "No replacement confirmed, only same revision Done and newer/older cancellation. No phone repeat.",
+    "Protected fixture starts at epoch 1000; huge elapsed time expected synthetic artifact. No real sensor or flight claim.",
+    "No source changes, tests or Git operations. Runtime InstallAndRun builds baseline."
+  ]
+}

@@ -1,0 +1,289 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-disclosure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/01-disclosure.txt",
+      "logsPath": "evidence/batch-18/01-disclosure.log",
+      "screenshotPath": "assets/current/batch-18/01-disclosure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "First hold exposes on-track position.",
+      "screenshotPathSHA256": "e43dd4948fba3768984bda5ea88d45c27fb4e442396e9c9c96502e21b00f7503",
+      "hierarchyPathSHA256": "473daec8dbd3bb431a19a25539b2f2adbf9239c6db40272137121c5dfc4ce58e",
+      "logsPathSHA256": "58b6a74e24524ece6d5ce1a670d9906fc0e09d2769db0447f6a130290c6a33c7"
+    },
+    {
+      "id": "02-repeat-hold",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/02-repeat-hold.txt",
+      "logsPath": "evidence/batch-18/02-repeat-hold.log",
+      "screenshotPath": "assets/current/batch-18/02-repeat-hold.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Repeat hold during active disclosure.",
+      "screenshotPathSHA256": "b211985df89cb5e14554a9632e65f02068c39c1bffcf836df8615e688a99ed19",
+      "hierarchyPathSHA256": "8beddf36195b073c750a3dee2994243e8ef26b110d8c4a03ee7b4db2369fbaeb",
+      "logsPathSHA256": "738b624e096decc8a4ffe9ba744324cb54df8e06f3394330e796f9db82a0edc7"
+    },
+    {
+      "id": "03-ipad-landscape-active",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/03-ipad-landscape-active.txt",
+      "logsPath": "evidence/batch-18/03-ipad-landscape-active.log",
+      "screenshotPath": "assets/current/batch-18/03-ipad-landscape-active.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Rotate actual active flight to landscape.",
+      "screenshotPathSHA256": "b13bbd21543d2e777757d9c41cacd7229ba174ca65e6671e2e3b3d4a9be2ed32",
+      "hierarchyPathSHA256": "449ec98369257b39fb76d71135e7c9265747ecf696c5d69b2d5e0849fa1432cf",
+      "logsPathSHA256": "738b624e096decc8a4ffe9ba744324cb54df8e06f3394330e796f9db82a0edc7"
+    },
+    {
+      "id": "04-landscape-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/04-landscape-settled.txt",
+      "logsPath": "evidence/batch-18/04-landscape-settled.log",
+      "screenshotPath": "assets/current/batch-18/04-landscape-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Settled landscape after repeated hold.",
+      "screenshotPathSHA256": "1b62809200cb40ebf1743c521e17d2849dd2d6b177ab8ae7acac8142baf8b331",
+      "hierarchyPathSHA256": "e78169f248b4768eccbf6dde2e273944544305af860f2532250dbb17de0b6e83",
+      "logsPathSHA256": "738b624e096decc8a4ffe9ba744324cb54df8e06f3394330e796f9db82a0edc7"
+    },
+    {
+      "id": "05-reduce-motion-enabled",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/05-reduce-motion-enabled.txt",
+      "logsPath": "evidence/batch-18/05-reduce-motion-enabled.log",
+      "screenshotPath": "assets/current/batch-18/05-reduce-motion-enabled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "System ReduceMotion originallyOff, enabled via nested switch.",
+      "screenshotPathSHA256": "39ad286a9efa01b1c050895614e1e5731d3ad55c70f2251873025a3a5984d2ac",
+      "hierarchyPathSHA256": "c761caa13224dd424f031a3293d291453a96cb82807cabe637d1b4dbf0099841",
+      "logsPathSHA256": "6a0567011d9d2cb2e6d02c32150045b03bbe5dd89639c55bbb136ec335267071"
+    },
+    {
+      "id": "06-reduced-motion-disclosure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/06-reduced-motion-disclosure.txt",
+      "logsPath": "evidence/batch-18/06-reduced-motion-disclosure.log",
+      "screenshotPath": "assets/current/batch-18/06-reduced-motion-disclosure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "With ReduceMotion enabled, hold PositionCheck; inspect stable on-track disclosure.",
+      "screenshotPathSHA256": "d070104381d54f9ae2a868d3c49103553cfabac070be9ced0407b30395406d0d",
+      "hierarchyPathSHA256": "5a4531e4cb9b03a45bb88b565b9a4f5bbc6862055ea454007a5e4d9728383824",
+      "logsPathSHA256": "842276b60bc1538552ff0029b03fbc60e844e802b1e7156ee2ba5ca0c90be73d"
+    },
+    {
+      "id": "07-reduce-motion-restored",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/07-reduce-motion-restored.txt",
+      "logsPath": "evidence/batch-18/07-reduce-motion-restored.log",
+      "screenshotPath": "assets/current/batch-18/07-reduce-motion-restored.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Restore original ReduceMotionOff.",
+      "screenshotPathSHA256": "1f2425620bfcfd062a8187cc3d6cc89d6dd9006506237b727aa2f9412a491989",
+      "hierarchyPathSHA256": "a87bad196496ff472a4c1fac97bad0c940db03fb4a23412817a4d377a4a18093",
+      "logsPathSHA256": "8c592f012374a26938884a3657432197b2713dd99ec75a110a5730afa352cfa7"
+    },
+    {
+      "id": "08-voiceover-toggle-attempt",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/08-voiceover-toggle-attempt.txt",
+      "logsPath": "evidence/batch-18/08-voiceover-toggle-attempt.log",
+      "screenshotPath": "assets/current/batch-18/08-voiceover-toggle-attempt.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Attempt enable VoiceOver from originalOff system switch.",
+      "screenshotPathSHA256": "aa427035d2300bde4342f0411eac86b7313524c29f313fd73f67801518326126",
+      "hierarchyPathSHA256": "541aca0d1f8216081403217630cd89d5e78b7875f96eb3e9bd1f9f7846fc5596",
+      "logsPathSHA256": "8c592f012374a26938884a3657432197b2713dd99ec75a110a5730afa352cfa7"
+    },
+    {
+      "id": "09-voiceover-position-focus",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/09-voiceover-position-focus.txt",
+      "logsPath": "evidence/batch-18/09-voiceover-position-focus.log",
+      "screenshotPath": "assets/current/batch-18/09-voiceover-position-focus.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "With VoiceOver switchOn, select PositionCheck.",
+      "screenshotPathSHA256": "e4485a9b98aa9ff6d0f7c5638a6d4773e19db597938598da9d657beffedea764",
+      "hierarchyPathSHA256": "ed1ec4251b8eb8139f2d1c0088cedf8ba6eac39cb9cca29a79497eade50d6c0f",
+      "logsPathSHA256": "8c592f012374a26938884a3657432197b2713dd99ec75a110a5730afa352cfa7"
+    },
+    {
+      "id": "10-voiceover-position-activate",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/10-voiceover-position-activate.txt",
+      "logsPath": "evidence/batch-18/10-voiceover-position-activate.log",
+      "screenshotPath": "assets/current/batch-18/10-voiceover-position-activate.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Double-tap selected PositionCheck under VoiceOver.",
+      "screenshotPathSHA256": "1ff6ef5fa446a083ee15a189bf726aabb81295ff83e4e8cff20f943a1f7c270c",
+      "hierarchyPathSHA256": "ed1ec4251b8eb8139f2d1c0088cedf8ba6eac39cb9cca29a79497eade50d6c0f",
+      "logsPathSHA256": "8c592f012374a26938884a3657432197b2713dd99ec75a110a5730afa352cfa7"
+    },
+    {
+      "id": "11-voiceover-restore-attempt",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/11-voiceover-restore-attempt.txt",
+      "logsPath": "evidence/batch-18/11-voiceover-restore-attempt.log",
+      "screenshotPath": "assets/current/batch-18/11-voiceover-restore-attempt.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Return Settings and tap original VoiceOver switch to restoreOff.",
+      "screenshotPathSHA256": "8430c672725c8db9e2a9068633b0552b6d5eca3838bf65874fa28c6be949781d",
+      "hierarchyPathSHA256": "ed1ec4251b8eb8139f2d1c0088cedf8ba6eac39cb9cca29a79497eade50d6c0f",
+      "logsPathSHA256": "32657bae1b257e1518b9d381cc78db0cd7ee72415bc3aa2bde31fffe2e12bd6c"
+    },
+    {
+      "id": "12-voiceover-real-focus",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/12-voiceover-real-focus.txt",
+      "logsPath": "evidence/batch-18/12-voiceover-real-focus.log",
+      "screenshotPath": "assets/current/batch-18/12-voiceover-real-focus.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "After dismissing VoiceOver system onboarding, focus PositionCheck.",
+      "screenshotPathSHA256": "cf41b6e2cb4e129ef4831bb1a7ce539287c3b3f208cda812de91eb9f137beec7",
+      "hierarchyPathSHA256": "0de464069f28e6b960957f20657b3f6459e64cbcc30ff4290b38d44d9a013160",
+      "logsPathSHA256": "7a693baf12217971ec92b6c965b8b3807ae268d31c2418d3069a9d8b190fbd89"
+    },
+    {
+      "id": "13-voiceover-default-action",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-18/13-voiceover-default-action.txt",
+      "logsPath": "evidence/batch-18/13-voiceover-default-action.log",
+      "screenshotPath": "assets/current/batch-18/13-voiceover-default-action.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "VoiceOver default double-tap PositionCheck.",
+      "screenshotPathSHA256": "c3eae00cac1e23ad402cb06542ea0509c0e189d0f9fc219237baaeaab4644367",
+      "hierarchyPathSHA256": "0d190a9362e25bde3d2b5ea62278b8cfe5823e59b8efe06e9cfdb6f4a3588363",
+      "logsPathSHA256": "7a693baf12217971ec92b6c965b8b3807ae268d31c2418d3069a9d8b190fbd89"
+    },
+    {
+      "id": "14-voiceover-restored",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-18/14-voiceover-restored.txt",
+      "logsPath": "evidence/batch-18/14-voiceover-restored.log",
+      "screenshotPath": "assets/current/batch-18/14-voiceover-restored.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-on-track-1794672372139",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Focus and doubletap original systemVoiceOver switch; restoreOff.",
+      "screenshotPathSHA256": "4dcfd2d3b9acf4fad1e8f1881d71a767a118272cc8b57e9bd294406be64826c0",
+      "hierarchyPathSHA256": "48c91a15d22fc917c42e6842702b159cad8fb41ef3a90422af9c8db59d792091",
+      "logsPathSHA256": "944cb4c79926d595674c1ba81575fe3664cc9bf3c48c43613267c46cf0b7c943"
+    }
+  ],
+  "notes": "iPad portrait834x1210 and landscape1210x834. Repeated hold during disclosure remains active (10s shown again; timing extension not conclusively measured). Landscape active readable with truncated next-target title; altitude due visible04. SystemReduceMotion originalOff\u2192On\u2192appPositionCheck\u2192Off; still-image does not prove animation timing. VoiceOver originalOff\u2192On; onboarding blocks09\u201311, dismissed before12;12real focus ring and13default activation outcome.14 restoresOff. Audio output not available so spoken pronunciation/order unverified.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

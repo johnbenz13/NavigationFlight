@@ -1,0 +1,67 @@
+2026-11-14 17:50:49.862154+0200 [15814:57142873] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x106966a30 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 17:50:50.025316+0200 [15814:57142335] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 17:50:50.257566+0200 [15814:57142335] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 17:50:50.319386+0200 [15814:57142335] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+
+2026-11-14 17:50:50.329374+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd2580>
+
+2026-11-14 17:50:50.335638+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd2260>
+
+2026-11-14 17:50:50.335730+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd21c0>
+
+2026-11-14 17:50:50.335810+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd2080>
+
+2026-11-14 17:50:50.335892+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd0500>
+
+2026-11-14 17:50:50.335973+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd1220>
+
+2026-11-14 17:50:50.336052+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd2120>
+
+2026-11-14 17:50:50.336133+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd1180>
+
+2026-11-14 17:50:50.336214+0200 [15814:57142335] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x106bd23a0>
+
+objc[15814]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1062e4398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108444310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 17:50:51.122148+0200 [15814:57142335] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 17:54:50.241095+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:54:50.275023+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:54:50.275084+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:54:50.275101+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:03.586724+0200 [15814:57142335] [Invalid Configuration] Update NavigationRequestObserver tried to update multiple times per frame.
+
+2026-11-14 17:55:03.615973+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:03.617930+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:03.617993+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:03.618010+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.886471+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.886531+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.886548+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.920958+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.921052+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:15.921112+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:16.427666+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:16.427733+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:16.427752+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:55:16.427767+0200 [15814:57142335] [API] cannot add handler to 0 from 0 - dropping

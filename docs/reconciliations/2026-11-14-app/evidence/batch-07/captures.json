@@ -1,0 +1,355 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7",
+  "device": "iPad Pro11 M5 iOS27.0(24A434) 834x1210 portrait",
+  "records": [
+    {
+      "id": "01-before-position",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/01-before-position.txt",
+      "logsPath": "evidence/batch-07/01-before-position.log",
+      "screenshotPath": "assets/current/batch-07/01-before-position.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-pos-1794659369310",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available"
+      },
+      "action": "Settled normal-size ready cockpit before Position Check.",
+      "hierarchyPathSHA256": "f3a76cc30da4349cb8a9926659f6a12ca022bf320836ee670316c24925d77a7e",
+      "logsPathSHA256": "0d667a1f90ec2214aa8dae74ec61f9c2264ad2dab634c2a8decf56defbbc9537",
+      "screenshotPathSHA256": "78b0ab2b7a52661c6762d3c788a697dd3c22c003e5fb38545a951bfc96308974"
+    },
+    {
+      "id": "02-held-position",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/02-held-position.txt",
+      "logsPath": "evidence/batch-07/02-held-position.log",
+      "screenshotPath": "assets/current/batch-07/02-held-position.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-pos-1794659369310",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available"
+      },
+      "action": "Hold1.2sec live disclosure.",
+      "hierarchyPathSHA256": "6585f902f5904cbc225305506dbc4aec228b9b3dca4094d8f2c7b6fcbd8b8126",
+      "logsPathSHA256": "b0d3b6ea68f682c8dba80f11c01b131598cae86d5a00ef8ab47f18521fe20cff",
+      "screenshotPathSHA256": "612084cf6941474775389d916116448c82996bd67aeeb0d771fadabda43792cc"
+    },
+    {
+      "id": "03-cancel-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/03-cancel-settled.txt",
+      "logsPath": "evidence/batch-07/03-cancel-settled.log",
+      "screenshotPath": "assets/current/batch-07/03-cancel-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-pos-1794659369310",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available"
+      },
+      "action": "Tap cancels disclosure; wait2seconds for viewport restoration.",
+      "hierarchyPathSHA256": "6835c70db3025911a3d75d5fd342b381da316737b758856aa12240fa562a385e",
+      "logsPathSHA256": "b0d3b6ea68f682c8dba80f11c01b131598cae86d5a00ef8ab47f18521fe20cff",
+      "screenshotPathSHA256": "f0e1ab4dee9df80a3ea8b8060964a03c7f40878eadeb2d4f3b8098b5302038c5"
+    },
+    {
+      "id": "04-cancel-still-collapsed",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/04-cancel-still-collapsed.txt",
+      "logsPath": "evidence/batch-07/04-cancel-still-collapsed.log",
+      "screenshotPath": "assets/current/batch-07/04-cancel-still-collapsed.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-pos-1794659369310",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available"
+      },
+      "action": "Additional3seconds after cancel; route stays collapsed.",
+      "hierarchyPathSHA256": "d772c24d71f936eb2d27ba1b515489b0e979e9d6a2ef94aa6148e98c7b7daba6",
+      "logsPathSHA256": "b0d3b6ea68f682c8dba80f11c01b131598cae86d5a00ef8ab47f18521fe20cff",
+      "screenshotPathSHA256": "f0e1ab4dee9df80a3ea8b8060964a03c7f40878eadeb2d4f3b8098b5302038c5"
+    },
+    {
+      "id": "05-natural-expiry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/05-natural-expiry.txt",
+      "logsPath": "evidence/batch-07/05-natural-expiry.log",
+      "screenshotPath": "assets/current/batch-07/05-natural-expiry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-pos-1794659369310",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available"
+      },
+      "action": "Second hold then11sec natural disclosure expiry.",
+      "hierarchyPathSHA256": "e810562ea7ce2919081546d5b8072d30b51fa410a4ea6f37dd31d84a200e9e55",
+      "logsPathSHA256": "7abba7945276938fac2597d7221b2251e3f93b995924a9530d9bf3d3f57d2cd8",
+      "screenshotPathSHA256": "da1c02fbf5baa6576255f23cf28f04a07ddcc1580db5f9a4b31a25a724da3635"
+    },
+    {
+      "id": "06-before-signal-loss",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/06-before-signal-loss.txt",
+      "logsPath": "evidence/batch-07/06-before-signal-loss.log",
+      "screenshotPath": "assets/current/batch-07/06-before-signal-loss.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-signal-1794659425588",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "signal-loss",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "6"
+      },
+      "action": "Hold signal-loss fixture before6sec followup.",
+      "hierarchyPathSHA256": "e491090d9feaa0b570ed0cd89d38761362fa24a17f78c531609b9c4ffb2f4cd2",
+      "logsPathSHA256": "a3741c85f646c23cc6c61cfadc90510ff22ef5fe5362138292f9fcb147c5ad01",
+      "screenshotPathSHA256": "5255926ff0b35d6d9f669fa6e18a58b12584b1a75105013a7452aa2b0d3c0659"
+    },
+    {
+      "id": "07-signal-loss",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/07-signal-loss.txt",
+      "logsPath": "evidence/batch-07/07-signal-loss.log",
+      "screenshotPath": "assets/current/batch-07/07-signal-loss.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-signal-1794659425588",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "signal-loss",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "6"
+      },
+      "action": "Followup signal-loss during disclosure.",
+      "hierarchyPathSHA256": "ce0ea97bd5f8350913d722b31958dbd0f84e738514c009b047f13233d4eeb5a8",
+      "logsPathSHA256": "a3741c85f646c23cc6c61cfadc90510ff22ef5fe5362138292f9fcb147c5ad01",
+      "screenshotPathSHA256": "4abaeb431ca7b048d834cd626ba5e44222bce68482f89dfb1dfb77cc1d32e48b"
+    },
+    {
+      "id": "08-newer-confirm",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/08-newer-confirm.txt",
+      "logsPath": "evidence/batch-07/08-newer-confirm.log",
+      "screenshotPath": "assets/current/batch-07/08-newer-confirm.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        }
+      },
+      "action": "Seed base; inject newer import.",
+      "hierarchyPathSHA256": "2771b3d8e060b82709bd28e7722c743f3642deb8d0fb682577308b9304876a5c",
+      "logsPathSHA256": "b582fb32fd4d48a8ba7c8a86b3e9167a92ab5afbc9ca93bdeff93ef9e5c4150c",
+      "screenshotPathSHA256": "a754c0ac5821f730e63aca197320887c769f3deb46476ec33c8555ebedb0ea65"
+    },
+    {
+      "id": "09-newer-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/09-newer-revision.txt",
+      "logsPath": "evidence/batch-07/09-newer-revision.log",
+      "screenshotPath": "assets/current/batch-07/09-newer-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        }
+      },
+      "action": "After confirmed newer Replace, saved detail revision12:01.",
+      "hierarchyPathSHA256": "fbbf4657a74ed4cd07468e42e1eedcfb5b970609b2149cd4eef68cc60f332e5e",
+      "logsPathSHA256": "53123238a38408fb144dafb6239991e30b78da3262b7a2680419be2e26e4ba23",
+      "screenshotPathSHA256": "2b8713f5fc53b1bfae017bdf72de89f4f7b5e7d34a7ffd05839f9b4a304656a4"
+    },
+    {
+      "id": "10-older-confirm",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/10-older-confirm.txt",
+      "logsPath": "evidence/batch-07/10-older-confirm.log",
+      "screenshotPath": "assets/current/batch-07/10-older-confirm.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "b2c2f53a35c0.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Same library persisted newer; older import requests rollback.",
+      "hierarchyPathSHA256": "377376203c7e1b8ca5e64991e7a10ef9a00390f3b8b588a91ba4c91e9e27135a",
+      "logsPathSHA256": "8351d54d46c7d7240a64a057d8542cf492ea8fdeb53399c833c66df97d164e7a",
+      "screenshotPathSHA256": "0ed5fc7d569673e5c5326b799bc38c468db6643eeb2ebb37693f76f36c54c114"
+    },
+    {
+      "id": "11-older-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/11-older-revision.txt",
+      "logsPath": "evidence/batch-07/11-older-revision.log",
+      "screenshotPath": "assets/current/batch-07/11-older-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "b2c2f53a35c0.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Confirmed rollback; revision11:59.",
+      "hierarchyPathSHA256": "d0d6bf1c0720d820a9dc66d7a4577c686a7ba5c40e2f3e55fdad5bd1e726232b",
+      "logsPathSHA256": "f29c4f0cafb34da2d79937ceced29f4c3f93d17d0802473c992cf80ed1257f2c",
+      "screenshotPathSHA256": "8345e185ca16ad1221a8f9e0dbe29d2008862d3739d7ab491478c158388f48c5"
+    },
+    {
+      "id": "12-remove-cancel-prompt",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/12-remove-cancel-prompt.txt",
+      "logsPath": "evidence/batch-07/12-remove-cancel-prompt.log",
+      "screenshotPath": "assets/current/batch-07/12-remove-cancel-prompt.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "b2c2f53a35c0.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Remove saved plan confirmation.",
+      "hierarchyPathSHA256": "af2b8a19615a72131422d894b6079b4a8f9885c128d39819489e9bff56a4ac54",
+      "logsPathSHA256": "f29c4f0cafb34da2d79937ceced29f4c3f93d17d0802473c992cf80ed1257f2c",
+      "screenshotPathSHA256": "6b15aafe24fa885f381aa80c22cec3592d167f2190afca7cca931e94a2d8f389"
+    },
+    {
+      "id": "13-remove-cancelled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/13-remove-cancelled.txt",
+      "logsPath": "evidence/batch-07/13-remove-cancelled.log",
+      "screenshotPath": "assets/current/batch-07/13-remove-cancelled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-replace-1794659445437",
+        "NAVIGATION_FLIGHT_UI_TEST_IMPORT_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "b2c2f53a35c0.fplnav",
+          "sha256": "b2c2f53a35c034c0bb81dc1592c5195b58eff51b963f41e89a7553c29ec6b87c"
+        }
+      },
+      "action": "Cancel retains saved older revision.",
+      "hierarchyPathSHA256": "25e3b0f7b7f2170d0f29627cd6f8fdff0e0281e35063ec52fdc6fa0c2f479a5d",
+      "logsPathSHA256": "f29c4f0cafb34da2d79937ceced29f4c3f93d17d0802473c992cf80ed1257f2c",
+      "screenshotPathSHA256": "67431810a1019113e96779e3d82919114e9adf9475ece87e35ecf2e9ba85714b"
+    },
+    {
+      "id": "14-remove-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/14-remove-failure.txt",
+      "logsPath": "evidence/batch-07/14-remove-failure.log",
+      "screenshotPath": "assets/current/batch-07/14-remove-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-removal-failure-1794659496463",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_REMOVAL_FAILURE": "1"
+      },
+      "action": "Confirm remove under existing failure injection.",
+      "hierarchyPathSHA256": "f8bdc5d0792024c346e40ed6b19c4b04cfbe582336084c88b7e3ab5ad4d6be73",
+      "logsPathSHA256": "b56e3c2d7ed24f5e45c44110859e51e2b205222e27e8b65f3724c799c137baff",
+      "screenshotPathSHA256": "786ad25b739dbd06723cc0fbc507ddf6eb68a88f94c1f2324f617f45ef123be6"
+    },
+    {
+      "id": "15-protected-restart-confirm",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/15-protected-restart-confirm.txt",
+      "logsPath": "evidence/batch-07/15-protected-restart-confirm.log",
+      "screenshotPath": "assets/current/batch-07/15-protected-restart-confirm.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-restart-1794659512904",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Protected restart warning.",
+      "hierarchyPathSHA256": "5dce9687f0280a49e8dba413cffa4920d579484c1ff789db6daac1eb154d5882",
+      "logsPathSHA256": "72ad63829fa503306603574ff7dc9a1845e7b2fb9785aa570d0e35389fdee52d",
+      "screenshotPathSHA256": "786ccd7772bb556944c1a88046b327acdc28b4e5037e66e21584ebec71f3d643"
+    },
+    {
+      "id": "16-restarted-ready",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-07/16-restarted-ready.txt",
+      "logsPath": "evidence/batch-07/16-restarted-ready.log",
+      "screenshotPath": "assets/current/batch-07/16-restarted-ready.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch07-restart-1794659512904",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Confirm Restart resets to ready timer00:00.",
+      "hierarchyPathSHA256": "66ebbba5c2d2a6bf6a1455ddac131b2b80439cd09cd778cc294aaf594f41747e",
+      "logsPathSHA256": "ff844bfb69a029ad80160b74b53e6e11a58d258dddfbcddf04646a0126e1e0be",
+      "screenshotPathSHA256": "c0ce11c419645e19a863fb0c36160c537d571cb6b36d92a45a4887bb9dc6ddae"
+    }
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder.",
+  "findings": [
+    "Position cancel route remains collapsed after2+3sec; natural10sec expiry removes disclosure and restores vertical route",
+    "Signal loss clears plane/recovery and announces lost, but route collapses",
+    "Newer Replace changes revision12:00\u219212:01; same library relaunch older Replace rolls back11:59",
+    "Remove cancellation retains detail; injected failure announces retained saved/current state",
+    "Confirmed protected Restart returns ready"
+  ],
+  "limits": [
+    "Position synthetic only",
+    "Real Files import unverified"
+  ]
+}

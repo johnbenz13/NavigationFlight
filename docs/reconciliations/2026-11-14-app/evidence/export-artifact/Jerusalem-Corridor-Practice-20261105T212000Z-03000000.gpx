@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="NavigationFlight" xmlns="http://www.topografix.com/GPX/1/1" xmlns:navflight="https://navigationflight.app/xmlschemas/GPX/1/0">
+  <metadata>
+    <name>Jerusalem Corridor Practice</name>
+    <extensions>
+      <navflight:flightPlanID>00000000-0000-4000-8000-000000000001</navflight:flightPlanID>
+      <navflight:status>complete</navflight:status>
+      <navflight:closureCause>automatic</navflight:closureCause>
+      <navflight:coverage>available</navflight:coverage>
+    </extensions>
+  </metadata>
+  <trk>
+    <name>Jerusalem Corridor Practice</name>
+    <trkseg>
+      <trkpt lat="32.1" lon="34.8">
+        
+        <ele>500.0</ele><time>2026-11-05T21:20:00Z</time>
+        <extensions>
+          <navflight:speed>42.0</navflight:speed>
+          <navflight:course>90.0</navflight:course>
+        </extensions>
+      </trkpt>
+      <trkpt lat="32.1" lon="34.9">
+        
+        <ele>1280.0</ele><time>2026-11-05T22:26:00Z</time>
+        <extensions>
+          <navflight:speed>44.0</navflight:speed>
+          <navflight:course>90.0</navflight:course>
+        </extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

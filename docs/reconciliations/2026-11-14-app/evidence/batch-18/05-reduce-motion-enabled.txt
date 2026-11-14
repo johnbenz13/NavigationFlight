@@ -1,0 +1,372 @@
+Device orientation: Portrait
+------------------------
+Application bundle identifier: com.apple.Preferences
+Application UI orientation: Portrait
+Application, pid: 81198, label: 'Settings'
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+         Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+          Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+           Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+            Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+             Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+              Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+               CollectionView, {{0.0, 0.0}, {320.0, 1210.0}}, identifier: 'com.apple.settings.sidebar.collectionView', label: 'Sidebar', hitPoint: {160.0, 605.0}
+                Other, {{-16.0, -2280.0}, {352.0, 2530.5}}, hitPoint: {168.0, 125.2}
+                Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+                 Other, {{0.0, 0.0}, {320.0, 180.0}}, hitPoint: {160.0, 90.0}
+                Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+                Cell, {{16.0, 140.0}, {288.0, 100.5}}, hitPoint: {160.0, 190.2}
+                 Other, {{16.0, 140.0}, {288.0, 100.5}}, hitPoint: {160.0, 190.2}
+                 Other, {{16.0, 140.0}, {288.0, 100.5}}, hitPoint: {160.0, 190.2}
+                  Other, {{16.0, 140.0}, {288.0, 100.5}}, hitPoint: {160.0, 190.2}
+                   Other, {{16.0, 140.0}, {288.0, 100.5}}, hitPoint: {160.0, 190.2}
+                    Button, {{16.0, 140.0}, {288.0, 100.5}}, identifier: 'com.apple.settings.primaryAppleAccount', label: 'Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more.', hitPoint: {160.0, 190.2}
+                     Image, {{32.0, 160.5}, {60.0, 60.0}}, identifier: 'apple.id', label: 'apple.id', hitPoint: {62.0, 190.5}
+                     StaticText, {{100.0, 151.0}, {138.5, 24.0}}, label: 'Apple Account', hitPoint: {169.2, 163.0}
+                     StaticText, {{100.0, 177.5}, {178.5, 52.0}}, label: 'Sign in to access your iCloud data, the App Store, Apple services, and more.', hitPoint: {189.2, 203.5}
+                Other, {{-16.0, 250.5}, {352.0, 426.0}}, hitPoint: {168.0, 463.5}
+                Cell, {{16.0, 250.5}, {288.0, 52.0}}, hitPoint: {160.0, 276.5}
+                 Other, {{16.0, 250.5}, {288.0, 52.0}}, hitPoint: {160.0, 276.5}
+                 Other, {{16.0, 250.5}, {288.0, 52.0}}, hitPoint: {160.0, 276.5}
+                  Other, {{16.0, 250.5}, {288.0, 52.0}}, hitPoint: {160.0, 276.5}
+                   Other, {{16.0, 250.5}, {288.0, 52.0}}, hitPoint: {160.0, 276.5}
+                    Button, {{16.0, 250.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.general', label: 'General', hitPoint: {160.0, 276.5}
+                     Image, {{30.0, 262.5}, {28.0, 28.0}}, hitPoint: {44.0, 276.5}
+                     StaticText, {{30.0, 262.5}, {95.5, 28.0}}, label: 'General', hitPoint: {77.8, 276.5}
+                Cell, {{16.0, 302.5}, {288.0, 52.0}}, Focused, Selected, hitPoint: {160.0, 328.5}
+                 Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                  Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                   Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                 Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                  Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                   Other, {{16.0, 302.5}, {288.0, 52.0}}, hitPoint: {160.0, 328.5}
+                    Button, {{16.0, 302.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.accessibility', label: 'Accessibility', Selected, hitPoint: {160.0, 328.5}
+                     Image, {{30.0, 314.5}, {28.0, 28.0}}, hitPoint: {44.0, 328.5}
+                     StaticText, {{30.0, 314.5}, {134.0, 28.0}}, label: 'Accessibility', hitPoint: {97.0, 328.5}
+                Cell, {{16.0, 354.5}, {288.0, 52.0}}, hitPoint: {160.0, 380.5}
+                 Other, {{16.0, 354.5}, {288.0, 52.0}}, hitPoint: {160.0, 380.5}
+                 Other, {{16.0, 354.5}, {288.0, 52.0}}, hitPoint: {160.0, 380.5}
+                  Other, {{16.0, 354.5}, {288.0, 52.0}}, hitPoint: {160.0, 380.5}
+                   Other, {{16.0, 354.5}, {288.0, 52.0}}, hitPoint: {160.0, 380.5}
+                    Button, {{16.0, 354.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.appearance', label: 'Appearance', hitPoint: {160.0, 380.5}
+                     Image, {{30.0, 366.5}, {28.0, 28.0}}, hitPoint: {44.0, 380.5}
+                     StaticText, {{30.0, 366.5}, {128.0, 28.0}}, label: 'Appearance', hitPoint: {94.0, 380.5}
+                Cell, {{16.0, 406.5}, {288.0, 52.0}}, hitPoint: {160.0, 432.5}
+                 Other, {{16.0, 406.5}, {288.0, 52.0}}, hitPoint: {160.0, 432.5}
+                 Other, {{16.0, 406.5}, {288.0, 52.0}}, hitPoint: {160.0, 432.5}
+                  Other, {{16.0, 406.5}, {288.0, 52.0}}, hitPoint: {160.0, 432.5}
+                   Other, {{16.0, 406.5}, {288.0, 52.0}}, hitPoint: {160.0, 432.5}
+                    Button, {{16.0, 406.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.camera', label: 'Camera', hitPoint: {160.0, 432.5}
+                     Image, {{30.0, 418.5}, {28.0, 28.0}}, hitPoint: {44.0, 432.5}
+                     StaticText, {{30.0, 418.5}, {95.5, 28.0}}, label: 'Camera', hitPoint: {77.8, 432.5}
+                Cell, {{16.0, 458.5}, {288.0, 52.0}}, hitPoint: {160.0, 484.5}
+                 Other, {{16.0, 458.5}, {288.0, 52.0}}, hitPoint: {160.0, 484.5}
+                 Other, {{16.0, 458.5}, {288.0, 52.0}}, hitPoint: {160.0, 484.5}
+                  Other, {{16.0, 458.5}, {288.0, 52.0}}, hitPoint: {160.0, 484.5}
+                   Other, {{16.0, 458.5}, {288.0, 52.0}}, hitPoint: {160.0, 484.5}
+                    Button, {{16.0, 458.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.homeScreen', label: 'Home Screen & App Library', hitPoint: {160.0, 484.5}
+                     Image, {{30.0, 470.5}, {28.0, 28.0}}, hitPoint: {44.0, 484.5}
+                     StaticText, {{30.0, 470.5}, {248.0, 28.0}}, label: 'Home Screen & App Library', hitPoint: {154.0, 484.5}
+                Cell, {{16.0, 510.5}, {288.0, 52.0}}, hitPoint: {160.0, 536.5}
+                 Other, {{16.0, 510.5}, {288.0, 52.0}}, hitPoint: {160.0, 536.5}
+                 Other, {{16.0, 510.5}, {288.0, 52.0}}, hitPoint: {160.0, 536.5}
+                  Other, {{16.0, 510.5}, {288.0, 52.0}}, hitPoint: {160.0, 536.5}
+                   Other, {{16.0, 510.5}, {288.0, 52.0}}, hitPoint: {160.0, 536.5}
+                    Button, {{16.0, 510.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.multitaskingAndGestures', label: 'Multitasking & Gestures', hitPoint: {160.0, 536.5}
+                     Image, {{30.0, 522.5}, {28.0, 28.0}}, hitPoint: {44.0, 536.5}
+                     StaticText, {{30.0, 522.5}, {217.5, 28.0}}, label: 'Multitasking & Gestures', hitPoint: {138.8, 536.5}
+                Cell, {{16.0, 562.5}, {288.0, 52.0}}, hitPoint: {160.0, 588.5}
+                 Other, {{16.0, 562.5}, {288.0, 52.0}}, hitPoint: {160.0, 588.5}
+                 Other, {{16.0, 562.5}, {288.0, 52.0}}, hitPoint: {160.0, 588.5}
+                  Other, {{16.0, 562.5}, {288.0, 52.0}}, hitPoint: {160.0, 588.5}
+                   Other, {{16.0, 562.5}, {288.0, 52.0}}, hitPoint: {160.0, 588.5}
+                    Button, {{16.0, 562.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.search', label: 'Search', hitPoint: {160.0, 588.5}
+                     Image, {{30.0, 574.5}, {28.0, 28.0}}, hitPoint: {44.0, 588.5}
+                     StaticText, {{30.0, 574.5}, {89.5, 28.0}}, label: 'Search', hitPoint: {74.8, 588.5}
+                Cell, {{16.0, 614.5}, {288.0, 52.0}}, hitPoint: {160.0, 640.5}
+                 Other, {{16.0, 614.5}, {288.0, 52.0}}, hitPoint: {160.0, 640.5}
+                 Other, {{16.0, 614.5}, {288.0, 52.0}}, hitPoint: {160.0, 640.5}
+                  Other, {{16.0, 614.5}, {288.0, 52.0}}, hitPoint: {160.0, 640.5}
+                   Other, {{16.0, 614.5}, {288.0, 52.0}}, hitPoint: {160.0, 640.5}
+                    Button, {{16.0, 614.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.siri', label: 'Siri', hitPoint: {160.0, 640.5}
+                     Image, {{30.0, 626.5}, {28.0, 28.0}}, hitPoint: {44.0, 640.5}
+                     StaticText, {{30.0, 626.5}, {60.0, 28.0}}, label: 'Siri', hitPoint: {60.0, 640.5}
+                Other, {{-16.0, 676.5}, {352.0, 62.0}}, hitPoint: {168.0, 707.5}
+                Cell, {{16.0, 676.5}, {288.0, 52.0}}, hitPoint: {160.0, 702.5}
+                 Other, {{16.0, 676.5}, {288.0, 52.0}}, hitPoint: {160.0, 702.5}
+                 Other, {{16.0, 676.5}, {288.0, 52.0}}, hitPoint: {160.0, 702.5}
+                  Other, {{16.0, 676.5}, {288.0, 52.0}}, hitPoint: {160.0, 702.5}
+                   Other, {{16.0, 676.5}, {288.0, 52.0}}, hitPoint: {160.0, 702.5}
+                    Button, {{16.0, 676.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.screenTime', label: 'Screen Time', hitPoint: {160.0, 702.5}
+                     Image, {{30.0, 688.5}, {28.0, 28.0}}, hitPoint: {44.0, 702.5}
+                     StaticText, {{30.0, 688.5}, {131.5, 28.0}}, label: 'Screen Time', hitPoint: {95.8, 702.5}
+                Other, {{-16.0, 738.5}, {352.0, 114.0}}, hitPoint: {168.0, 795.5}
+                Cell, {{16.0, 738.5}, {288.0, 52.0}}, hitPoint: {160.0, 764.5}
+                 Other, {{16.0, 738.5}, {288.0, 52.0}}, hitPoint: {160.0, 764.5}
+                 Other, {{16.0, 738.5}, {288.0, 52.0}}, hitPoint: {160.0, 764.5}
+                  Other, {{16.0, 738.5}, {288.0, 52.0}}, hitPoint: {160.0, 764.5}
+                   Other, {{16.0, 738.5}, {288.0, 52.0}}, hitPoint: {160.0, 764.5}
+                    Button, {{16.0, 738.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.passcodeAndBiometrics', label: 'Passcode', hitPoint: {160.0, 764.5}
+                     Image, {{30.0, 750.5}, {28.0, 28.0}}, hitPoint: {44.0, 764.5}
+                     StaticText, {{30.0, 750.5}, {110.0, 28.0}}, label: 'Passcode', hitPoint: {85.0, 764.5}
+                Cell, {{16.0, 790.5}, {288.0, 52.0}}, hitPoint: {160.0, 816.5}
+                 Other, {{16.0, 790.5}, {288.0, 52.0}}, hitPoint: {160.0, 816.5}
+                 Other, {{16.0, 790.5}, {288.0, 52.0}}, hitPoint: {160.0, 816.5}
+                  Other, {{16.0, 790.5}, {288.0, 52.0}}, hitPoint: {160.0, 816.5}
+                   Other, {{16.0, 790.5}, {288.0, 52.0}}, hitPoint: {160.0, 816.5}
+                    Button, {{16.0, 790.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.privacyAndSecurity', label: 'Privacy & Security', hitPoint: {160.0, 816.5}
+                     Image, {{30.0, 802.5}, {28.0, 28.0}}, hitPoint: {44.0, 816.5}
+                     StaticText, {{30.0, 802.5}, {174.5, 28.0}}, label: 'Privacy & Security', hitPoint: {117.2, 816.5}
+                Other, {{-16.0, 852.5}, {352.0, 114.0}}, hitPoint: {168.0, 909.5}
+                Cell, {{16.0, 852.5}, {288.0, 52.0}}, hitPoint: {160.0, 878.5}
+                 Other, {{16.0, 852.5}, {288.0, 52.0}}, hitPoint: {160.0, 878.5}
+                 Other, {{16.0, 852.5}, {288.0, 52.0}}, hitPoint: {160.0, 878.5}
+                  Other, {{16.0, 852.5}, {288.0, 52.0}}, hitPoint: {160.0, 878.5}
+                   Other, {{16.0, 852.5}, {288.0, 52.0}}, hitPoint: {160.0, 878.5}
+                    Button, {{16.0, 852.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.gameCenter', label: 'Game Center', hitPoint: {160.0, 878.5}
+                     Image, {{30.0, 864.5}, {28.0, 28.0}}, hitPoint: {44.0, 878.5}
+                     StaticText, {{30.0, 864.5}, {137.0, 28.0}}, label: 'Game Center', hitPoint: {98.5, 878.5}
+                Cell, {{16.0, 904.5}, {288.0, 52.0}}, hitPoint: {160.0, 930.5}
+                 Other, {{16.0, 904.5}, {288.0, 52.0}}, hitPoint: {160.0, 930.5}
+                 Other, {{16.0, 904.5}, {288.0, 52.0}}, hitPoint: {160.0, 930.5}
+                  Other, {{16.0, 904.5}, {288.0, 52.0}}, hitPoint: {160.0, 930.5}
+                   Other, {{16.0, 904.5}, {288.0, 52.0}}, hitPoint: {160.0, 930.5}
+                    Button, {{16.0, 904.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.iCloud', label: 'iCloud', hitPoint: {160.0, 930.5}
+                     Image, {{30.0, 916.5}, {28.0, 28.0}}, hitPoint: {44.0, 930.5}
+                     StaticText, {{30.0, 916.5}, {84.5, 28.0}}, label: 'iCloud', hitPoint: {72.2, 930.5}
+                Other, {{-16.0, 966.5}, {352.0, 62.0}}, hitPoint: {168.0, 997.5}
+                Cell, {{16.0, 966.5}, {288.0, 52.0}}, hitPoint: {160.0, 992.5}
+                 Other, {{16.0, 966.5}, {288.0, 52.0}}, hitPoint: {160.0, 992.5}
+                 Other, {{16.0, 966.5}, {288.0, 52.0}}, hitPoint: {160.0, 992.5}
+                  Other, {{16.0, 966.5}, {288.0, 52.0}}, hitPoint: {160.0, 992.5}
+                   Other, {{16.0, 966.5}, {288.0, 52.0}}, hitPoint: {160.0, 992.5}
+                    Button, {{16.0, 966.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.apps', label: 'Apps', hitPoint: {160.0, 992.5}
+                     Image, {{30.0, 978.5}, {28.0, 28.0}}, hitPoint: {44.0, 992.5}
+                     StaticText, {{30.0, 978.5}, {75.5, 28.0}}, label: 'Apps', hitPoint: {67.8, 992.5}
+                Other, {{-16.0, 1028.5}, {352.0, 2482.0}}, hitPoint: {168.0, 1119.2}
+                Cell, {{16.0, 1028.5}, {288.0, 52.0}}, hitPoint: {160.0, 1054.5}
+                 Other, {{16.0, 1028.5}, {288.0, 52.0}}, hitPoint: {160.0, 1054.5}
+                 Other, {{16.0, 1028.5}, {288.0, 52.0}}, hitPoint: {160.0, 1054.5}
+                  Other, {{16.0, 1028.5}, {288.0, 52.0}}, hitPoint: {160.0, 1054.5}
+                   Other, {{16.0, 1028.5}, {288.0, 52.0}}, hitPoint: {160.0, 1054.5}
+                    Button, {{16.0, 1028.5}, {288.0, 52.0}}, identifier: 'com.apple.settings.developer', label: 'Developer', hitPoint: {160.0, 1054.5}
+                     Image, {{30.0, 1040.5}, {28.0, 28.0}}, hitPoint: {44.0, 1054.5}
+                     StaticText, {{30.0, 1040.5}, {114.0, 28.0}}, label: 'Developer', hitPoint: {87.0, 1054.5}
+                Other, {{287.0, 140.0}, {30.0, 1070.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {302.0, 675.0}
+                 Other, {{314.0, 242.5}, {3.0, 964.5}}, hitPoint: {315.5, 724.8}
+                Other, {{287.0, 140.0}, {30.0, 1070.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {302.0, 675.0}
+                 Other, {{314.0, 242.5}, {3.0, 964.5}}, hitPoint: {315.5, 724.8}
+           NavigationBar, {{0.0, 32.0}, {320.0, 108.0}}, identifier: 'Settings', hitPoint: {160.0, 86.0}
+            SearchField, {{16.0, 86.0}, {288.0, 44.0}}, label: 'Search', placeholderValue: 'Search', hitPoint: {160.0, 108.0}
+             Button, {{270.0, 97.0}, {18.0, 22.5}}, identifier: 'Dictate', label: 'Dictate', hitPoint: {279.0, 108.2}
+             Image, {{28.0, 97.5}, {20.5, 20.0}}, identifier: 'magnifyingglass', label: 'Search', hitPoint: {38.2, 107.5}
+             Button, {{270.0, 97.0}, {18.0, 22.5}}, identifier: 'Dictate', label: 'Dictate', hitPoint: {279.0, 108.2}
+           Toolbar, {{0.0, 0.0}, {320.0, 1210.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {160.0, 605.0}
+            Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+          Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+           Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+            Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+             Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+              Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+               Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+             Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+              Other, {{0.0, 0.0}, {320.0, 1210.0}}, hitPoint: {160.0, 605.0}
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+          Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+           NavigationBar, {{0.0, 32.0}, {834.0, 54.0}}, identifier: 'Motion', hitPoint: {417.0, 59.0}
+            Button, {{330.0, 32.0}, {44.0, 44.0}}, identifier: 'BackButton', label: 'Accessibility', hitPoint: {352.0, 54.0}
+            StaticText, {{549.0, 43.5}, {55.5, 21.0}}, label: 'Motion', hitPoint: {576.8, 54.0}
+           Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+            Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+             Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+              Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+               Other, {{320.0, 86.0}, {514.0, 1104.0}}, hitPoint: {577.0, 638.0}
+                Table, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+                 Other, {{0.0, 86.0}, {834.0, 17.5}}, hitPoint: {417.0, 94.8}
+                 Cell, {{336.0, 103.5}, {482.0, 53.0}}, identifier: 'REDUCE_MOTION', hitPoint: {577.0, 130.0}
+                  Other, {{336.0, 103.5}, {482.0, 53.0}}, hitPoint: {577.0, 130.0}
+                   Other, {{336.0, 103.5}, {482.0, 53.0}}, hitPoint: {577.0, 130.0}
+                    Switch, {{356.0, 116.0}, {442.0, 28.0}}, identifier: 'REDUCE_MOTION', label: 'Reduce Motion', value: 1, hitPoint: {577.0, 130.0}
+                     Button, {{356.0, 119.8}, {115.0, 20.5}}, identifier: 'REDUCE_MOTION', label: 'Reduce Motion', hitPoint: {413.5, 130.0}
+                     Switch, {{737.0, 116.0}, {63.0, 28.0}}, value: 1, hitPoint: {768.5, 130.0}
+                 Other, {{0.0, 156.5}, {834.0, 46.0}}, identifier: 'Reduce the motion of the user interface, including the parallax effect of icons.', hitPoint: {417.0, 179.5}
+                  Other, {{336.0, 156.5}, {482.0, 46.0}}, label: 'Reduce the motion of the user interface, including the parallax effect of icons.', hitPoint: {577.0, 179.5}
+                 Other, {{0.0, 202.5}, {834.0, 17.5}}, hitPoint: {417.0, 211.2}
+                 Cell, {{336.0, 220.0}, {482.0, 53.0}}, identifier: 'REDUCE_MOTION_REDUCE_SLIDE_ANIMATIONS', hitPoint: {577.0, 246.5}
+                  Other, {{336.0, 220.0}, {482.0, 53.0}}, hitPoint: {577.0, 246.5}
+                   Other, {{336.0, 220.0}, {482.0, 53.0}}, hitPoint: {577.0, 246.5}
+                    Switch, {{356.0, 232.5}, {442.0, 28.0}}, identifier: 'REDUCE_MOTION_REDUCE_SLIDE_ANIMATIONS', label: 'Prefer Cross-Fade Transitions', value: 0, hitPoint: {577.0, 246.5}
+                     Button, {{356.0, 236.2}, {226.5, 20.5}}, identifier: 'REDUCE_MOTION_REDUCE_SLIDE_ANIMATIONS', label: 'Prefer Cross-Fade Transitions', hitPoint: {469.2, 246.5}
+                     Switch, {{737.0, 232.5}, {63.0, 28.0}}, value: 0, hitPoint: {768.5, 246.5}
+                 Other, {{0.0, 273.0}, {834.0, 46.0}}, identifier: 'Reduces the movement of onscreen elements and screen actions, such as launching or moving between apps, to help with motion sensitivity.', hitPoint: {417.0, 296.0}
+                  Other, {{336.0, 273.0}, {482.0, 46.0}}, label: 'Reduces the movement of onscreen elements and screen actions, such as launching or moving between apps, to help with motion sensitivity.', hitPoint: {577.0, 296.0}
+                 Other, {{0.0, 319.0}, {834.0, 17.5}}, hitPoint: {417.0, 327.8}
+                 Cell, {{336.0, 336.5}, {482.0, 53.0}}, identifier: 'REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES', hitPoint: {577.0, 363.0}
+                  Other, {{336.0, 336.5}, {482.0, 53.0}}, hitPoint: {577.0, 363.0}
+                   Other, {{336.0, 336.5}, {482.0, 53.0}}, hitPoint: {577.0, 363.0}
+                    Switch, {{356.0, 349.0}, {442.0, 28.0}}, identifier: 'REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES', label: 'Auto-Play Animated Images', value: 1, hitPoint: {577.0, 363.0}
+                     Button, {{356.0, 352.8}, {211.0, 20.5}}, identifier: 'REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES', label: 'Auto-Play Animated Images', hitPoint: {461.5, 363.0}
+                     Switch, {{737.0, 349.0}, {63.0, 28.0}}, value: 1, hitPoint: {768.5, 363.0}
+                 Cell, {{336.0, 389.5}, {482.0, 53.0}}, identifier: 'REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS', hitPoint: {577.0, 416.0}
+                  Other, {{336.0, 389.5}, {482.0, 53.0}}, hitPoint: {577.0, 416.0}
+                   Other, {{336.0, 389.5}, {482.0, 53.0}}, hitPoint: {577.0, 416.0}
+                    Switch, {{356.0, 402.0}, {442.0, 28.0}}, identifier: 'REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS', label: 'Auto-Play Video Previews', value: 1, hitPoint: {577.0, 416.0}
+                     Button, {{356.0, 405.8}, {195.5, 20.5}}, identifier: 'REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS', label: 'Auto-Play Video Previews', hitPoint: {453.8, 416.0}
+                     Switch, {{737.0, 402.0}, {63.0, 28.0}}, value: 1, hitPoint: {768.5, 416.0}
+                 Cell, {{336.0, 442.5}, {482.0, 53.0}}, identifier: 'ReduceMotionAutoplayMessagesEffects', hitPoint: {577.0, 469.0}
+                  Other, {{336.0, 442.5}, {482.0, 53.0}}, hitPoint: {577.0, 469.0}
+                   Other, {{336.0, 442.5}, {482.0, 53.0}}, hitPoint: {577.0, 469.0}
+                    Switch, {{356.0, 455.0}, {442.0, 28.0}}, identifier: 'ReduceMotionAutoplayMessagesEffects', label: 'Auto-Play Message Effects', value: 1, hitPoint: {577.0, 469.0}
+                     Button, {{356.0, 458.8}, {205.5, 20.5}}, identifier: 'ReduceMotionAutoplayMessagesEffects', label: 'Auto-Play Message Effects', hitPoint: {458.8, 469.0}
+                     Switch, {{737.0, 455.0}, {63.0, 28.0}}, value: 1, hitPoint: {768.5, 469.0}
+                 Other, {{0.0, 495.5}, {834.0, 46.0}}, identifier: 'Control if videos, animated images, and full screen effects in messages play automatically.', hitPoint: {417.0, 518.5}
+                  Other, {{336.0, 495.5}, {482.0, 46.0}}, label: 'Control if videos, animated images, and full screen effects in messages play automatically.', hitPoint: {577.0, 518.5}
+                 Other, {{0.0, 541.5}, {834.0, 17.5}}, hitPoint: {417.0, 550.2}
+                 Cell, {{336.0, 559.0}, {482.0, 53.0}}, identifier: 'PREFER_NONBLINKING_CURSOR', hitPoint: {577.0, 585.5}
+                  Other, {{336.0, 559.0}, {482.0, 53.0}}, hitPoint: {577.0, 585.5}
+                   Other, {{336.0, 559.0}, {482.0, 53.0}}, hitPoint: {577.0, 585.5}
+                    Switch, {{356.0, 571.5}, {442.0, 28.0}}, identifier: 'PREFER_NONBLINKING_CURSOR', label: 'Prefer Non-Blinking Cursor', value: 0, hitPoint: {577.0, 585.5}
+                     Button, {{356.0, 575.2}, {205.0, 20.5}}, identifier: 'PREFER_NONBLINKING_CURSOR', label: 'Prefer Non-Blinking Cursor', hitPoint: {458.5, 585.5}
+                     Switch, {{737.0, 571.5}, {63.0, 28.0}}, value: 0, hitPoint: {768.5, 585.5}
+                 Other, {{0.0, 612.0}, {834.0, 30.0}}, identifier: 'Prefer the cursor indicator in text does not blink.', hitPoint: {417.0, 627.0}
+                  Other, {{336.0, 612.0}, {482.0, 30.0}}, label: 'Prefer the cursor indicator in text does not blink.', hitPoint: {577.0, 627.0}
+                 Other, {{0.0, 642.0}, {834.0, 17.5}}, hitPoint: {417.0, 650.8}
+                 Cell, {{336.0, 659.5}, {482.0, 53.0}}, identifier: 'REFRESH_RATE', hitPoint: {577.0, 686.0}
+                  Other, {{336.0, 659.5}, {482.0, 53.0}}, hitPoint: {577.0, 686.0}
+                   Other, {{336.0, 659.5}, {482.0, 53.0}}, hitPoint: {577.0, 686.0}
+                    Switch, {{356.0, 672.0}, {442.0, 28.0}}, identifier: 'REFRESH_RATE', label: 'Limit Frame Rate', value: 0, hitPoint: {577.0, 686.0}
+                     Button, {{356.0, 675.8}, {128.5, 20.5}}, identifier: 'REFRESH_RATE', label: 'Limit Frame Rate', hitPoint: {420.2, 686.0}
+                     Switch, {{737.0, 672.0}, {63.0, 28.0}}, value: 0, hitPoint: {768.5, 686.0}
+                 Other, {{0.0, 712.5}, {834.0, 30.0}}, identifier: 'Sets the maximum frame rate of the display to 60 frames per second.', hitPoint: {417.0, 727.5}
+                  Other, {{336.0, 712.5}, {482.0, 30.0}}, label: 'Sets the maximum frame rate of the display to 60 frames per second.', hitPoint: {577.0, 727.5}
+                 Other, {{801.0, 86.0}, {30.0, 1094.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {816.0, 633.0}
+                  Other, {{828.0, 633.0}, {3.0, 544.0}}, hitPoint: {829.5, 905.0}
+                 Other, {{320.0, 1177.0}, {484.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {562.0, 1192.0}
+                  Other, {{323.0, 1204.0}, {478.0, 3.0}}, hitPoint: {562.0, 1205.5}
+           Toolbar, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {417.0, 605.0}
+            Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+         Toolbar, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {417.0, 605.0}
+          Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+------------------------
+Application bundle identifier: com.apple.springboard
+Application UI orientation: Portrait
+Application, pid: 70729, label: ' ', activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    RemotePlaceholder, pid: 70908, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    RemotePlaceholder, pid: 70908, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {2.0, 2.0}}, hitPoint: {1.0, 1.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {2.0, 2.0}}, hitPoint: {1.0, 1.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'SBSwitcherWindow:Main', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+      ScrollView, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+      Other, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'AppSwitcherContentView', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'card:com.apple.Preferences:sceneID:com.apple.Preferences-default', label: 'Settings', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+          Other, {{-196.0, -294.0}, {1226.0, 1798.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+           Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+            Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+             ScrollView, {{0.0, -605.0}, {834.0, 1815.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+              Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+               Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+               Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                 Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                         StatusBar, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                          Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                           Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{25.0, 11.0}, {252.0, 10.0}}, hitPoint: {151.0, 16.0}, activationBundleId: com.apple.springboard
+                             Button, {{25.0, 7.5}, {123.0, 17.0}}, identifier: 'breadcrumb', label: 'Return to NavigationFlight', hitPoint: {86.5, 16.0}, activationBundleId: com.apple.springboard
+                             StaticText, {{158.0, 7.5}, {38.0, 17.0}}, label: '18:08', hitPoint: {177.0, 16.0}, activationBundleId: com.apple.springboard
+                             StaticText, {{206.0, 7.5}, {71.0, 17.0}}, label: 'Sat 14 Nov', hitPoint: {241.5, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{49.0, 7.0}, {18.0, 18.0}}, hitPoint: {58.0, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{287.0, 11.0}, {71.0, 10.0}}, hitPoint: {322.5, 16.0}, activationBundleId: com.apple.springboard
+                             Other, {{287.0, 0.0}, {71.0, 32.0}}, hitPoint: {322.5, 16.0}, activationBundleId: com.apple.springboard
+                              Other, {{287.0, 0.0}, {71.0, 32.0}}, hitPoint: {322.5, 16.0}, activationBundleId: com.apple.springboard
+                               StaticText, {{287.0, 0.0}, {58.5, 32.0}}, label: 'Settings', hitPoint: {316.2, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{313.5, 7.0}, {18.0, 18.0}}, hitPoint: {322.5, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{366.0, 11.0}, {442.0, 10.0}}, hitPoint: {587.0, 16.0}, activationBundleId: com.apple.springboard
+                             Other, {{757.0, 8.0}, {18.0, 16.0}}, identifier: '3 of 3 Wi-Fi bars', value: SSID, 3 of 3 Wi-Fi..., hitPoint: {766.0, 16.0}, activationBundleId: com.apple.springboard
+                              Image, {{756.5, 9.0}, {18.5, 13.5}}, identifier: 'wifi', label: 'Wi-Fi', hitPoint: {765.8, 15.8}, activationBundleId: com.apple.springboard
+                             Other, {{779.0, 9.5}, {29.0, 13.0}}, label: '100% battery power', value: Not charging, hitPoint: {793.5, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{766.0, 7.0}, {18.0, 18.0}}, hitPoint: {775.0, 16.0}, activationBundleId: com.apple.springboard
+                      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 32.0}, {834.0, 1178.0}}, hitPoint: {417.0, 621.0}, activationBundleId: com.apple.springboard
+               Other, {{814.0, 1190.0}, {40.0, 40.0}}, identifier: 'resize-grabber', label: 'Resize Settings', value: Bottom Right, hitPoint: {824.0, 1200.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+          Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {417.0, 605.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  StatusBar, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+     RemotePlaceholder, pid: 77070, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true

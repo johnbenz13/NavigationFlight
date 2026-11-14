@@ -1,0 +1,44 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 22421, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{-402.0, -874.0}, {1206.0, 2622.0}}, identifier: 'PopoverDismissRegion', label: 'dismiss popup', hitPoint: {201.0, 437.0}
+   Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+    Button, {{153.0, 201.9}, {96.0, 23.0}}, label: 'Sheet Grabber', value: Expanded, hitPoint: {201.0, 213.4}
+    Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+     Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+      Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+       Other, {{7.5, 205.2}, {387.0, 628.6}}, identifier: 'leg-start-checklist', hitPoint: {201.0, 519.5}
+        StaticText, {{27.2, 221.1}, {92.8, 25.3}}, label: 'Checklist', hitPoint: {73.6, 233.7}
+        Button, {{330.6, 221.1}, {44.2, 44.2}}, identifier: 'leg-start-checklist-close', label: 'Done', hitPoint: {352.7, 243.2}
+        StaticText, {{27.2, 247.3}, {174.1, 17.3}}, label: 'Selected template · ⁨צא כיוון⁩', hitPoint: {114.3, 256.0}
+        ScrollView, {{27.2, 272.9}, {347.6, 307.3}}, hitPoint: {201.0, 426.5}
+         Other, {{27.2, 272.9}, {347.6, 281.3}}, hitPoint: {201.0, 413.6}
+          StaticText, {{27.2, 272.9}, {37.1, 13.8}}, label: 'TIMER', hitPoint: {45.8, 279.8}
+          StaticText, {{27.2, 287.6}, {104.7, 17.3}}, label: 'Started · 00:00', hitPoint: {79.5, 296.3}
+          StaticText, {{27.2, 313.6}, {54.7, 13.8}}, label: 'HEADING', hitPoint: {54.6, 320.4}
+          StaticText, {{27.2, 328.3}, {50.9, 25.3}}, label: '355°', hitPoint: {52.6, 340.9}
+          StaticText, {{27.2, 354.5}, {139.9, 13.8}}, label: 'Check magnetic compass', hitPoint: {97.1, 361.4}
+          StaticText, {{348.6, 385.9}, {26.2, 13.8}}, label: 'גמ״ד', hitPoint: {361.7, 392.8}
+          StaticText, {{27.2, 407.3}, {23.4, 13.8}}, label: 'גובה', hitPoint: {38.9, 414.2}
+          StaticText, {{27.2, 422.1}, {45.8, 13.8}}, label: '2,000 ft', hitPoint: {50.1, 428.9}
+          StaticText, {{27.2, 443.5}, {67.9, 13.8}}, label: 'מהירות ומנוע', hitPoint: {61.1, 450.4}
+          StaticText, {{27.2, 458.2}, {145.3, 59.9}}, label: 'Planned IAS unavailable
+Oil pressure
+Oil temperature
+Amperage · Suction · Fuel', hitPoint: {99.9, 488.2}
+          StaticText, {{27.2, 525.8}, {25.3, 13.8}}, label: 'דיווח', hitPoint: {39.8, 532.7}
+          StaticText, {{27.2, 540.5}, {83.9, 13.8}}, label: 'מה הדיווח הבא?', hitPoint: {69.1, 547.4}
+        Button, {{27.2, 587.9}, {347.6, 44.2}}, identifier: 'leg-start-checklist-noted', label: 'Mark leg start checklist noted', hitPoint: {201.0, 609.9}
+        StaticText, {{27.2, 639.7}, {321.0, 36.5}}, label: 'Noting folds the checklist into a compact chip; it does not certify completion of each item.', hitPoint: {187.7, 658.0}
+    Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+     Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+      Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+       Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+        Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+         Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+       Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}
+        Other, {{8.0, 205.7}, {386.0, 660.3}}, hitPoint: {201.0, 535.9}

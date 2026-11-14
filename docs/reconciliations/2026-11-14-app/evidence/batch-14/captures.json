@@ -1,0 +1,255 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-multiple-recovery",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/01-multiple-recovery.txt",
+      "logsPath": "evidence/batch-14/01-multiple-recovery.log",
+      "screenshotPath": "assets/current/batch-14/01-multiple-recovery.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-multiple-1794671271706",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "multiple"
+      },
+      "action": "Launch existing multiple recovery fixture.",
+      "screenshotPathSHA256": "5eef863de6483a20d907f6fb8a1d7ace1b743acf394dfe513d51fe890e57611d",
+      "hierarchyPathSHA256": "c095bb12d8ac0e92a8e690e5c43a8cbe63359a6ea85c30072ea7c1bc2bf5f81c",
+      "logsPathSHA256": "8b4ea15e2ea8236a0c0abe7f33d05e2db9e57ca1cab34aff8010ceb8f45478b2"
+    },
+    {
+      "id": "02-multiple-select-continues",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/02-multiple-select-continues.txt",
+      "logsPath": "evidence/batch-14/02-multiple-select-continues.log",
+      "screenshotPath": "assets/current/batch-14/02-multiple-select-continues.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-multiple-1794671271706",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "multiple"
+      },
+      "action": "Select first recovery candidate; no confirmation action.",
+      "screenshotPathSHA256": "474f827330f36d72cf486e2ec221779e615bb70397f3c965de4c3d5c788f5c1e",
+      "hierarchyPathSHA256": "55b3c4353e8b70cc917ea43be3e6ed7c3f242405a7e7510d910e2b3291f261a7",
+      "logsPathSHA256": "bde718551a5c0b8bd963a5034eb6b58a5ac2257f3ae1a1debb1e1d5c9a430f8d"
+    },
+    {
+      "id": "03-multiple-other-record",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/03-multiple-other-record.txt",
+      "logsPath": "evidence/batch-14/03-multiple-other-record.log",
+      "screenshotPath": "assets/current/batch-14/03-multiple-other-record.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-multiple-1794671271706",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "multiple"
+      },
+      "action": "Open Flights after selecting candidate.",
+      "screenshotPathSHA256": "35838cc140304dc371aa5c4163c134f75eaa88a2ee34b49664886ce80d0d559a",
+      "hierarchyPathSHA256": "508a8dc129f0ac349f632d88ae0a15b6661c863f98ac74ff7fc8f71dc04ef658",
+      "logsPathSHA256": "f2637dd1027088a8ed077575abedb8e930b0c0f9ae6746e148b773a70f09042a"
+    },
+    {
+      "id": "04-other-superseded",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/04-other-superseded.txt",
+      "logsPath": "evidence/batch-14/04-other-superseded.log",
+      "screenshotPath": "assets/current/batch-14/04-other-superseded.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-multiple-1794671271706",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "multiple"
+      },
+      "action": "Inspect unselected recovery package after direct selection.",
+      "screenshotPathSHA256": "0ac9e550f4bcf8c9d2c408fdd0b052d3f2128a856e7602eb34c2042adcbc2f95",
+      "hierarchyPathSHA256": "56e9d0e90b7ff3a7373138a35b02c97bba713be9d05079e53d7d6ab2972e10e9",
+      "logsPathSHA256": "023b929f684dfd9adee4b20b486d796345b3137cf8150f8f48c98f702f2ab454"
+    },
+    {
+      "id": "07-expiry-restarted",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/07-expiry-restarted.txt",
+      "logsPath": "evidence/batch-14/07-expiry-restarted.log",
+      "screenshotPath": "assets/current/batch-14/07-expiry-restarted.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Restart same synthetic recovery fixture after tool idle cleanup; uninterrupted expiry observation begins here.",
+      "screenshotPathSHA256": "45f3cc412c17b418dfb8e835ebaa1a6d58adb2d70db92ec0dfc722cce3af29a7",
+      "hierarchyPathSHA256": "34a0d3972db3ce0dd3106be371d962dd332d7436c02586aef4cfaa89fe0481da",
+      "logsPathSHA256": "ee49fe52c754087e6166c4a67663efe2e60a65debccdd7713f11efeb909a0b2a"
+    },
+    {
+      "id": "08-expiry-countdown",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/08-expiry-countdown.txt",
+      "logsPath": "evidence/batch-14/08-expiry-countdown.log",
+      "screenshotPath": "assets/current/batch-14/08-expiry-countdown.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Untouched gate after fifty-second runtime wait.",
+      "screenshotPathSHA256": "255b1d68a43762d61f9ec6b4cc417d726e4771a67678e9097d0f37657bfdaee8",
+      "hierarchyPathSHA256": "e7aae6c7ee40055d663852a6ab4f8dac6a13badadd60588cc0311cc7a908b7a1",
+      "logsPathSHA256": "87ec064015ba83a8edcc3a0672341c4c8b808ef17327ef84f2a19027de355c67"
+    },
+    {
+      "id": "09-expiry-countdown",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/09-expiry-countdown.txt",
+      "logsPath": "evidence/batch-14/09-expiry-countdown.log",
+      "screenshotPath": "assets/current/batch-14/09-expiry-countdown.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Continue untouched gate wait fifty seconds.",
+      "screenshotPathSHA256": "1b6627f0e1341d4ffd9802020a7f9b7b871791eb4b02723e0a3b5cff686df0d7",
+      "hierarchyPathSHA256": "46a0d856ec305ca2a54a29e278493abd143d8346be9856cd72200abb0b2f5ebc",
+      "logsPathSHA256": "87ec064015ba83a8edcc3a0672341c4c8b808ef17327ef84f2a19027de355c67"
+    },
+    {
+      "id": "10-expiry-countdown",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/10-expiry-countdown.txt",
+      "logsPath": "evidence/batch-14/10-expiry-countdown.log",
+      "screenshotPath": "assets/current/batch-14/10-expiry-countdown.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Untouched gate wait fifty seconds.",
+      "screenshotPathSHA256": "12a19e30b7735d0735add6460fbebedd218ae4273768f4a77ba8b2d179820824",
+      "hierarchyPathSHA256": "7147135ba28fa9852e0d459affa59bd1abae0510720ecd01a5ed9915866cf589",
+      "logsPathSHA256": "87ec064015ba83a8edcc3a0672341c4c8b808ef17327ef84f2a19027de355c67"
+    },
+    {
+      "id": "11-recovery-near-expiry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/11-recovery-near-expiry.txt",
+      "logsPath": "evidence/batch-14/11-recovery-near-expiry.log",
+      "screenshotPath": "assets/current/batch-14/11-recovery-near-expiry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Untouched gate near expiry.",
+      "screenshotPathSHA256": "40f289e8d62227e90bec0a3e99f4f766263f6e636168e3b5f491fed08358a5ea",
+      "hierarchyPathSHA256": "d30c4b9d6adc792521ae5becda530e754b94eca9f3441bd133391164883d067d",
+      "logsPathSHA256": "87ec064015ba83a8edcc3a0672341c4c8b808ef17327ef84f2a19027de355c67"
+    },
+    {
+      "id": "12-recovery-expired",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/12-recovery-expired.txt",
+      "logsPath": "evidence/batch-14/12-recovery-expired.log",
+      "screenshotPath": "assets/current/batch-14/12-recovery-expired.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Wait past expiry without tapping Continue.",
+      "screenshotPathSHA256": "01a81321787ad574b8fc9d3c02484ccb95404e8e65344f269e942a26448fb6f3",
+      "hierarchyPathSHA256": "70a420e1bf918fbe99296ad401421b9e207b282ea89eec0783b6dcb2e80e034d",
+      "logsPathSHA256": "c1a380453bd4168738577b57e20daeda63b9133d4b1e8f90584bb1b8446ec561"
+    },
+    {
+      "id": "13-expired-recording-list",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/13-expired-recording-list.txt",
+      "logsPath": "evidence/batch-14/13-expired-recording-list.log",
+      "screenshotPath": "assets/current/batch-14/13-expired-recording-list.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "After natural expiry opens legacy Plan Inspection, inspect Flights.",
+      "screenshotPathSHA256": "468d67f94dcf6118ac9c5522a726a8c55b1ac69cb1ba8f36ecd1314e97822324",
+      "hierarchyPathSHA256": "1389e8ac33cee14629863e6f8e7dba9123199737cc2ffb3468a1bd0aa0d28698",
+      "logsPathSHA256": "3cbbda02c05ecfc253deecf62665754012d03901e7e90ff148981b9335878795"
+    },
+    {
+      "id": "14-expired-detail",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-14/14-expired-detail.txt",
+      "logsPath": "evidence/batch-14/14-expired-detail.log",
+      "screenshotPath": "assets/current/batch-14/14-expired-detail.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch14-expiry-1794671294705",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Inspect automatically closed recording after expiry.",
+      "screenshotPathSHA256": "c5bb95d8c5480cf361b8027e5d7b77088895c7f47a34586476cb18f0f0349f61",
+      "hierarchyPathSHA256": "0e304a45618de70dbf2450ccb405a9083dab04c9f24fc6c50d88c99fc76b3a79",
+      "logsPathSHA256": "1735092aa719b5cfab5544c7b41bbdea550e6b6757e995e58422b092176f18d7"
+    }
+  ],
+  "notes": [
+    "01\u201304 multiple candidate selection directly resumes first and closes other Incomplete/Superseded during recovery without confirmation.",
+    "05\u201306 first natural expiry attempt invalid: tool session auto-disappeared during idle and app at Home. No app expiry conclusion from this setup.",
+    "07\u201314 uninterrupted second attempt:4:00\u21923:05\u21922:06\u21921:03\u21920:09\u2192legacy Plan Inspection. No Continue tapped. Recording Incomplete afterward. Stale Continue impossible to tap once gate disappears; no race injection used.",
+    "Countdown glyphs partly absent in some captures but fully visible at1:03; do not classify transient text capture as separate defect.",
+    "Closure-failure retry unsupported: existing RootView only creates failure.create or failure.remove; no close-failure hook."
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

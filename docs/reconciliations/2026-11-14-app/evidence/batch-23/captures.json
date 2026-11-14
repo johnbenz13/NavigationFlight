@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-export-retry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-23/01-export-retry.txt",
+      "logsPath": "evidence/batch-23/01-export-retry.log",
+      "screenshotPath": "assets/current/batch-23/01-export-retry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch23-retries-1794674316479",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Tap Retry in GPX export failed alert; returned detail without share sheet or renewed alert. Static export failure remains enabled.",
+      "screenshotPathSHA256": "f2dd357499aeae3c898edd0ce941838420987032ce1d2001b4cf45d37d9fddcf",
+      "hierarchyPathSHA256": "98bd00c0e7f41dfd80f535a0c9a089182b8152c1313c0adcd4c47db39fd7c380",
+      "logsPathSHA256": "be5c915877aef61c1646f5ed13d9d753f7e68b033eae2ac3d39fcc33b00cff5b"
+    },
+    {
+      "id": "02-delete-failure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-23/02-delete-failure.txt",
+      "logsPath": "evidence/batch-23/02-delete-failure.log",
+      "screenshotPath": "assets/current/batch-23/02-delete-failure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch23-retries-1794674316479",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Confirm Delete under static DELETE_FAILURE; settled detail remains, no visible failure alert.",
+      "screenshotPathSHA256": "99fb6b91aae6acdce83af22e131d7f53d2bf03c7c0c94802ad0a03f941b68d95",
+      "hierarchyPathSHA256": "b00157ba0c77438d4a54e0dcb694b535381f8fe79b30a24229266f1c83ebe771",
+      "logsPathSHA256": "58bb7e2b182b5775cdcd71ac675a4a50012a90b5c5cc71808940a1de0bba9f07"
+    },
+    {
+      "id": "03-delete-repeat-confirmation",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-23/03-delete-repeat-confirmation.txt",
+      "logsPath": "evidence/batch-23/03-delete-repeat-confirmation.log",
+      "screenshotPath": "assets/current/batch-23/03-delete-repeat-confirmation.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch23-retries-1794674316479",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "RepeatDelete after firstconfirmedfailure returned detail withoutvisibleerror.",
+      "screenshotPathSHA256": "81c3552c29cfc36bf2d040951a6fbdb307a5be8b4b824b697d471226219c8692",
+      "hierarchyPathSHA256": "9b0da34571bd30144a956dc2194f960fe03c0d3270a8cf5963261607ad6e8204",
+      "logsPathSHA256": "58bb7e2b182b5775cdcd71ac675a4a50012a90b5c5cc71808940a1de0bba9f07"
+    },
+    {
+      "id": "04-delete-repeat-result",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-23/04-delete-repeat-result.txt",
+      "logsPath": "evidence/batch-23/04-delete-repeat-result.log",
+      "screenshotPath": "assets/current/batch-23/04-delete-repeat-result.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch23-retries-1794674316479",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "RepeatconfirmedDelete understaticfailure; inspectsettledresult.",
+      "screenshotPathSHA256": "92a3e9b9a42e61aff060460475b7c47741fd11300fe7cfdd86e57eca345623d2",
+      "hierarchyPathSHA256": "6fd0860f42f1a7e48c95d9c4f82a4843731d1bc9452f5fad703eeb69b8350ead",
+      "logsPathSHA256": "58bb7e2b182b5775cdcd71ac675a4a50012a90b5c5cc71808940a1de0bba9f07"
+    },
+    {
+      "id": "05-export-repeat-alert",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-23/05-export-repeat-alert.txt",
+      "logsPath": "evidence/batch-23/05-export-repeat-alert.log",
+      "screenshotPath": "assets/current/batch-23/05-export-repeat-alert.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch23-retries-1794674316479",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flights",
+        "NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE": "populated",
+        "NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE": "1",
+        "NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE": "1"
+      },
+      "action": "Tap Export again at current hitPoint after delete retries; detail remains, no visible alert/share sheet.",
+      "screenshotPathSHA256": "48b74542ccaf31c1432a20edc9be18d738e76430a14a676f59016e90211f1904",
+      "hierarchyPathSHA256": "6fd0860f42f1a7e48c95d9c4f82a4843731d1bc9452f5fad703eeb69b8350ead",
+      "logsPathSHA256": "58bb7e2b182b5775cdcd71ac675a4a50012a90b5c5cc71808940a1de0bba9f07"
+    }
+  ],
+  "notes": "iPadPro11M5iOS27 portrait. FirstExport showed GPXexportfailed withCancel/Retry; Retry returnsdetail01, no renewederror/share. FirstDeleteconfirm returnsdetail02 withoutfailurealert; secondconfirmation03 andsecondconfirm04 likewise retainsdetail. LaterExporttap05 producesnovisiblealert/share. TwoDeleteattempts; oneexplicitexportRetrypluslaterexporttap. Constantfault cannot clear duringprocess; successafterfaultclear unverified. Doesnotprove packagepersistence beyondsame detail; no relaunch. All screenshotinspected. SystemReduceMotion andVoiceOver restoredOff in18; nootherSettingschanges.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

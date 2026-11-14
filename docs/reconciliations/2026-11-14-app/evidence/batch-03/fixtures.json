@@ -1,0 +1,12 @@
+[
+  {
+    "path": "base.fplnav",
+    "bytes": 10852,
+    "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+  },
+  {
+    "path": "two-leg.fplnav",
+    "bytes": 7483,
+    "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+  }
+]

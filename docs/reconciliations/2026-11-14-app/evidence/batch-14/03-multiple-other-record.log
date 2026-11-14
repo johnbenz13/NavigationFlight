@@ -1,0 +1,39 @@
+2026-11-14 17:47:54.662159+0200 [14844:57134683] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x109106b80 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 17:47:54.835774+0200 [14844:57134240] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 17:47:54.944705+0200 [14844:57134240] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+objc[14844]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108af8398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1099fc310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 17:47:55.149852+0200 [14844:57134240] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+
+2026-11-14 17:47:55.638799+0200 [14844:57134240] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 17:48:02.898798+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:02.935211+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:02.935267+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:02.935282+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:03.072726+0200 [14844:57134240] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-14 17:48:03.125646+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:03.125754+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:03.139516+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:03.139590+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:04.729980+0200 [14844:57134240] [Invalid Configuration] Update NavigationRequestObserver tried to update multiple times per frame.
+
+2026-11-14 17:48:04.760086+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:04.761580+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:04.761616+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:48:04.761637+0200 [14844:57134240] [API] cannot add handler to 0 from 0 - dropping

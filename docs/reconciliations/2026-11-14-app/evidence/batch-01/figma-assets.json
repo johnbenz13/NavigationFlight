@@ -1,0 +1,26 @@
+[
+  {
+    "path": "../../assets/figma/batch-01/cockpit-portrait-190-96.png",
+    "sha256": "f5e791039ee3d2da863ca6a724068f26a458afd6f9e7b10d8c804515f29aede7"
+  },
+  {
+    "path": "../../assets/figma/batch-01/library-ipad-28-187.png",
+    "sha256": "63de4f530027a0c816d6f32d80b78ad668e74086c339b1299ce535b6a1800b05"
+  },
+  {
+    "path": "../../assets/figma/batch-01/library-landscape-28-239.png",
+    "sha256": "b2ee259d67dcdfcf26b2763d5e2bd50c2c7222f77ad0cc594bd683127da8806f"
+  },
+  {
+    "path": "../../assets/figma/batch-01/library-phone-28-295.png",
+    "sha256": "0ce787ae5b68893523b85a4243715094032897737e5e7ed176c051451247efa5"
+  },
+  {
+    "path": "../../assets/figma/batch-01/loaded-review-41-76.png",
+    "sha256": "09a6453332248baf53d912920e97a4657d39b9ddc2da3af6505611dd46385cab"
+  },
+  {
+    "path": "../../assets/figma/batch-01/not-loaded-28-513.png",
+    "sha256": "ef4277612e605d86e634dfd5f53fa9c438eab673c868225d05383b86c0c471c9"
+  }
+]

@@ -1,0 +1,231 @@
+Device orientation: Portrait
+------------------------
+Application bundle identifier: com.apple.springboard
+Application UI orientation: Portrait
+Application, pid: 70729, label: ' '
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Image, {{0.0, 0.0}, {450.0, 75.0}}, identifier: 'StatusBarLegibilityShadow', hitPoint: {225.0, 37.5}
+    Image, {{384.0, 0.0}, {450.0, 75.0}}, hitPoint: {609.0, 37.5}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'Home screen icons', hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+       Icon, {{116.5, 105.5}, {72.5, 95.5}}, identifier: 'Contacts', label: 'Contacts', hitPoint: {152.8, 153.2}
+        Other, {{119.0, 107.5}, {68.0, 85.0}}, hitPoint: {153.0, 150.0}
+         Other, {{119.0, 107.5}, {68.0, 68.0}}, hitPoint: {153.0, 141.5}
+          Other, {{119.0, 107.5}, {68.0, 68.0}}, hitPoint: {153.0, 141.5}
+           Other, {{119.0, 107.5}, {68.0, 68.0}}, hitPoint: {153.0, 141.5}
+         Other, {{118.5, 179.0}, {68.5, 20.0}}, identifier: 'label-view', hitPoint: {152.8, 189.0}
+          Other, {{118.5, 179.0}, {68.5, 20.0}}, hitPoint: {152.8, 189.0}
+           Other, {{118.5, 179.0}, {68.5, 20.0}}, hitPoint: {152.8, 189.0}
+            Image, {{86.0, 144.4}, {134.5, 88.0}}, hitPoint: {153.2, 188.4}
+            Image, {{118.5, 179.0}, {68.5, 20.0}}, hitPoint: {152.8, 189.0}
+       Icon, {{246.5, 105.5}, {77.0, 95.5}}, identifier: 'Shortcuts', label: 'Shortcuts', hitPoint: {285.0, 153.2}
+        Other, {{251.0, 107.5}, {68.0, 85.0}}, hitPoint: {285.0, 150.0}
+         Other, {{251.0, 107.5}, {68.0, 68.0}}, hitPoint: {285.0, 141.5}
+          Other, {{251.0, 107.5}, {68.0, 68.0}}, hitPoint: {285.0, 141.5}
+           Other, {{251.0, 107.5}, {68.0, 68.0}}, hitPoint: {285.0, 141.5}
+         Other, {{248.5, 179.0}, {73.0, 20.0}}, identifier: 'label-view', hitPoint: {285.0, 189.0}
+          Other, {{248.5, 179.0}, {73.0, 20.0}}, hitPoint: {285.0, 189.0}
+           Other, {{248.5, 179.0}, {73.0, 20.0}}, hitPoint: {285.0, 189.0}
+            Image, {{216.0, 144.4}, {139.0, 88.0}}, hitPoint: {285.5, 188.4}
+            Image, {{248.5, 179.0}, {73.0, 20.0}}, hitPoint: {285.0, 189.0}
+       Icon, {{375.5, 105.5}, {82.5, 95.5}}, identifier: 'Passwords', label: 'Passwords', hitPoint: {416.8, 153.2}
+        Other, {{383.0, 107.5}, {68.0, 85.0}}, hitPoint: {417.0, 150.0}
+         Other, {{383.0, 107.5}, {68.0, 68.0}}, hitPoint: {417.0, 141.5}
+          Other, {{383.0, 107.5}, {68.0, 68.0}}, hitPoint: {417.0, 141.5}
+           Other, {{383.0, 107.5}, {68.0, 68.0}}, hitPoint: {417.0, 141.5}
+         Other, {{377.5, 179.0}, {78.5, 20.0}}, identifier: 'label-view', hitPoint: {416.8, 189.0}
+          Other, {{377.5, 179.0}, {78.5, 20.0}}, hitPoint: {416.8, 189.0}
+           Other, {{377.5, 179.0}, {78.5, 20.0}}, hitPoint: {416.8, 189.0}
+            Image, {{345.0, 144.4}, {144.5, 88.0}}, hitPoint: {417.2, 188.4}
+            Image, {{377.5, 179.0}, {78.5, 20.0}}, hitPoint: {416.8, 189.0}
+       Icon, {{513.0, 105.5}, {72.0, 95.5}}, identifier: 'Preview', label: 'Preview', hitPoint: {549.0, 153.2}
+        Other, {{515.0, 107.5}, {68.0, 85.0}}, hitPoint: {549.0, 150.0}
+         Other, {{515.0, 107.5}, {68.0, 68.0}}, hitPoint: {549.0, 141.5}
+          Other, {{515.0, 107.5}, {68.0, 68.0}}, hitPoint: {549.0, 141.5}
+           Other, {{515.0, 107.5}, {68.0, 68.0}}, hitPoint: {549.0, 141.5}
+         Other, {{518.0, 179.0}, {61.5, 20.0}}, identifier: 'label-view', hitPoint: {548.8, 189.0}
+          Other, {{518.0, 179.0}, {61.5, 20.0}}, hitPoint: {548.8, 189.0}
+           Other, {{518.0, 179.0}, {61.5, 20.0}}, hitPoint: {548.8, 189.0}
+            Image, {{485.5, 144.4}, {127.5, 88.0}}, hitPoint: {549.2, 188.4}
+            Image, {{518.0, 179.0}, {61.5, 20.0}}, hitPoint: {548.8, 189.0}
+       Icon, {{645.0, 105.5}, {72.0, 95.5}}, identifier: 'Health', label: 'Health', hitPoint: {681.0, 153.2}
+        Other, {{647.0, 107.5}, {68.0, 85.0}}, hitPoint: {681.0, 150.0}
+         Other, {{647.0, 107.5}, {68.0, 68.0}}, hitPoint: {681.0, 141.5}
+          Other, {{647.0, 107.5}, {68.0, 68.0}}, hitPoint: {681.0, 141.5}
+           Other, {{647.0, 107.5}, {68.0, 68.0}}, hitPoint: {681.0, 141.5}
+         Other, {{654.0, 179.0}, {54.0, 20.0}}, identifier: 'label-view', hitPoint: {681.0, 189.0}
+          Other, {{654.0, 179.0}, {54.0, 20.0}}, hitPoint: {681.0, 189.0}
+           Other, {{654.0, 179.0}, {54.0, 20.0}}, hitPoint: {681.0, 189.0}
+            Image, {{621.5, 144.4}, {120.0, 88.0}}, hitPoint: {681.5, 188.4}
+            Image, {{654.0, 179.0}, {54.0, 20.0}}, hitPoint: {681.0, 189.0}
+       Icon, {{117.0, 268.0}, {72.0, 95.5}}, identifier: 'Fitness', label: 'Fitness', hitPoint: {153.0, 315.8}
+        Other, {{119.0, 270.0}, {68.0, 85.0}}, hitPoint: {153.0, 312.5}
+         Other, {{119.0, 270.0}, {68.0, 68.0}}, hitPoint: {153.0, 304.0}
+          Other, {{119.0, 270.0}, {68.0, 68.0}}, hitPoint: {153.0, 304.0}
+           Other, {{119.0, 270.0}, {68.0, 68.0}}, hitPoint: {153.0, 304.0}
+         Other, {{124.0, 341.5}, {58.0, 20.0}}, identifier: 'label-view', hitPoint: {153.0, 351.5}
+          Other, {{124.0, 341.5}, {58.0, 20.0}}, hitPoint: {153.0, 351.5}
+           Other, {{124.0, 341.5}, {58.0, 20.0}}, hitPoint: {153.0, 351.5}
+            Image, {{91.5, 306.9}, {124.0, 88.0}}, hitPoint: {153.5, 350.9}
+            Image, {{124.0, 341.5}, {58.0, 20.0}}, hitPoint: {153.0, 351.5}
+       Icon, {{231.0, 268.0}, {109.0, 99.5}}, identifier: 'NavigationMapPOC', label: 'NavigationMapPOC', hitPoint: {285.5, 317.8}
+        Other, {{251.0, 270.0}, {68.0, 85.0}}, hitPoint: {285.0, 312.5}
+         Other, {{251.0, 270.0}, {68.0, 68.0}}, hitPoint: {285.0, 304.0}
+          Other, {{251.0, 270.0}, {68.0, 68.0}}, hitPoint: {285.0, 304.0}
+           Other, {{251.0, 270.0}, {68.0, 68.0}}, hitPoint: {285.0, 304.0}
+         Other, {{233.0, 336.5}, {105.0, 29.0}}, identifier: 'label-view', hitPoint: {285.5, 351.0}
+          Other, {{233.0, 336.5}, {105.0, 29.0}}, hitPoint: {285.5, 351.0}
+           Other, {{233.0, 336.5}, {105.0, 29.0}}, hitPoint: {285.5, 351.0}
+            Image, {{200.0, 302.4}, {171.0, 97.0}}, hitPoint: {285.5, 350.9}
+            Image, {{233.0, 336.5}, {105.0, 29.0}}, hitPoint: {285.5, 351.0}
+       Icon, {{381.0, 268.0}, {72.0, 95.5}}, identifier: 'Wallet', label: 'Wallet', hitPoint: {417.0, 315.8}
+        Other, {{383.0, 270.0}, {68.0, 85.0}}, hitPoint: {417.0, 312.5}
+         Other, {{383.0, 270.0}, {68.0, 68.0}}, hitPoint: {417.0, 304.0}
+          Other, {{383.0, 270.0}, {68.0, 68.0}}, hitPoint: {417.0, 304.0}
+           Other, {{383.0, 270.0}, {68.0, 68.0}}, hitPoint: {417.0, 304.0}
+         Other, {{391.0, 341.5}, {52.0, 20.0}}, identifier: 'label-view', hitPoint: {417.0, 351.5}
+          Other, {{391.0, 341.5}, {52.0, 20.0}}, hitPoint: {417.0, 351.5}
+           Other, {{391.0, 341.5}, {52.0, 20.0}}, hitPoint: {417.0, 351.5}
+            Image, {{358.5, 306.9}, {118.0, 88.0}}, hitPoint: {417.5, 350.9}
+            Image, {{391.0, 341.5}, {52.0, 20.0}}, hitPoint: {417.0, 351.5}
+       Icon, {{494.5, 268.0}, {109.0, 99.5}}, identifier: 'NavigationFlight', label: 'NavigationFlight', hitPoint: {549.0, 317.8}
+        Other, {{515.0, 270.0}, {68.0, 85.0}}, hitPoint: {549.0, 312.5}
+         Other, {{515.0, 270.0}, {68.0, 68.0}}, hitPoint: {549.0, 304.0}
+          Other, {{515.0, 270.0}, {68.0, 68.0}}, hitPoint: {549.0, 304.0}
+           Other, {{515.0, 270.0}, {68.0, 68.0}}, hitPoint: {549.0, 304.0}
+         Other, {{496.5, 336.5}, {105.0, 29.0}}, identifier: 'label-view', hitPoint: {549.0, 351.0}
+          Other, {{496.5, 336.5}, {105.0, 29.0}}, hitPoint: {549.0, 351.0}
+           Other, {{496.5, 336.5}, {105.0, 29.0}}, hitPoint: {549.0, 351.0}
+            Image, {{464.0, 302.4}, {171.0, 97.0}}, hitPoint: {549.5, 350.9}
+            Image, {{496.5, 336.5}, {105.0, 29.0}}, hitPoint: {549.0, 351.0}
+      PageIndicator, {{385.0, 1040.0}, {64.0, 41.0}}, identifier: 'Page control', value: Page 2 of 2, hitPoint: {417.0, 1060.5}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    RemotePlaceholder, pid: 70908, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    RemotePlaceholder, pid: 70908, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {2.0, 2.0}}, hitPoint: {1.0, 1.0}
+  Other, {{0.0, 0.0}, {2.0, 2.0}}, hitPoint: {1.0, 1.0}
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+  Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+   Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+ Window, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+  Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+   Other, {{376.0, 0.0}, {834.0, 1210.0}}, hitPoint: {605.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {417.0, 605.0}}, hitPoint: {208.5, 302.5}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 1110.0}, {834.0, 100.0}}, identifier: 'Multitasking Dock', hitPoint: {417.0, 1160.0}
+     Other, {{14.0, 1110.0}, {394.0, 92.0}}, identifier: 'user icon list view', label: 'Dock', hitPoint: {211.0, 1156.0}
+      Icon, {{30.5, 1126.5}, {59.0, 59.0}}, identifier: 'Messages', label: 'Messages', hitPoint: {60.0, 1156.0}
+       Other, {{30.5, 1126.5}, {59.0, 59.0}}, hitPoint: {60.0, 1156.0}
+        Other, {{30.5, 1126.5}, {59.0, 59.0}}, hitPoint: {60.0, 1156.0}
+         Other, {{30.5, 1126.5}, {59.0, 59.0}}, hitPoint: {60.0, 1156.0}
+          Other, {{30.5, 1126.5}, {59.0, 59.0}}, hitPoint: {60.0, 1156.0}
+      Icon, {{106.0, 1126.5}, {59.0, 59.0}}, identifier: 'Safari', label: 'Safari', hitPoint: {135.5, 1156.0}
+       Other, {{106.0, 1126.5}, {59.0, 59.0}}, hitPoint: {135.5, 1156.0}
+        Other, {{106.0, 1126.5}, {59.0, 59.0}}, hitPoint: {135.5, 1156.0}
+         Other, {{106.0, 1126.5}, {59.0, 59.0}}, hitPoint: {135.5, 1156.0}
+          Other, {{106.0, 1126.5}, {59.0, 59.0}}, hitPoint: {135.5, 1156.0}
+      Icon, {{181.5, 1126.5}, {59.0, 59.0}}, identifier: 'Calendar', label: 'Calendar', value: Saturday, 14 Novem..., hitPoint: {211.0, 1156.0}
+       Other, {{181.5, 1126.5}, {59.0, 59.0}}, hitPoint: {211.0, 1156.0}
+        Other, {{181.5, 1126.5}, {59.0, 59.0}}, hitPoint: {211.0, 1156.0}
+         Other, {{181.5, 1126.5}, {59.0, 59.0}}, hitPoint: {211.0, 1156.0}
+          Other, {{181.5, 1126.5}, {59.0, 59.0}}, hitPoint: {211.0, 1156.0}
+      Icon, {{257.0, 1126.5}, {59.0, 59.0}}, identifier: 'Photos', label: 'Photos', hitPoint: {286.5, 1156.0}
+       Other, {{257.0, 1126.5}, {59.0, 59.0}}, hitPoint: {286.5, 1156.0}
+        Other, {{257.0, 1126.5}, {59.0, 59.0}}, hitPoint: {286.5, 1156.0}
+         Other, {{257.0, 1126.5}, {59.0, 59.0}}, hitPoint: {286.5, 1156.0}
+          Other, {{257.0, 1126.5}, {59.0, 59.0}}, hitPoint: {286.5, 1156.0}
+      Icon, {{332.5, 1126.5}, {59.0, 59.0}}, identifier: 'Siri', label: 'Siri', hitPoint: {362.0, 1156.0}
+       Other, {{332.5, 1126.5}, {59.0, 59.0}}, hitPoint: {362.0, 1156.0}
+        Other, {{332.5, 1126.5}, {59.0, 59.0}}, hitPoint: {362.0, 1156.0}
+         Other, {{332.5, 1126.5}, {59.0, 59.0}}, hitPoint: {362.0, 1156.0}
+          Other, {{332.5, 1126.5}, {59.0, 59.0}}, hitPoint: {362.0, 1156.0}
+     Other, {{425.5, 1126.5}, {210.0, 59.0}}, identifier: 'Recent icon list view', label: 'Suggestions', hitPoint: {530.5, 1156.0}
+      Icon, {{425.5, 1126.5}, {59.0, 59.0}}, identifier: 'NavigationFlight', label: 'NavigationFlight', hitPoint: {455.0, 1156.0}
+       Other, {{425.5, 1126.5}, {59.0, 59.0}}, hitPoint: {455.0, 1156.0}
+        Other, {{425.5, 1126.5}, {59.0, 59.0}}, hitPoint: {455.0, 1156.0}
+         Other, {{425.5, 1126.5}, {59.0, 59.0}}, hitPoint: {455.0, 1156.0}
+          Other, {{425.5, 1126.5}, {59.0, 59.0}}, hitPoint: {455.0, 1156.0}
+      Icon, {{501.0, 1126.5}, {59.0, 59.0}}, identifier: 'Settings', label: 'Settings', hitPoint: {530.5, 1156.0}
+       Other, {{501.0, 1126.5}, {59.0, 59.0}}, hitPoint: {530.5, 1156.0}
+        Other, {{501.0, 1126.5}, {59.0, 59.0}}, hitPoint: {530.5, 1156.0}
+         Other, {{501.0, 1126.5}, {59.0, 59.0}}, hitPoint: {530.5, 1156.0}
+          Other, {{501.0, 1126.5}, {59.0, 59.0}}, hitPoint: {530.5, 1156.0}
+      Icon, {{576.5, 1126.5}, {59.0, 59.0}}, identifier: 'Files', label: 'Files', hitPoint: {606.0, 1156.0}
+       Other, {{576.5, 1126.5}, {59.0, 59.0}}, hitPoint: {606.0, 1156.0}
+        Other, {{576.5, 1126.5}, {59.0, 59.0}}, hitPoint: {606.0, 1156.0}
+         Other, {{576.5, 1126.5}, {59.0, 59.0}}, hitPoint: {606.0, 1156.0}
+          Other, {{576.5, 1126.5}, {59.0, 59.0}}, hitPoint: {606.0, 1156.0}
+     Other, {{653.0, 1110.0}, {92.0, 92.0}}, identifier: 'utilities icon list view', label: 'Utilities', hitPoint: {699.0, 1156.0}
+      Icon, {{663.0, 1120.0}, {72.0, 72.0}}, identifier: 'Downloads', label: 'Downloads', hitPoint: {699.0, 1156.0}
+       Other, {{669.5, 1126.5}, {59.0, 59.0}}, hitPoint: {699.0, 1156.0}
+        Other, {{669.5, 1126.5}, {59.0, 59.0}}, hitPoint: {699.0, 1156.0}
+         Other, {{669.5, 1126.5}, {59.0, 59.0}}, hitPoint: {699.0, 1156.0}
+          Other, {{669.5, 1126.5}, {59.0, 59.0}}, hitPoint: {699.0, 1156.0}
+       Other, {{650.8, 1077.0}, {96.5, 35.5}}, hitPoint: {699.0, 1094.8}
+        Other, {{650.8, 1077.0}, {96.5, 35.5}}, hitPoint: {699.0, 1094.8}
+         StaticText, {{658.8, 1085.0}, {80.5, 19.5}}, label: 'Downloads', hitPoint: {699.0, 1094.8}
+     Icon, {{738.5, 1120.0}, {72.0, 72.0}}, identifier: 'AppLibrary', label: 'App Library', hitPoint: {774.5, 1156.0}
+      Other, {{776.7, 1134.3}, {19.5, 19.5}}, identifier: 'SBHLibraryCategoryStackView-innerIcon-1:com.bensaidj.NavigationMapPOC', hitPoint: {786.4, 1144.1}
+      Other, {{752.8, 1134.3}, {19.5, 19.5}}, identifier: 'SBHLibraryCategoryStackView-innerIcon-0:com.bensaidj.NavigationFlight', hitPoint: {762.6, 1144.1}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  StatusBar, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}
+   Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}
+    Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}
+     Other, {{25.0, 11.0}, {384.0, 10.0}}, hitPoint: {217.0, 16.0}
+      StaticText, {{25.0, 7.5}, {33.5, 17.0}}, label: '18:11', hitPoint: {41.8, 16.0}
+      StaticText, {{68.5, 7.5}, {71.0, 17.0}}, label: 'Sat 14 Nov', hitPoint: {104.0, 16.0}
+     Other, {{425.0, 11.0}, {383.0, 10.0}}, hitPoint: {616.5, 16.0}
+      Other, {{757.0, 8.0}, {18.0, 16.0}}, identifier: '3 of 3 Wi-Fi bars', value: SSID, 3 of 3 Wi-Fi..., hitPoint: {766.0, 16.0}
+       Image, {{756.5, 9.0}, {18.5, 13.5}}, identifier: 'wifi', label: 'Wi-Fi', hitPoint: {765.8, 15.8}
+      Other, {{779.0, 9.5}, {29.0, 13.0}}, label: '100% battery power', value: Not charging, hitPoint: {793.5, 16.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+     RemotePlaceholder, pid: 77070, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}

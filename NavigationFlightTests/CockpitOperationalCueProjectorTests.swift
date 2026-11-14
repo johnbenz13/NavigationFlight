@@ -141,6 +141,35 @@ struct CockpitOperationalCueProjectorTests {
         #expect(frequencyDue.dueEvents.contains(.frequency(frequencyChangeID)))
     }
 
+    @Test("Console presentation follows live current and next cues")
+    func consolePresentationFollowsLiveCurrentAndNextCues() throws {
+        let altitudeEventID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000006"))
+        let frequencies = [
+            displayFrequency(id: "first", service: "PLUTO WEST", value: 118.4),
+            displayFrequency(id: "current", service: "PALMACHIM", value: 135.55),
+            displayFrequency(id: "next", service: "BEN GURION", value: 120.5)
+        ]
+        let cues = CockpitOperationalCueState(
+            frequencies: [
+                .init(frequency: frequencies[0], status: .other),
+                .init(frequency: frequencies[1], status: .current),
+                .init(frequency: frequencies[2], status: .next)
+            ],
+            currentAltitude: .init(value: 4_500),
+            nextAltitude: nil,
+            dueAltitude: .init(target: .init(value: 4_500), direction: .up),
+            dueEvents: [.altitude(altitudeEventID)]
+        )
+
+        let presentation = CockpitConsoleCuePresentation(
+            cues: cues,
+            emphasizedEvents: [.altitude(altitudeEventID)]
+        )
+
+        #expect(presentation.immediateFrequencyCues.map(\.frequency.id) == ["current", "next"])
+        #expect(presentation.isAltitudeEmphasized)
+    }
+
     @Test("Repeated service and frequency do not create a false change")
     func repeatedServiceAndFrequencyDoNotCreateFalseChange() throws {
         let repeatedID = try #require(UUID(uuidString: "00000000-0000-4000-8000-000000000019"))
@@ -297,6 +326,8 @@ struct CockpitOperationalCueProjectorTests {
             at: start.addingTimeInterval(43)
         )
         #expect(nextLeg.currentAltitude == AltitudeFeet(value: 3_500))
+        #expect(nextLeg.dueAltitude == .init(target: .init(value: 3_500), direction: .up))
+        #expect(nextLeg.dueEvents.contains(.altitude(secondLegID)))
     }
 
     @Test("Next-leg time-zero altitude takes precedence over its initial altitude")
@@ -686,6 +717,21 @@ struct CockpitOperationalCueProjectorTests {
                 frequenciesByPhase: planned.frequenciesByPhase,
                 defaultMode: planned.defaultMode
             ))
+        )
+    }
+
+    private func displayFrequency(
+        id: String,
+        service: String,
+        value: Double
+    ) -> CockpitPresentationData.DisplayFrequency {
+        CockpitPresentationData.DisplayFrequency(
+            id: id,
+            phases: [.enRoute],
+            service: service,
+            serviceType: "Control",
+            frequencyMHz: value,
+            source: .route
         )
     }
 

@@ -30,6 +30,24 @@ struct CockpitOperationalCueState: Equatable, Sendable {
     let dueEvents: Set<DueEvent>
 }
 
+struct CockpitConsoleCuePresentation: Equatable, Sendable {
+    let immediateFrequencyCues: [CockpitOperationalCueState.FrequencyCue]
+    let isAltitudeEmphasized: Bool
+
+    init(
+        cues: CockpitOperationalCueState,
+        emphasizedEvents: Set<CockpitOperationalCueState.DueEvent>
+    ) {
+        immediateFrequencyCues = [
+            cues.frequencies.first(where: { $0.status == .current }),
+            cues.frequencies.first(where: { $0.status == .next })
+        ].compactMap { $0 }
+        isAltitudeEmphasized = emphasizedEvents.contains { event in
+            if case .altitude = event { true } else { false }
+        }
+    }
+}
+
 extension CockpitOperationalCueState.FrequencyCue {
     var statusLabel: String? {
         switch status {
@@ -248,12 +266,23 @@ struct CockpitOperationalCueProjector: Sendable {
             nextAltitude = nil
         }
 
+        let initialAltitudeDue = currentAltitudeChange == nil
+            ? beginningAltitudeCueForCurrentLeg(
+                legIndex: flight.activeLegIndex,
+                flightPlan: flightPlan,
+                plannedNavigation: plannedNavigation,
+                mode: flight.executionMode
+            )
+            : nil
+
         var dueEvents: Set<CockpitOperationalCueState.DueEvent> = []
         if let currentFrequencyChange {
             dueEvents.insert(.frequency(currentFrequencyChange.change.id))
         }
         if let currentAltitudeChange {
             dueEvents.insert(.altitude(currentAltitudeChange.change.id))
+        } else if initialAltitudeDue != nil {
+            dueEvents.insert(.altitude(legID))
         }
 
         return CockpitOperationalCueState(
@@ -265,7 +294,7 @@ struct CockpitOperationalCueProjector: Sendable {
                     target: $0.change.targetAltitude,
                     direction: $0.change.symbolDirection
                 )
-            },
+            } ?? initialAltitudeDue,
             dueEvents: dueEvents
         )
     }
@@ -310,6 +339,38 @@ struct CockpitOperationalCueProjector: Sendable {
         return CockpitOperationalCueState.AltitudeCue(
             target: leg.initialAltitudeMsl,
             direction: leg.initialAltitudeMsl.value > currentAltitude.value ? .up : .down
+        )
+    }
+
+    private func beginningAltitudeCueForCurrentLeg(
+        legIndex: Int,
+        flightPlan: FlightPlan,
+        plannedNavigation: PlannedNavigation,
+        mode: NavigationMode
+    ) -> CockpitOperationalCueState.AltitudeCue? {
+        guard legIndex > 0 else { return nil }
+        let previousLeg = plannedNavigation.legs[legIndex - 1]
+        let previousAnnotationsByID = Dictionary(
+            uniqueKeysWithValues: plannedNavigation.annotations
+                .filter { $0.legID == previousLeg.legID && $0.kind == .altitudeChange }
+                .map { ($0.entityID, $0) }
+        )
+        let previousAltitude = flightPlan.altitudeChanges.enumerated()
+            .compactMap { sourceIndex, change -> (target: AltitudeFeet, time: Int, sourceIndex: Int)? in
+                guard change.legID == previousLeg.legID,
+                      let annotation = previousAnnotationsByID[change.id],
+                      let time = time(for: annotation, mode: mode) else { return nil }
+                return (change.targetAltitude, time, sourceIndex)
+            }
+            .max { lhs, rhs in
+                lhs.time == rhs.time ? lhs.sourceIndex < rhs.sourceIndex : lhs.time < rhs.time
+            }?
+            .target ?? previousLeg.initialAltitudeMsl
+        let currentAltitude = plannedNavigation.legs[legIndex].initialAltitudeMsl
+        guard currentAltitude != previousAltitude else { return nil }
+        return CockpitOperationalCueState.AltitudeCue(
+            target: currentAltitude,
+            direction: currentAltitude.value > previousAltitude.value ? .up : .down
         )
     }
 

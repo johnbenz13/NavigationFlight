@@ -1029,7 +1029,10 @@ struct CockpitView: View {
                 label: "Planned altitude",
                 value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft",
                 detail: "MSL",
-                identifier: "cockpit-altitude"
+                identifier: "cockpit-altitude",
+                cue: altitudeTransitionLabel,
+                accessibilityValue: operationalCues?.altitudeAccessibilityDescription,
+                emphasizesValue: containsAltitudeEmphasis
             )
         }
         .frame(height: 84)
@@ -1078,7 +1081,10 @@ struct CockpitView: View {
         label: String,
         value: String,
         detail: String,
-        identifier: String
+        identifier: String,
+        cue: String? = nil,
+        accessibilityValue: String? = nil,
+        emphasizesValue: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
@@ -1088,15 +1094,34 @@ struct CockpitView: View {
             Text(value)
                 .font(.title2.bold())
                 .monospacedDigit()
+                .foregroundStyle(emphasizesValue ? Self.cueAmber : .primary)
+                .padding(.horizontal, emphasizesValue && accessibilityReduceMotion ? 5 : 0)
+                .padding(.vertical, emphasizesValue && accessibilityReduceMotion ? 2 : 0)
+                .background(
+                    emphasizesValue && accessibilityReduceMotion ? Self.cueAmber.opacity(0.16) : .clear,
+                    in: Capsule()
+                )
+                .cuePulse(
+                    active: emphasizesValue && !accessibilityReduceMotion,
+                    scale: 1.08
+                )
                 .lineLimit(1)
-            Text(detail)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+            HStack(spacing: 5) {
+                Text(detail)
+                    .foregroundStyle(.secondary)
+                if let cue {
+                    Text(cue)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Self.cueAmber)
+                }
+            }
+            .font(.caption)
+            .lineLimit(2)
         }
         .padding(.horizontal, 8)
         .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(accessibilityValue ?? "")
         .accessibilityIdentifier(identifier)
     }
 
@@ -1128,7 +1153,15 @@ struct CockpitView: View {
                     compactInstrument(label: "Next ETA · \(data.destination)", value: Self.duration(mapPresentation.operationalDestinationETASeconds), detail: mapPresentation.isDestinationETARevised ? "Revised · elapsed" : "Planned · elapsed", identifier: "cockpit-eta")
                 }
                 .buttonStyle(.plain)
-                compactInstrument(label: "Planned altitude", value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft", detail: "MSL", identifier: "cockpit-altitude")
+                compactInstrument(
+                    label: "Planned altitude",
+                    value: "\(Self.feet(operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl)) ft",
+                    detail: "MSL",
+                    identifier: "cockpit-altitude",
+                    cue: altitudeTransitionLabel,
+                    accessibilityValue: operationalCues?.altitudeAccessibilityDescription,
+                    emphasizesValue: containsAltitudeEmphasis
+                )
             }
             .padding(.top, 4)
 
@@ -1145,6 +1178,16 @@ struct CockpitView: View {
 
     private var headingProvenance: String {
         activeHeadingState?.committedDegrees == nil ? "Planned · magnetic" : "Revised · magnetic"
+    }
+
+    private var altitudeTransitionLabel: String? {
+        let transition = containsAltitudeEmphasis
+            ? operationalCues?.dueAltitude
+            : operationalCues?.nextAltitude
+        let status = containsAltitudeEmphasis ? "DUE" : "NEXT"
+        return transition.map {
+            "\($0.direction == .up ? "↑" : "↓") \(Self.feet($0.target.value)) ft \(status)"
+        }
     }
 
     @ViewBuilder
@@ -1270,21 +1313,51 @@ struct CockpitView: View {
         }
     }
 
-    private func compactInstrument(label: String, value: String, detail: String, identifier: String) -> some View {
+    private func compactInstrument(
+        label: String,
+        value: String,
+        detail: String,
+        identifier: String,
+        cue: String? = nil,
+        accessibilityValue: String? = nil,
+        emphasizesValue: Bool = false
+    ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(label).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-            Text(value).font(.headline).monospacedDigit().lineLimit(1)
-            Text(detail).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+                .foregroundStyle(emphasizesValue ? Self.cueAmber : .primary)
+                .padding(.horizontal, emphasizesValue && accessibilityReduceMotion ? 4 : 0)
+                .background(
+                    emphasizesValue && accessibilityReduceMotion ? Self.cueAmber.opacity(0.16) : .clear,
+                    in: Capsule()
+                )
+                .cuePulse(
+                    active: emphasizesValue && !accessibilityReduceMotion,
+                    scale: 1.06
+                )
+                .lineLimit(1)
+            HStack(spacing: 4) {
+                Text(detail).foregroundStyle(.secondary)
+                if let cue {
+                    Text(cue).fontWeight(.semibold).foregroundStyle(Self.cueAmber)
+                }
+            }
+            .font(.caption2)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(accessibilityValue ?? "")
         .accessibilityIdentifier(identifier)
     }
 
     private var compactImmediateFrequencies: some View {
         HStack(spacing: 8) {
             ForEach(0..<2, id: \.self) { index in
-                let entry = immediateFrequencyEntry(at: index)
+                let cue = immediateFrequencyCue(at: index)
                 Button {
                     cockpitPresentationState.setFrequencyPlanPresented(true)
                 } label: {
@@ -1292,17 +1365,21 @@ struct CockpitView: View {
                         Text(index == 0 ? "Planned now" : "Planned next")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(entry.map { "\($0.service) · \(Self.frequency($0.frequencyMHz)) MHz" } ?? "None in imported plan")
+                        Text(cue.map { "\($0.frequency.service) · \(Self.frequency($0.frequency.frequencyMHz)) MHz" } ?? "None in imported plan")
                             .font(.caption.weight(.semibold))
                             .lineLimit(1)
                             .minimumScaleFactor(0.75)
                     }
                     .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
                     .padding(.horizontal, 8)
-                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                    .background(immediateFrequencyBackground(cue), in: RoundedRectangle(cornerRadius: 10))
+                    .cuePulse(
+                        active: isImmediateFrequencyEmphasized(cue) && !accessibilityReduceMotion,
+                        scale: 1.04
+                    )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(immediateFrequencyAccessibilityLabel(entry, index: index))
+                .accessibilityLabel(immediateFrequencyAccessibilityLabel(cue, index: index))
                 .accessibilityHint("Opens the complete imported frequency plan")
                 .accessibilityIdentifier(index == 0 ? "planned-now" : "planned-next")
             }
@@ -1564,7 +1641,7 @@ struct CockpitView: View {
             title: "TARGET ALTITUDE",
             value: "\(Self.feet(currentAltitude)) ft",
             detail: "Current planned · MSL",
-            valueColor: nextAltitude == nil ? .primary : Self.cueAmber,
+            valueColor: containsAltitudeEmphasis ? Self.cueAmber : .primary,
             accessibilityIdentifier: "cockpit-altitude",
             trailingTitle: displayedTransition.map {
                 "\($0.direction == .up ? "↑" : "↓") \(Self.feet($0.target.value)) \(transitionStatus)"
@@ -1615,6 +1692,16 @@ struct CockpitView: View {
                 .fontDesign(.rounded)
                 .monospacedDigit()
                 .foregroundStyle(valueColor)
+                .padding(.horizontal, emphasized && accessibilityReduceMotion ? 5 : 0)
+                .padding(.vertical, emphasized && accessibilityReduceMotion ? 2 : 0)
+                .background(
+                    emphasized && accessibilityReduceMotion ? Self.cueAmber.opacity(0.16) : .clear,
+                    in: Capsule()
+                )
+                .cuePulse(
+                    active: emphasized && !accessibilityReduceMotion,
+                    scale: 1.08
+                )
                 .lineLimit(1)
             Text(detail)
                 .font(.caption2)
@@ -1685,7 +1772,7 @@ struct CockpitView: View {
             .font(.caption)
             HStack(spacing: 8) {
                 ForEach(0..<2, id: \.self) { index in
-                    immediateFrequencyCard(immediateFrequencyEntry(at: index), index: index)
+                    immediateFrequencyCard(immediateFrequencyCue(at: index), index: index)
                         .frame(width: 190)
                 }
             }
@@ -1698,19 +1785,22 @@ struct CockpitView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(0..<2, id: \.self) { index in
-                immediateFrequencyCard(immediateFrequencyEntry(at: index), index: index)
+                immediateFrequencyCard(immediateFrequencyCue(at: index), index: index)
             }
         }
         .accessibilityIdentifier("planned-frequencies")
     }
 
-    private func immediateFrequencyCard(_ entry: CockpitFrequencyPlan.Entry?, index: Int) -> some View {
+    private func immediateFrequencyCard(
+        _ cue: CockpitOperationalCueState.FrequencyCue?,
+        index: Int
+    ) -> some View {
         let sequence = index == 0 ? "Planned now" : "Planned next"
         return VStack(alignment: .leading, spacing: 3) {
             Text(sequence)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(entry.map { "\($0.service) · \(Self.frequency($0.frequencyMHz)) MHz" } ?? "None in imported plan")
+            Text(cue.map { "\($0.frequency.service) · \(Self.frequency($0.frequency.frequencyMHz)) MHz" } ?? "None in imported plan")
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -1718,24 +1808,61 @@ struct CockpitView: View {
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .background(immediateFrequencyBackground(cue), in: RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            if isImmediateFrequencyEmphasized(cue) && accessibilityReduceMotion {
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Self.cueGreen, lineWidth: 3)
+            }
+        }
+        .cuePulse(
+            active: isImmediateFrequencyEmphasized(cue) && !accessibilityReduceMotion,
+            scale: 1.04
+        )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(immediateFrequencyAccessibilityLabel(entry, index: index))
+        .accessibilityLabel(immediateFrequencyAccessibilityLabel(cue, index: index))
         .accessibilityIdentifier(sequence == "Planned now" ? "planned-now" : "planned-next")
     }
 
-    private func immediateFrequencyEntry(at index: Int) -> CockpitFrequencyPlan.Entry? {
-        guard data.frequencyPlan.immediateEntries.indices.contains(index) else { return nil }
-        return data.frequencyPlan.immediateEntries[index]
+    private func immediateFrequencyCue(at index: Int) -> CockpitOperationalCueState.FrequencyCue? {
+        guard let operationalCues else {
+            guard data.displayFrequencies.indices.contains(index) else { return nil }
+            return CockpitOperationalCueState.FrequencyCue(
+                frequency: data.displayFrequencies[index],
+                status: index == 0 ? .current : .next
+            )
+        }
+        let presentation = CockpitConsoleCuePresentation(
+            cues: operationalCues,
+            emphasizedEvents: emphasizedCueEvents
+        )
+        guard presentation.immediateFrequencyCues.indices.contains(index) else { return nil }
+        return presentation.immediateFrequencyCues[index]
     }
 
     private func immediateFrequencyAccessibilityLabel(
-        _ entry: CockpitFrequencyPlan.Entry?,
+        _ cue: CockpitOperationalCueState.FrequencyCue?,
         index: Int
     ) -> String {
         let sequence = index == 0 ? "Planned now" : "Planned next"
-        guard let entry else { return "\(sequence), none in imported plan" }
-        return "\(sequence), \(entry.service), \(Self.frequency(entry.frequencyMHz)) megahertz"
+        guard let cue else { return "\(sequence), none in imported plan" }
+        return "\(sequence), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz"
+    }
+
+    private func immediateFrequencyBackground(
+        _ cue: CockpitOperationalCueState.FrequencyCue?
+    ) -> Color {
+        switch cue?.status {
+        case .current: Self.cueGreenBackground
+        case .next: Self.cueAmberBackground
+        case .other, nil: Color(.secondarySystemBackground)
+        }
+    }
+
+    private func isImmediateFrequencyEmphasized(
+        _ cue: CockpitOperationalCueState.FrequencyCue?
+    ) -> Bool {
+        cue?.status == .current && containsFrequencyEmphasis
     }
 
     private func readyFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {

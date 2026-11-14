@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "path": "Jerusalem-Corridor-Practice-20261105T212000Z-03000000.gpx",
+  "sha256": "3495d1455852953658a285dd9692acea849d9a430d8e81f473a008b42becfb67",
+  "bytes": 1189,
+  "originalModificationTimeUTC": "2026-11-14T11:59:28.256951Z",
+  "uiAssociation": "evidence/batch-05/10-export-share.txt exact filename",
+  "provenanceLimit": "Deterministic filename does not prove immutable creation provenance. Retrieved read-only from simulator app temporary directory.",
+  "parsedGPXVersion": "1.1",
+  "tracks": 1,
+  "segments": 1,
+  "points": 2,
+  "matchesSeededCoordinatesTimesElevationSpeedCourse": true,
+  "limits": [
+    "No multi-segment interruption example",
+    "No invalid optional-value example",
+    "No external application interoperability exercise"
+  ]
+}

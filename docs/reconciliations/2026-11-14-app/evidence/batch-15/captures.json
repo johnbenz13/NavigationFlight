@@ -1,0 +1,234 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-action-only-start",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/01-action-only-start.txt",
+      "logsPath": "evidence/batch-15/01-action-only-start.log",
+      "screenshotPath": "assets/current/batch-15/01-action-only-start.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Start genuine new recording with unavailable synthetic location source.",
+      "screenshotPathSHA256": "3a43dc04bb195eca649948b9bdc5038123cd61ad32bf1ce50b7851b595ad086e",
+      "hierarchyPathSHA256": "f798a40b072aa964b4d926cf9f4e494ccdc11b83c2e0bc327e6a9dd0200aa507",
+      "logsPathSHA256": "a7b941f1276b0f83c0f2c0e0bece0cb3f1801c19f4658095b88180c25b978ba0"
+    },
+    {
+      "id": "02-pre-relaunch-revision",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/02-pre-relaunch-revision.txt",
+      "logsPath": "evidence/batch-15/02-pre-relaunch-revision.log",
+      "screenshotPath": "assets/current/batch-15/02-pre-relaunch-revision.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Commit heading356 to genuine disk-backed flight checkpoint.",
+      "screenshotPathSHA256": "e4857447901191544f5b9c89c21ac2b410dc6e5161f39e206b1438f0faf18e48",
+      "hierarchyPathSHA256": "cc77026ad38927302d617207f1bb5828ad8b0077e67e46c10e2008c2e3b6c2ce",
+      "logsPathSHA256": "a7b941f1276b0f83c0f2c0e0bece0cb3f1801c19f4658095b88180c25b978ba0"
+    },
+    {
+      "id": "03-actual-checkpoint-relaunch",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/03-actual-checkpoint-relaunch.txt",
+      "logsPath": "evidence/batch-15/03-actual-checkpoint-relaunch.log",
+      "screenshotPath": "assets/current/batch-15/03-actual-checkpoint-relaunch.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Relaunch same library ID without PLAN, RECOVERY_STATE or FLIGHTS_STATE seed.",
+      "screenshotPathSHA256": "c4a81a53f1021a3b7e5eb5683ae67b4606bac86dcd6687b46847e7736293b169",
+      "hierarchyPathSHA256": "10819652fea78d854498e3c615a01394de641b1bdd8310b25f655a07f82bf698",
+      "logsPathSHA256": "254d26f956b928a9fe797f938c0641b8d7c45cebe55a29db0e7a1a269ac556f0"
+    },
+    {
+      "id": "04-restored-checkpoint",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/04-restored-checkpoint.txt",
+      "logsPath": "evidence/batch-15/04-restored-checkpoint.log",
+      "screenshotPath": "assets/current/batch-15/04-restored-checkpoint.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Continue actual disk checkpoint; inspect revised heading and elapsed timer.",
+      "screenshotPathSHA256": "ba436b9a1e25e9bd9db31c02ba0658954b3f1f6ca12d83843fde9fef8092c70a",
+      "hierarchyPathSHA256": "41e205c115caf44c46527df3158c50007d48788aaba90a11aca041e4ccee4f9b",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "05-bypass-ip-final-reach",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/05-bypass-ip-final-reach.txt",
+      "logsPath": "evidence/batch-15/05-bypass-ip-final-reach.log",
+      "screenshotPath": "assets/current/batch-15/05-bypass-ip-final-reach.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Report destination reached without reporting preceding IP.",
+      "screenshotPathSHA256": "cfb938c3937008c1589147e273efdc833ed93dc1ccaaee415e370de479cf6a18",
+      "hierarchyPathSHA256": "f1a4a623034f2cb461de505e02ebc957011977d961db791396b983efdac79b9b",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "06-passed-ip-inspect-attempt",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/06-passed-ip-inspect-attempt.txt",
+      "logsPath": "evidence/batch-15/06-passed-ip-inspect-attempt.log",
+      "screenshotPath": "assets/current/batch-15/06-passed-ip-inspect-attempt.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Tap current hierarchy IP hitpoint after bypass.",
+      "screenshotPathSHA256": "f692aa6b1d508cea58aa28b2eed7837efcd50714927586770ec6e928c160e236",
+      "hierarchyPathSHA256": "697c26cd91ff6260e2c4e09596ba1d699272b6663b734edcf86745a056f6a58d",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "07-passed-ip-fallback",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/07-passed-ip-fallback.txt",
+      "logsPath": "evidence/batch-15/07-passed-ip-fallback.log",
+      "screenshotPath": "assets/current/batch-15/07-passed-ip-fallback.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "After AX tap missed, tap visible Passed without report label.",
+      "screenshotPathSHA256": "66a5b71ae90d13cb1dd63f41a58b44b6e1fc5603c77594d948c73470f698dafb",
+      "hierarchyPathSHA256": "c737ab4dba41575ea6e2d193003af01ef07a90e843dfcfc7b721ff8413e5b4b5",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "08-previous-after-bypass",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/08-previous-after-bypass.txt",
+      "logsPath": "evidence/batch-15/08-previous-after-bypass.log",
+      "screenshotPath": "assets/current/batch-15/08-previous-after-bypass.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Open previous leg summary.",
+      "screenshotPathSHA256": "00f291e5888e46a41e567817cf0093df4503c97d4653704edf1d681d30351e04",
+      "hierarchyPathSHA256": "8e06b180cf822215c5197eb3167c45bc58c2b010ccae5125f28b16e69e672ecc",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "09-action-only-end-sheet",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/09-action-only-end-sheet.txt",
+      "logsPath": "evidence/batch-15/09-action-only-end-sheet.log",
+      "screenshotPath": "assets/current/batch-15/09-action-only-end-sheet.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Tap NavigationComplete marks navigation complete in recorder; recording continues. Open status next to reach End.",
+      "screenshotPathSHA256": "327f48c6d443f995f9ee4dd6c4fefb1eb265bb50be8427874e070ff1e561e839",
+      "hierarchyPathSHA256": "f8af4cc1f9be395c1496df8b4fbf0b03c1bd729cc83a888d24273b732e053455",
+      "logsPathSHA256": "7287da66ffc46d78c7c0dc86c76290eafd499460b66134339876434e54b9c8c0"
+    },
+    {
+      "id": "10-action-only-confirmation",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/10-action-only-confirmation.txt",
+      "logsPath": "evidence/batch-15/10-action-only-confirmation.log",
+      "screenshotPath": "assets/current/batch-15/10-action-only-confirmation.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "End action-only recording after completed navigation.",
+      "screenshotPathSHA256": "a6b841bf11ddde3ffa74c81f6b1a9678db79b5f3f9c384c1ffad371bfe3f4c1a",
+      "hierarchyPathSHA256": "53548e81eac1e1cc9b5ce081d2ec18357c84f4218e2e4583864fe7684a5d939e",
+      "logsPathSHA256": "ad4b889a79323f6332dc297a911a0c99c26312d4ef03d9979930939e2a191154"
+    },
+    {
+      "id": "11-action-only-ended",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/11-action-only-ended.txt",
+      "logsPath": "evidence/batch-15/11-action-only-ended.log",
+      "screenshotPath": "assets/current/batch-15/11-action-only-ended.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Confirm End Recording.",
+      "screenshotPathSHA256": "f3d1030915fd5438d3a7b52ed27bd8c7a5ead1b3274d691d618af836de3d534a",
+      "hierarchyPathSHA256": "2972a44bbd8b7059c9d6e86126c976b81a24dcd512681d4f8f43ec415c74de21",
+      "logsPathSHA256": "ad4b889a79323f6332dc297a911a0c99c26312d4ef03d9979930939e2a191154"
+    },
+    {
+      "id": "12-action-only-saved",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/12-action-only-saved.txt",
+      "logsPath": "evidence/batch-15/12-action-only-saved.log",
+      "screenshotPath": "assets/current/batch-15/12-action-only-saved.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Open Flights after real action-only closure.",
+      "screenshotPathSHA256": "4c6077137565c7ba39eafd1bf8e162e2a7ad1ed0cc818df65db98d4da3b63e4f",
+      "hierarchyPathSHA256": "5e7c3e5a7bb144f64c3c93d11ea5ac31adad0a69a9a13f07c3d8eacc05f2218f",
+      "logsPathSHA256": "ecca35e8f6d7d2b7b364d9c593c09fa1db7b3444e4cf3306bef2ac91393e54f5"
+    },
+    {
+      "id": "13-action-only-complete-detail",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/13-action-only-complete-detail.txt",
+      "logsPath": "evidence/batch-15/13-action-only-complete-detail.log",
+      "screenshotPath": "assets/current/batch-15/13-action-only-complete-detail.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Inspect saved action-only recording completion and coverage.",
+      "screenshotPathSHA256": "92f708c8f76f6a6983176caf302bfa45761e5aec77091c425f793951553c9197",
+      "hierarchyPathSHA256": "c0c523b02e2c32df36ce0b60f5105c90c3d9eaa88ccf7758947a1e5c4c5f7413",
+      "logsPathSHA256": "a885b9815c4bc437675006ec23089e0fa6b10bb44ec51d0f779b8335d92871ff"
+    },
+    {
+      "id": "14-action-only-no-export",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-15/14-action-only-no-export.txt",
+      "logsPath": "evidence/batch-15/14-action-only-no-export.log",
+      "screenshotPath": "assets/current/batch-15/14-action-only-no-export.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch15-durable-1794671738231",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Scroll closed detail to export eligibility.",
+      "screenshotPathSHA256": "fa86ccb7ca4f7e6c9be28c56f30fc2328fa192a9a721b9d429cc95622188194a",
+      "hierarchyPathSHA256": "464e657cdac7c987ae7a4a7e41fbbf65a9521061559dc702b1a078f879f33eea",
+      "logsPathSHA256": "a885b9815c4bc437675006ec23089e0fa6b10bb44ec51d0f779b8335d92871ff"
+    }
+  ],
+  "notes": [
+    "Actual disk-backed checkpoint:Start\u2192heading356 atelapsed12\u2192relaunch sameLIBRARY_ID noPLAN/recoveryseed\u2192Continue gate4:55\u2192restored356 elapsed29. Route collapsed onrestore; timer/revision survive.",
+    "Finaldestinationreach bypassesIP; AXpassedwithoutreport/noActual; visibleIP historical callout explicitly no reach timestamp orActualETA and no revision controls. PrevioussummaryshowsIPpassed,Actual29,headingrevised356.",
+    "Unavailable GPS fixture throughout; actual action-only closure Complete after navigationcomplete/manualEnd, listManuallyEnded detailCompleteManualGPSunavailable. StaleRecordingContinuesbottom afterEnd persists as priorissue.",
+    "No real process crash,device reboot or extended durability claimed; toolInstallAndRun clean relaunch only."
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

@@ -1,0 +1,37 @@
+2026-11-14 17:29:42.158082+0200 [9277:57084129] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10ad143f0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+objc[9277]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1062f4398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a6e8310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 17:29:42.693290+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:29:42.737078+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:29:42.740639+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:29:42.755449+0200 [9277:57084010] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 17:29:42.767895+0200 [9277:57084010] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 17:29:43.212529+0200 [9277:57084010] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 17:29:59.403723+0200 [9277:57084010] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-14 17:29:59.470782+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:29:59.470911+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.500399+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.500448+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.519608+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.519644+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.519659+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:04.519673+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:12.129169+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 17:30:12.129364+0200 [9277:57084010] [API] cannot add handler to 0 from 0 - dropping

@@ -1,0 +1,223 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-vor-drag-hitpoint",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/01-vor-drag-hitpoint.txt",
+      "logsPath": "evidence/batch-10/01-vor-drag-hitpoint.log",
+      "screenshotPath": "assets/current/batch-10/01-vor-drag-hitpoint.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Drag VOR label using hierarchy hitpoint.",
+      "screenshotPathSHA256": "11d3fdc41d98b03a796c1f96daab123a35e7377d9bc38a18d0b2f96b22ebe719",
+      "hierarchyPathSHA256": "e82bb6e10b3266ad53ad9f7ff95686da2520fa410a2b4664882c8b0aa16cf82c",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "02-vor-label-drag",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/02-vor-label-drag.txt",
+      "logsPath": "evidence/batch-10/02-vor-label-drag.log",
+      "screenshotPath": "assets/current/batch-10/02-vor-label-drag.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Hitpoint drag panned whole map; fallback drag visible VOR grip at222612 to320650.",
+      "screenshotPathSHA256": "213edda8e2a1ab2797c2e58f8f8e9e257db425c5ce7224ba4a673b0df34a8fe5",
+      "hierarchyPathSHA256": "f68367606abe921f6e5d3660efeaa12cce5a14715b9e2343c9410942a39f9027",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "03-focus-destination",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/03-focus-destination.txt",
+      "logsPath": "evidence/batch-10/03-focus-destination.log",
+      "screenshotPath": "assets/current/batch-10/03-focus-destination.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Tap Show Destination Waypoint after map pan.",
+      "screenshotPathSHA256": "be8e8fd35ab412302267f7d37a688a36b5adab01bc8899b3062354767161eb10",
+      "hierarchyPathSHA256": "88aaebb4c23eee43c2d56c20323461adc511120c44f171481fa34682c90126aa",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "04-focus-destination-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/04-focus-destination-settled.txt",
+      "logsPath": "evidence/batch-10/04-focus-destination-settled.log",
+      "screenshotPath": "assets/current/batch-10/04-focus-destination-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Tap newly present Show Destination Waypoint.",
+      "screenshotPathSHA256": "0fd9543a93361c984f262aface9fb58d84c9d7ab0b9a30dc1cc15fb3da40f20f",
+      "hierarchyPathSHA256": "88aaebb4c23eee43c2d56c20323461adc511120c44f171481fa34682c90126aa",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "05-focus-whole-leg",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/05-focus-whole-leg.txt",
+      "logsPath": "evidence/batch-10/05-focus-whole-leg.log",
+      "screenshotPath": "assets/current/batch-10/05-focus-whole-leg.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Tap Show Whole Active Leg.",
+      "screenshotPathSHA256": "2441600c9f321f0fe926b7a4eae7fc1eb643fe2548cf890e00c42e9dd5d08b3d",
+      "hierarchyPathSHA256": "8fb73dfb5b7777e2fc660bce5eec0610ae2ce6f5a864044c228e60e578e7f111",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "06-eta-committed45",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/06-eta-committed45.txt",
+      "logsPath": "evidence/batch-10/06-eta-committed45.log",
+      "screenshotPath": "assets/current/batch-10/06-eta-committed45.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Attempt +5 at previous editor position then Commit; observed revised00:40 (not45). Baseline numeric revision showsRevised. No dedicated revert in target or EditRevision.",
+      "screenshotPathSHA256": "862e1285fdbf6786238c7141c1c6f3b0aa86e17980b2038dcd27668402c954b4",
+      "hierarchyPathSHA256": "93196fb36c31dc55d25c8b3822164c1c2e89ef1996350529656c7392180e20d3",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "07-eta-revert-inspection",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/07-eta-revert-inspection.txt",
+      "logsPath": "evidence/batch-10/07-eta-revert-inspection.log",
+      "screenshotPath": "assets/current/batch-10/07-eta-revert-inspection.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Tap cockpit ETA while callout open dismisses it.",
+      "screenshotPathSHA256": "c6adcd4510047c579fa006e8521186a2188053614c4cbd4c7a4e8f0aabd17ed7",
+      "hierarchyPathSHA256": "aa528b3b5314381895de9086e9a7cc03b7c37e98be4c79939a0b8bcf45109356",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "08-eta-revision-editor",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/08-eta-revision-editor.txt",
+      "logsPath": "evidence/batch-10/08-eta-revision-editor.log",
+      "screenshotPath": "assets/current/batch-10/08-eta-revision-editor.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Open Edit Revision on committed40; inspect editor for revert.",
+      "screenshotPathSHA256": "ed6dd980051a741ec53f90f3d9cddd0bd24bd27fa7a731efc706e9ad4ec53723",
+      "hierarchyPathSHA256": "c285a57d89c5db9f3e0ab5c05a93c2f0a74264605bc23302455d05ee1a94e1fd",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "09-undo-invalidated-by-heading",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/09-undo-invalidated-by-heading.txt",
+      "logsPath": "evidence/batch-10/09-undo-invalidated-by-heading.log",
+      "screenshotPath": "assets/current/batch-10/09-undo-invalidated-by-heading.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Reach first destination then commit successor heading356 within20sec; inspect Undo.",
+      "screenshotPathSHA256": "660eb95e92000fb483d93108ba75388c0ab5160149423fc35c0f19736e09a4aa",
+      "hierarchyPathSHA256": "940af5f4c4f2d13c0ab56398b083d48a87eb93ec3d2458fba964e749f8af93d5",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "10-final-reach-undone",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/10-final-reach-undone.txt",
+      "logsPath": "evidence/batch-10/10-final-reach-undone.log",
+      "screenshotPath": "assets/current/batch-10/10-final-reach-undone.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Undo final reach restores active leg2 and revised heading.",
+      "screenshotPathSHA256": "aafe3cdc8c315e37308ed3ade49f51a1b33fbebb6f5bb70c9df4b7ac04f29375",
+      "hierarchyPathSHA256": "6b14a9c371f8a6bed86bd1ccb064bf4283747a8c8b52264a9a0784e5f3a03f53",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    },
+    {
+      "id": "11-duplicate-undo-no-action",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-10/11-duplicate-undo-no-action.txt",
+      "logsPath": "evidence/batch-10/11-duplicate-undo-no-action.log",
+      "screenshotPath": "assets/current/batch-10/11-duplicate-undo-no-action.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch10-nav-1794670403048",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "two-leg.fplnav",
+          "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+        }
+      },
+      "action": "Tap former Undo location again; no Undo exists and active state remains.",
+      "screenshotPathSHA256": "d72ab875209e669330f1896ce8eaec5ed5ba934eae72480d4d9d5afb2da66838",
+      "hierarchyPathSHA256": "8be8b845a943524beb51dd9db34fdee58919efb59ae029c64a935537dc2542ba",
+      "logsPathSHA256": "80226326843bc351d201db51e81e24f547ce38e0062050d04ad2d162bdc89e75"
+    }
+  ],
+  "notes": [
+    "VOR label grip drag succeeds after hierarchy hitpoint pans whole map. Repositioned label persists across focus.",
+    "ShowWholeActiveLeg restores initial framing; ShowDestination tap twice showed no visible framing change in this ready fixture, bounded attempt.",
+    "No explicit ETA revert in target/editor. Baseline numeric committedETA still Revised.",
+    "Successor headingcommit invalidates Undo within3sec; finalUndo restoresactive; second tap formerlocation no action."
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

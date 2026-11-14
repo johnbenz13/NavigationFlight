@@ -1,0 +1,45 @@
+2026-11-14 18:02:09.726214+0200 [18324:57170861] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10915abe0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 18:02:09.874478+0200 [18324:57170775] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 18:02:10.092470+0200 [18324:57170775] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 18:02:10.195375+0200 [18324:57170775] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+
+2026-11-14 18:02:10.209212+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b2580>
+
+2026-11-14 18:02:10.214796+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b1f40>
+
+2026-11-14 18:02:10.220033+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b10e0>
+
+2026-11-14 18:02:10.220190+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b0fa0>
+
+2026-11-14 18:02:10.220347+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b1180>
+
+2026-11-14 18:02:10.220451+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b0000>
+
+2026-11-14 18:02:10.220541+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b2260>
+
+2026-11-14 18:02:10.220634+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b23a0>
+
+2026-11-14 18:02:10.220725+0200 [18324:57170775] [AXUIA] This child can't be serialized correctly: <SwiftUI.AccessibilityNode: 0x1093b2440>
+
+objc[18324]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x103f18398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x109878310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 18:02:10.999129+0200 [18324:57170775] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 18:02:17.172743+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.203762+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.203825+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.203843+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.407670+0200 [18324:57170775] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-14 18:02:17.511369+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.512592+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:02:17.512629+0200 [18324:57170775] [API] cannot add handler to 0 from 0 - dropping

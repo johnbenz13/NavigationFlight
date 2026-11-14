@@ -1,0 +1,157 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPad Pro 11 M5; iOS27.0(24A434); 834x1210 portrait",
+  "fixtureSource": "See retained exact bytes and fixtures.json in this folder.",
+  "records": [
+    {
+      "id": "01-position-education",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/01-position-education.txt",
+      "logsPath": "evidence/batch-04/01-position-education.log",
+      "screenshotPath": "assets/current/batch-04/01-position-education.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-position-1794657366786",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION": "1"
+      },
+      "action": "Fresh fixture recovery-available with education enabled; initial permission education.",
+      "hierarchyPathSHA256": "1d0a069dcb9bd10ee4158c27b1cf34a63adb8d7d38ca8fd60e648f481792aa86",
+      "logsPathSHA256": "c3a4242cbfbc8e4f27606933f43ef109b52732c6ccc6312ba062996681e0dac6",
+      "screenshotPathSHA256": "203a875800a1e9c4cc153194f4ad0901191b7d0e08a5efeda185d2bf496152e5"
+    },
+    {
+      "id": "02-position-tap-hint",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/02-position-tap-hint.txt",
+      "logsPath": "evidence/batch-04/02-position-tap-hint.log",
+      "screenshotPath": "assets/current/batch-04/02-position-tap-hint.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-position-1794657366786",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION": "1"
+      },
+      "action": "Tap Ready Position Check; hold hint only, aircraft remains hidden.",
+      "hierarchyPathSHA256": "492a512d3a228fe680d079aca22f985c1b7189b868dac0a5011497669175fe22",
+      "logsPathSHA256": "cef9960670b788bd5f1bf8d125042144342ca45afb47eb9349c7dce1a2b50c48",
+      "screenshotPathSHA256": "9b4f5f1ba3adf0de2527ce7add57de37943603e6a6e63cc33c3789b156ef8330"
+    },
+    {
+      "id": "03-position-disclosure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/03-position-disclosure.txt",
+      "logsPath": "evidence/batch-04/03-position-disclosure.log",
+      "screenshotPath": "assets/current/batch-04/03-position-disclosure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-position-1794657366786",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION": "1"
+      },
+      "action": "Hold1.2sec triggers temporary position/recovery disclosure; synthetic trusted sample.",
+      "hierarchyPathSHA256": "f522ca4bd1d9c48800413f713ff95872322794fdf08a394e723bfa55fb62f577",
+      "logsPathSHA256": "bb0fa5fdfcdd4a6de28d1e06202c15fd19eae783a3942ba3e33abdd175bc0012",
+      "screenshotPathSHA256": "fc966b7603b8032b56dc05fc7b6221337a339b589763923058b2b53c47d482ec"
+    },
+    {
+      "id": "04-position-cancelled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/04-position-cancelled.txt",
+      "logsPath": "evidence/batch-04/04-position-cancelled.log",
+      "screenshotPath": "assets/current/batch-04/04-position-cancelled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-position-1794657366786",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "recovery-available",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_EDUCATION": "1"
+      },
+      "action": "Tap active control ends disclosure; plane/recovery hidden, timer/progression continue.",
+      "hierarchyPathSHA256": "ebe21fd1872a588dc6844de207baa7e4c3294dacd9952c2b7322ba6ca6771f6b",
+      "logsPathSHA256": "bb0fa5fdfcdd4a6de28d1e06202c15fd19eae783a3942ba3e33abdd175bc0012",
+      "screenshotPathSHA256": "f281746abb462163836eb7dd526d9f85e520451ba5bbffb76e651f408193c492"
+    },
+    {
+      "id": "05-position-acquiring",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/05-position-acquiring.txt",
+      "logsPath": "evidence/batch-04/05-position-acquiring.log",
+      "screenshotPath": "assets/current/batch-04/05-position-acquiring.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-acquire-1794657405069",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Hold acquiring fixture; no trusted location revealed, bounded acquisition countdown.",
+      "hierarchyPathSHA256": "5a7d7a472c95ad8e21d31a3890b379e6b8d6abf14fa703b8d223e33196a163af",
+      "logsPathSHA256": "3060320e8a1644b6f0c90b13b107835f963a18d5ff35f0afc5fd42ae9f5d08a6",
+      "screenshotPathSHA256": "a8cefce1eb1af54152ed6402f453c36569d6a5a917250e86e01c4513126bf86f"
+    },
+    {
+      "id": "06-acquisition-timeout",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/06-acquisition-timeout.txt",
+      "logsPath": "evidence/batch-04/06-acquisition-timeout.log",
+      "screenshotPath": "assets/current/batch-04/06-acquisition-timeout.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-acquire-1794657405069",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "No trusted samples: after11sec acquisition ends without position disclosure.",
+      "hierarchyPathSHA256": "e5cdc83e55126d7da93bf0a3231bd3d4c07aba7dbc0e9b50582e59215bf3f321",
+      "logsPathSHA256": "3060320e8a1644b6f0c90b13b107835f963a18d5ff35f0afc5fd42ae9f5d08a6",
+      "screenshotPathSHA256": "d25746d27556005c2ad086b54f130d4e46eca1cd5216b7d996eabab92740a69b"
+    },
+    {
+      "id": "07-permission-required",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-04/07-permission-required.txt",
+      "logsPath": "evidence/batch-04/07-permission-required.log",
+      "screenshotPath": "assets/current/batch-04/07-permission-required.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch04-permission-1794657432623",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "permission-required"
+      },
+      "action": "Tap permission-required Position Check opens system Settings; screenshot captured transition, no permission changed.",
+      "hierarchyPathSHA256": "b0dc7b52b67901bf4b95d49fcd4d4ae9ef08327955b26ebf9f58fe86154d91a4",
+      "logsPathSHA256": "5bca35bf1c03d8a0857533683aa461534dbdf3faca48be8506439e578d7f0f02",
+      "screenshotPathSHA256": "edfd26bff4a8559d2c15ccf4fd331b95672340180e655d7bede3138f3f706415"
+    }
+  ],
+  "limits": [
+    "Synthetic debug position; real GPS/background sensing unverified",
+    "Permission-required tap opened Settings; transition screenshot only; no permission changed",
+    "Additional position outcomes and signal-loss unverified"
+  ]
+}

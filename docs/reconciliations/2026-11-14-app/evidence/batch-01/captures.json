@@ -1,0 +1,218 @@
+{
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "date": "2026-11-14",
+  "timezone": "Asia/Jerusalem",
+  "notes": [
+    "No source edits, Git operations or tests. Workspace InstallAndRun built baseline.",
+    "Fixture exact bytes retained in representative-v7.fplnav, hash in fixture.json. Unique disposable library IDs in each record environment.",
+    "iPad 834x1210 portrait /1210x834 landscape points; iPhone 402x874 portrait points. Screenshots are 2x and 3x respectively.",
+    "Picker Cancel hierarchy hitPoint (734.5,69) did not dismiss; X fallback (32,64) attempted but immediate capture still picker. Relaunched before settled verification; cancellation unverified. No existing file selected.",
+    "Initial library load route strip unobscured. Returning from inspection shifts strip from y117 to y53 under floating tab bar; destination text and Map tools overlap tabs.",
+    "Portrait iPad next frequency visually truncates; landscape target altitude and ETA title truncate. No claim of Figma match.",
+    "Unverified: actual file import completion, cancel settled outcome, duplicates/replacement/removal, storage errors, reload persistence/offline restart, protected active flight, active progression, phone inspection return, Dynamic Type/VoiceOver.",
+    "Supplement: loaded library detail retained on Flight Plans tab, Continue to Cockpit and separate Restart Flight action visible; Continue preserves ready state and does not cause legacy inspection-return overlap. Restart action not activated."
+  ],
+  "records": [
+    {
+      "id": "01-ipad-empty",
+      "applicationState": "Running",
+      "hierarchyPath": "01-ipad-empty.txt",
+      "logsPath": "01-ipad-empty.log",
+      "screenshotPath": "../../assets/current/batch-01/01-ipad-empty.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_39_35_412-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-empty-1794656360103"
+      },
+      "action": "Fresh launch unique empty library; portrait",
+      "device": "iPad Pro 11-inch (M5), iOS 27.0 (24A434), 834x1210 points",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/01-ipad-empty.png",
+      "screenshotSHA256": "d9615e010e88760af4aa125e0b94ab137290aefda8ef2611acdbd8fa020e41e4"
+    },
+    {
+      "id": "02-ipad-import-picker",
+      "applicationState": "Running",
+      "hierarchyPath": "02-ipad-import-picker.txt",
+      "logsPath": "02-ipad-import-picker.log",
+      "screenshotPath": "../../assets/current/batch-01/02-ipad-import-picker.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_39_55_681-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-empty-1794656360103"
+      },
+      "action": "Tap Add Flight Plan from empty library",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/02-ipad-import-picker.png",
+      "screenshotSHA256": "6b7a2c724d6c352a4a21b73d9beacb8b40880b0da3e990f125dd1abe2d3bdb9c"
+    },
+    {
+      "id": "03-ipad-library",
+      "applicationState": "Running",
+      "hierarchyPath": "03-ipad-library.txt",
+      "logsPath": "03-ipad-library.log",
+      "screenshotPath": "../../assets/current/batch-01/03-ipad-library.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_40_37_414-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Fresh launch seeded unique library; one official V7 fixture",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/03-ipad-library.png",
+      "screenshotSHA256": "a9d51d27a18933a7e5ab8aad83ffb699287462c31b6384314d42cdeab3fb370e"
+    },
+    {
+      "id": "04-ipad-plan-detail",
+      "applicationState": "Running",
+      "hierarchyPath": "04-ipad-plan-detail.txt",
+      "logsPath": "04-ipad-plan-detail.log",
+      "screenshotPath": "../../assets/current/batch-01/04-ipad-plan-detail.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_40_38_020-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Tap saved plan row; detail opens without loading cockpit",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/04-ipad-plan-detail.png",
+      "screenshotSHA256": "15b3f4a4930ccd7ad5d89251b36a6dad9a86e6d31ed41fcda949622f00a6c965"
+    },
+    {
+      "id": "05-ipad-cockpit-portrait",
+      "applicationState": "Running",
+      "hierarchyPath": "05-ipad-cockpit-portrait.txt",
+      "logsPath": "05-ipad-cockpit-portrait.log",
+      "screenshotPath": "../../assets/current/batch-01/05-ipad-cockpit-portrait.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_40_46_749-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Tap Load in Cockpit; ready flight, start leg still required",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/05-ipad-cockpit-portrait.png",
+      "screenshotSHA256": "68625814d3b7e0a664ff97ee113f7b62b6ec6ea3691968616d2fa0713e9dcc66"
+    },
+    {
+      "id": "06-ipad-cockpit-landscape",
+      "applicationState": "Running",
+      "hierarchyPath": "06-ipad-cockpit-landscape.txt",
+      "logsPath": "06-ipad-cockpit-landscape.log",
+      "screenshotPath": "../../assets/current/batch-01/06-ipad-cockpit-landscape.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_40_56_813-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Rotate ready cockpit landscapeLeft; viewport 1210x834 points",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/06-ipad-cockpit-landscape.png",
+      "screenshotSHA256": "2c5d7d91bb2aa1e248828affa8550e677feb41bcdb5d5eee4e33e18353ce928b"
+    },
+    {
+      "id": "07-ipad-inspection-landscape",
+      "applicationState": "Running",
+      "hierarchyPath": "07-ipad-inspection-landscape.txt",
+      "logsPath": "07-ipad-inspection-landscape.log",
+      "screenshotPath": "../../assets/current/batch-01/07-ipad-inspection-landscape.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_41_17_518-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Map tools > Inspect flight plan; exposes saved calculations and annotations",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/07-ipad-inspection-landscape.png",
+      "screenshotSHA256": "4224edd0ff2eadf52b743c83f4a891419fe5574274ccdf486d31b9d21f5ed186"
+    },
+    {
+      "id": "08-ipad-return-overlap",
+      "applicationState": "Running",
+      "hierarchyPath": "08-ipad-return-overlap.txt",
+      "logsPath": "08-ipad-return-overlap.log",
+      "screenshotPath": "../../assets/current/batch-01/08-ipad-return-overlap.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library iPad-13_41_27_203-thumbnailScreenshot.png",
+      "action": "From Plan Inspection tap toolbar Cockpit. Ready state persists but route strip moves under tabs.",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-seeded-1794656421738",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/08-ipad-return-overlap.png",
+      "screenshotSHA256": "e212b09c6ffaf745bcf575ab476f21fd4076eb1b9d968e86a0327476a7a869dc"
+    },
+    {
+      "id": "09-phone-cockpit",
+      "applicationState": "Running",
+      "hierarchyPath": "09-phone-cockpit.txt",
+      "logsPath": "09-phone-cockpit.log",
+      "screenshotPath": "../../assets/current/batch-01/09-phone-cockpit.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Reconcile Library Phone-13_42_10_170-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-phone-1794656497844",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Fresh seeded phone library > saved plan detail > Load in Cockpit",
+      "device": "iPhone 17, iOS 27.0 (24A434), 402x874 points",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/09-phone-cockpit.png",
+      "screenshotSHA256": "0c2a2954de99c0c787ede4bb1466a68640bdcad18656c02cfa948ad0b1383296"
+    },
+    {
+      "id": "10-ipad-retained-loaded-review",
+      "applicationState": "Running",
+      "hierarchyPath": "10-ipad-retained-loaded-review.txt",
+      "logsPath": "10-ipad-retained-loaded-review.log",
+      "screenshotPath": "../../assets/current/batch-01/10-ipad-retained-loaded-review.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Loaded Library Review-13_43_50_236-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-loaded-review-1794656600708",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Seed library + loaded plan; open row; Continue to Cockpit; tap Flight Plans app tab. Detail retained, Continue/Restart visible.",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/10-ipad-retained-loaded-review.png",
+      "screenshotSHA256": "e1333b2e1ae882fe253303daf8ea33905d8265c7a7e578fa1edf43de6d793a9a"
+    },
+    {
+      "id": "11-ipad-continue-cockpit",
+      "applicationState": "Running",
+      "hierarchyPath": "11-ipad-continue-cockpit.txt",
+      "logsPath": "11-ipad-continue-cockpit.log",
+      "screenshotPath": "../../assets/current/batch-01/11-ipad-continue-cockpit.png",
+      "thumbnailScreenshotPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/720D6DDB-BA7B-49AA-A3A4-24A15A327217/DeviceInteractionSynthesize/Loaded Library Review-13_43_57_806-thumbnailScreenshot.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "reconcile-loaded-review-1794656600708",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "representative-v7.fplnav"
+        }
+      },
+      "action": "Tap Continue to Cockpit from retained loaded review. Ready state remains; route strip below tabs.",
+      "originalScreenshotPath": "/tmp/navigationflight-reconciliation-capture/11-ipad-continue-cockpit.png",
+      "screenshotSHA256": "ede268569f8af2335eb4b83e85d229127d33c93c307630637ca1054578fe6a1b"
+    }
+  ],
+  "normalization": "Fixture environment values are base64 of the retained exact bytes; reconstruct before launch. Original tool screenshot paths retained for timestamps. File paths rebased to this manifest."
+}

@@ -1,0 +1,161 @@
+Device orientation: Portrait
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 82816, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+          Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+           Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+            StaticText, {{36.0, 62.0}, {160.0, 58.5}}, identifier: 'leg-status', label: 'READY', hitPoint: {116.0, 91.2}
+            Button, {{509.5, 58.0}, {288.5, 63.5}}, label: 'Map tools', hitPoint: {653.8, 89.8}
+             StaticText, {{509.5, 58.0}, {288.5, 63.5}}, label: 'Map tools', hitPoint: {653.8, 89.8}
+             Image, {{509.5, 64.0}, {54.0, 51.5}}, identifier: 'map', label: 'Show Map', hitPoint: {536.5, 89.8}
+            StaticText, {{36.0, 125.5}, {231.0, 58.5}}, label: 'LEG 1 OF 1', hitPoint: {151.5, 154.8}
+            StaticText, {{36.0, 188.0}, {563.0, 125.5}}, label: 'From Synthetic waypoint 1 to Synthetic waypoint 2', hitPoint: {317.5, 250.8}
+            Other, {{0.0, 32.0}, {834.0, 544.5}}, identifier: 'aviation-map', label: 'Map', value: Zoom 14x. 4 annota..., hitPoint: {417.0, 304.2}
+             Button, {{786.0, 40.0}, {40.0, 40.0}}, label: 'Compass', value: north, hitPoint: {806.0, 60.0}
+             Button, {{352.5, 304.5}, {100.0, 44.0}}, label: 'IP1, future target, planned ETA 00:16', hitPoint: {402.5, 326.5}
+             Button, {{355.5, 191.0}, {446.0, 38.0}}, identifier: 'destination-eta-target', label: 'Synthetic waypoint 2, arrival ETA target', hitPoint: {578.5, 210.0}
+             Button, {{108.5, 205.0}, {271.0, 81.0}}, label: 'Planned VOR DME reference, SYN · R-270°M · 12.4 NM', hitPoint: {244.0, 245.5}
+              Image, {{316.5, 280.0}, {16.0, 24.0}}, identifier: 'ellipsis', label: 'More', hitPoint: {324.5, 292.0}
+             Button, {{361.5, 378.8}, {409.0, 50.5}}, hitPoint: {566.0, 404.0}
+             Button, {{746.5, 489.0}, {79.5, 79.5}}, label: 'About this map', hitPoint: {786.2, 528.8}
+            ScrollView, {{0.0, 556.5}, {834.0, 8.0}}, identifier: 'cockpit-disclosure-strip', hitPoint: {417.0, 560.5}
+             Other, {{0.0, 556.5}, {24.0, 8.0}}, hitPoint: {12.0, 560.5}
+            ScrollView, {{0.0, 576.5}, {834.0, 633.5}}, identifier: 'compact-cockpit-console', hitPoint: {417.0, 893.2}
+             Other, {{0.0, 576.5}, {834.0, 1401.0}}, hitPoint: {417.0, 893.2}
+              StaticText, {{12.0, 585.5}, {620.0, 51.5}}, label: 'Destination · Synthetic waypoint 2', hitPoint: {322.0, 611.2}
+              Button, {{12.0, 645.0}, {810.0, 63.5}}, identifier: 'start-leg', label: 'Start leg', hitPoint: {417.0, 676.8}
+              Button, {{12.0, 716.5}, {461.0, 63.5}}, identifier: 'choose-starting-leg', label: 'Choose starting leg', hitPoint: {242.5, 748.2}
+              StaticText, {{12.0, 788.0}, {529.0, 48.0}}, label: 'ACTIVE LEG INSTRUMENTS', hitPoint: {276.5, 812.0}
+              Button, {{20.0, 842.2}, {457.0, 51.5}}, identifier: 'recording-status', label: 'Prepared · Sensing', hitPoint: {248.5, 868.0}
+               Image, {{20.0, 846.0}, {44.0, 44.0}}, identifier: 'location.circle', label: 'Orient To Phone', hitPoint: {42.0, 868.0}
+               StaticText, {{73.0, 842.2}, {360.0, 51.5}}, label: 'Prepared · Sensing', hitPoint: {253.0, 868.0}
+               Image, {{443.0, 858.5}, {34.0, 19.5}}, identifier: 'chevron.down', label: 'Go Down', hitPoint: {460.0, 868.2}
+              StaticText, {{11.0, 901.0}, {812.0, 195.0}}, identifier: 'cockpit-time', label: 'LEG TIMER, –:––, Starts when Start Leg is pressed', hitPoint: {417.0, 998.5}
+               StaticText, {{22.0, 912.0}, {203.0, 48.0}}, label: 'LEG TIMER', hitPoint: {123.5, 936.0}
+               StaticText, {{22.0, 965.0}, {101.0, 67.0}}, label: '–:––', hitPoint: {72.5, 998.5}
+               StaticText, {{22.0, 1037.0}, {548.5, 48.0}}, label: 'Starts when Start Leg is pressed', hitPoint: {296.2, 1061.0}
+              StaticText, {{12.0, 1103.0}, {810.0, 193.0}}, identifier: 'cockpit-eta', label: 'NEXT ETA · SYNTHETIC WAYPOINT 2, 00:40, Planned · elapsed from leg start', hitPoint: {417.0, 1156.5}
+               StaticText, {{22.0, 1113.0}, {681.5, 48.0}}, label: 'NEXT ETA · SYNTHETIC WAYPOINT 2', hitPoint: {362.8, 1137.0}
+               StaticText, {{22.0, 1166.0}, {162.0, 67.0}}, label: '00:40', hitPoint: {103.0, 1188.0}
+             Other, {{801.0, 576.5}, {30.0, 603.5}}, label: 'Vertical scroll bar, 3 pages', value: 0%, hitPoint: {816.0, 878.2}
+              Other, {{828.0, 579.5}, {3.0, 266.5}}, hitPoint: {829.5, 712.8}
+             Other, {{801.0, 576.5}, {30.0, 603.5}}, label: 'Vertical scroll bar, 3 pages', value: 0%, hitPoint: {816.0, 878.2}
+              Other, {{828.0, 579.5}, {3.0, 266.5}}, hitPoint: {829.5, 712.8}
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+        Other, {{0.0, 28.0}, {834.0, 49.0}}, hitPoint: {417.0, 52.5}
+         Button, {{160.8, 32.0}, {61.5, 41.0}}, identifier: 'ToggleSideBar', label: 'Toggle sidebar', hitPoint: {191.5, 52.5}
+         Button, {{222.2, 32.0}, {105.0, 41.0}}, identifier: 'airplane', label: 'Cockpit', Selected, hitPoint: {274.8, 52.5}
+          Button, {{222.2, 32.0}, {105.0, 41.0}}, identifier: 'airplane', label: 'Cockpit', Selected, hitPoint: {274.8, 52.5}
+         Button, {{327.2, 32.0}, {140.5, 41.0}}, identifier: 'folder', label: 'Flight Plans', hitPoint: {397.5, 52.5}
+          Button, {{327.2, 32.0}, {140.5, 41.0}}, identifier: 'folder', label: 'Flight Plans', hitPoint: {397.5, 52.5}
+         Button, {{467.8, 32.0}, {95.0, 41.0}}, identifier: 'clock.arrow.circlepath', label: 'Flights', hitPoint: {515.2, 52.5}
+          Button, {{467.8, 32.0}, {95.0, 41.0}}, identifier: 'clock.arrow.circlepath', label: 'Flights', hitPoint: {515.2, 52.5}
+         Button, {{562.8, 32.0}, {110.5, 41.0}}, identifier: 'gearshape', label: 'Settings', hitPoint: {618.0, 52.5}
+          Button, {{562.8, 32.0}, {110.5, 41.0}}, identifier: 'gearshape', label: 'Settings', hitPoint: {618.0, 52.5}
+------------------------
+Application bundle identifier: com.apple.springboard
+Application UI orientation: Portrait
+Application, pid: 70729, label: ' ', activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {1668.0, 2420.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'SBSwitcherWindow:Main', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+      ScrollView, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+      Other, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'AppSwitcherContentView', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, identifier: 'card:com.bensaidj.NavigationFlight:sceneID:com.bensaidj.NavigationFlight-75889346-5FE9-4A00-AF22-99E7BD3FED25', label: 'NavigationFlight', hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+          Other, {{-196.0, -294.0}, {1226.0, 1798.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+           Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+            Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+             ScrollView, {{0.0, -605.0}, {834.0, 1815.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+              Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+               Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+               Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                 Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                         StatusBar, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                          Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                           Other, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{25.0, 11.0}, {119.0, 10.0}}, hitPoint: {84.5, 16.0}, activationBundleId: com.apple.springboard
+                             StaticText, {{25.0, 7.5}, {38.0, 17.0}}, label: '14:04', hitPoint: {44.0, 16.0}, activationBundleId: com.apple.springboard
+                             StaticText, {{73.0, 7.5}, {71.0, 17.0}}, label: 'Sat 14 Nov', hitPoint: {108.5, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{49.0, 7.0}, {18.0, 18.0}}, hitPoint: {58.0, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{154.0, 11.0}, {126.0, 10.0}}, hitPoint: {217.0, 16.0}, activationBundleId: com.apple.springboard
+                             Other, {{154.0, 0.0}, {126.0, 32.0}}, hitPoint: {217.0, 16.0}, activationBundleId: com.apple.springboard
+                              Other, {{154.0, 0.0}, {126.0, 32.0}}, hitPoint: {217.0, 16.0}, activationBundleId: com.apple.springboard
+                               StaticText, {{154.0, 0.0}, {113.5, 32.0}}, label: 'NavigationFlight', hitPoint: {210.8, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{208.0, 7.0}, {18.0, 18.0}}, hitPoint: {217.0, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{288.0, 11.0}, {520.0, 10.0}}, hitPoint: {548.0, 16.0}, activationBundleId: com.apple.springboard
+                             Button, {{701.0, 7.0}, {48.0, 18.0}}, label: 'Location tracking in progress', hitPoint: {725.0, 16.0}, activationBundleId: com.apple.springboard
+                             Other, {{757.0, 8.0}, {18.0, 16.0}}, identifier: '3 of 3 Wi-Fi bars', value: SSID, 3 of 3 Wi-Fi..., hitPoint: {766.0, 16.0}, activationBundleId: com.apple.springboard
+                              Image, {{756.5, 9.0}, {18.5, 13.5}}, identifier: 'wifi', label: 'Wi-Fi', hitPoint: {765.8, 15.8}, activationBundleId: com.apple.springboard
+                             Other, {{779.0, 9.5}, {29.0, 13.0}}, label: '100% battery power', value: Not charging, hitPoint: {793.5, 16.0}, activationBundleId: com.apple.springboard
+                            Other, {{766.0, 7.0}, {18.0, 18.0}}, hitPoint: {775.0, 16.0}, activationBundleId: com.apple.springboard
+                      Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                     Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+                Other, {{0.0, 32.0}, {834.0, 1178.0}}, hitPoint: {417.0, 621.0}, activationBundleId: com.apple.springboard
+               Other, {{814.0, 1190.0}, {40.0, 40.0}}, identifier: 'resize-grabber', label: 'Resize NavigationFlight', value: Bottom Right, hitPoint: {824.0, 1200.0}, activationBundleId: com.apple.springboard
+       Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+        Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+         Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+          Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {417.0, 605.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {208.5, 302.5}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  StatusBar, {{0.0, 0.0}, {834.0, 32.0}}, hitPoint: {417.0, 16.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+   Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+    Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}, activationBundleId: com.apple.springboard
+     RemotePlaceholder, pid: 77070, {{0.0, 0.0}, {0.0, 0.0}}, Disabled, isRemoteLeafPlaceholder: true

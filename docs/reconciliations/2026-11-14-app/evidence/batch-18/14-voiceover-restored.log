@@ -1,0 +1,61 @@
+2026-11-14 18:06:31.702851+0200 [19402:57184289] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x109107270 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+objc[19402]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1044e4398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x105e34310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 18:06:32.390010+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:06:32.434005+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:06:32.434398+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:06:32.443505+0200 [19402:57184154] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 18:06:32.450181+0200 [19402:57184154] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 18:06:32.878604+0200 [19402:57184154] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 18:06:33.452138+0200 [19402:57184154] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-14 18:06:33.521589+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:06:33.521686+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:06:38.482584+0200 [19402:57184154] [SystemGestureGate] <0x1092a4280> Gesture: System gesture gate timed out.
+
+2026-11-14 18:06:40.313194+0200 [19402:57184154] [SystemGestureGate] <0x1092a4280> Gesture: System gesture gate timed out.
+
+2026-11-14 18:07:17.905149+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:07:17.905203+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:07:18.073841+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:07:18.073944+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:08.562633+0200 [19402:57184154] [SystemGestureGate] <0x1092a4280> Gesture: System gesture gate timed out.
+
+2026-11-14 18:08:10.753120+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:10.753176+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:10.933304+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:10.933363+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:42.830586+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:42.830667+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:42.991204+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:08:42.991255+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:09:13.741466+0200 [19402:57184154] [AXRuntimeCommon] Unknown client: NavigationFlight
+
+2026-11-14 18:09:34.110836+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:09:34.110886+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:09:34.268997+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:09:34.269046+0200 [19402:57184154] [API] cannot add handler to 0 from 0 - dropping

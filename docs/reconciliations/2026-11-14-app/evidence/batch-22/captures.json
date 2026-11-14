@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPhone17 iOS27(24A434)402x874portrait",
+  "records": [
+    {
+      "id": "01-real-permission-cockpit",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-22/01-real-permission-cockpit.txt",
+      "logsPath": "evidence/batch-22/01-real-permission-cockpit.log",
+      "screenshotPath": "assets/current/batch-22/01-real-permission-cockpit.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch22-realpermission-1794673179016",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "NoPOSITION_CHECK_STATE hook; enterCockpit realCoreLocation.",
+      "screenshotPathSHA256": "b4d6312409e08d86cd290672d2eb9432c0089ffae33140fd91da52c4c69e64f5",
+      "hierarchyPathSHA256": "f013b999567d4147973670eb9bc2f4a3a863527b81c2a7c41c29cb17399ae818",
+      "logsPathSHA256": "7e1509294056ab8a70cdd3cd1b9656557159a9d961e9547f8a338bfb1142632d"
+    }
+  ],
+  "notes": "RealCoreLocation launch noPOSITION_CHECK_STATE, phone17iOS27. EnterCockpit no systempermission prompt, acquiringthenGPSunavailable. Attempt activateSettings failedsessionnotfound; not denial/regrant evidence. No permission settings changed.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

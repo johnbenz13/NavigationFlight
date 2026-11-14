@@ -1,0 +1,45 @@
+2026-11-14 14:31:55.271651+0200 [84255:56793858] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x107250210 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+objc[84255]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x103fc8398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10fde0310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 14:31:55.746164+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:55.751712+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:55.754668+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:55.778934+0200 [84255:56793779] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 14:31:55.810306+0200 [84255:56793779] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 14:31:56.254466+0200 [84255:56793779] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 14:31:56.601924+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:56.601977+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:56.602000+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:56.602500+0200 [84255:56793779] [Invalid Configuration] Update NavigationRequestObserver tried to update multiple times per frame.
+
+2026-11-14 14:31:56.663173+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:56.663235+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:56.663252+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:57.158376+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:57.158427+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:57.158442+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:31:57.158454+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:32:17.485513+0200 [84255:56793779] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-14 14:32:17.536545+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:32:17.537540+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:32:17.537575+0200 [84255:56793779] [API] cannot add handler to 0 from 0 - dropping

@@ -1,0 +1,17 @@
+[
+  {
+    "path": "3d301bef0e68.fplnav",
+    "bytes": 10852,
+    "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+  },
+  {
+    "path": "training-editor-wind.fplnav",
+    "bytes": 15288,
+    "sha256": "d363ae9a9e4839f2a6f0b175da99585f68c0a153858e88d99e5f7d85beb609b0"
+  },
+  {
+    "path": "two-leg.fplnav",
+    "bytes": 7483,
+    "sha256": "0f6063a6e8ee3b81d45b6aca66976cb121b5bc3894ce684126efacb82cfcbd08"
+  }
+]

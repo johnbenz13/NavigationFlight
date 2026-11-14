@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-history-scroll-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/01-history-scroll-settled.txt",
+      "logsPath": "evidence/batch-17/01-history-scroll-settled.log",
+      "screenshotPath": "assets/current/batch-17/01-history-scroll-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch16-history-1794671901632",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Recovered completedFlight, Previousleg then scroll panel; no additional ETA/reference content appears.",
+      "screenshotPathSHA256": "f6be04fd344961e89e52127412b05a140bafd1c2babcff98259ee258693897f9",
+      "hierarchyPathSHA256": "7caa1e65ed4feeb5ebe81ea496f50adfad3858d58f8d5ab79bc8d5f86fe96738",
+      "logsPathSHA256": "db4084838a607a960b561fbeb1d94e90f2f6b08d92d64e943d855bb934079960"
+    },
+    {
+      "id": "02-completed-target-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/02-completed-target-settled.txt",
+      "logsPath": "evidence/batch-17/02-completed-target-settled.log",
+      "screenshotPath": "assets/current/batch-17/02-completed-target-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch16-history-1794671901632",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "Tap completed destination ETA console; no callout opens after settling.",
+      "screenshotPathSHA256": "39dfacdbba5137450fc279a35039f6aa814c736334f17f0f3b5d978548391ae8",
+      "hierarchyPathSHA256": "bfeb2dd694b870307aeb824401ffd295a0ca2ec85f401adaf88060216a357344",
+      "logsPathSHA256": "db4084838a607a960b561fbeb1d94e90f2f6b08d92d64e943d855bb934079960"
+    },
+    {
+      "id": "03-completed-target-fallback",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/03-completed-target-fallback.txt",
+      "logsPath": "evidence/batch-17/03-completed-target-fallback.log",
+      "screenshotPath": "assets/current/batch-17/03-completed-target-fallback.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch16-history-1794671901632",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "unavailable"
+      },
+      "action": "After map AX target miss, tap visible destination label in collapsed map.",
+      "screenshotPathSHA256": "508eb39baed5fbdd57d19fc99ba8a0f63de7b3e3ea66fdf920bce483c3dd7fa2",
+      "hierarchyPathSHA256": "4ce24df756049916c83b6784fdcce8a44614a63158ae995b219310d0eb658a4d",
+      "logsPathSHA256": "db4084838a607a960b561fbeb1d94e90f2f6b08d92d64e943d855bb934079960"
+    },
+    {
+      "id": "04-timeout",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/04-timeout.txt",
+      "logsPath": "evidence/batch-17/04-timeout.log",
+      "screenshotPath": "assets/current/batch-17/04-timeout.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794672325595",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Hold Position Check then allow full acquisition timeout.",
+      "screenshotPathSHA256": "59d59d667db7b59f2c0609d5141688dc9f08b315bb99d2786460cb155ba4a9ab",
+      "hierarchyPathSHA256": "04112938d0683938ddfeb875e3dcd02d1183e2a7762ebb477814534fc455b63f",
+      "logsPathSHA256": "773b5883b6277adda1faf3fc9d1442ac59597940c08cc1803ad531e3ad0af10f"
+    },
+    {
+      "id": "05-timeout-tap-retry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/05-timeout-tap-retry.txt",
+      "logsPath": "evidence/batch-17/05-timeout-tap-retry.log",
+      "screenshotPath": "assets/current/batch-17/05-timeout-tap-retry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794672325595",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Tap exact fresh unavailable control hitPoint; remains GPS acquisition timed out.",
+      "screenshotPathSHA256": "34a7c6093459f53b0cc28ee45440539bf625a44ca91364972ce42194d5c96161",
+      "hierarchyPathSHA256": "b17126d14022e13647142f2239e97c3d2d7fabfff7a2562040a6655d5eec5ebe",
+      "logsPathSHA256": "773b5883b6277adda1faf3fc9d1442ac59597940c08cc1803ad531e3ad0af10f"
+    },
+    {
+      "id": "06-timeout-hold-retry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-17/06-timeout-hold-retry.txt",
+      "logsPath": "evidence/batch-17/06-timeout-hold-retry.log",
+      "screenshotPath": "assets/current/batch-17/06-timeout-hold-retry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794672325595",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Hold exact current unavailable control for1.2sec; remains timed out, no acquisition.",
+      "screenshotPathSHA256": "920f5a8c9c395d03cc541b816a47aaca0825cf6869a0aabacc961d44940df75a",
+      "hierarchyPathSHA256": "6bd99a9301f0eb08af59fb2e97442f944fcbd67d58622299e1da8ec581ae7475",
+      "logsPathSHA256": "c2f939afc9bffaa815cd884500abdf4c0f1cf1ae0673a38100b31b26e187ac7d"
+    }
+  ],
+  "notes": "Completed-history bounded followup: previous panel scroll adds no fields. Completed ETA console and map AX+visible fallback do not reopen target; immediate batch16 future-target/editor persistence remains unverified. Fresh exact-hitpoint timeout tap and hold both remain unavailable.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

@@ -1,0 +1,51 @@
+2026-11-14 18:38:40.855622+0200 [26486:57243142] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10a962ac0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 18:38:41.067063+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:38:41.067181+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:38:41.114113+0200 [26486:57242808] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 18:38:41.316406+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:38:41.316451+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:38:41.445955+0200 [26486:57242808] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+2026-11-14 18:38:41.569133+0200 [26486:57242808] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+
+objc[26486]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10aeb8398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10b428310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 18:38:42.244664+0200 [26486:57242808] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 18:40:33.711055+0200 [26486:57242808] [Critical] [!] <UIKitHoverGestureRecognizer: 0x10b3c6700; id = 147; cid = 1; phase = possible> has been in possible phase for 72.286989667 seconds
+
+2026-11-14 18:40:33.711100+0200 [26486:57242808] [Critical] [!] <UIKitHoverGestureRecognizer: 0x1054f8900; id = 1; cid = 1; phase = possible> has been in possible phase for 72.286990417 seconds
+
+2026-11-14 18:40:33.711122+0200 [26486:57242808] [Critical] [!] <UIKitHoverGestureRecognizer: 0x114556880; id = 228; cid = 1; phase = possible> has been in possible phase for 72.175361375 seconds
+
+2026-11-14 18:40:33.711138+0200 [26486:57242808] [Critical] [!] <UIKitHoverGestureRecognizer: 0x10b1e7480; id = 135; cid = 1; phase = possible> has been in possible phase for 72.286738833 seconds
+
+2026-11-14 18:40:33.711154+0200 [26486:57242808] [Critical] [!] <UIKitHoverGestureRecognizer: 0x114aee400; id = 245; cid = 1; phase = possible> has been in possible phase for 72.286993792 seconds
+
+2026-11-14 18:40:33.819750+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:33.819824+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:33.819842+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:33.869692+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:33.869761+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:33.869782+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:34.369405+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:34.369453+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:34.369469+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:40:34.369482+0200 [26486:57242808] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 18:45:02.735227+0200 [26486:57242808] [Invalid Configuration] Update NavigationRequestObserver tried to update multiple times per frame.

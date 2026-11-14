@@ -1,0 +1,100 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 22421, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            Other, {{0.0, 62.0}, {402.0, 451.0}}, identifier: 'aviation-map', label: 'Map', value: Zoom 14x. 4 annota..., hitPoint: {201.0, 287.5}
+             Button, {{354.0, 70.0}, {40.0, 40.0}}, label: 'Compass', value: north, hitPoint: {374.0, 90.0}
+             Button, {{157.3, 229.0}, {100.0, 44.0}}, label: 'IP1, future target, planned ETA 00:16', hitPoint: {207.3, 251.0}
+             Button, {{160.3, 115.7}, {182.3, 38.0}}, identifier: 'destination-eta-target', label: 'Synthetic waypoint 2, arrival ETA target', hitPoint: {251.5, 134.7}
+             Button, {{32.8, 129.7}, {236.0, 81.0}}, label: 'Planned VOR DME reference, SYN · R-270°M · 12.4 NM', hitPoint: {150.8, 170.2}
+              Image, {{240.8, 234.7}, {16.0, 24.0}}, identifier: 'ellipsis', label: 'More', hitPoint: {248.8, 246.7}
+             Button, {{166.3, 311.7}, {167.7, 34.0}}, hitPoint: {250.2, 328.7}
+             Button, {{368.3, 479.3}, {25.7, 25.7}}, label: 'About this map', hitPoint: {381.2, 492.2}
+            StaticText, {{11.2, 119.2}, {361.5, 57.2}}, identifier: 'position-check-recovery', label: 'ON TRACK, Position remains visible; no corrective course is needed.', hitPoint: {192.0, 147.8}
+             StaticText, {{24.0, 132.0}, {59.3, 13.3}}, label: 'ON TRACK', hitPoint: {53.7, 138.7}
+             StaticText, {{24.0, 149.3}, {317.7, 14.3}}, label: 'Position remains visible; no corrective course is needed.', hitPoint: {182.8, 156.5}
+            ScrollView, {{0.0, 453.0}, {402.0, 48.0}}, identifier: 'cockpit-disclosure-strip', hitPoint: {201.0, 477.0}
+             Other, {{0.0, 453.0}, {132.7, 48.0}}, hitPoint: {66.3, 477.0}
+              Button, {{11.5, 456.5}, {109.7, 41.0}}, identifier: 'leg-start-checklist-chip', label: 'Checklist', hitPoint: {66.3, 477.0}
+               StaticText, {{24.0, 468.0}, {67.0, 18.0}}, label: 'Checklist', hitPoint: {57.5, 477.0}
+               Image, {{101.3, 471.7}, {6.7, 11.0}}, identifier: 'chevron.right', label: 'Forward', hitPoint: {104.7, 477.2}
+            StaticText, {{12.0, 523.0}, {55.7, 14.3}}, label: 'Active leg', hitPoint: {39.8, 530.2}
+            Button, {{290.7, 523.0}, {94.0, 14.3}}, identifier: 'recording-status', label: 'Recording', hitPoint: {337.7, 530.2}
+             Image, {{290.7, 524.0}, {12.3, 12.3}}, identifier: 'record.circle.fill', label: 'Record Button In A Filled Circle', hitPoint: {296.8, 530.2}
+             StaticText, {{309.0, 523.0}, {60.0, 14.3}}, label: 'Recording', hitPoint: {339.0, 530.2}
+             Image, {{375.3, 527.7}, {9.3, 5.3}}, identifier: 'chevron.down', label: 'Go Down', hitPoint: {380.0, 530.3}
+            Button, {{12.0, 541.3}, {106.0, 47.0}}, identifier: 'cockpit-heading', label: 'Operational heading, 355°, Planned · magnetic', hitPoint: {65.0, 564.8}
+             StaticText, {{12.0, 541.3}, {106.0, 13.3}}, label: 'Operational heading', hitPoint: {65.0, 548.0}
+             StaticText, {{12.0, 554.7}, {40.0, 20.3}}, label: '355°', hitPoint: {32.0, 564.8}
+             StaticText, {{12.0, 575.0}, {100.3, 13.3}}, label: 'Planned · magnetic', hitPoint: {62.2, 581.7}
+            StaticText, {{205.0, 541.3}, {115.7, 47.0}}, identifier: 'cockpit-time', label: 'Leg timer, 00:37, Elapsed from leg start', hitPoint: {262.8, 564.8}
+             StaticText, {{205.0, 541.3}, {49.7, 13.3}}, label: 'Leg timer', hitPoint: {229.8, 548.0}
+             StaticText, {{205.0, 554.7}, {48.3, 20.3}}, label: '00:37', hitPoint: {229.2, 564.8}
+             StaticText, {{205.0, 575.0}, {115.7, 13.3}}, label: 'Elapsed from leg start', hitPoint: {262.8, 581.7}
+            Button, {{12.0, 596.3}, {167.0, 47.0}}, identifier: 'cockpit-eta', label: 'Next ETA · Synthetic waypoint 2, 00:40, Planned · elapsed', hitPoint: {95.5, 619.8}
+             StaticText, {{12.0, 596.3}, {167.0, 13.3}}, label: 'Next ETA · Synthetic waypoint 2', hitPoint: {95.5, 603.0}
+             StaticText, {{12.0, 609.7}, {48.3, 20.3}}, label: '00:40', hitPoint: {36.2, 619.8}
+             StaticText, {{12.0, 630.0}, {93.0, 13.3}}, label: 'Planned · elapsed', hitPoint: {58.5, 636.7}
+            StaticText, {{205.0, 596.3}, {116.7, 47.0}}, identifier: 'cockpit-altitude', label: 'Planned altitude, 3,200 ft, MSL, ↓ 2,500 ft NEXT', value: Target altitude 3,..., hitPoint: {263.3, 619.8}
+             StaticText, {{205.0, 596.3}, {85.0, 13.3}}, label: 'Planned altitude', hitPoint: {247.5, 603.0}
+             StaticText, {{205.0, 609.7}, {65.0, 20.3}}, label: '3,200 ft', hitPoint: {237.5, 619.8}
+             StaticText, {{205.0, 630.0}, {23.3, 13.3}}, label: 'MSL', hitPoint: {216.7, 636.7}
+             StaticText, {{232.3, 630.0}, {89.3, 13.3}}, label: '↓ 2,500 ft NEXT', hitPoint: {277.0, 636.7}
+            Button, {{12.0, 651.3}, {185.0, 40.0}}, identifier: 'planned-now', label: 'Planned now, Synthetic service, 120.50 megahertz', hitPoint: {104.5, 671.3}
+             StaticText, {{20.0, 658.2}, {67.0, 13.3}}, label: 'Planned now', hitPoint: {53.5, 664.8}
+             StaticText, {{20.0, 671.5}, {166.3, 13.0}}, label: 'Synthetic service · 120.50 MHz', hitPoint: {103.2, 678.0}
+            Button, {{205.0, 651.3}, {185.0, 40.0}}, identifier: 'planned-next', label: 'Planned next, none in imported plan', hitPoint: {297.5, 671.3}
+             StaticText, {{213.0, 657.5}, {68.0, 13.3}}, label: 'Planned next', hitPoint: {247.0, 664.2}
+             StaticText, {{213.0, 670.8}, {130.0, 14.3}}, label: 'None in imported plan', hitPoint: {278.0, 678.0}
+            Button, {{12.0, 699.3}, {174.0, 58.0}}, identifier: 'position-check-control', label: 'Position Check, Active', value: Tap to end, hitPoint: {99.0, 728.3}
+             Button, {{12.0, 699.3}, {174.0, 58.0}}, label: 'Position Check · 10s, Tap to end', hitPoint: {99.0, 728.3}
+              StaticText, {{26.0, 701.7}, {113.0, 38.0}}, label: 'Position Check · 10s', hitPoint: {82.5, 720.7}
+              StaticText, {{26.0, 741.7}, {55.3, 13.3}}, label: 'Tap to end', hitPoint: {53.7, 748.3}
+            Button, {{196.0, 699.3}, {194.0, 58.0}}, identifier: 'waypoint-identified', label: 'Report destination identified', hitPoint: {293.0, 728.3}
+            Button, {{196.0, 759.3}, {194.0, 22.0}}, identifier: 'reached-now', label: 'Report destination reached', hitPoint: {293.0, 770.3}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {97.7, 54.0}}, hitPoint: {69.8, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {97.7, 54.0}}, label: 'Cockpit', Selected, hitPoint: {73.8, 822.0}
+              Image, {{59.3, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {73.8, 814.8}
+             Button, {{109.8, 795.0}, {97.7, 54.0}}, label: 'Flight Plans', hitPoint: {158.6, 822.0}
+              Image, {{142.4, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {158.4, 814.8}
+             Button, {{194.6, 795.0}, {97.7, 54.0}}, label: 'Flights', hitPoint: {243.4, 822.0}
+              Image, {{229.2, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {243.1, 815.0}
+             Button, {{279.3, 795.0}, {97.7, 54.0}}, label: 'Settings', hitPoint: {328.2, 822.0}
+              Image, {{314.0, 801.0}, {28.0, 28.0}}, identifier: 'gearshape.fill', label: 'Gear shape, filled', hitPoint: {328.0, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+             Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+              Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+              Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+               Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+                Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+                 Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+                Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+               Other, {{25.0, 795.0}, {97.7, 54.0}}, hitPoint: {73.8, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

@@ -1,0 +1,49 @@
+Device orientation: Portrait
+------------------------
+Application bundle identifier: com.apple.springboard
+Application UI orientation: Portrait
+Application, pid: 70729, label: ' '
+ Window, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+  Other, {{0.0, 0.0}, {834.0, 1210.0}}, hitPoint: {417.0, 605.0}
+   Alert, {{257.0, 326.5}, {320.0, 532.0}}, label: 'VoiceOver Gestures', hitPoint: {417.0, 592.5}
+    Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+     Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+      Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+      Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+       ScrollView, {{257.0, 326.5}, {320.0, 452.0}}, hitPoint: {417.0, 552.5}
+        Other, {{257.0, 326.5}, {320.0, 452.0}}, hitPoint: {417.0, 552.5}
+         StaticText, {{287.0, 348.5}, {260.0, 20.5}}, label: 'VoiceOver Gestures', hitPoint: {417.0, 358.8}
+         StaticText, {{287.0, 376.0}, {260.0, 398.0}}, label: 'To go Home: Slide one finger up from the bottom edge until you hear the second sound and lift your finger.
+To use the App Switcher: Slide up farther from the bottom until you hear the third sound and lift your finger.
+To use the Dock: Slide one finger up from the bottom edge until you hear the second sound, then swipe down to reveal the Dock.
+If you move too far to the left or right, the gesture will be canceled.
+To use Control Center: Slide one finger down from the top edge until you hear the second sound and lift your finger.
+To use Notification Center: Slide down farther from the top until you hear the third sound and lift your finger.', hitPoint: {417.0, 575.0}
+        Other, {{544.0, 326.5}, {30.0, 452.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {559.0, 552.5}
+         Other, {{571.0, 287.5}, {3.0, 36.0}}, hitPoint: {572.5, 305.5}
+        Other, {{257.0, 745.5}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {417.0, 760.5}
+         Other, {{218.0, 772.5}, {36.0, 3.0}}, hitPoint: {236.0, 774.0}
+        Other, {{544.0, 326.5}, {30.0, 452.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {559.0, 552.5}
+         Other, {{571.0, 287.5}, {3.0, 36.0}}, hitPoint: {572.5, 305.5}
+        Other, {{257.0, 745.5}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {417.0, 760.5}
+         Other, {{218.0, 772.5}, {36.0, 3.0}}, hitPoint: {236.0, 774.0}
+       ScrollView, {{257.0, 778.5}, {320.0, 80.0}}, hitPoint: {417.0, 818.5}
+        Other, {{257.0, 778.5}, {320.0, 80.0}}, hitPoint: {417.0, 818.5}
+         Other, {{273.0, 794.5}, {288.0, 48.0}}, hitPoint: {417.0, 818.5}
+          Button, {{273.0, 794.5}, {288.0, 48.0}}, label: 'OK', hitPoint: {417.0, 818.5}
+        Other, {{544.0, 778.5}, {30.0, 80.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {559.0, 818.5}
+         Other, {{571.0, 868.5}, {3.0, 7.0}}, hitPoint: {572.5, 872.0}
+        Other, {{257.0, 825.5}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {417.0, 840.5}
+         Other, {{347.0, 852.5}, {7.0, 3.0}}, hitPoint: {350.5, 854.0}
+        Other, {{544.0, 778.5}, {30.0, 80.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {559.0, 818.5}
+         Other, {{571.0, 868.5}, {3.0, 7.0}}, hitPoint: {572.5, 872.0}
+        Other, {{257.0, 825.5}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {417.0, 840.5}
+         Other, {{347.0, 852.5}, {7.0, 3.0}}, hitPoint: {350.5, 854.0}
+    Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+     Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+      Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+       Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+        Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+         Other, {{257.0, 326.5}, {834.0, 1210.0}}, hitPoint: {545.5, 768.2}
+       Other, {{257.0, 326.5}, {320.0, 532.0}}, hitPoint: {417.0, 592.5}
+        Other, {{257.0, 326.5}, {834.0, 1210.0}}, hitPoint: {545.5, 768.2}

@@ -1,0 +1,37 @@
+2026-11-14 13:49:18.835274+0200 [78495:56721668] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10a9473c0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 13:49:18.914042+0200 [78495:56721575] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+
+2026-11-14 13:49:19.285360+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:19.312539+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:19.312597+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:19.326323+0200 [78495:56721290] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 13:49:19.353065+0200 [78495:56721290] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+objc[78495]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10a30c398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10bc28310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 13:49:19.564452+0200 [78495:56721569] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+
+2026-11-14 13:49:19.796221+0200 [78495:56721290] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 13:49:28.292290+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:30.145987+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:30.170738+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:30.170770+0200 [78495:56721290] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:49:31.716527+0200 [78495:56721290] [DocumentManager] Unable to get ISSymbol for UTI: com.apple.ios-simulator Error: Error Domain=com.apple.iconServices.symbol-error Code=-1 "Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0" UserInfo={NSLocalizedDescription=Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0}
+
+2026-11-14 13:49:32.031883+0200 [78495:56721290] [DocumentManager] Unable to get ISSymbol for UTI: com.apple.ios-simulator Error: Error Domain=com.apple.iconServices.symbol-error Code=-1 "Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0" UserInfo={NSLocalizedDescription=Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0}
+
+2026-11-14 13:49:57.332187+0200 [78495:56721290] [DocumentManager] Unable to get ISSymbol for UTI: com.apple.ios-simulator Error: Error Domain=com.apple.iconServices.symbol-error Code=-1 "Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0" UserInfo={NSLocalizedDescription=Failed to find symbol using type id: com.apple.ios-simulator. Options: 1, strategy: 0}
+
+2026-11-14 13:49:58.128274+0200 [78495:56721290] [AXAppAccessibility] Got a keyboard will change frame notification, but keyboard was not even present.
+
+2026-11-14 13:49:58.128338+0200 [78495:56721290] [AXAppAccessibility] Got a keyboard will hide notification, but keyboard was not even present.

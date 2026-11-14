@@ -1,0 +1,167 @@
+2026-11-14 13:58:51.885040+0200 [81453:56752267] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10b162c70 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 13:58:52.092978+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.093099+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.148561+0200 [81453:56752159] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 13:58:52.450304+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.450347+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.475893+0200 [81453:56752159] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!
+
+objc[81453]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107fe0398) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x114aac310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-14 13:58:52.597615+0200 [81453:56752159] void * _Nullable NSMapGet(NSMapTable * _Nonnull, const void * _Nullable): map table argument is NULL
+
+2026-11-14 13:58:53.129648+0200 [81453:56752159] [AXValidations] AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+
+2026-11-14 13:59:11.754602+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:11.754697+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:11.754718+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:11.805769+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:11.805819+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:11.805835+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:12.328989+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:12.329062+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:12.329090+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:12.329109+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.318485+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.318563+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.318581+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.812287+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.812354+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.812370+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:28.812385+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:32.866971+0200 [81453:56752159] [ShareSheet] Failed to request default share mode for fileURL:file:///Users/john/Library/Developer/CoreSimulator/Devices/C6E23861-74E2-469C-8748-10245EAC330E/data/Containers/Data/Application/B4C39B2D-139A-4DD6-99FF-6D882D952737/tmp/Jerusalem-Corridor-Practice-20261105T212000Z-03000000.gpx error:Error Domain=NSOSStatusErrorDomain Code=-10814 "(null)" UserInfo={_LSFile=LSBindingEvaluator.mm, _LSLine=1975, _LSFunction=runEvaluator}
+
+2026-11-14 13:59:32.869160+0200 [81453:56752159] [ShareSheet] Only support loading options for CKShare and SWY types.
+
+2026-11-14 13:59:32.873708+0200 [81453:56752159] [ShareSheet] error fetching file provider domain for URL:file:///Users/john/Library/Developer/CoreSimulator/Devices/C6E23861-74E2-469C-8748-10245EAC330E/data/Containers/Data/Application/B4C39B2D-139A-4DD6-99FF-6D882D952737/tmp/Jerusalem-Corridor-Practice-20261105T212000Z-03000000.gpx : (null)
+
+2026-11-14 13:59:32.874182+0200 [81453:56753789] [ShareSheet] error fetching item for URL:file:///Users/john/Library/Developer/CoreSimulator/Devices/C6E23861-74E2-469C-8748-10245EAC330E/data/Containers/Data/Application/B4C39B2D-139A-4DD6-99FF-6D882D952737/tmp/Jerusalem-Corridor-Practice-20261105T212000Z-03000000.gpx : (null)
+
+2026-11-14 13:59:33.116002+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:34.583897+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:34.583941+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+IOSurfaceClientSetSurfaceNotify failed e00002c7
+
+2026-11-14 13:59:46.304244+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.304338+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.304361+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.796571+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.796647+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.796673+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:46.796694+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:56.554985+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:56.555051+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:59:56.555078+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:12.540831+0200 [81453:56752159] [Invalid Configuration] Update NavigationRequestObserver tried to update multiple times per frame.
+
+2026-11-14 14:00:12.579653+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:12.579715+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:12.579732+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.065088+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.065184+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.065217+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.065248+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.069571+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.069657+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:13.069681+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.896156+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.896200+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.896215+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.918724+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.918777+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:27.918795+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:28.414345+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:28.414397+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:28.414413+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:28.414427+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:33.828870+0200 [81453:56752159] [API] Failed to create 1668x0 image slot (alpha=1 wide=1) (client=0x8e78c259) [0x5 (os/kern) failure]
+
+2026-11-14 14:00:33.843961+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:33.844041+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:33.844062+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.329307+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.329386+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.329416+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.329441+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.901889+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.901937+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.901957+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.922755+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.922806+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:34.922822+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:35.434354+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:35.434423+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:35.434446+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 14:00:35.434463+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping

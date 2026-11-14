@@ -1015,14 +1015,12 @@ final class NavigationFlightUITests: XCTestCase {
     func testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues() throws {
         let app = launchCockpit(planData: try oneLegPlanData())
 
-        let currentFrequency = app.descendants(matching: .any).matching(
-            NSPredicate(format: "identifier BEGINSWITH 'frequency-' AND value == 'current'")
-        ).firstMatch
-        let nextFrequency = app.descendants(matching: .any).matching(
-            NSPredicate(format: "identifier BEGINSWITH 'frequency-' AND value == 'next'")
-        ).firstMatch
+        let currentFrequency = app.descendants(matching: .any)["planned-now"]
+        let nextFrequency = app.descendants(matching: .any)["planned-next"]
         XCTAssertTrue(currentFrequency.waitForExistence(timeout: 3))
         XCTAssertTrue(nextFrequency.waitForExistence(timeout: 3))
+        XCTAssertEqual(currentFrequency.label, "Planned now, SYN, 113.50 megahertz")
+        XCTAssertEqual(nextFrequency.label, "Planned next, Synthetic service, 120.50 megahertz")
 
         let altitude = app.descendants(matching: .any)["cockpit-altitude"]
         XCTAssertTrue(altitude.waitForExistence(timeout: 3))

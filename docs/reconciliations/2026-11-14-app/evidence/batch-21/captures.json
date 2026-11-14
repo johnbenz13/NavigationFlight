@@ -1,0 +1,109 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPhone17 iOS27(24A434)402x874portrait",
+  "records": [
+    {
+      "id": "01-update-review",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-21/01-update-review.txt",
+      "logsPath": "evidence/batch-21/01-update-review.log",
+      "screenshotPath": "assets/current/batch-21/01-update-review.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch21-update-1794672964210",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Review savednewer with debugloadedbase.",
+      "screenshotPathSHA256": "d446ad514d7155f38adfb4a7ece7a3a3b8550b3e20130fe15155d110a39c30fa",
+      "hierarchyPathSHA256": "129cfd5ab13c29d719eb2b748162ccff6d29526cf8ff05e83eeb7888465138ef",
+      "logsPathSHA256": "fd2f6fbcc6764596dbbe5e362b1bd97f1487ef3e8d4ee25d6fc1b29347f0c7a8"
+    },
+    {
+      "id": "02-update-confirmation",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-21/02-update-confirmation.txt",
+      "logsPath": "evidence/batch-21/02-update-confirmation.log",
+      "screenshotPath": "assets/current/batch-21/02-update-confirmation.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch21-update-1794672964210",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "TapLoadUpdatedPlan protectedcurrentflight.",
+      "screenshotPathSHA256": "8dad68d98a6645cc190791278f62301a2beb95b67e80d3699247da3de6080eec",
+      "hierarchyPathSHA256": "f5773b15165701672fccfd63a16777c6ee329aa86ba3017967b3b3dfbb923b54",
+      "logsPathSHA256": "479d9f5d076f909b9cb068700d22f2b3f1c18a686937536b5ec36bf5306f5a65"
+    },
+    {
+      "id": "03-update-cancel",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-21/03-update-cancel.txt",
+      "logsPath": "evidence/batch-21/03-update-cancel.log",
+      "screenshotPath": "assets/current/batch-21/03-update-cancel.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch21-update-1794672964210",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Cancelreturnsreviewcurrentflightpreserved.",
+      "screenshotPathSHA256": "672006fe1b1d61480f88bd4ad89c13174228f1079953d453ef108a7187e8ef38",
+      "hierarchyPathSHA256": "2ec0bdb54bcb22d582f88c3afaf86c784d0313ba8dc8951b8df23c02faf2d1bc",
+      "logsPathSHA256": "479d9f5d076f909b9cb068700d22f2b3f1c18a686937536b5ec36bf5306f5a65"
+    },
+    {
+      "id": "04-update-confirmed",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-21/04-update-confirmed.txt",
+      "logsPath": "evidence/batch-21/04-update-confirmed.log",
+      "screenshotPath": "assets/current/batch-21/04-update-confirmed.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch21-update-1794672964210",
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_PLANS": {
+          "encoding": "base64",
+          "bytesFrom": "4e9b0bfa0387.fplnav",
+          "sha256": "4e9b0bfa038768d78cc4a6a66a5895d58ae415d6c5f042683472987a0fb57df5"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_LOADED_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_PROTECTED_FLIGHT": "1"
+      },
+      "action": "Reopen andEndLoadupdatedrevision.",
+      "screenshotPathSHA256": "59c3a98ce2324f9ccf55aa47a6cfde24189df3c9d09fd41c8bfc3ef15ed77404",
+      "hierarchyPathSHA256": "73e79aff67e34e00f7c530259b5d814945c69a6c73759858e28841a0979438c3",
+      "logsPathSHA256": "ef2940cfea9d63b9459287fb27eaa8502b50943d3f67a3373d1733df47a5e3be"
+    }
+  ],
+  "notes": "iPhone17iOS27 402x874portrait. Existingbase loaded/protected plusnewerSaved. LoadUpdatedPlan cancellationreturnsreview;confirmedEndLoadopensReadynewflight. No actual runtimeGPSor timingclaimforprotecteddebugepoch.",
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

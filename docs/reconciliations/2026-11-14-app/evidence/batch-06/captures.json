@@ -1,0 +1,320 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7",
+  "device": "iPad Pro11 M5 iOS27.0(24A434) 834x1210 portrait",
+  "records": [
+    {
+      "id": "01-active-tab-library",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/01-active-tab-library.txt",
+      "logsPath": "evidence/batch-06/01-active-tab-library.log",
+      "screenshotPath": "assets/current/batch-06/01-active-tab-library.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch05-single-continue-1794657707725",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Current recovered flight switches to Flight Plans; elapsed continues.",
+      "hierarchyPathSHA256": "71b48683ae4e5ea071ca59fe68df68f802defe9495d7e6084a42cf09127bd214",
+      "logsPathSHA256": "d73304aa7b81b3b859221bb069791e7c1128b2ee0b9a40c543cc4ba3c1f216b8",
+      "screenshotPathSHA256": "bd510384c7172352087d4bf81a02a6b301aa7a7fe3a54d935cbfee1b14f9b5c2"
+    },
+    {
+      "id": "02-active-tab-return",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/02-active-tab-return.txt",
+      "logsPath": "evidence/batch-06/02-active-tab-return.log",
+      "screenshotPath": "assets/current/batch-06/02-active-tab-return.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch05-single-continue-1794657707725",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Return current active cockpit.",
+      "hierarchyPathSHA256": "468beded499490a2f82e934743665bd21b886ce8f8a8ce9c36b9cbeb20580d46",
+      "logsPathSHA256": "305f0d53007d5a0a96e6921d02d4756eac883ec0195e0dfbe4de17601bf95666",
+      "screenshotPathSHA256": "5de360173c4057683d0510f9fb96b7e55d5407b46fd1f336d3c3f34aa7dd23d7"
+    },
+    {
+      "id": "03-background-return",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/03-background-return.txt",
+      "logsPath": "evidence/batch-06/03-background-return.log",
+      "screenshotPath": "assets/current/batch-06/03-background-return.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch05-single-continue-1794657707725",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Home button -> wait5seconds -> activate app ->wait1; compare timer with02.",
+      "hierarchyPathSHA256": "5225601c09747347b72dccf456565a45d48442e0aa6aca1d332aff196e3c9e2b",
+      "logsPathSHA256": "c883cc72c01d231c0857ad19d4d2835c14b92b40c00491fd31ce48cffd2ba9d9",
+      "screenshotPathSHA256": "7a9777a946a978edb4258914e76628b82ea078371c437b9a7695e52326b247ae"
+    },
+    {
+      "id": "04-background-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/04-background-settled.txt",
+      "logsPath": "evidence/batch-06/04-background-settled.log",
+      "screenshotPath": "assets/current/batch-06/04-background-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch05-single-continue-1794657707725",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Wait2s after foreground; assess annotations and elapsed timer.",
+      "hierarchyPathSHA256": "3ecc04761dbf94dff14b3167b2e8638d6d4e24cf5d36bcb3699c61a5c99cec8d",
+      "logsPathSHA256": "c883cc72c01d231c0857ad19d4d2835c14b92b40c00491fd31ce48cffd2ba9d9",
+      "screenshotPathSHA256": "8a4cbfe757cc458cf7981d274024c31ece8362b13dbe3469db8954394186cc60"
+    },
+    {
+      "id": "05-ip-callout",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/05-ip-callout.txt",
+      "logsPath": "evidence/batch-06/05-ip-callout.log",
+      "screenshotPath": "assets/current/batch-06/05-ip-callout.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch05-single-continue-1794657707725",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE": "single"
+      },
+      "action": "Tap IP1 AX hitpoint after foreground; inspect callout.",
+      "hierarchyPathSHA256": "312b4380be89a11816af0269d009ab2068c062a4cf25a8d6ff4dce9b8359a50d",
+      "logsPathSHA256": "c883cc72c01d231c0857ad19d4d2835c14b92b40c00491fd31ce48cffd2ba9d9",
+      "screenshotPathSHA256": "56916b0694636071a257c985ae519fc843d7bbe55b75e1ca0704c14e5dacb593"
+    },
+    {
+      "id": "06-ip-callout",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/06-ip-callout.txt",
+      "logsPath": "evidence/batch-06/06-ip-callout.log",
+      "screenshotPath": "assets/current/batch-06/06-ip-callout.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "AX IP hitpoint missed (32pt vertical offset); screenshot fallback visible IP label402,522.",
+      "hierarchyPathSHA256": "b34b49515b31ddce27ef8780ece8e8468596244d1d500b0dbe04119096914abf",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "9beaa1918f6ce47380154dfd5f952fb966f7cc35c9695595956feaa2cb0f4139"
+    },
+    {
+      "id": "07-ip-reached",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/07-ip-reached.txt",
+      "logsPath": "evidence/batch-06/07-ip-reached.log",
+      "screenshotPath": "assets/current/batch-06/07-ip-reached.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Report IP1 reached.",
+      "hierarchyPathSHA256": "9d3b898498b3899cee04797668df170fde3013af50020ef116c12848cf63f074",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "057a8c1d3a6109d0d59d1a8479f191f0e1bad512d8ef29d1fe20d8a35cae62e6"
+    },
+    {
+      "id": "08-check-available",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/08-check-available.txt",
+      "logsPath": "evidence/batch-06/08-check-available.log",
+      "screenshotPath": "assets/current/batch-06/08-check-available.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Revise Next ETA from reached IP opens generic map editor; no Check or explicit Cancel button visible (only Cancel keeps... text).",
+      "hierarchyPathSHA256": "3480974eabafccc3e8d727b4e9da9218ed3da94d94e00d36f8203f876d2aa07f",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "b8149229900e7777c029405c28fbabecf8c03c90a6adc5b79faa4c54315bd1aa"
+    },
+    {
+      "id": "09-eta-operational-editor",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/09-eta-operational-editor.txt",
+      "logsPath": "evidence/batch-06/09-eta-operational-editor.log",
+      "screenshotPath": "assets/current/batch-06/09-eta-operational-editor.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Cockpit ETA opens operational editor after IP reached.",
+      "hierarchyPathSHA256": "fe0d7fdbec7c98dfc8af6c60033b2932684cae48ac07f732c30849f386e4b334",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "077a07637bb87384702385fdae661d6885de7772e84609bf57e5fbb37a5883fe"
+    },
+    {
+      "id": "10-eta-after-ip",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/10-eta-after-ip.txt",
+      "logsPath": "evidence/batch-06/10-eta-after-ip.log",
+      "screenshotPath": "assets/current/batch-06/10-eta-after-ip.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Tap cockpit ETA after dismissed generic draft; ETA stayed40.",
+      "hierarchyPathSHA256": "5151073f4d25f6f3762ff211eb8eef2ef839d7ae53e4b090734fd79ac1071ab0",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "067d2f892de8d5eed53f7c4aa5b26f859b588a2d78871439c60a6c72f4f61157"
+    },
+    {
+      "id": "11-heading-cancel-editor",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/11-heading-cancel-editor.txt",
+      "logsPath": "evidence/batch-06/11-heading-cancel-editor.log",
+      "screenshotPath": "assets/current/batch-06/11-heading-cancel-editor.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Open heading editor.",
+      "hierarchyPathSHA256": "4aa9ad02df98c31640ada59369d53cc12362302f587054e7425c1fab46ca5d41",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "60ab7dc5d8062a41375fd31f2cb07f86802942c4a08fc74ac6432bcfce301f80"
+    },
+    {
+      "id": "12-heading-cancelled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/12-heading-cancelled.txt",
+      "logsPath": "evidence/batch-06/12-heading-cancelled.log",
+      "screenshotPath": "assets/current/batch-06/12-heading-cancelled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Cancel draft356 preserves355 operational heading.",
+      "hierarchyPathSHA256": "55b769a51bfb42bca8d3e4164ae14811f7ff52b8ca29fcda35b36051216be311",
+      "logsPathSHA256": "646cfb17caa19c54c41e1766a2cca9fd74e174cbdcfb69e037ccbade680d7a01",
+      "screenshotPathSHA256": "28f50978ad5791c459814d32177c1aca2d72ff64b31b192de06ba1370d11c3e2"
+    },
+    {
+      "id": "13-settings-placeholder",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/13-settings-placeholder.txt",
+      "logsPath": "evidence/batch-06/13-settings-placeholder.log",
+      "screenshotPath": "assets/current/batch-06/13-settings-placeholder.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-ip-1794657788733",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "Settings section placeholder.",
+      "hierarchyPathSHA256": "c13e06cea87d7c214c30eb134fdfb366a5e292e1599a9ee044169291f5810baf",
+      "logsPathSHA256": "e1bdda1aa5d63b82f34c2e8e4c012877eeacd302465b2d4c407b62d53d564e07",
+      "screenshotPathSHA256": "08d5823738b999855dbecc551bdaa994f032b9fce6526d4e7eaec3632c377fa0"
+    },
+    {
+      "id": "14-large-inspection",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/14-large-inspection.txt",
+      "logsPath": "evidence/batch-06/14-large-inspection.log",
+      "screenshotPath": "assets/current/batch-06/14-large-inspection.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-large-1794657865603",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "AccessibilityXXXL launch argument; inspect legacy plan.",
+      "commandLineArguments": [
+        "-UIPreferredContentSizeCategoryName",
+        "UICTContentSizeCategoryAccessibilityXXXL"
+      ],
+      "hierarchyPathSHA256": "d78665bbaab25a44c9f7c7dd35be44a6e6188e8a7878936699b58252a083dbfc",
+      "logsPathSHA256": "395d80fe1aa2e9ba1a88de9df1662ce24c0c24d6cd46a87a6da8538bf5375e4e",
+      "screenshotPathSHA256": "870a83259dbba33934716da6d8207620d45448f8e34f51f7f9d69e60b4e6e16c"
+    },
+    {
+      "id": "15-large-cockpit",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-06/15-large-cockpit.txt",
+      "logsPath": "evidence/batch-06/15-large-cockpit.log",
+      "screenshotPath": "assets/current/batch-06/15-large-cockpit.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch06-large-1794657865603",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "base.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        }
+      },
+      "action": "AccessibilityXXXL ready cockpit.",
+      "commandLineArguments": [
+        "-UIPreferredContentSizeCategoryName",
+        "UICTContentSizeCategoryAccessibilityXXXL"
+      ],
+      "hierarchyPathSHA256": "317901edff3ae54afc9edbbaa4a72bce30d360423e76c8bbe6ae21cc381a9f4d",
+      "logsPathSHA256": "2a8e512702394dd2e0a36339c75fcd33bd0263843e563f2ea96462cc54cdc0a0",
+      "screenshotPathSHA256": "48d278867599eca32242d2645baacb723e892392ef8282b32460c1806c3393d2"
+    }
+  ],
+  "findings": [
+    "Tab roundtrip retains active timer and places route below tabs",
+    "Background5sec/foreground timer continues; custom map annotations remain visually absent after2s but in AX tree",
+    "IP AX hitpoint32pt above rendered label; fallback screenshot tap opens",
+    "IP reached actual18 planned16; no Undo exposed",
+    "After reached IP ReviseNextETA and cockpitETA expose generic editor without Check/explicitCancel; outside dismiss retains earlier operational40",
+    "Heading draft356 Cancel preserves355",
+    "Large text legacy route names break into narrow fragments; cockpit IP label clipped; cockpit instruments scroll vertically"
+  ],
+  "limits": [
+    "Background behavior simulator only",
+    "IP Undo and Check not found in reached branch",
+    "VoiceOver, contrast, ReduceMotion unverified",
+    "LargeText only two states; no comprehensive accessibility audit"
+  ]
+}

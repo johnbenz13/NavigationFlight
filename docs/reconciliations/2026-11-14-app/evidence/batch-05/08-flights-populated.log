@@ -1,0 +1,13 @@
+2026-11-14 13:58:51.885040+0200 [81453:56752267] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.1.434.0.vHSOPZ/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.0.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x10b162c70 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+2026-11-14 13:58:52.092978+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.093099+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.148561+0200 [81453:56752159] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"
+
+2026-11-14 13:58:52.450304+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.450347+0200 [81453:56752159] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-14 13:58:52.475893+0200 [81453:56752159] [AXValidations] AX Safe category class 'SFBarButtonGroupContainerAccessibility' was not found!

@@ -1,0 +1,196 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-provider-download-prompt",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-13/01-provider-download-prompt.txt",
+      "logsPath": "evidence/batch-13/01-provider-download-prompt.log",
+      "screenshotPath": "assets/current/batch-13/01-provider-download-prompt.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-permission-revoked-1794671015589",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "permission-revoked",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "12"
+      },
+      "action": "Safari open disposable localhost attachment.",
+      "screenshotPathSHA256": "68bd60cf7d73f4d0ed80deb04bfc635c4971761a2e92de915cc75dfc0fb81657",
+      "hierarchyPathSHA256": "929fbece0557156ed6828f7de08277c6283c87e9c4ce89ec783d30cef434f9b4",
+      "logsPathSHA256": "83265e6cc8340fc9d72aafaa9aeeb91e3abd4f2f6163962c22df194c12067521"
+    },
+    {
+      "id": "02-provider-download",
+      "applicationState": "RunningInBackground",
+      "hierarchyPath": "evidence/batch-13/02-provider-download.txt",
+      "logsPath": "evidence/batch-13/02-provider-download.log",
+      "screenshotPath": "assets/current/batch-13/02-provider-download.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-permission-revoked-1794671015589",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "permission-revoked",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "12"
+      },
+      "action": "Confirm Safari download.",
+      "screenshotPathSHA256": "58a46deb7dffcfeb7b566de9ef01b7bac8ab4748b769105c6ec1c7aa051eb5f6",
+      "hierarchyPathSHA256": "74bb0ee829bb11adf51532893f3712ca82fa660f31f5cffdc829469e110baa67",
+      "logsPathSHA256": "83265e6cc8340fc9d72aafaa9aeeb91e3abd4f2f6163962c22df194c12067521"
+    },
+    {
+      "id": "08-clean-provider-picker",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/08-clean-provider-picker.txt",
+      "logsPath": "evidence/batch-13/08-clean-provider-picker.log",
+      "screenshotPath": "assets/current/batch-13/08-clean-provider-picker.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "New clean library empty; stale Add y118 missed because current toolbar y54.",
+      "screenshotPathSHA256": "d283ac1f10ff3b9a73e6ff81b424b15c5634ecb205ac2f20f797c1498822676e",
+      "hierarchyPathSHA256": "a19defbf6e7ea5368ef53c24e80aecc638c1f556bd8de179456a8520fd790742",
+      "logsPathSHA256": "d1082858afc0068e6486e40e02cb08d60fda6355731302a17b9e8cf511ba6c53"
+    },
+    {
+      "id": "09-clean-settled-downloads",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/09-clean-settled-downloads.txt",
+      "logsPath": "evidence/batch-13/09-clean-settled-downloads.log",
+      "screenshotPath": "assets/current/batch-13/09-clean-settled-downloads.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Use current Add hitpoint785,54 then wait for remote picker.",
+      "screenshotPathSHA256": "af59d1881caab37856806fcec642ac985348b92eb7f7d4ccd3f101ab45ad88b2",
+      "hierarchyPathSHA256": "1cb284ead81c8435be351a9a7400d8d8141524e51ba8a9fafd876c14b8138723",
+      "logsPathSHA256": "12842b27b983ba3c4ee5bf80329dd9b1c110db78de20cc14907b111a6205f26f"
+    },
+    {
+      "id": "10-clean-provider-import-success",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/10-clean-provider-import-success.txt",
+      "logsPath": "evidence/batch-13/10-clean-provider-import-success.log",
+      "screenshotPath": "assets/current/batch-13/10-clean-provider-import-success.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Select staged training-editor-wind.fplnav only; real provider import succeeds.",
+      "screenshotPathSHA256": "5caff237e41dc654ddf2c262d8f8e43a654404bcadea339f6bfc44177873f691",
+      "hierarchyPathSHA256": "ac0ea64cd541533c71eca7c6609280727c1e94d0b2899b9ccd6b12e81fe45cab",
+      "logsPathSHA256": "a4982d01c2fc59659f7d54a37cd1fbecf8888d9881cb00031b1d20121af002d3"
+    },
+    {
+      "id": "11-provider-plan-review",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/11-provider-plan-review.txt",
+      "logsPath": "evidence/batch-13/11-provider-plan-review.log",
+      "screenshotPath": "assets/current/batch-13/11-provider-plan-review.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Inspect freshly imported synthetic provider plan.",
+      "screenshotPathSHA256": "394240f36d893c0451b560f4834f763ba9b9fd9148107c14d37af866859f5829",
+      "hierarchyPathSHA256": "aa02a1275fdcd63b7aefecbb62ec2bbef5804da460894e1829c9c3c14658db79",
+      "logsPathSHA256": "b97b838c9af42f87d6a82add6d09be20abfe211755ddb16d5548288bf54004f3"
+    },
+    {
+      "id": "12-realchart-ready",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/12-realchart-ready.txt",
+      "logsPath": "evidence/batch-13/12-realchart-ready.log",
+      "screenshotPath": "assets/current/batch-13/12-realchart-ready.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Load provider plan into Cockpit.",
+      "screenshotPathSHA256": "6d2ad5cfabbc1a4fed73951cfcf4dda5ae1485cfc2072147629ca5aa8036fc58",
+      "hierarchyPathSHA256": "4f8c44933844977b55de31fd4658133c26d40b3c500d95e61160623e2507b66b",
+      "logsPathSHA256": "c068725d1c2315381f5168807ed082bc6656270ed9520cddc514dbb5de4d43a5"
+    },
+    {
+      "id": "13-no-wind-selected",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/13-no-wind-selected.txt",
+      "logsPath": "evidence/batch-13/13-no-wind-selected.log",
+      "screenshotPath": "assets/current/batch-13/13-no-wind-selected.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Select available whole-plan No wind before timing.",
+      "screenshotPathSHA256": "df542505137697b9e9093122cbcde54d53dee88f86bbf7808a7f4741175ceb73",
+      "hierarchyPathSHA256": "05cb5fa7e1c42e929a86032863eb701e1e3d57dc89291651a739a47354719f9e",
+      "logsPathSHA256": "89a335df139fc602449a58769e4c4d5c65be194befb8589d8ae3df0feb2adbcc"
+    },
+    {
+      "id": "14-ready-no-wind",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/14-ready-no-wind.txt",
+      "logsPath": "evidence/batch-13/14-ready-no-wind.log",
+      "screenshotPath": "assets/current/batch-13/14-ready-no-wind.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Return Cockpit with No wind selected.",
+      "screenshotPathSHA256": "57c166ae07be8a7240865b5cb03f486e60e5a2ee24983cfce58d5335764119d3",
+      "hierarchyPathSHA256": "809f0794af507946414530f4c460c6c97623b7529cf7e9ede55cdbe9462de881",
+      "logsPathSHA256": "3e381fdf9352352a636768a743657e399d5ea76580876bfdb0e79343c6946c8f"
+    },
+    {
+      "id": "15-start-after-no-wind",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/15-start-after-no-wind.txt",
+      "logsPath": "evidence/batch-13/15-start-after-no-wind.log",
+      "screenshotPath": "assets/current/batch-13/15-start-after-no-wind.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Direct Start without load/restart after No wind selection.",
+      "screenshotPathSHA256": "07506647f474570ca583db3ceae31278814bc031e619fb4d94194d6ffec5feb7",
+      "hierarchyPathSHA256": "212c28300e18cc6a4a96294356f71ae2bcf73474c61d257ef2618689156da6b8",
+      "logsPathSHA256": "3e381fdf9352352a636768a743657e399d5ea76580876bfdb0e79343c6946c8f"
+    },
+    {
+      "id": "16-mode-active-settled",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-13/16-mode-active-settled.txt",
+      "logsPath": "evidence/batch-13/16-mode-active-settled.log",
+      "screenshotPath": "assets/current/batch-13/16-mode-active-settled.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch13-provider-clean-1794671168340",
+        "NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION": "flight-plans"
+      },
+      "action": "Close checklist after Start to inspect active values.",
+      "screenshotPathSHA256": "a3e4eeeaf5b16de362e8ef31cafc3ab6114266c63b7e691c476482cfdb5ae8af",
+      "hierarchyPathSHA256": "8f3f03afcc296d6b8c9d25c28f59687576b99f9b9293f849220176353b361fae",
+      "logsPathSHA256": "6a984bf1f57a0a0c816935c331d38c325989d25f9876f9b32068f43b9177fb2d"
+    }
+  ],
+  "notes": [
+    "Clean provider journey08(empty),09(settled Downloads only training-editor-wind.fplnav),10(success),11(review),12(loadedrealchart). Safari01/02 stages exact localhost attachment.",
+    "Initial failed attempt03-07 accidentally imported existing provider item into disposable library; no existing file modified or bytes retained. Exclude03-07 from review evidence; keep attempt limitation.",
+    "NoWind selected13 gives95kt09:56; ready14 heading035ETA09:56; directStart15 checklist033ETA09:16 but console035.16settled checks remaining inconsistency.",
+    "Only synthetic staged fixture bytes copied."
+  ],
+  "providerFixture": {
+    "path": "evidence/batch-13/training-editor-wind.fplnav",
+    "bytes": 15288,
+    "sha256": "d363ae9a9e4839f2a6f0b175da99585f68c0a153858e88d99e5f7d85beb609b0"
+  },
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

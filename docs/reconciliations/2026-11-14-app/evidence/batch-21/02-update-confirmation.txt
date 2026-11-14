@@ -1,0 +1,46 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 23298, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Alert, {{41.0, 355.0}, {320.0, 192.0}}, label: 'End current Flight?', hitPoint: {201.0, 451.0}
+    Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+     Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+      Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+      Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+       ScrollView, {{41.0, 355.0}, {320.0, 112.0}}, hitPoint: {201.0, 411.0}
+        Other, {{41.0, 355.0}, {320.0, 112.0}}, hitPoint: {201.0, 411.0}
+         StaticText, {{71.0, 377.0}, {260.0, 20.3}}, label: 'End current Flight?', hitPoint: {201.0, 387.2}
+         StaticText, {{71.0, 404.7}, {260.0, 58.0}}, label: 'Loading this Flight Plan ends the current Flight and discards recorded progress and pilot edits.', hitPoint: {201.0, 433.7}
+        Other, {{41.0, 465.0}, {320.0, 2.0}}, hitPoint: {201.0, 466.0}
+        Other, {{328.0, 355.0}, {30.0, 112.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {343.0, 411.0}
+         Other, {{355.0, 316.0}, {3.0, 36.0}}, hitPoint: {356.5, 334.0}
+        Other, {{41.0, 434.0}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {201.0, 449.0}
+         Other, {{2.0, 461.0}, {36.0, 3.0}}, hitPoint: {20.0, 462.5}
+        Other, {{328.0, 355.0}, {30.0, 112.0}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {343.0, 411.0}
+         Other, {{355.0, 316.0}, {3.0, 36.0}}, hitPoint: {356.5, 334.0}
+        Other, {{41.0, 434.0}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {201.0, 449.0}
+         Other, {{2.0, 461.0}, {36.0, 3.0}}, hitPoint: {20.0, 462.5}
+       ScrollView, {{41.0, 467.0}, {320.0, 80.0}}, hitPoint: {201.0, 507.0}
+        Other, {{41.0, 467.0}, {320.0, 80.0}}, hitPoint: {201.0, 507.0}
+         Other, {{57.0, 483.0}, {288.0, 48.0}}, hitPoint: {201.0, 507.0}
+          Button, {{57.0, 483.0}, {140.0, 48.0}}, label: 'Cancel', hitPoint: {127.0, 507.0}
+          Button, {{205.0, 483.0}, {140.0, 48.0}}, label: 'End & Load', hitPoint: {275.0, 507.0}
+        Other, {{328.0, 467.0}, {30.0, 80.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {343.0, 507.0}
+         Other, {{355.0, 557.0}, {3.0, 7.0}}, hitPoint: {356.5, 560.5}
+        Other, {{41.0, 514.0}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {201.0, 529.0}
+         Other, {{131.0, 541.0}, {7.0, 3.0}}, hitPoint: {134.5, 542.5}
+        Other, {{328.0, 467.0}, {30.0, 80.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {343.0, 507.0}
+         Other, {{355.0, 557.0}, {3.0, 7.0}}, hitPoint: {356.5, 560.5}
+        Other, {{41.0, 514.0}, {320.0, 30.0}}, label: 'Horizontal scroll bar, 1 page', value: 0%, hitPoint: {201.0, 529.0}
+         Other, {{131.0, 541.0}, {7.0, 3.0}}, hitPoint: {134.5, 542.5}
+    Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+     Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+      Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+       Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+        Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+         Other, {{41.0, 355.0}, {402.0, 874.0}}, hitPoint: {221.5, 614.5}
+       Other, {{41.0, 355.0}, {320.0, 192.0}}, hitPoint: {201.0, 451.0}
+        Other, {{41.0, 355.0}, {402.0, 874.0}}, hitPoint: {221.5, 614.5}

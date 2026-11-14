@@ -1,0 +1,256 @@
+{
+  "date": "2026-11-14",
+  "baseline": "1a2d7e7596667a39616fe3812f6a07326f30ca00",
+  "device": "iPadPro11M5 iOS27(24A434)834x1210portrait",
+  "records": [
+    {
+      "id": "01-on-track",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/01-on-track.txt",
+      "logsPath": "evidence/batch-12/01-on-track.log",
+      "screenshotPath": "assets/current/batch-12/01-on-track.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-ontrack-1794670718825",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "HoldPositionCheck with on-trackfixture.",
+      "screenshotPathSHA256": "f33107f9e5929a5e2394e18593e95f133092727a1a3be3f1a897a26d0019b335",
+      "hierarchyPathSHA256": "a975e2a5ab88f90423096a1a6c2a13f3823c892a7abafd6ba531c4a40777aee9",
+      "logsPathSHA256": "844ef7834371437df9be6c07fdd09ac8c22158e7e0fd2ab08d303e40226813d5"
+    },
+    {
+      "id": "02-tab-return-disclosure-ended",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/02-tab-return-disclosure-ended.txt",
+      "logsPath": "evidence/batch-12/02-tab-return-disclosure-ended.log",
+      "screenshotPath": "assets/current/batch-12/02-tab-return-disclosure-ended.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-ontrack-1794670718825",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Tab return after original disclosure had already expired (elapsed34 versus initial3); does not prove boundary cancellation.",
+      "screenshotPathSHA256": "35d81203556bc3c4e35120b1c2b3d303da5ddd6badf2a0f2e6422c7ac500d771",
+      "hierarchyPathSHA256": "4e15b0691e274013142140b1e4e173ed18dc1b162880a8ecec049456bc8af8b0",
+      "logsPathSHA256": "d03163581c576ddcc9b529968aec92913c9c864671a60150987d5537682404f4"
+    },
+    {
+      "id": "03-background-return-disclosure-ended",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/03-background-return-disclosure-ended.txt",
+      "logsPath": "evidence/batch-12/03-background-return-disclosure-ended.log",
+      "screenshotPath": "assets/current/batch-12/03-background-return-disclosure-ended.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-ontrack-1794670718825",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "HoldPositionCheck then Home1sec, activateapp1sec. Checkdisclosure ends.",
+      "screenshotPathSHA256": "32876659b774408d871ecb65dfbc5dd14863577219260fe32107f207a39e9734",
+      "hierarchyPathSHA256": "828067a66378c75be13e0eb5962dcb82a7ed76c8828bb02672cc94c396c25214",
+      "logsPathSHA256": "ece5f97cb429c3892743b0c6727bdefda9cfb054fe53a87484d9748d8b6a7599"
+    },
+    {
+      "id": "04-tab-ends-new-disclosure",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/04-tab-ends-new-disclosure.txt",
+      "logsPath": "evidence/batch-12/04-tab-ends-new-disclosure.log",
+      "screenshotPath": "assets/current/batch-12/04-tab-ends-new-disclosure.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-ontrack-1794670718825",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "on-track"
+      },
+      "action": "Newhold then immediate tabawayandback under10sec; disclosureended.",
+      "screenshotPathSHA256": "d43453af6feececf075f9d272a65f6d54986d7aaee57bc2dc9c38ef75e718108",
+      "hierarchyPathSHA256": "425765fc9f65cac48d902b6bf50e976594caa8b496808ef89e72e41150ae0564",
+      "logsPathSHA256": "017404203efba999317181d046fe1bc56d70d9b054315904a225f8336544648b"
+    },
+    {
+      "id": "05-position-only",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/05-position-only.txt",
+      "logsPath": "evidence/batch-12/05-position-only.log",
+      "screenshotPath": "assets/current/batch-12/05-position-only.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-position-only-1794670788861",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "position-only"
+      },
+      "action": "Hold with position-only fixture.",
+      "screenshotPathSHA256": "3b94fe596efca27ce43a685a7c4edac6efac13af25c4eed592a83e1580a47399",
+      "hierarchyPathSHA256": "b01b9ff32ae97bf12fa41a070fb20f6fc75c8b750e45d610c081217a66951267",
+      "logsPathSHA256": "04b173bdbfd54be00ab68800ea5457e8e768c3b9cb9f6d5ee33559e66d428e7e"
+    },
+    {
+      "id": "06-no-sensible-intercept",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/06-no-sensible-intercept.txt",
+      "logsPath": "evidence/batch-12/06-no-sensible-intercept.log",
+      "screenshotPath": "assets/current/batch-12/06-no-sensible-intercept.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-no-sensible-intercept-1794670949592",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "no-sensible-intercept"
+      },
+      "action": "Hold with no-sensible-intercept fixture.",
+      "screenshotPathSHA256": "75812e8649089943a59af2bbdc71ad4c0bcdede9683809b7d0c39c67f43c5d2f",
+      "hierarchyPathSHA256": "d4b448a605c96a0397180af3c29c79fffd16fd5079db7f335cb5c105e5e3a8d3",
+      "logsPathSHA256": "4ea56e80ae616f32e0df10b696c451a30b32089b234cf27b60b3c1f479cab94c"
+    },
+    {
+      "id": "07-extreme-displacement",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/07-extreme-displacement.txt",
+      "logsPath": "evidence/batch-12/07-extreme-displacement.log",
+      "screenshotPath": "assets/current/batch-12/07-extreme-displacement.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-extreme-displacement-1794670965754",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "extreme-displacement"
+      },
+      "action": "Hold with extreme-displacement fixture.",
+      "screenshotPathSHA256": "c3ecc79e09a359c299eeb2ca4b12d944d2532d55455536b38878f57ed67d8881",
+      "hierarchyPathSHA256": "3bee26447a3b3d81fc9262b5634d1e5939c5c394ded604866ef4f79e8d1d81ce",
+      "logsPathSHA256": "17fdb79a8f542c33142ebf12bbda95d2557b84e2f66d243384769bde95eb9b66"
+    },
+    {
+      "id": "08-acquisition-timeout",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/08-acquisition-timeout.txt",
+      "logsPath": "evidence/batch-12/08-acquisition-timeout.log",
+      "screenshotPath": "assets/current/batch-12/08-acquisition-timeout.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794670980672",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Hold without usable fix; wait eleven seconds.",
+      "screenshotPathSHA256": "b6cb3bcccdf434bb658176e9b9c8ca26696c0e192de74d6fb587fbdd8619d035",
+      "hierarchyPathSHA256": "d1f36eb4a1d98710a88e3cf1f8c0a909351132fe3f7173bded9d729d6a37aa77",
+      "logsPathSHA256": "7afa21846f2a47e8d950322a8cf44564a2af159b93ce624f08074f884540750b"
+    },
+    {
+      "id": "09-acquisition-retry",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/09-acquisition-retry.txt",
+      "logsPath": "evidence/batch-12/09-acquisition-retry.log",
+      "screenshotPath": "assets/current/batch-12/09-acquisition-retry.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794670980672",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Hold again after timeout; remained unavailable with GPS acquisition timed out, no acquisition restart observed.",
+      "screenshotPathSHA256": "590cc599e95a57d842a15ff704d57e1a0f1cc98752bd2becf1927bfc4b64eee1",
+      "hierarchyPathSHA256": "cf91fbadaf75a399e96f709a8940ef61d4a0163a7c5a5877a809ec3620af0051",
+      "logsPathSHA256": "bbba2e45838a60c2a4ef6d71f7325872535e90a6b5c545a7056b6288f6fb687f"
+    },
+    {
+      "id": "10-timeout-tap",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/10-timeout-tap.txt",
+      "logsPath": "evidence/batch-12/10-timeout-tap.log",
+      "screenshotPath": "assets/current/batch-12/10-timeout-tap.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-acquiring-1794670980672",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "acquiring"
+      },
+      "action": "Tap timeout control after retry hold left timeout visible.",
+      "screenshotPathSHA256": "7b5a493fe76cae55356f9a6dbcf1314e01cb0f7c496f85a094ca12561fd12622",
+      "hierarchyPathSHA256": "251a5bf3065bbc488ab2f8be583ff7b7d203546292f6c680c6ce5a59cf47e06f",
+      "logsPathSHA256": "bbba2e45838a60c2a4ef6d71f7325872535e90a6b5c545a7056b6288f6fb687f"
+    },
+    {
+      "id": "11-before-permission-revoked",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/11-before-permission-revoked.txt",
+      "logsPath": "evidence/batch-12/11-before-permission-revoked.log",
+      "screenshotPath": "assets/current/batch-12/11-before-permission-revoked.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-permission-revoked-1794671015589",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "permission-revoked",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "12"
+      },
+      "action": "Hold before delayed permission revocation; fixture delay twelve seconds from launch.",
+      "screenshotPathSHA256": "2b60a737c0c2b7826780a1125494173fd2668b3e6feb14a6525c3c90dd3491bf",
+      "hierarchyPathSHA256": "c0422ed1b16f7b6e8ee2e35d5ade9f70db35a5023ebbad3c4dccda0e3d836dcc",
+      "logsPathSHA256": "2098c5cb8ce7a02c9bf71e63b5c64c7f3d802d8912b2fdeeb0c46dbe49a207d5"
+    },
+    {
+      "id": "12-permission-revoked",
+      "applicationState": "Running",
+      "hierarchyPath": "evidence/batch-12/12-permission-revoked.txt",
+      "logsPath": "evidence/batch-12/12-permission-revoked.log",
+      "screenshotPath": "assets/current/batch-12/12-permission-revoked.png",
+      "env": {
+        "NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID": "batch12-permission-revoked-1794671015589",
+        "NAVIGATION_FLIGHT_UI_TEST_PLAN": {
+          "encoding": "base64",
+          "bytesFrom": "3d301bef0e68.fplnav",
+          "sha256": "3d301bef0e685555afc6de8c34827955cf366edf67abef22dd86ab18973b3e4d"
+        },
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_STATE": "permission-revoked",
+        "NAVIGATION_FLIGHT_UI_TEST_POSITION_CHECK_FIXTURE_DELAY": "12"
+      },
+      "action": "Wait six seconds for fixture permission revocation.",
+      "screenshotPathSHA256": "0700681dbecc6d6439df7527095a6230a8ee62ad42bb6313e6658a91853d3f46",
+      "hierarchyPathSHA256": "232a6c4690acb2589de4796757da02771fc666e5d445f614690b228780492093",
+      "logsPathSHA256": "2098c5cb8ce7a02c9bf71e63b5c64c7f3d802d8912b2fdeeb0c46dbe49a207d5"
+    }
+  ],
+  "notes": [
+    "All screenshots inspected. On-track, position-only, no-sensible-intercept and extreme-displacement show respective explanation with plane where in viewport.",
+    "Fresh disclosure tab boundary04 and permission revocation12 clear plane/guidance but collapse route. Background03 clears disclosure but annotations absent.",
+    "Timeout retry hold09 and tap10 left unavailable; successful retry unsupported by static acquiring fixture, but no visible new acquiring state observed.",
+    "Permission revoked fixture delay12sec; before11 active at3sec, after12 permission required at10sec so stopped before natural expiry. Real system grant/regrant not exercised."
+  ],
+  "fixtureSource": "See exact bytes and fixtures.json in this folder."
+}

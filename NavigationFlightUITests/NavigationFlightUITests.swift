@@ -1051,8 +1051,8 @@ final class NavigationFlightUITests: XCTestCase {
         toggle.tap()
         XCTAssertEqual(toggle.label, "Show drift lines, manual calculation aid")
         app.buttons["show-plan-inspection"].tap()
-        XCTAssertTrue(app.buttons["open-cockpit"].waitForExistence(timeout: 2))
-        app.buttons["open-cockpit"].tap()
+        XCTAssertTrue(app.buttons["return-to-cockpit"].waitForExistence(timeout: 5))
+        app.buttons["return-to-cockpit"].tap()
 
         XCTAssertTrue(toggle.waitForExistence(timeout: 2))
         XCTAssertEqual(toggle.label, "Show drift lines, manual calculation aid")

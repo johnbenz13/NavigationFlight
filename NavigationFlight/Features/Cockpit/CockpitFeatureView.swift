@@ -243,7 +243,7 @@ struct CockpitFeatureView: View {
                         onReopenChecklist: { state.reopenLegStartChecklist() },
                         onNoteChecklist: { state.noteLegStartChecklist() },
                         onToggleDriftLines: { state.toggleDriftLines() },
-                        onShowPlanInspection: { isCockpitPresented = false }
+                        onShowPlanInspection: { onIntent(.chooseFlightPlan) }
                     )
                     }
                     .onChange(of: positionCheck) { previous, current in

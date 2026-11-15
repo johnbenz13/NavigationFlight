@@ -44,6 +44,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let legState: Flight.LegState
     let showsDriftReferenceArms: Bool
     let focusRequest: AviationMapFocusRequest
+    let placesEndpointLabelsOutward: Bool
     let resources: any AviationMapResourceProviding
     let visualStyle: AviationMapVisualStyle
     @Binding var etaCalloutOffset: AviationMapCalloutOffset
@@ -69,6 +70,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         legState: Flight.LegState,
         showsDriftReferenceArms: Bool,
         focusRequest: AviationMapFocusRequest,
+        placesEndpointLabelsOutward: Bool = false,
         resources: any AviationMapResourceProviding = BundledAviationMapResourceProvider(),
         visualStyle: AviationMapVisualStyle = .default,
         etaCalloutOffset: Binding<AviationMapCalloutOffset>,
@@ -93,6 +95,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.legState = legState
         self.showsDriftReferenceArms = showsDriftReferenceArms
         self.focusRequest = focusRequest
+        self.placesEndpointLabelsOutward = placesEndpointLabelsOutward
         self.resources = resources
         self.visualStyle = visualStyle
         _etaCalloutOffset = etaCalloutOffset
@@ -122,6 +125,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             focusRequest: focusRequest,
             chartURL: resources.chartURL(),
             visualStyle: visualStyle,
+            placesEndpointLabelsOutward: placesEndpointLabelsOutward,
             etaCalloutOffset: $etaCalloutOffset,
             vorDMECalloutOffset: $vorDMECalloutOffset,
             identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
@@ -224,6 +228,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var lastFocusRequest: AviationMapFocusRequest
         private let chartURL: URL?
         private let visualStyle: AviationMapVisualStyle
+        private let placesEndpointLabelsOutward: Bool
         private let etaCalloutOffset: Binding<AviationMapCalloutOffset>
         private let vorDMECalloutOffset: Binding<AviationMapCalloutOffset>
         private let identificationPointCalloutOffsets: Binding<[IdentificationPointKey: AviationMapCalloutOffset]>
@@ -254,6 +259,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             focusRequest: AviationMapFocusRequest,
             chartURL: URL?,
             visualStyle: AviationMapVisualStyle,
+            placesEndpointLabelsOutward: Bool,
             etaCalloutOffset: Binding<AviationMapCalloutOffset>,
             vorDMECalloutOffset: Binding<AviationMapCalloutOffset>,
             identificationPointCalloutOffsets: Binding<[IdentificationPointKey: AviationMapCalloutOffset]>,
@@ -282,6 +288,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.lastFocusRequest = focusRequest
             self.chartURL = chartURL
             self.visualStyle = visualStyle
+            self.placesEndpointLabelsOutward = placesEndpointLabelsOutward
             self.etaCalloutOffset = etaCalloutOffset
             self.vorDMECalloutOffset = vorDMECalloutOffset
             self.identificationPointCalloutOffsets = identificationPointCalloutOffsets
@@ -422,6 +429,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     annotation: annotation,
                     reuseIdentifier: identifier,
                     visualStyle: visualStyle,
+                    placesLabelOutward: placesEndpointLabelsOutward,
                     onSelectDestination: { [weak self] in
                         self?.onSelectTimingTarget(destinationTargetID)
                     }
@@ -1366,6 +1374,7 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         annotation: EndpointAnnotation,
         reuseIdentifier: String,
         visualStyle: AviationMapVisualStyle,
+        placesLabelOutward: Bool,
         onSelectDestination: @escaping () -> Void
     ) {
         self.onSelectDestination = onSelectDestination
@@ -1375,7 +1384,7 @@ private final class EndpointAnnotationView: MLNAnnotationView {
             addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectDestination)))
             isEnabled = true
         } else {
-            configureDeparture(annotation)
+            configureDeparture(annotation, placesLabelOutward: placesLabelOutward)
             isEnabled = false
         }
     }
@@ -1384,7 +1393,7 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         onSelectDestination()
     }
 
-    private func configureDeparture(_ annotation: EndpointAnnotation) {
+    private func configureDeparture(_ annotation: EndpointAnnotation, placesLabelOutward: Bool) {
         let label = UILabel()
         label.numberOfLines = 1
         label.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(
@@ -1402,11 +1411,15 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         frame = CGRect(origin: .zero, size: size)
 
         let symbol = WaypointSymbolView(destination: false)
-        symbol.frame = CGRect(x: 4, y: bounds.midY - 9, width: 18, height: 18)
+        let symbolX: CGFloat = placesLabelOutward ? labelSize.width + 10 : 4
+        symbol.frame = CGRect(x: symbolX, y: bounds.midY - 9, width: 18, height: 18)
         addSubview(symbol)
-        label.frame = CGRect(x: 28, y: bounds.midY - labelSize.height / 2, width: labelSize.width, height: labelSize.height)
+        let labelX: CGFloat = placesLabelOutward ? 0 : 28
+        label.frame = CGRect(x: labelX, y: bounds.midY - labelSize.height / 2, width: labelSize.width, height: labelSize.height)
         addSubview(label)
-        centerOffset = CGVector(dx: bounds.midX - 13, dy: 0)
+        centerOffset = placesLabelOutward
+            ? CGVector(dx: 13 - bounds.midX, dy: 0)
+            : CGVector(dx: bounds.midX - 13, dy: 0)
     }
 
     private func configureDestination(

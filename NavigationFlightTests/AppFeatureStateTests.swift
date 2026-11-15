@@ -100,6 +100,25 @@ struct AppFeatureStateTests {
         #expect(state.flightPlans == originalFlightPlans)
     }
 
+    @Test("Inspecting from Cockpit selects the loaded plan as a Cockpit-origin review")
+    func cockpitInspectionSelectsLoadedPlan() throws {
+        let plan = try flightPlan()
+        let record = LibraryFlightPlan(flightPlan: plan, importedAt: .distantPast)
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(plan)
+        var flightPlans = FlightPlansFeatureState()
+        let requestID = UUID()
+        flightPlans.beginLoading(requestID: requestID)
+        _ = flightPlans.completeLoading(requestID: requestID, records: [record], error: nil)
+        var state = AppFeatureState(selectedAppSection: .cockpit, cockpit: cockpit, flightPlans: flightPlans)
+
+        state.chooseFlightPlanFromCockpit()
+
+        #expect(state.selectedAppSection == .flightPlans)
+        #expect(state.flightPlans.selectedRecordID == plan.id)
+        #expect(state.flightPlans.reviewEntry == .cockpit)
+    }
+
     @Test("Loading without protected work creates the injected ready Flight")
     func loadWithoutProtectedWork() throws {
         let plan = try flightPlan()
@@ -191,7 +210,7 @@ struct AppFeatureStateTests {
 
     @Test("Ready leg and mode selection are not protected")
     func readySelectionIsNotProtected() throws {
-        let plan = try twoLegFlightPlan()
+        let plan = try flightPlan()
         var cockpit = CockpitFeatureState()
         try cockpit.accept(plan)
         cockpit.selectNextLeg()
@@ -750,6 +769,64 @@ struct AppFeatureStateTests {
         #expect(presentation.primaryAction.action == .loadInCockpit)
         #expect(presentation.updateActions.isEmpty)
         #expect(presentation.flightActions.isEmpty)
+    }
+
+    @Test("Canonical review projects whole-plan no-wind values and imported information")
+    func canonicalReviewProjection() throws {
+        let plan = try twoLegFlightPlan()
+        let importedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let record = LibraryFlightPlan(flightPlan: plan, importedAt: importedAt)
+        let planned = try #require(plan.plannedNavigation.plannedNavigation)
+
+        let presentation = FlightPlanReviewPresentation(record: record, isLoaded: true)
+
+        let expectedDistance = planned.legs.reduce(0.0) { $0 + $1.groundDistance.value }
+        #expect(presentation.status == "Current loaded Flight")
+        #expect(presentation.departure == plan.waypoints.first?.name)
+        #expect(presentation.destination == plan.waypoints.last?.name)
+        #expect(presentation.distance == "\(expectedDistance.formatted(.number.precision(.fractionLength(1)))) NM")
+        #expect(presentation.legs.map(\.id) == plan.legs.map(\.id))
+        #expect(presentation.imported == importedAt)
+        #expect(presentation.frequencySections.flatMap(\.values).isEmpty == false)
+        #expect(presentation.map != nil)
+    }
+
+    @Test("Canonical review omits missing optional frequencies without inventing placeholders")
+    func canonicalReviewOmitsMissingFrequencies() throws {
+        let plan = try flightPlan()
+        let planned = try #require(plan.plannedNavigation.plannedNavigation)
+        let withoutFrequencies = PlannedNavigation(
+            calculationVersion: planned.calculationVersion,
+            altitudeReference: planned.altitudeReference,
+            legs: planned.legs,
+            annotations: planned.annotations,
+            vorDmeReferences: planned.vorDmeReferences,
+            frequenciesByPhase: [:],
+            defaultMode: planned.defaultMode
+        )
+        let updated = FlightPlan(
+            id: plan.id,
+            title: plan.title,
+            createdAt: plan.createdAt,
+            modifiedAt: plan.modifiedAt,
+            parameters: plan.parameters,
+            waypoints: plan.waypoints,
+            legs: plan.legs,
+            identificationPoints: plan.identificationPoints,
+            altitudeChanges: plan.altitudeChanges,
+            frequencyChanges: plan.frequencyChanges,
+            vorDmeReferences: plan.vorDmeReferences,
+            operationalContext: plan.operationalContext,
+            plannedNavigation: .eligible(withoutFrequencies)
+        )
+
+        let presentation = FlightPlanReviewPresentation(
+            record: LibraryFlightPlan(flightPlan: updated, importedAt: .distantPast),
+            isLoaded: false
+        )
+
+        #expect(presentation.status == "Saved Flight Plan")
+        #expect(presentation.frequencySections.isEmpty)
     }
 
     @Test("Restart pins the loaded snapshot while update loads the saved revision")

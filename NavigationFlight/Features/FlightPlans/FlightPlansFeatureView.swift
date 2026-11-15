@@ -27,7 +27,7 @@ struct FlightPlansFeatureView: View {
                         loadedFlightPlan: loadedFlightPlan,
                         scrollPosition: $scrollPosition,
                         onSelect: { id in
-                            state.selectRecord(id: id)
+                            state.selectRecord(id: id, entry: .flightPlans)
                             navigationPath.append(id)
                         }
                     )
@@ -44,7 +44,7 @@ struct FlightPlansFeatureView: View {
                 }
             }
             .navigationDestination(for: UUID.self) { id in
-                if let record = state.records.first(where: { $0.id == id }) {
+                if let record = reviewRecord(id: id) {
                     FlightPlanInspectionView(
                         record: record,
                         loadedFlightPlan: loadedFlightPlan,
@@ -84,6 +84,7 @@ struct FlightPlansFeatureView: View {
                 hasLoadedLibrary = true
                 await installDebugSeedIfNeeded()
                 await refresh()
+                openSelectedRecordIfNeeded()
                 if let debugImportData {
                     await importFlightPlan(data: debugImportData)
                 }
@@ -108,7 +109,14 @@ struct FlightPlansFeatureView: View {
             .onChange(of: state.selectedRecordID) { _, selectedRecordID in
                 if selectedRecordID == nil {
                     navigationPath.removeAll()
+                } else {
+                    openSelectedRecordIfNeeded()
                 }
+            }
+            .onChange(of: navigationPath) { oldPath, newPath in
+                guard oldPath.isEmpty == false, newPath.isEmpty,
+                      state.consumeCockpitReviewReturn() else { return }
+                onIntent(.returnToCockpit)
             }
         }
     }
@@ -119,12 +127,33 @@ struct FlightPlansFeatureView: View {
         isFileImporterPresented = true
     }
 
+    private func openSelectedRecordIfNeeded() {
+        guard let selectedRecordID = state.selectedRecordID,
+              reviewRecord(id: selectedRecordID) != nil,
+              navigationPath.last != selectedRecordID else { return }
+        navigationPath = [selectedRecordID]
+    }
+
+    private func reviewRecord(id: UUID) -> LibraryFlightPlan? {
+        if let record = state.records.first(where: { $0.id == id }) {
+            return record
+        }
+        guard let loadedFlightPlan, loadedFlightPlan.id == id else { return nil }
+        return LibraryFlightPlan(
+            flightPlan: loadedFlightPlan,
+            importedAt: loadedFlightPlan.createdAt
+        )
+    }
+
     private func refresh() async {
         let requestID = UUID()
         state.beginLoading(requestID: requestID)
         do {
             let records = try await library.plans()
             state.completeLoading(requestID: requestID, records: records, error: nil)
+            if state.reviewEntry == .cockpit, let loadedFlightPlan {
+                state.selectRecord(id: loadedFlightPlan.id, entry: .cockpit)
+            }
         } catch let error as FlightPlanLibraryError {
             state.completeLoading(requestID: requestID, records: nil, error: error)
         } catch {
@@ -317,93 +346,16 @@ private struct FlightPlanInspectionView: View {
     }
 
     var body: some View {
-        List {
-            Section("Route") {
-                LabeledContent("Departure", value: record.flightPlan.waypoints.first?.name ?? "—")
-                LabeledContent("Destination", value: record.flightPlan.waypoints.last?.name ?? "—")
-            }
-
-            Section("Flight Plan") {
-                LabeledContent("Revision") {
-                    Text(record.flightPlan.modifiedAt, format: .dateTime)
-                }
-                LabeledContent("Imported") {
-                    Text(record.importedAt, format: .dateTime)
-                }
-            }
-
-            Section {
-                VStack(alignment: .leading, spacing: 10) {
-                    Button {
-                        perform(presentation.primaryAction.action)
-                    } label: {
-                        Text(presentation.primaryAction.label)
-                            .frame(maxWidth: .infinity, minHeight: 34)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .buttonBorderShape(.roundedRectangle(radius: 8))
-                    .disabled(isActionDisabled)
-                    .accessibilityIdentifier(identifier(for: presentation.primaryAction.action))
-
-                    if let consequence = presentation.primaryAction.consequence {
-                        Text(consequence)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("continue-to-cockpit-consequence")
-                    }
-                }
-
-                ForEach(presentation.updateActions, id: \.action) { presentedAction in
-                    Button {
-                        perform(presentedAction.action)
-                    } label: {
-                        Text(presentedAction.label)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .disabled(isActionDisabled)
-                    .accessibilityIdentifier(identifier(for: presentedAction.action))
-                }
-            }
-
-            if presentation.flightActions.isEmpty == false {
-                Section(presentation.flightActionsTitle) {
-                    ForEach(presentation.flightActions, id: \.action) { presentedAction in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Button(role: presentedAction.role == .destructive ? .destructive : nil) {
-                                perform(presentedAction.action)
-                            } label: {
-                                Text(presentedAction.label)
-                                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
-                            }
-                            .disabled(isActionDisabled)
-                            .accessibilityIdentifier(identifier(for: presentedAction.action))
-
-                            if let consequence = presentedAction.consequence {
-                                Text(consequence)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .accessibilityIdentifier("restart-flight-consequence")
-                            }
-                        }
-                    }
-                }
-            }
-
-            Section("Flight Plan Actions") {
-                Button("Remove from Flight Plans…", role: .destructive) {
-                    onRemove(record.id)
-                }
-                .disabled(isActionDisabled)
-                .accessibilityIdentifier("remove-flight-plan")
-
-                Text("Removes only the saved library copy.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .navigationTitle(record.flightPlan.title)
-        .navigationBarTitleDisplayMode(.inline)
-        .accessibilityIdentifier("flight-plan-inspection")
+        FlightPlanReviewView(
+            record: record,
+            loadedFlightPlan: loadedFlightPlan,
+            isActionDisabled: isActionDisabled,
+            primaryAction: presentation.primaryAction,
+            updateActions: presentation.updateActions,
+            flightActions: presentation.flightActions,
+            onAction: perform,
+            onRemove: { onRemove(record.id) }
+        )
         .alert(removalAlertTitle, isPresented: removalAlertPresented) {
             if let confirmationID = pendingRemoval?.id {
                 Button("Remove", role: .destructive) {
@@ -463,14 +415,6 @@ private struct FlightPlanInspectionView: View {
         }
     }
 
-    private func identifier(for action: FlightPlanInspectionPresentation.Action) -> String {
-        switch action {
-        case .loadInCockpit: "load-in-cockpit"
-        case .returnToCockpit: "return-to-cockpit"
-        case .loadUpdatedPlan: "load-updated-plan"
-        case .restartFlight: "restart-flight"
-        }
-    }
 }
 
 private struct FlightPlansEmptyView: View {

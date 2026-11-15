@@ -60,15 +60,28 @@ iteration 04, approved 2026-11-03:
 *The action hierarchy is represented by the current library review. This preview does
 not show how all the detailed planning capabilities should be integrated.*
 
-**Design needed:** A usable combined-state design has not been identified in the
-inspected references. That is a bounded design-evidence gap, not proof that no such
-design exists elsewhere. Search remaining approved coverage before authoring a replacement.
+**Approved v1 design:** Issue [#150](https://github.com/johnbenz13/NavigationFlight/issues/150)
+records the approved map-led G02 v1 coverage. The exact v1 nodes remain historical
+approval evidence.
 
-**Recommendation / decision:** Retain the discrepancy for reconciliation; prefer
-completing the canonical review while preserving planning details. Owner options are
-plan/design that integration, preserve two explicit review experiences and revise the
-contract, defer, or retire selected capabilities explicitly. Behavior choice and any
-new design-write scope remain unresolved. No capability is silently retired.
+**Proposed v2 direction:** [iPad Pro 11-inch portrait · loaded Flight Plan · node
+43:169](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=43-169)
+adds the missing read-only **Frequency Plan**, **Route** (Departure and Destination),
+and **Flight Plan** (Revision and Imported) information while retaining the map,
+whole-plan summary, Continue action, and separated protected Restart action. Route and
+Flight Plan reuse the labels and saved values already present in the library inspection.
+Frequency Plan retains the planned-data semantics from Flying a Leg and does not imply
+live or tuned receiver state.
+
+**Status / next gate:** The feature owner approved the v2 primary direction on
+2026-11-15. Complete coverage is now in review: Route Details expanded `46:2`,
+Frequency Plan expanded `46:118`, not-loaded `46:234`, panned-map `46:329`,
+confirmation `46:424`, unavailable `46:527`, failure `46:625`, loading `46:722`,
+iPad landscape `46:816`, iPhone portrait `46:885`, and flow, Dynamic Type,
+VoiceOver, missing-data and Reduce Motion rules `46:948`. The approved v1 coverage
+remains the implementation baseline until the feature owner explicitly approves this
+complete v2 set as the renewed paired baseline. No implementation is authorized by
+this proposal.
 
 ## G03 · Read complete operational labels and frequencies
 

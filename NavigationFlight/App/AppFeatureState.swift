@@ -50,6 +50,9 @@ struct AppFeatureState: Equatable, Sendable {
     }
 
     mutating func chooseFlightPlanFromCockpit() {
+        if let id = cockpit.flightPlan?.id {
+            flightPlans.selectRecord(id: id, entry: .cockpit)
+        }
         selectAppSection(.flightPlans)
     }
 
@@ -248,8 +251,14 @@ struct PendingFlightChange: Equatable, Sendable, Identifiable {
 }
 
 struct FlightPlansFeatureState: Equatable, Sendable {
+    enum ReviewEntry: Equatable, Sendable {
+        case flightPlans
+        case cockpit
+    }
+
     private(set) var records: [LibraryFlightPlan] = []
     private(set) var selectedRecordID: UUID?
+    private(set) var reviewEntry: ReviewEntry = .flightPlans
     private(set) var inFlightRequestID: UUID?
     private(set) var pendingImport: PendingFlightPlanImport?
     private(set) var pendingRemoval: PendingFlightPlanRemoval?
@@ -366,8 +375,15 @@ struct FlightPlansFeatureState: Equatable, Sendable {
         presentation = .flightChangeFailure
     }
 
-    mutating func selectRecord(id: UUID) {
+    mutating func selectRecord(id: UUID, entry: ReviewEntry = .flightPlans) {
         selectedRecordID = id
+        reviewEntry = entry
+    }
+
+    mutating func consumeCockpitReviewReturn() -> Bool {
+        guard reviewEntry == .cockpit else { return false }
+        reviewEntry = .flightPlans
+        return true
     }
 
     @discardableResult

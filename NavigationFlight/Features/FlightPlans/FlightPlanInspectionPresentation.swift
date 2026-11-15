@@ -50,7 +50,7 @@ struct FlightPlanInspectionPresentation: Equatable, Sendable {
         } else {
             primaryAction = PresentedAction(
                 action: .loadInCockpit,
-                label: "Load in Cockpit",
+                label: "Load into Cockpit",
                 consequence: nil,
                 role: .standard
             )

@@ -787,7 +787,7 @@ struct AppFeatureStateTests {
         #expect(presentation.distance == "\(expectedDistance.formatted(.number.precision(.fractionLength(1)))) NM")
         #expect(presentation.legs.map(\.id) == plan.legs.map(\.id))
         #expect(presentation.imported == importedAt)
-        #expect(presentation.frequencySections.flatMap(\.values).isEmpty == false)
+        #expect(presentation.frequencyPlan.entries.isEmpty == false)
         #expect(presentation.map != nil)
     }
 
@@ -826,7 +826,7 @@ struct AppFeatureStateTests {
         )
 
         #expect(presentation.status == "Saved Flight Plan")
-        #expect(presentation.frequencySections.isEmpty)
+        #expect(presentation.frequencyPlan.entries.isEmpty)
     }
 
     @Test("Restart pins the loaded snapshot while update loads the saved revision")

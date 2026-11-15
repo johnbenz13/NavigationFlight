@@ -4,16 +4,11 @@ struct FlightPlanReviewPresentation: Equatable {
     struct Leg: Identifiable, Equatable {
         let id: UUID
         let index: Int
+        let departure: String
+        let destination: String
         let route: String
         let distance: String
         let duration: String
-    }
-
-    struct FrequencySection: Identifiable, Equatable {
-        let phase: FlightPhase
-        let values: [String]
-
-        var id: FlightPhase { phase }
     }
 
     let title: String
@@ -26,7 +21,7 @@ struct FlightPlanReviewPresentation: Equatable {
     let distance: String
     let duration: String
     let legs: [Leg]
-    let frequencySections: [FrequencySection]
+    let frequencyPlan: CockpitFrequencyPlan
     let map: AviationMapPresentation?
 
     init(record: LibraryFlightPlan, isLoaded: Bool) {
@@ -54,19 +49,45 @@ struct FlightPlanReviewPresentation: Equatable {
             return Leg(
                 id: leg.id,
                 index: index + 1,
+                departure: leg.departure.name,
+                destination: leg.arrival.name,
                 route: "\(leg.departure.name) → \(leg.arrival.name)",
                 distance: values.map { "\($0.groundDistance.value.formatted(.number.precision(.fractionLength(1)))) NM" } ?? "Unavailable",
                 duration: values.map { Self.duration($0.noWind.durationSeconds) } ?? "Unavailable"
             )
         }
 
-        frequencySections = FlightPhase.allCases.compactMap { phase in
-            let values = (planned?.frequenciesByPhase[phase] ?? []).map { frequency in
-                let role = frequency.role.map { " · \($0)" } ?? ""
-                return "\(frequency.name)\(role) · \(frequency.frequency.value.formatted(.number.precision(.fractionLength(2...3)))) MHz"
-            }
-            return values.isEmpty ? nil : FrequencySection(phase: phase, values: values)
+        let frequencies = Dictionary(uniqueKeysWithValues: FlightPhase.allCases.map { phase in
+            (phase, (planned?.frequenciesByPhase[phase] ?? []).map {
+                CockpitPresentationData.Frequency(
+                    id: $0.id,
+                    phase: phase,
+                    role: $0.role,
+                    service: $0.name,
+                    frequencyMHz: $0.frequency.value,
+                    source: $0.source
+                )
+            })
+        })
+        let sourceReferences = Dictionary(uniqueKeysWithValues: plan.vorDmeReferences.map { ($0.id, $0) })
+        let waypointNames = Dictionary(uniqueKeysWithValues: plan.waypoints.map { ($0.id, $0.name) })
+        let references: [CockpitPresentationData.PlannedReference] = (planned?.vorDmeReferences ?? []).compactMap { resolved in
+            guard let source = sourceReferences[resolved.referenceID],
+                  let endpointName = waypointNames[source.waypointID] else { return nil }
+            return CockpitPresentationData.PlannedReference(
+                id: resolved.referenceID,
+                endpointName: endpointName,
+                station: source.navigationAid.identifier,
+                frequencyMHz: resolved.frequency.value,
+                magneticRadialFromDegrees: resolved.magneticRadialFrom.value,
+                slantRangeNauticalMiles: resolved.slantRange.value,
+                source: resolved.source
+            )
         }
+        frequencyPlan = CockpitPresentationAdapter().makeFrequencyPlan(
+            frequencies: frequencies,
+            references: references
+        )
 
         if let firstLeg = plan.legs.first, let lastLeg = plan.legs.last {
             let waypoints = plan.waypoints.map { waypoint in
@@ -130,6 +151,13 @@ struct FlightPlanReviewPresentation: Equatable {
 }
 
 struct FlightPlanReviewView: View {
+    private enum PresentedSheet: String, Identifiable {
+        case frequencyPlan
+        case routeDetails
+
+        var id: String { rawValue }
+    }
+
     let record: LibraryFlightPlan
     let loadedFlightPlan: FlightPlan?
     let isActionDisabled: Bool
@@ -139,8 +167,7 @@ struct FlightPlanReviewView: View {
     let onAction: (FlightPlanInspectionPresentation.Action) -> Void
     let onRemove: () -> Void
 
-    @State private var isRouteExpanded = false
-    @State private var isFrequencyExpanded = false
+    @State private var presentedSheet: PresentedSheet?
     @State private var mapFocusRequest = AviationMapFocusRequest(mode: .overview)
     @State private var preservedMapCamera: AviationMapCameraState?
     @State private var isMapCameraUserControlled = false
@@ -174,6 +201,20 @@ struct FlightPlanReviewView: View {
         .background(Color(.systemBackground))
         .navigationTitle(presentation.title)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .frequencyPlan:
+                CockpitFrequencyPlanView(plan: presentation.frequencyPlan) {
+                    presentedSheet = nil
+                }
+                .presentationDetents([.large])
+            case .routeDetails:
+                FlightPlanRouteDetailsView(presentation: presentation) {
+                    presentedSheet = nil
+                }
+                .presentationDetents([.large])
+            }
+        }
         .accessibilityIdentifier("flight-plan-inspection")
     }
 
@@ -269,13 +310,6 @@ struct FlightPlanReviewView: View {
 
                 informationCard
 
-                if isFrequencyExpanded {
-                    frequencyDetails
-                }
-                if isRouteExpanded {
-                    routeDetails
-                }
-
                 actionSection
                 Divider()
                 Button("Remove from Flight Plans…", role: .destructive, action: onRemove)
@@ -308,17 +342,16 @@ struct FlightPlanReviewView: View {
         }
         .padding(16)
         .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 14))
-        .accessibilityIdentifier("flight-plan-information")
     }
 
     private var frequencySummary: some View {
         Button {
-            isFrequencyExpanded.toggle()
+            presentedSheet = .frequencyPlan
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Label("Frequency Plan", systemImage: isFrequencyExpanded ? "chevron.down" : "chevron.right")
+                Label("Frequency Plan", systemImage: "chevron.right")
                     .font(.headline)
-                Text(presentation.frequencySections.isEmpty ? "No planned frequencies" : "\(presentation.frequencySections.reduce(0) { $0 + $1.values.count }) planned entries · not tuned")
+                Text(presentation.frequencyPlan.entries.isEmpty ? "No planned frequencies" : "Complete imported sequence · not tuned")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -333,9 +366,9 @@ struct FlightPlanReviewView: View {
     private var routeSummary: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button {
-                isRouteExpanded.toggle()
+                presentedSheet = .routeDetails
             } label: {
-                Label("Route", systemImage: isRouteExpanded ? "chevron.down" : "chevron.right")
+                Label("Route", systemImage: "chevron.right")
                     .font(.headline)
             }
             .buttonStyle(.plain)
@@ -353,53 +386,6 @@ struct FlightPlanReviewView: View {
             LabeledContent("Imported") { Text(presentation.imported, format: .dateTime) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var frequencyDetails: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Planned Frequency Sequence").font(.headline)
-            if presentation.frequencySections.isEmpty {
-                Text("No optional frequency information was imported.")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(presentation.frequencySections) { section in
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(phaseTitle(section.phase))
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                        ForEach(section.values, id: \.self) { Text($0).font(.subheadline) }
-                    }
-                }
-            }
-            Text("Read-only imported planning information. This does not indicate a tuned or live receiver.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 14))
-        .accessibilityIdentifier("flight-plan-frequency-details")
-    }
-
-    private var routeDetails: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Route Details").font(.headline)
-            ForEach(presentation.legs) { leg in
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(leg.index)").foregroundStyle(.secondary).frame(width: 24, alignment: .leading)
-                    Text(leg.route).frame(maxWidth: .infinity, alignment: .leading)
-                    Text(leg.distance).monospacedDigit()
-                    Text(leg.duration).monospacedDigit().frame(width: 58, alignment: .trailing)
-                }
-                .font(.subheadline)
-                .accessibilityElement(children: .combine)
-            }
-            Text("Read-only saved route order.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 14))
-        .accessibilityIdentifier("flight-plan-route-details")
     }
 
     private var actionSection: some View {
@@ -447,10 +433,6 @@ struct FlightPlanReviewView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func phaseTitle(_ phase: FlightPhase) -> String {
-        switch phase { case .departure: "Departure"; case .enRoute: "En route"; case .arrival: "Arrival" }
-    }
-
     private func identifier(for action: FlightPlanInspectionPresentation.Action) -> String {
         switch action {
         case .loadInCockpit: "load-in-cockpit"
@@ -458,5 +440,108 @@ struct FlightPlanReviewView: View {
         case .loadUpdatedPlan: "load-updated-plan"
         case .restartFlight: "restart-flight"
         }
+    }
+}
+
+private struct FlightPlanRouteDetailsView: View {
+    let presentation: FlightPlanReviewPresentation
+    let onClose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider()
+                .padding(.top, 10)
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    endpoints
+                    ForEach(presentation.legs) { leg in
+                        legCard(leg)
+                    }
+                    Text("\(presentation.distance) total · \(presentation.duration) no-wind ETE")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 16)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 18)
+        .background(Color(.systemBackground))
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Route details")
+                    .font(.title2.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Button("Close", action: onClose)
+                    .font(.subheadline.weight(.semibold))
+                    .accessibilityIdentifier("close-route-details")
+            }
+            Text("Read-only saved route order")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var endpoints: some View {
+        HStack {
+            endpoint("DEPARTURE", presentation.departure, alignment: .leading)
+            Spacer()
+            Image(systemName: "arrow.right")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            Spacer()
+            endpoint("DESTINATION", presentation.destination, alignment: .trailing)
+        }
+        .padding(13)
+        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 11))
+        .accessibilityElement(children: .combine)
+    }
+
+    private func endpoint(_ label: LocalizedStringKey, _ value: String, alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 3) {
+            Text(label)
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.headline)
+        }
+    }
+
+    private func legCard(_ leg: FlightPlanReviewPresentation.Leg) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Text("\(leg.index)")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color.accentColor, in: .circle)
+                Text(leg.departure)
+                Image(systemName: "arrow.right")
+                    .accessibilityHidden(true)
+                Text(leg.destination)
+            }
+            .font(.headline)
+
+            HStack {
+                Text(leg.distance)
+                    .fontWeight(.semibold)
+                Spacer()
+                Text("\(leg.duration) · No wind")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.subheadline)
+            .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+        .padding(13)
+        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 11))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("route-detail-leg-\(leg.index)")
     }
 }

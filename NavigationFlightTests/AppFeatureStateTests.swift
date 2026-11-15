@@ -66,18 +66,25 @@ struct AppFeatureStateTests {
         #expect(state.flightPlans == originalFlightPlans)
     }
 
-    @Test("Section selection preserves active timing exactly")
+    @Test("Section selection preserves active timing and dismisses transient Cockpit UI")
     func selectionPreservesActiveTiming() throws {
         var cockpit = CockpitFeatureState()
         try cockpit.accept(try flightPlan())
         try cockpit.startLeg(at: Date(timeIntervalSince1970: 1_000))
         var state = AppFeatureState(selectedAppSection: .cockpit, cockpit: cockpit)
-        let originalCockpit = state.cockpit
+        let originalFlight = state.cockpit.flight
+        let originalFlightPlan = state.cockpit.flightPlan
+        let originalMode = state.cockpit.mode
+        let originalSelectedLegIndex = state.cockpit.selectedLegIndex
 
         state.selectAppSection(.flightPlans)
 
-        #expect(state.cockpit == originalCockpit)
+        #expect(state.cockpit.flight == originalFlight)
+        #expect(state.cockpit.flightPlan == originalFlightPlan)
+        #expect(state.cockpit.mode == originalMode)
+        #expect(state.cockpit.selectedLegIndex == originalSelectedLegIndex)
         #expect(state.cockpit.flight?.legStartedAt == Date(timeIntervalSince1970: 1_000))
+        #expect(state.cockpit.activeLegStartChecklist?.presentationState == .collapsed)
     }
 
     @Test("Choosing a Flight Plan from empty Cockpit changes only app selection")
@@ -244,6 +251,9 @@ struct AppFeatureStateTests {
         let selection = state.selectedAppSection
         let pendingID = try #require(state.pendingFlightChange?.id)
 
+        state.selectAppSection(.cockpit)
+        #expect(state.selectedAppSection == .settings)
+
         let staleCancellation = state.cancelPendingFlightChange(id: UUID())
         let cancelled = state.cancelPendingFlightChange(id: pendingID)
         #expect(staleCancellation == false)
@@ -251,6 +261,9 @@ struct AppFeatureStateTests {
         #expect(state.pendingFlightChange == nil)
         #expect(state.cockpit == protectedState)
         #expect(state.selectedAppSection == selection)
+
+        state.selectAppSection(.cockpit)
+        #expect(state.selectedAppSection == .cockpit)
     }
 
     @Test("Duplicate Flight change requests cannot replace the pending decision")

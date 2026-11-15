@@ -35,7 +35,18 @@ struct AppFeatureState: Equatable, Sendable {
     }
 
     mutating func selectAppSection(_ section: AppSection) {
+        guard section != selectedAppSection, canSwitchAppSection else { return }
+        if selectedAppSection == .cockpit {
+            cockpit.prepareForSectionDeparture()
+        }
         selectedAppSection = section
+    }
+
+    var canSwitchAppSection: Bool {
+        pendingFlightChange == nil
+            && flightPlans.pendingImport == nil
+            && flightPlans.pendingRemoval == nil
+            && flights.pendingDeletionID == nil
     }
 
     mutating func chooseFlightPlanFromCockpit() {

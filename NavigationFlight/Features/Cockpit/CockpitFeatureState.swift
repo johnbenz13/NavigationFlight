@@ -466,6 +466,16 @@ struct CockpitFeatureState: Equatable, Sendable {
         flight?.cancelPilotHeadingEditing()
     }
 
+    mutating func prepareForSectionDeparture() {
+        let etaTargetKeys = flight.map { Array($0.pilotETAStatesByTargetKey.keys) } ?? []
+        for targetKey in etaTargetKeys {
+            flight?.cancelPilotETAEditing(targetKey: targetKey)
+            flight?.hidePilotETACheck(targetKey: targetKey)
+        }
+        flight?.cancelPilotHeadingEditing()
+        collapseLegStartChecklist()
+    }
+
     private func currentLegElapsedSeconds(at timestamp: Date = .now) -> Int {
         flight?.elapsedTime(at: timestamp).map(IdentificationPointTimingCalculator.displaySeconds) ?? 0
     }

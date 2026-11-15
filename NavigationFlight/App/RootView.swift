@@ -259,7 +259,7 @@ struct RootView: View {
 
     private var appShell: some View {
         TabView(selection: appSectionSelection) {
-            Tab("Cockpit", systemImage: "airplane", value: AppFeatureState.AppSection.cockpit) {
+            Tab(value: AppFeatureState.AppSection.cockpit) {
                 CockpitFeatureView(
                     state: Binding(
                         get: { appState.cockpit },
@@ -273,6 +273,8 @@ struct RootView: View {
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
+            } label: {
+                cockpitTabLabel
             }
 
             Tab("Flight Plans", systemImage: "folder", value: AppFeatureState.AppSection.flightPlans) {
@@ -586,6 +588,33 @@ struct RootView: View {
             get: { appState.selectedAppSection },
             set: { appState.selectAppSection($0) }
         )
+    }
+
+    private var cockpitTabLabel: some View {
+        let indicator = CockpitActivityIndicator(
+            isNavigationActive: appState.cockpit.flight?.legState == .active,
+            recordingStatus: flightRecordingCoordinator.status
+        )
+        return HStack(spacing: 5) {
+            Label("Cockpit", systemImage: "airplane")
+            switch indicator {
+            case .none:
+                EmptyView()
+            case .active:
+                Circle()
+                    .fill(Color.secondary)
+                    .frame(width: 10, height: 10)
+                    .accessibilityHidden(true)
+            case .warning:
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(Color.orange)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(indicator.accessibilityLabel))
+        .accessibilityIdentifier("cockpit-tab")
     }
 
     private func synchronizeIdleTimer() {

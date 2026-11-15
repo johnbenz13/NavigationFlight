@@ -17,6 +17,37 @@ nonisolated enum RecordingStatus: Equatable, Sendable {
     case closedIncomplete
 }
 
+nonisolated enum CockpitActivityIndicator: Equatable, Sendable {
+    case none
+    case active
+    case warning
+
+    init(isNavigationActive: Bool, recordingStatus: RecordingStatus) {
+        switch recordingStatus {
+        case .partialRecording, .gpsGap, .recordingGPSUnavailable,
+             .recordingDegraded, .recordingLowStorage, .physicalPhaseCorrected:
+            self = .warning
+        case .navigationCompleteRecordingContinues, .landedAwaitingStop:
+            self = .active
+        case .recording, .gpsResumed:
+            self = isNavigationActive ? .active : .none
+        case .ready, .prepared, .closedComplete, .closedIncomplete:
+            self = .none
+        }
+    }
+
+    var accessibilityLabel: LocalizedStringResource {
+        switch self {
+        case .none:
+            "Cockpit"
+        case .active:
+            "Cockpit, active flight continues"
+        case .warning:
+            "Cockpit, recording warning"
+        }
+    }
+}
+
 nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
     enum Tone: Equatable, Sendable {
         case neutral

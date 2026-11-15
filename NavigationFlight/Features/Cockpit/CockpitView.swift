@@ -181,6 +181,7 @@ struct CockpitView: View {
     let checklistState: CockpitFeatureState.LegStartChecklistState?
     let flight: Flight
     let areDriftLinesVisible: Bool
+    var isSectionSelected = true
     var operationalCues: CockpitOperationalCueState? = nil
     var emphasizedCueEvents: Set<CockpitOperationalCueState.DueEvent> = []
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
@@ -246,6 +247,11 @@ struct CockpitView: View {
             }
         }
         .background(Color(.systemBackground))
+        .onChange(of: isSectionSelected) { _, selected in
+            if !selected {
+                dismissTransientPresentations()
+            }
+        }
         .overlay {
             ZStack {
                 if let headingState = activeHeadingState, headingState.isEditing {
@@ -431,6 +437,21 @@ struct CockpitView: View {
             positionCheckRestoration = nil
             onPositionCheckMapRestored(command.id)
         }
+    }
+
+    private func dismissTransientPresentations() {
+        showsChartsUnavailable = false
+        showsHeadingCommitConfirmation = false
+        showsCompactFrequencies = false
+        isRecordingStatusPresented = false
+        isCompactChecklistPresented = false
+        identificationPointReportError = nil
+        positionCheckRestoration = nil
+        cockpitPresentationState.setMapToolsPresented(false)
+        cockpitPresentationState.setFrequencyPlanPresented(false)
+        cockpitPresentationState.setChecklistPresented(false)
+        cockpitPresentationState.setPreviousLegPresented(false)
+        cockpitPresentationState.setNextLegPresented(false)
     }
 
     @ViewBuilder

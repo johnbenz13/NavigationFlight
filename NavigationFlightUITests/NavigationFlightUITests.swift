@@ -897,7 +897,7 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["start-leg"].tap()
         let timer = app.descendants(matching: .any)["cockpit-time"]
         XCTAssertTrue(timer.waitForExistence(timeout: 2))
-        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
 
         let flightPlansTab = tab(named: "Flight Plans", in: app)
         flightPlansTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
@@ -910,7 +910,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(cockpitTab.waitForExistence(timeout: 2))
         cockpitTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(timer.waitForExistence(timeout: 2))
-        XCTAssertTrue(timer.label.contains("Running from pilot start"))
+        XCTAssertTrue(timer.label.contains("Elapsed from leg start"))
         XCTAssertTrue(app.buttons["waypoint-identified"].exists)
         XCTAssertTrue(app.buttons["reached-now"].isEnabled)
 
@@ -1957,6 +1957,10 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     private func tab(named label: String, in app: XCUIApplication) -> XCUIElement {
+        if label == "Cockpit" {
+            let matches = app.buttons.matching(identifier: "cockpit-tab")
+            return matches.element(boundBy: max(matches.count - 1, 0))
+        }
         let matches = app.buttons.matching(NSPredicate(format: "label == %@", label))
         return matches.element(boundBy: max(matches.count - 1, 0))
     }

@@ -197,6 +197,7 @@ struct CockpitFeatureView: View {
                         checklistState: state.activeLegStartChecklist,
                         flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
+                        isSectionSelected: isSectionSelected,
                         operationalCues: operationalCues,
                         emphasizedCueEvents: emphasizedCueEvents,
                         pendingReachUndo: state.pendingReachUndo,

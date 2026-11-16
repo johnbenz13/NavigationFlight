@@ -126,7 +126,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             self.flightPlan = flightPlan
             flightPlanSourceData = sourceData
             selectedLegIndex = 0
-            mode = plannedNavigation.defaultMode
+            mode = .noWind
             flight = Flight(
                 id: flightID,
                 flightPlanID: flightPlan.id,
@@ -151,7 +151,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         self.flightPlan = flightPlan
         flightPlanSourceData = sourceData
         selectedLegIndex = flight.activeLegIndex
-        mode = flight.executionMode
+        mode = .noWind
         self.flight = flight
         legStartChecklists = [:]
         areDriftLinesVisible = true
@@ -165,23 +165,15 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func selectPreviousLeg() {
         guard canSelectPreviousLeg else { return }
         let candidate = selectedLegIndex - 1
-        guard (try? flight?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        guard (try? flight?.selectReadyLeg(index: candidate, mode: .noWind)) != nil else { return }
         selectedLegIndex = candidate
     }
 
     mutating func selectNextLeg() {
         guard canSelectNextLeg else { return }
         let candidate = selectedLegIndex + 1
-        guard (try? flight?.selectReadyLeg(index: candidate, mode: mode)) != nil else { return }
+        guard (try? flight?.selectReadyLeg(index: candidate, mode: .noWind)) != nil else { return }
         selectedLegIndex = candidate
-    }
-
-    mutating func selectMode(_ newMode: NavigationMode) {
-        guard flight?.legState == .ready,
-              let flightPlan, case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else { return }
-        if newMode == .wind && !plannedNavigation.legs.allSatisfy({ $0.withWind != nil }) { return }
-        mode = newMode
-        try? flight?.selectReadyLeg(index: selectedLegIndex, mode: mode)
     }
 
     mutating func startLeg(at timestamp: Date = .now) throws {

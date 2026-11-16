@@ -339,7 +339,6 @@ struct FlightRecoveryCoordinatorTests {
     func replayRestoresCommittedNavigationFacts() async throws {
         let sourceData = try fixtureData()
         let plan = try FPLNavDecoder().decode(sourceData)
-        let planned = try #require(plan.plannedNavigation.plannedNavigation)
         let startedAt = Date(timeIntervalSince1970: 2_000)
         let finalLegIndex = plan.legs.index(before: plan.legs.endIndex)
         let flight = Flight(
@@ -347,7 +346,7 @@ struct FlightRecoveryCoordinatorTests {
             flightPlanID: plan.id,
             legIDs: plan.legs.map(\.id),
             activeLegIndex: finalLegIndex,
-            executionMode: planned.defaultMode
+            executionMode: .noWind
         )
         let snapshot = RecordedFlightPlanSnapshot(
             id: plan.id,

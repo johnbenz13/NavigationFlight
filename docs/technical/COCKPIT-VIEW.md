@@ -182,7 +182,7 @@ SwiftUI reevaluates CockpitFeatureView and CockpitView
 | Select ETA timing target | Toggles selection, clears identification-point selection, collapses the checklist, and focuses the map | `onOpenPilotETA(target)` | `state.openPilotETAEditor(target:)` |
 | Adjust, commit, edit, show check, or hide check in a map callout | Mostly forwards directly; committing an identification-point ETA returns selection to that point | Corresponding typed ETA callback | Corresponding `CockpitFeatureState` ETA command |
 | Collapse, reopen, or note checklist | On narrow maps, reopening also closes the previous-leg drawer | Corresponding checklist callback | Corresponding checklist command |
-| Plan Inspection | None | `onShowPlanInspection()` | Sets `isCockpitPresented = false` in `CockpitFeatureView` |
+| Inspect flight plan | None | `onShowPlanInspection()` | Sends `chooseFlightPlan`; the app shell opens the canonical review in Flight Plans |
 | Change map focus, drag a callout, open/close a drawer, or open Charts | Mutates only local `@State` | None | No feature-state change |
 
 There is no `@Binding` to `Flight`. Operational mutations remain behind `CockpitFeatureState` commands, so the parent remains the single source of truth.

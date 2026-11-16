@@ -156,17 +156,15 @@ The equality is an implemented integration invariant rather than a single struct
 `selectPreviousLeg()` and `selectNextLeg()` first evaluate their corresponding availability query. For an available move, each method:
 
 1. computes the adjacent candidate index;
-2. asks the optional session to select that candidate using the current feature mode;
+2. asks the optional session to select that candidate using no-wind mode;
 3. ignores any thrown transition error; and
 4. assigns `selectedLegIndex` only when the optional session call completed successfully.
 
 The session call validates readiness, index bounds, and that the target leg has not already started. Under the feature's availability guards, production browsing occurs only with an existing ready session and empty timing history.
 
-### Mode selection
+### Operational mode
 
-`selectMode(_:)` operates only when a session is ready and the accepted flight has eligible execution data. Wind mode is ignored unless every execution leg contains a `withWind` value. An accepted mode is stored in `mode`, then passed to `flight.selectReadyLeg` together with the current selected index. The session updates its `executionMode` without changing its active index.
-
-The mode is whole-plan selection state: moving between browsed legs does not reset it. Once the session is active or completed, the mode command is ignored by its ready-state guard.
+The current operational mode is always `.noWind`. Accepting a plan ignores its imported default mode, while preserving imported wind solutions in the decoded source model for compatibility. Leg browsing synchronizes the selected index and `.noWind` into the ready `Flight`; there is no user-facing or feature-state command for selecting wind mode.
 
 ## Flight-execution coordination
 
@@ -262,10 +260,9 @@ Historical checklist entries remain in `legStartChecklists` across leg progressi
 
 | Operation | Successful effect | Failure or unavailable-state behavior |
 | --- | --- | --- |
-| `accept(_:)` | Replaces plan, selection, mode, session, and checklist history | Throws `CockpitPlanError`; preserves prior state |
+| `accept(_:)` | Replaces plan, selection, no-wind session, and checklist history | Throws `CockpitPlanError`; preserves prior state |
 | `selectPreviousLeg()` | Selects the preceding pre-flight leg in feature and session | No-op when unavailable or session selection fails |
 | `selectNextLeg()` | Selects the succeeding pre-flight leg in feature and session | No-op when unavailable or session selection fails |
-| `selectMode(_:)` | Stores supported ready-state mode and synchronizes session | No-op outside ready state or for unsupported wind mode; session error is ignored |
 | `startLeg(at:)` | Starts session timing and creates active-leg checklist | Propagates session error; optional session absence performs no transition |
 | `identifyDestination(at:)` | Records identification and hides active checklist for phase | Propagates session error; optional session absence performs no session transition |
 | `reachCurrentWaypoint(at:)` | Applies session progression, checklist hiding, index synchronization, and possible successor checklist | Propagates session error before feature side effects |

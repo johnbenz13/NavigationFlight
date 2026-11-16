@@ -208,15 +208,13 @@ struct AppFeatureStateTests {
         #expect(decision == .loaded)
     }
 
-    @Test("Ready leg and mode selection are not protected")
-    func readySelectionIsNotProtected() throws {
+    @Test("Ready no-wind state is not protected")
+    func readyNoWindStateIsNotProtected() throws {
         let plan = try flightPlan()
         var cockpit = CockpitFeatureState()
         try cockpit.accept(plan)
-        cockpit.selectNextLeg()
-        cockpit.selectMode(.wind)
-
-        #expect(cockpit.selectedLegIndex == 1)
+        #expect(cockpit.mode == .noWind)
+        #expect(cockpit.flight?.executionMode == .noWind)
         #expect(cockpit.hasProtectedPilotWork == false)
     }
 

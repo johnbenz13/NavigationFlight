@@ -143,17 +143,9 @@ CockpitFeatureState command
 SwiftUI reevaluates from the new snapshot
 ```
 
-### Plan inspection actions
+### Flight Plan review routing
 
-| User intent from `PlanInspectionView` | Container closure | Result |
-| --- | --- | --- |
-| Open another plan | `isImporterPresented = true` | Presents the file importer |
-| Open cockpit | `isCockpitPresented = true` | Selects the cockpit branch |
-| Previous leg | `state.selectPreviousLeg()` | Requests synchronized pre-flight selection |
-| Next leg | `state.selectNextLeg()` | Requests synchronized pre-flight selection |
-| Select calculation mode | `state.selectMode($0)` | Requests whole-plan mode selection |
-
-The view also passes `state.canSelectPreviousLeg` and `state.canSelectNextLeg`, allowing `PlanInspectionView` to disable unavailable controls without duplicating feature rules.
+`CockpitFeatureView` no longer owns a plan-inspection branch or file importer. A loaded Flight renders Cockpit directly. Map Tools sends `chooseFlightPlan` to the app shell, which selects Flight Plans and opens the loaded plan in the canonical `FlightPlanReviewView`.
 
 ### Cockpit actions
 

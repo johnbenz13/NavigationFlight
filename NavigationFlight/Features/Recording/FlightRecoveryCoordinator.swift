@@ -325,7 +325,7 @@ final class FlightRecoveryCoordinator {
     ) throws -> Flight {
         guard snapshot.recording.flightPlanSnapshot.id == flightPlan.id,
               snapshot.recording.flightPlanSnapshot.legIDs == flightPlan.legs.map(\.id),
-              let plannedNavigation = flightPlan.plannedNavigation.plannedNavigation else {
+              flightPlan.plannedNavigation.plannedNavigation != nil else {
             throw FlightRecoveryError.invalidFlightPlanSnapshot
         }
         let undoneEventIDs = Set(snapshot.events.compactMap { event -> UUID? in
@@ -344,7 +344,7 @@ final class FlightRecoveryCoordinator {
             flightPlanID: flightPlan.id,
             legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: initialIndex,
-            executionMode: plannedNavigation.defaultMode
+            executionMode: .noWind
         )
         do {
             for event in snapshot.events where !undoneEventIDs.contains(event.id) {

@@ -1220,20 +1220,20 @@ struct NavigationFlightTests {
         #expect(wind.direction == .heading(355))
     }
 
-    @Test func cockpitFeatureStateLoadsAtomicallyAndPreservesModeWhileBrowsing() throws {
+    @Test func cockpitFeatureStateLoadsWindPlanUsingNoWindAndPreservesLegWhileBrowsing() throws {
         let flightPlan = try twoLegFlight()
         var state = CockpitFeatureState()
         try state.accept(flightPlan)
         #expect(state.selectedLegIndex == 0)
-        #expect(state.mode == .wind)
+        #expect(state.mode == .noWind)
+        #expect(state.flight?.executionMode == .noWind)
 
-        state.selectMode(.noWind)
         state.selectNextLeg()
         #expect(state.selectedLegIndex == 1)
         #expect(state.mode == .noWind)
-        state.selectPreviousLeg()
-        #expect(state.selectedLegIndex == 0)
-        #expect(state.mode == .noWind)
+        try state.startLeg(at: Date(timeIntervalSince1970: 1_000))
+        #expect(state.flight?.activeLegIndex == 1)
+        #expect(state.flight?.executionMode == .noWind)
 
         let preserved = state
         state.cancelImport()

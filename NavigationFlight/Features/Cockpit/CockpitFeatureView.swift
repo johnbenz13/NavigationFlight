@@ -1,17 +1,10 @@
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
-
-extension UTType {
-    static let fplnav = UTType(filenameExtension: "fplnav") ?? .data
-}
 
 struct CockpitFeatureView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @Binding private var state: CockpitFeatureState
-    @State private var isImporterPresented = false
-    @State private var isCockpitPresented = false
     @State private var presentedError: PresentedError?
     @State private var locationAvailability: LocationAvailability = .acquiring
     @State private var positionCheckCoordinator: PositionCheckCoordinator
@@ -19,9 +12,7 @@ struct CockpitFeatureView: View {
     @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
     @State private var progressionNotice: CockpitProgressionNotice?
-    private let loader = FPLNavFileLoader()
     private let adapter = CockpitPresentationAdapter()
-    private let presentationRequestID: UUID?
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
     private let recordingCoordinator: FlightRecordingCoordinator
@@ -30,7 +21,6 @@ struct CockpitFeatureView: View {
 
     init(
         state: Binding<CockpitFeatureState>,
-        presentationRequestID: UUID? = nil,
         locationService: AircraftLocationService,
         positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
@@ -39,7 +29,6 @@ struct CockpitFeatureView: View {
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         _state = state
-        self.presentationRequestID = presentationRequestID
         self.locationService = locationService
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
@@ -50,11 +39,6 @@ struct CockpitFeatureView: View {
 
     var body: some View {
         content
-            .onChange(of: presentationRequestID, initial: true) { _, newValue in
-                if newValue != nil {
-                    isCockpitPresented = true
-                }
-            }
             .onChange(of: positionCheckCoordinator.state) { previous, current in
                 let ended = (previous.activeSession != nil || previous.acquisitionRequest != nil)
                     && current.activeSession == nil
@@ -96,20 +80,6 @@ struct CockpitFeatureView: View {
                     endPositionCheck(.cockpitDismissed)
                 }
             }
-            .onChange(of: isCockpitPresented) { _, presented in
-                if !presented {
-                    endPositionCheck(.cockpitDismissed)
-                }
-            }
-            .fileImporter(
-                isPresented: $isImporterPresented,
-                allowedContentTypes: [.fplnav],
-                allowsMultipleSelection: false
-            ) { result in
-                handleImport(result)
-            } onCancellation: {
-                state.cancelImport()
-            }
             .alert(item: $presentedError) { error in
                 Alert(
                     title: Text(error.title),
@@ -150,8 +120,7 @@ struct CockpitFeatureView: View {
                legIndex: state.selectedLegIndex,
                mode: state.mode
            ) {
-            if isCockpitPresented {
-                if let mapPresentation = try? AviationMapPresentationFactory().makePresentation(
+            if let mapPresentation = try? AviationMapPresentationFactory().makePresentation(
                     flightPlan: flightPlan,
                     flight: flight
                 ) {
@@ -257,19 +226,6 @@ struct CockpitFeatureView: View {
                             UIAccessibility.post(notification: .announcement, argument: announcement)
                         }
                     }
-                }
-            } else {
-                PlanInspectionView(
-                    data: presentation,
-                    canSelectPreviousLeg: state.canSelectPreviousLeg,
-                    canSelectNextLeg: state.canSelectNextLeg,
-                    onOpenPlan: { isImporterPresented = true },
-                    onOpenCockpit: { isCockpitPresented = true },
-                    onRestartFlight: { onIntent(.restartFlight) },
-                    onSelectPreviousLeg: { state.selectPreviousLeg() },
-                    onSelectNextLeg: { state.selectNextLeg() },
-                    onSelectMode: { state.selectMode($0) }
-                )
             }
         } else {
             ContentUnavailableView {
@@ -287,22 +243,6 @@ struct CockpitFeatureView: View {
                 .accessibilityIdentifier("choose-flight-plan")
             }
             .accessibilityIdentifier("empty-cockpit")
-        }
-    }
-
-    private func handleImport(_ result: Result<[URL], any Error>) {
-        do {
-            guard let url = try result.get().first else { return }
-            let candidate = try loader.load(url)
-            try state.accept(candidate)
-            isCockpitPresented = false
-        } catch let error as CockpitPlanError {
-            presentedError = .init(title: "Couldn’t Open Plan", message: error.localizedDescription)
-        } catch {
-            presentedError = .init(
-                title: "Couldn’t Open Plan",
-                message: "The selected file couldn’t be opened. \(error.localizedDescription)"
-            )
         }
     }
 
@@ -628,7 +568,7 @@ struct CockpitFeatureView: View {
     private var shouldMonitorLocation: Bool {
         PositionCheckMonitoringScope.shouldMonitor(
             sectionSelected: isSectionSelected,
-            cockpitPresented: isCockpitPresented,
+            cockpitPresented: true,
             hasFlight: state.flight != nil,
             sceneActive: scenePhase == .active
         )

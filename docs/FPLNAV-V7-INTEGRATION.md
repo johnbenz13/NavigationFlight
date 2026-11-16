@@ -66,14 +66,14 @@ compatibility evidence. No claim of a published V8 package is made here.
 Navigation Flight now opens `.fplnav` files with the platform document picker,
 balances security-scoped access, decodes the complete candidate before replacing
 the current plan, and admits execution-eligible V7/V8 plans. Cancellation and
-failure preserve the current plan, selected leg, and calculation mode. Legacy V5
+failure preserve the current plan and selected leg. Legacy V5
 plans explain that they need resaving in Navigation Editor; empty V7 plans explain
 that route legs are required.
 
-Plan Inspection is the preflight surface for browsing imported immutable execution
-data and selecting the whole-plan wind/no-wind mode. Cockpit is a separate adaptive
-portrait/landscape presentation of that same selected resolved leg and mode. A
-domain-to-presentation adapter selects saved timing, heading and annotation offsets,
+Flight Plans owns the canonical map-led review of imported immutable execution data.
+Cockpit is the adaptive portrait/landscape operational presentation and currently
+uses saved no-wind values exclusively. Imported wind solutions remain decodable for
+compatibility but are not selectable or operational. A domain-to-presentation adapter selects saved timing, heading and annotation offsets,
 sums saved durations for cumulative time, associates accepted VOR/DME references
 with leg endpoints, and retains final frequency phase ordering. The schematic scales
 saved WGS84 positions for display only. Fictional examples remain preview-only.

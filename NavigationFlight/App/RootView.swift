@@ -178,7 +178,7 @@ struct RootView: View {
             } else if let encoded = environment["NAVIGATION_FLIGHT_UI_TEST_PLAN"],
                       let data = Data(base64Encoded: encoded),
                       let plan = try? FPLNavDecoder().decode(data),
-                      let mode = plan.plannedNavigation.plannedNavigation?.defaultMode {
+                      plan.plannedNavigation.plannedNavigation != nil {
                 let count = recoveryState == "multiple" ? 2 : 1
                 packageResults = (0..<count).compactMap { index in
                     let startedAt = Date.now.addingTimeInterval(TimeInterval(-60 - (index * 60)))
@@ -186,7 +186,7 @@ struct RootView: View {
                         flightPlanID: plan.id,
                         legIDs: plan.legs.map(\.id),
                         activeLegIndex: 0,
-                        executionMode: mode
+                        executionMode: .noWind
                     )
                     guard let promotion = try? FlightRecording.promoteForStartLeg(
                         id: UUID(),
@@ -265,7 +265,6 @@ struct RootView: View {
                         get: { appState.cockpit },
                         set: { appState.updateCockpit($0) }
                     ),
-                    presentationRequestID: appState.cockpitPresentationRequestID,
                     locationService: locationService,
                     positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,

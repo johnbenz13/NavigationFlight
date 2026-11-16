@@ -51,8 +51,8 @@ struct CockpitConsoleCuePresentation: Equatable, Sendable {
 extension CockpitOperationalCueState.FrequencyCue {
     var statusLabel: String? {
         switch status {
-        case .current: "CURRENT"
-        case .next: "NEXT"
+        case .current: "PLANNED NOW"
+        case .next: "PLANNED NEXT"
         case .other: nil
         }
     }

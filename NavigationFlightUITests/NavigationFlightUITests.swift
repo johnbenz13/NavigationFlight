@@ -1409,6 +1409,8 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
         XCTAssertEqual(panel.label, "Frequency plan")
         XCTAssertTrue(app.staticTexts["Imported planning data—not live radio state"].exists)
+        XCTAssertTrue(app.staticTexts["These values come from the imported plan. The app does not know what is tuned."].exists)
+        XCTAssertFalse(app.staticTexts["Not tuned"].exists)
 
         app.buttons["close-frequency-plan"].tap()
 

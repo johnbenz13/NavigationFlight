@@ -85,7 +85,7 @@ The projector builds ordered per-leg timelines from existing domain data:
 - `FrequencyChange` supplies the service, frequency, leg, and fractional progress.
 - `AltitudeChange` supplies the target, explicit direction, and leg-progress, waypoint, or identification-point anchor.
 - `PlannedNavigationAnnotation` supplies no-wind and optional with-wind time from leg start for each change entity.
-- `PlannedNavigation.frequenciesByPhase` remains the authoritative complete console list.
+- `PlannedNavigation.frequenciesByPhase` remains the authoritative complete imported sequence presented by **Frequency Plan**. The fixed console projects only **Planned now** and **Planned next** from that sequence.
 - `PlannedLegNavigation.initialAltitudeMsl` supplies the initial target before later altitude changes become due.
 
 Entity identifiers join changes to their planned annotations. The selected navigation mode selects `noWindTimeFromLegStartSeconds` or `withWindTimeFromLegStartSeconds`. Missing required timing is treated as unavailable cue timing rather than guessed from GPS or wall-clock route progress.
@@ -129,8 +129,8 @@ The application coordinator synchronizes the adapter whenever the derived condit
 
 `CockpitView` retains the existing console hierarchy.
 
-- Every frequency remains present in the existing order.
-- A frequency row receives a semantic status and renders neutral, green/current, or amber/next treatment plus visible text.
+- Every frequency remains present in imported order in **Frequency Plan**; the fixed console retains only the compact immediate pair.
+- A frequency cue receives a semantic status and renders neutral, green/planned-now, or amber/planned-next treatment plus visible planning text.
 - The altitude card renames its meaning to target altitude, retains the large current target, and adds one compact next target with an arrow.
 - The due animation attaches only to the newly current frequency content or altitude arrow, not to the whole console.
 - No new button, tap target, acknowledgement action, modal, or navigation path is added.
@@ -139,7 +139,7 @@ Semantic colors should adapt to light/dark appearance while meeting sufficient c
 
 ## Accessibility
 
-- `CURRENT` and `NEXT` are exposed as text and accessibility values, not color-only state.
+- `PLANNED NOW` and `PLANNED NEXT` are exposed as text and accessibility values, not color-only state. Imported values never assert tuned, not-tuned, active-receiver, or inactive-receiver state.
 - The altitude accessibility value includes current target and, when present, the next target and direction.
 - A due transition updates the value without moving VoiceOver focus or posting an interrupting announcement.
 - Reduce Motion replaces pulse animation with a static highlight for the same five-second duration.
@@ -168,7 +168,7 @@ The exact file split may be reduced if existing nearby types provide a deeper in
 - Start-of-next-leg preview during the previous leg.
 - No-wind and with-wind annotation timing.
 - Repeated identical frequency suppression.
-- Complete frequency list ordering with one current and one next status.
+- Complete Frequency Plan ordering with one planned-now and one planned-next status.
 - Multiple altitude changes with only one next preview.
 - Coincident frequency and altitude events.
 - Early manual leg completion and new-leg baseline resolution.
@@ -183,7 +183,7 @@ The exact file split may be reduced if existing nearby types provide a deeper in
 
 ### Presentation and UI tests
 
-- Current, next, and neutral frequency treatments include visible labels.
+- Planned-now, planned-next, and neutral frequency treatments include visible planning labels.
 - Current and next altitude values and arrows render without clipping.
 - Only the affected local cue pulses for five seconds.
 - Reduce Motion uses a static highlight.

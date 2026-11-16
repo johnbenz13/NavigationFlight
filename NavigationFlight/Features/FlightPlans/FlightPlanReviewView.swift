@@ -351,7 +351,7 @@ struct FlightPlanReviewView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Frequency Plan", systemImage: "chevron.right")
                     .font(.headline)
-                Text(presentation.frequencyPlan.entries.isEmpty ? "No planned frequencies" : "Complete imported sequence · not tuned")
+                Text(presentation.frequencyPlan.entries.isEmpty ? "No planned frequencies" : "Complete imported sequence · planning data")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

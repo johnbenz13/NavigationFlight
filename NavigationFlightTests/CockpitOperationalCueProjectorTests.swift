@@ -52,7 +52,7 @@ struct CockpitOperationalCueProjectorTests {
         #expect(emphasis.activeEvents(at: now.addingTimeInterval(7)).isEmpty)
     }
 
-    @Test("Cue projection exposes semantic current next and altitude direction descriptions")
+    @Test("Cue projection exposes planning-only frequency and altitude direction descriptions")
     func cueProjectionExposesSemanticDescriptions() throws {
         let flightPlan = try fixtureFlightPlan()
         let flight = Flight(
@@ -67,9 +67,10 @@ struct CockpitOperationalCueProjectorTests {
             at: Date(timeIntervalSince1970: 1_000)
         )
 
-        #expect(state.frequencies.map(\.statusLabel) == ["CURRENT", "NEXT"])
-        #expect(state.frequencies[0].accessibilityDescription.contains("current"))
-        #expect(state.frequencies[1].accessibilityDescription.contains("next"))
+        #expect(state.frequencies.map(\.statusLabel) == ["PLANNED NOW", "PLANNED NEXT"])
+        #expect(state.frequencies[0].accessibilityDescription.contains("planned now"))
+        #expect(state.frequencies[1].accessibilityDescription.contains("planned next"))
+        #expect(state.frequencies.allSatisfy { !$0.accessibilityDescription.contains("tuned") })
         #expect(state.altitudeAccessibilityDescription == "Target altitude 2,000 feet MSL, next target 4,000 feet, climb")
     }
 

@@ -2137,7 +2137,9 @@ struct CockpitView: View {
                     Text("PLANNED FREQUENCIES").font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
                     ForEach(orderedFrequencyCues) { frequencyValue($0) }
                     if orderedFrequencies.isEmpty { Text("None").font(.caption).foregroundStyle(.secondary) }
-                    Text("Not tuned").font(.caption).foregroundStyle(.secondary)
+                    Text("Imported plan · receiver state unknown")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .scrollIndicators(.hidden).frame(minHeight: 30).padding(.horizontal, 10)
@@ -2159,7 +2161,10 @@ struct CockpitView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("PLANNED FREQUENCIES").font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
-                Spacer(); Text("Not tuned").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Text("Imported plan · receiver state unknown")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 7) {

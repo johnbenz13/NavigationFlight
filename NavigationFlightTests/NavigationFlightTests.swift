@@ -213,6 +213,30 @@ struct NavigationFlightTests {
         #expect(saved.legs[0].noWind.groundSpeed == Knots(value: 90))
     }
 
+    @Test func suppliedLLHZLLIBV7FixtureProvidesPopulatedFrequencyPlan() throws {
+        let flightPlan = try FPLNavDecoder().decode(
+            try fixtureData("llhz-llib-via-jerusalem-v7", directory: "V7/Official")
+        )
+        let plannedNavigation = try eligiblePlannedNavigation(flightPlan)
+        let phaseCounts = plannedNavigation.frequenciesByPhase.mapValues(\.count)
+
+        #expect(flightPlan.title == "LLHZ - LLIB via Jerusalem")
+        #expect(flightPlan.frequencyChanges.count == 6)
+        #expect(phaseCounts[.departure] == 3)
+        #expect(phaseCounts[.enRoute] == 15)
+        #expect(phaseCounts[.arrival] == 4)
+
+        let presentation = try CockpitPresentationAdapter().makePresentation(
+            flightPlan: flightPlan,
+            legIndex: 0,
+            mode: .noWind
+        )
+        #expect(presentation.displayFrequencies.count == 14)
+        #expect(presentation.frequencyPlan.entries.count == 14)
+        #expect(presentation.frequencyPlan.entries.prefix(2).map(\.sequence) == [.now, .next])
+        #expect(presentation.frequencyPlan.entries.first?.service == "HERZLIA")
+    }
+
     @Test(arguments: ["editor-wind", "editor-no-wind", "editor-calm"])
     func editorV7VectorsDecode(_ name: String) throws {
         let flightPlan = try FPLNavDecoder().decode(try fixtureData(name, directory: "V7/Editor"))

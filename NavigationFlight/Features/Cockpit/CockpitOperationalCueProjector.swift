@@ -1,6 +1,31 @@
 import Foundation
 
 struct CockpitOperationalCueState: Equatable, Sendable {
+    struct CommunicationPlan: Equatable, Sendable {
+        struct Entry: Identifiable, Equatable, Sendable {
+            enum State: Equatable, Sendable {
+                case departurePlan
+                case atStart
+                case current
+                case next
+                case later
+                case past
+                case arrival
+            }
+
+            let id: String
+            let phase: FlightPhase
+            let role: String?
+            let service: String
+            let frequencyMHz: Double
+            let state: State
+            let dueContext: String
+        }
+
+        let entries: [Entry]
+        let compactEntries: [Entry]
+    }
+
     struct FrequencyCue: Identifiable, Equatable, Sendable {
         enum Status: Equatable, Sendable {
             case current
@@ -24,10 +49,27 @@ struct CockpitOperationalCueState: Equatable, Sendable {
     }
 
     let frequencies: [FrequencyCue]
+    let communicationPlan: CommunicationPlan
     let currentAltitude: AltitudeFeet
     let nextAltitude: AltitudeCue?
     let dueAltitude: AltitudeCue?
     let dueEvents: Set<DueEvent>
+
+    init(
+        frequencies: [FrequencyCue],
+        communicationPlan: CommunicationPlan = .init(entries: [], compactEntries: []),
+        currentAltitude: AltitudeFeet,
+        nextAltitude: AltitudeCue?,
+        dueAltitude: AltitudeCue?,
+        dueEvents: Set<DueEvent>
+    ) {
+        self.frequencies = frequencies
+        self.communicationPlan = communicationPlan
+        self.currentAltitude = currentAltitude
+        self.nextAltitude = nextAltitude
+        self.dueAltitude = dueAltitude
+        self.dueEvents = dueEvents
+    }
 }
 
 struct CockpitConsoleCuePresentation: Equatable, Sendable {
@@ -38,10 +80,31 @@ struct CockpitConsoleCuePresentation: Equatable, Sendable {
         cues: CockpitOperationalCueState,
         emphasizedEvents: Set<CockpitOperationalCueState.DueEvent>
     ) {
-        immediateFrequencyCues = [
-            cues.frequencies.first(where: { $0.status == .current }),
-            cues.frequencies.first(where: { $0.status == .next })
-        ].compactMap { $0 }
+        if cues.communicationPlan.compactEntries.isEmpty {
+            immediateFrequencyCues = [
+                cues.frequencies.first(where: { $0.status == .current }),
+                cues.frequencies.first(where: { $0.status == .next })
+            ].compactMap { $0 }
+        } else {
+            immediateFrequencyCues = cues.communicationPlan.compactEntries.prefix(2).map { entry in
+                let status: CockpitOperationalCueState.FrequencyCue.Status = switch entry.state {
+                case .current, .departurePlan: .current
+                case .next: .next
+                case .atStart, .later, .past, .arrival: .other
+                }
+                return CockpitOperationalCueState.FrequencyCue(
+                    frequency: .init(
+                        id: entry.id,
+                        phases: [entry.phase],
+                        service: entry.service,
+                        serviceType: entry.role ?? entry.phase.rawValue,
+                        frequencyMHz: entry.frequencyMHz,
+                        source: .route
+                    ),
+                    status: status
+                )
+            }
+        }
         isAltitudeEmphasized = emphasizedEvents.contains { event in
             if case .altitude = event { true } else { false }
         }
@@ -229,6 +292,14 @@ struct CockpitOperationalCueProjector: Sendable {
             )
         }
 
+        let communicationPlan = makeCommunicationPlan(
+            flightPlan: flightPlan,
+            plannedNavigation: plannedNavigation,
+            presentation: presentation,
+            flight: flight,
+            elapsedSeconds: elapsedSeconds
+        )
+
         let orderedAltitudeChanges = flightPlan.altitudeChanges.enumerated()
             .compactMap { sourceIndex, change -> (change: AltitudeChange, time: Int, sourceIndex: Int)? in
                 guard change.legID == legID,
@@ -287,6 +358,7 @@ struct CockpitOperationalCueProjector: Sendable {
 
         return CockpitOperationalCueState(
             frequencies: frequencies,
+            communicationPlan: communicationPlan,
             currentAltitude: currentAltitude,
             nextAltitude: nextAltitude,
             dueAltitude: currentAltitudeChange.map {
@@ -309,6 +381,173 @@ struct CockpitOperationalCueProjector: Sendable {
         case .wind:
             annotation.withWindTimeFromLegStartSeconds
         }
+    }
+
+    private struct CommunicationEvent {
+        let entry: CockpitPresentationData.Frequency
+        let legIndex: Int?
+        let time: Int?
+        let dueContext: String
+    }
+
+    private func makeCommunicationPlan(
+        flightPlan: FlightPlan,
+        plannedNavigation: PlannedNavigation,
+        presentation: CockpitPresentationData,
+        flight: Flight,
+        elapsedSeconds: Int?
+    ) -> CockpitOperationalCueState.CommunicationPlan {
+        let legIndexByID = Dictionary(uniqueKeysWithValues: flight.legIDs.enumerated().map { ($1, $0) })
+        let changeByPlannedID = Dictionary(uniqueKeysWithValues: flightPlan.frequencyChanges.map {
+            ("route:\($0.id.uuidString.lowercased())", $0)
+        })
+        let annotationByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
+
+        let events = FlightPhase.allCases.flatMap { phase in
+            (presentation.frequencies[phase] ?? []).filter { entry in
+                entry.source != .vorDme && entry.frequencyMHz >= 118
+            }.map { entry -> CommunicationEvent in
+                guard let change = changeByPlannedID[entry.id],
+                      let legIndex = legIndexByID[change.legID],
+                      let annotation = annotationByID[change.id],
+                      let eventTime = time(for: annotation, mode: flight.executionMode) else {
+                    let context = phase == .departure ? "Before navigation" : "After navigation"
+                    return CommunicationEvent(entry: entry, legIndex: nil, time: nil, dueContext: context)
+                }
+                return CommunicationEvent(
+                    entry: entry,
+                    legIndex: legIndex,
+                    time: eventTime,
+                    dueContext: dueContext(
+                        for: change,
+                        legIndex: legIndex,
+                        time: eventTime,
+                        flightPlan: flightPlan
+                    )
+                )
+            }
+        }
+
+        let orderedRouteEvents = events.filter { $0.legIndex != nil }.sorted {
+            if $0.legIndex != $1.legIndex { return ($0.legIndex ?? 0) < ($1.legIndex ?? 0) }
+            return ($0.time ?? 0) < ($1.time ?? 0)
+        }
+        let routeCurrentIndex: Int? = {
+            guard flight.legState != .ready, let elapsedSeconds else { return nil }
+            return orderedRouteEvents.lastIndex {
+                guard let legIndex = $0.legIndex, let eventTime = $0.time else { return false }
+                return legIndex < flight.activeLegIndex
+                    || (legIndex == flight.activeLegIndex && eventTime <= elapsedSeconds)
+            }
+        }()
+        let routeNextIndex: Int? = {
+            let start = (routeCurrentIndex ?? -1) + 1
+            guard orderedRouteEvents.indices.contains(start) else { return nil }
+            if let current = routeCurrentIndex {
+                let currentEvent = orderedRouteEvents[current]
+                return orderedRouteEvents.indices.dropFirst(start).first {
+                    !sameCommunication(orderedRouteEvents[$0].entry, currentEvent.entry)
+                }
+            }
+            return start
+        }()
+
+        let fullEntries = events.map { event -> CockpitOperationalCueState.CommunicationPlan.Entry in
+            let state: CockpitOperationalCueState.CommunicationPlan.Entry.State
+            if event.entry.phase == .departure {
+                if flight.legState == .ready && flight.activeLegIndex == 0 {
+                    state = .departurePlan
+                } else if flight.legState == .active,
+                          routeCurrentIndex == nil,
+                          events.first(where: { $0.entry.phase == .departure })?.entry.id == event.entry.id {
+                    state = .current
+                } else {
+                    state = .past
+                }
+            } else if event.entry.phase == .arrival {
+                if flight.legState == .active,
+                   routeNextIndex == nil,
+                   events.first(where: { $0.entry.phase == .arrival })?.entry.id == event.entry.id {
+                    state = .next
+                } else {
+                    state = .arrival
+                }
+            } else if let index = orderedRouteEvents.firstIndex(where: { $0.entry.id == event.entry.id }) {
+                if flight.legState == .ready,
+                   event.legIndex == flight.activeLegIndex,
+                   event.time == 0 { state = .atStart }
+                else if flight.legState == .completed { state = .past }
+                else if index == routeCurrentIndex { state = .current }
+                else if index == routeNextIndex { state = .next }
+                else if routeCurrentIndex.map({ index < $0 }) == true { state = .past }
+                else { state = .later }
+            } else {
+                state = .later
+            }
+            return .init(
+                id: event.entry.id,
+                phase: event.entry.phase,
+                role: event.entry.role,
+                service: event.entry.service,
+                frequencyMHz: event.entry.frequencyMHz,
+                state: state,
+                dueContext: event.dueContext
+            )
+        }
+
+        let compactCandidates: [CockpitOperationalCueState.CommunicationPlan.Entry]
+        switch flight.legState {
+        case .ready:
+            let currentLegRoute = fullEntries.filter { entry in
+                guard let change = changeByPlannedID[entry.id] else { return false }
+                return legIndexByID[change.legID] == flight.activeLegIndex
+            }
+            compactCandidates = (flight.activeLegIndex == 0
+                ? Array(fullEntries.filter { $0.phase == .departure }.prefix(1))
+                : []) + currentLegRoute
+        case .active:
+            compactCandidates = fullEntries.filter { $0.state == .current || $0.state == .next }
+        case .completed:
+            compactCandidates = Array(fullEntries.filter { $0.phase == .arrival }.prefix(1))
+        }
+        var compactEntries: [CockpitOperationalCueState.CommunicationPlan.Entry] = []
+        for entry in compactCandidates where compactEntries.count < (flight.legState == .ready ? 3 : 2) {
+            guard compactEntries.last.map({ !sameCommunication($0, entry) }) ?? true else { continue }
+            compactEntries.append(entry)
+        }
+
+        return .init(entries: fullEntries, compactEntries: compactEntries)
+    }
+
+    private func dueContext(
+        for change: FrequencyChange,
+        legIndex: Int,
+        time: Int,
+        flightPlan: FlightPlan
+    ) -> String {
+        guard flightPlan.legs.indices.contains(legIndex) else { return "Planned in route" }
+        let leg = flightPlan.legs[legIndex]
+        let route = "\(leg.departure.name) → \(leg.arrival.name)"
+        if time == 0 { return "\(route) · at start" }
+        let points = flightPlan.identificationPoints.filter { $0.legID == change.legID }
+        if let pointIndex = points.firstIndex(where: { abs($0.progress.fraction - change.progress.fraction) < 0.000_001 }) {
+            return "\(route) · at IP \(pointIndex + 1)"
+        }
+        return "\(route) · later this leg"
+    }
+
+    private func sameCommunication(
+        _ lhs: CockpitPresentationData.Frequency,
+        _ rhs: CockpitPresentationData.Frequency
+    ) -> Bool {
+        lhs.service == rhs.service && lhs.frequencyMHz == rhs.frequencyMHz
+    }
+
+    private func sameCommunication(
+        _ lhs: CockpitOperationalCueState.CommunicationPlan.Entry,
+        _ rhs: CockpitOperationalCueState.CommunicationPlan.Entry
+    ) -> Bool {
+        lhs.service == rhs.service && lhs.frequencyMHz == rhs.frequencyMHz
     }
 
     private func beginningAltitudeCue(

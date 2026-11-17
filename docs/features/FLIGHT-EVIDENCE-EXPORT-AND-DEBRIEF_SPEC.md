@@ -49,7 +49,7 @@ This specification deliberately supersedes Automatic Flight Recording and Recove
 - iPhone landscape remains outside the design baseline.
 - Human direction approvals: Directions 01–05 approved by John, 2026-11-17.
 - Paired baseline approval: product specification revision 02 and Figma Directions 01–05 approved by John, 2026-11-17.
-- Repository permalink: pending the first authorized documentation commit; replace this note with the immutable commit URL before implementation handoff.
+- Approved specification revision: [commit `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md).
 
 ### Design coverage checklist
 

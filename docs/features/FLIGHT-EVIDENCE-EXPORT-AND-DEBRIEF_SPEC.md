@@ -194,7 +194,7 @@ The approved main-screen direction is the visual and interaction baseline for th
 - Product specification: revision 02 approved by John on 2026-11-17.
 - Experience design: Figma Directions 01–05 and the paired product/design baseline approved by John on 2026-11-17.
 - Technical design: [technical agreement](../technical/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_TECHNICAL.md) approved by John on 2026-11-17.
-- Delivery tickets: [six-slice vertical breakdown](FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_DELIVERY-PLAN.md) approved by John on 2026-11-17; not published.
+- Delivery tickets: [six-slice vertical breakdown](FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_DELIVERY-PLAN.md) approved and published as GitHub issues [#175](https://github.com/johnbenz13/NavigationFlight/issues/175)–[#180](https://github.com/johnbenz13/NavigationFlight/issues/180).
 - Implementation: not authorized by this specification draft.
 
 ## Approved product decisions captured

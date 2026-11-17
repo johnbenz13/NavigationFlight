@@ -1,6 +1,6 @@
 # Flight Evidence Export and Debrief — Delivery Plan
 
-Status: **six-slice vertical breakdown approved by John on 2026-11-17; publication pending**
+Status: **approved and published on 2026-11-17**
 
 Authoritative contracts:
 
@@ -208,11 +208,15 @@ Slice 1 · Closed-flight export
 | FE-047–FE-050 | 1 | 2, 4, 5, 6 | Directions 02–05 as applicable |
 | FE-051–FE-053 | 3 | 4 | Directions 01 and 04 |
 
-## Publication plan
+## Published issues
 
-After explicit publication approval:
+| Slice | GitHub issue | Readiness | Blocker |
+| --- | --- | --- | --- |
+| 1 | [#175 — Export diagnostic evidence from a closed Flight](https://github.com/johnbenz13/NavigationFlight/issues/175) | `ready-for-agent` | None |
+| 2 | [#176 — Export a provisional active or recoverable snapshot](https://github.com/johnbenz13/NavigationFlight/issues/176) | `ready-for-agent` | #175 |
+| 3 | [#177 — Debrief a completed Flight on iPad](https://github.com/johnbenz13/NavigationFlight/issues/177) | `ready-for-agent` | #175 |
+| 4 | [#178 — Debrief every retained state across supported layouts](https://github.com/johnbenz13/NavigationFlight/issues/178) | `ready-for-agent` | #177 |
+| 5 | [#179 — Explain one Flight's detector decisions locally](https://github.com/johnbenz13/NavigationFlight/issues/179) | `ready-for-agent` | #175 |
+| 6 | [#180 — Compare Flights and produce a detector recommendation](https://github.com/johnbenz13/NavigationFlight/issues/180) | `ready-for-human` | #179 |
 
-- Publish six GitHub issues in `johnbenz13/NavigationFlight` in dependency order.
-- Label Slices 1–5 `ready-for-agent`; label Slice 6 `ready-for-human`.
-- Record native blockers where available, otherwise add `Blocked by: #…`.
-- Read back every issue and relationship, then add issue links here.
+GitHub native dependency editing was not used; each blocked issue contains an explicit `Blocked by: #…` reference. Published bodies and labels were read back and verified after creation.

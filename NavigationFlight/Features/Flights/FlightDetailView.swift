@@ -8,15 +8,19 @@ struct FlightDetailLoaderView: View {
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
     let exporter: GPXExporter
+    let diagnosticExporter: DiagnosticBundleExporter
     @Binding var flightsState: FlightsFeatureState
     let onRequestDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var detail: FlightDetailPresentation?
     @State private var loadFailed = false
-    @State private var exportResult: GPXExportResult?
-    @State private var exportFailed = false
-    @State private var isExporting = false
+    @State private var exportChoicePresented = false
+    @State private var exportResult: FlightExportResult?
+    @State private var failedFormat: FlightExportFormat?
+    @State private var exportTask: Task<Void, Never>?
+
+    private var isExporting: Bool { exportTask != nil }
 
     var body: some View {
         Group {
@@ -25,7 +29,7 @@ struct FlightDetailLoaderView: View {
                     detail: detail,
                     onContinue: { onContinue(id) },
                     isExporting: isExporting,
-                    onExport: export,
+                    onExport: { exportChoicePresented = true },
                     onDelete: onRequestDelete
                 )
             } else if loadFailed {
@@ -48,36 +52,69 @@ struct FlightDetailLoaderView: View {
                 loadFailed = true
             }
         }
+        .sheet(isPresented: $exportChoicePresented) {
+            FlightExportChoiceView { format in
+                exportChoicePresented = false
+                beginExport(format)
+            }
+            .presentationSizing(.page)
+            .presentationDetents([.height(430)])
+            .presentationDragIndicator(.visible)
+        }
+        .overlay {
+            if isExporting {
+                DiagnosticExportProgressView {
+                    exportTask?.cancel()
+                }
+            }
+        }
         .navigationDestination(isPresented: Binding(
             get: { exportResult != nil },
             set: { if !$0 { exportResult = nil } }
         )) {
             if let exportResult {
-                GPXExportResultView(result: exportResult)
+                FlightExportResultView(result: exportResult)
             }
         }
-        .alert("GPX export failed", isPresented: $exportFailed) {
-            Button("Retry") { Task { await export() } }
+        .alert("Export Couldn’t Be Completed", isPresented: Binding(
+            get: { failedFormat != nil },
+            set: { if !$0 { failedFormat = nil } }
+        )) {
+            Button("Try Again") {
+                if let failedFormat { beginExport(failedFormat) }
+            }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("No file was shared. The recording is unchanged and remains available to export again.")
+            Text("No incomplete file was shared, and the Flight recording was not changed.")
         }
         .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
             if wasPresent, !isPresent {
                 dismiss()
             }
         }
+        .onDisappear {
+            exportTask?.cancel()
+        }
     }
-    private func export() async {
-        guard !isExporting else { return }
-        isExporting = true
-        defer { isExporting = false }
-        do {
-            exportResult = try await library.export(id: id, using: exporter)
-        } catch is CancellationError {
-            return
-        } catch {
-            exportFailed = true
+
+    private func beginExport(_ format: FlightExportFormat) {
+        guard exportTask == nil else { return }
+        exportTask = Task {
+            defer { exportTask = nil }
+            do {
+                switch format {
+                case .diagnosticBundle:
+                    exportResult = .diagnostic(
+                        try await library.exportDiagnosticBundle(id: id, using: diagnosticExporter)
+                    )
+                case .gpx:
+                    exportResult = .gpx(try await library.export(id: id, using: exporter))
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                failedFormat = format
+            }
         }
     }
 }
@@ -86,7 +123,7 @@ struct FlightDetailView: View {
     let detail: FlightDetailPresentation
     let onContinue: () -> Void
     let isExporting: Bool
-    let onExport: () async -> Void
+    let onExport: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
@@ -126,11 +163,9 @@ struct FlightDetailView: View {
                         .controlSize(.large)
                         .accessibilityIdentifier("flight-detail.continue")
                 } else if detail.canExport {
-                    Button {
-                        Task { await onExport() }
-                    } label: {
+                    Button(action: onExport) {
                         if isExporting {
-                            ProgressView("Preparing GPX")
+                            ProgressView("Preparing Export")
                                 .frame(maxWidth: .infinity)
                         } else {
                             Label(exportTitle, systemImage: "square.and.arrow.up")
@@ -281,7 +316,7 @@ struct FlightDetailView: View {
     }
 
     private var exportTitle: String {
-        detail.status == .complete ? "Export GPX" : "Export partial GPX"
+        "Export Flight"
     }
 
     private var durationText: String {

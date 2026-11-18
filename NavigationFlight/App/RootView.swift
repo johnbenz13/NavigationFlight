@@ -302,7 +302,14 @@ struct RootView: View {
                     onContinue: continueFlightFromLibrary,
                     exporter: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] == "1"
                         ? GPXExporter(temporaryDirectory: URL(fileURLWithPath: "/dev/null"))
-                        : GPXExporter()
+                        : GPXExporter(),
+                    diagnosticExporter: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] == "1"
+                        ? DiagnosticBundleExporter(temporaryDirectory: URL(fileURLWithPath: "/dev/null"))
+                        : DiagnosticBundleExporter(
+                            preparationDelay: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_DELAY"] == "1"
+                                ? .seconds(5)
+                                : .zero
+                        )
                 )
             }
 

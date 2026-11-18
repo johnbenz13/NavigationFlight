@@ -6,6 +6,7 @@ struct FlightsFeatureView: View {
     let activeRecordingID: UUID?
     let onContinue: (UUID) -> Void
     var exporter = GPXExporter()
+    var diagnosticExporter = DiagnosticBundleExporter()
 
     @State private var isDeleting = false
 
@@ -32,6 +33,7 @@ struct FlightsFeatureView: View {
                     activeRecordingID: activeRecordingID,
                     onContinue: onContinue,
                     exporter: exporter,
+                    diagnosticExporter: diagnosticExporter,
                     flightsState: $state,
                     onRequestDelete: { state.requestDeletion(of: id) }
                 )

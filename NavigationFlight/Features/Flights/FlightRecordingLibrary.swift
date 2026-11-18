@@ -99,6 +99,20 @@ actor FlightRecordingLibrary {
         return try await exporter.export(snapshot: snapshot)
     }
 
+    func exportDiagnosticBundle(
+        id: UUID,
+        using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
+        capturedAt: Date = Date(),
+        context: FlightEvidenceContext = .current
+    ) async throws -> DiagnosticExportResult {
+        let snapshot = try await store.readSnapshot(id: id)
+        return try await exporter.export(FlightEvidenceSnapshot(
+            capturedAt: capturedAt,
+            recording: snapshot,
+            context: context
+        ))
+    }
+
     func detail(
         id: UUID,
         activeRecordingID: UUID? = nil

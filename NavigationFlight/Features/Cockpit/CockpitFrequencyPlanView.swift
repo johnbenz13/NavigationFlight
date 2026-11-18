@@ -3,6 +3,7 @@ import SwiftUI
 struct CockpitFrequencyPlanView: View {
     let plan: CockpitFrequencyPlan
     var communicationPlan: CockpitOperationalCueState.CommunicationPlan? = nil
+    var navigationAidPlan: CockpitOperationalCueState.NavigationAidPlan? = nil
     var references: [CockpitPresentationData.PlannedReference] = []
     let onClose: () -> Void
 
@@ -14,7 +15,7 @@ struct CockpitFrequencyPlanView: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    if plan.entries.isEmpty && communicationEntries.isEmpty {
+                    if !hasCommunications && navigationAidStations.isEmpty {
                         ContentUnavailableView(
                             "No Planned Frequencies",
                             systemImage: "radio",
@@ -24,7 +25,7 @@ struct CockpitFrequencyPlanView: View {
                         .padding(.top, 48)
                     } else {
                         if communicationPlan == nil {
-                            ForEach(plan.entries) { entry in
+                            ForEach(plan.entries.filter { $0.kind == .communication }) { entry in
                                 CockpitFrequencyPlanEntryView(entry: entry)
                             }
                         } else if !communicationEntries.isEmpty {
@@ -46,15 +47,17 @@ struct CockpitFrequencyPlanView: View {
                                 }
                             }
                         }
-                        if !navigationAidEntries.isEmpty {
+                        if !navigationAidStations.isEmpty {
+                            Divider()
+                                .padding(.top, 6)
                             Text("NAVIGATION AIDS")
                                 .font(.caption.weight(.bold))
                                 .tracking(0.7)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(navigationAidAccent)
                                 .padding(.top, 14)
                                 .accessibilityAddTraits(.isHeader)
-                            ForEach(navigationAidEntries) { entry in
-                                CockpitFrequencyPlanEntryView(entry: entry)
+                            ForEach(navigationAidStations) { station in
+                                CockpitNavigationAidStationView(station: station)
                             }
                         }
                     }
@@ -62,7 +65,7 @@ struct CockpitFrequencyPlanView: View {
                 .padding(.vertical, 16)
             }
 
-            if !plan.entries.isEmpty || !communicationEntries.isEmpty {
+            if hasCommunications || !navigationAidStations.isEmpty {
                 Text("These values come from the imported plan. The app does not know what is tuned.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -78,22 +81,46 @@ struct CockpitFrequencyPlanView: View {
         communicationPlan?.entries ?? []
     }
 
-    private var navigationAidEntries: [CockpitFrequencyPlan.Entry] {
-        var entries = plan.entries.filter { $0.kind == .navigationAid }
-        for reference in references where !entries.contains(where: {
-            $0.service == reference.station && $0.frequencyMHz == reference.frequencyMHz
-        }) {
-            entries.append(.init(
-                id: "reference:\(reference.id.uuidString.lowercased())",
-                sequence: .later,
-                kind: .navigationAid,
-                service: reference.station,
-                role: "VOR/DME",
-                frequencyMHz: reference.frequencyMHz,
-                association: reference.endpointName
-            ))
+    private var hasCommunications: Bool {
+        if communicationPlan != nil { return !communicationEntries.isEmpty }
+        return plan.entries.contains { $0.kind == .communication }
+    }
+
+    private var navigationAidStations: [CockpitOperationalCueState.NavigationAidPlan.Station] {
+        if let navigationAidPlan { return navigationAidPlan.stations }
+
+        var stations: [CockpitOperationalCueState.NavigationAidPlan.Station] = []
+        for (routeIndex, reference) in references.enumerated() {
+            let association = CockpitOperationalCueState.NavigationAidPlan.Association(
+                id: reference.id,
+                state: .later,
+                arrivalWaypoint: reference.endpointName,
+                routeIndex: routeIndex
+            )
+            if let index = stations.firstIndex(where: {
+                $0.identifier == reference.station && $0.frequencyMHz == reference.frequencyMHz
+            }) {
+                let station = stations[index]
+                stations[index] = .init(
+                    id: station.id,
+                    identifier: station.identifier,
+                    frequencyMHz: station.frequencyMHz,
+                    associations: station.associations + [association]
+                )
+            } else {
+                stations.append(.init(
+                    id: reference.id,
+                    identifier: reference.station,
+                    frequencyMHz: reference.frequencyMHz,
+                    associations: [association]
+                ))
+            }
         }
-        return entries
+        return stations
+    }
+
+    private var navigationAidAccent: Color {
+        Color(red: 91 / 255, green: 79 / 255, blue: 179 / 255)
     }
 
     private func phaseTitle(_ phase: FlightPhase) -> String {
@@ -119,6 +146,153 @@ struct CockpitFrequencyPlanView: View {
             Text("Imported planning data—not live radio state")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct CockpitNavigationAidStationView: View {
+    let station: CockpitOperationalCueState.NavigationAidPlan.Station
+
+    private let accent = Color(red: 91 / 255, green: 79 / 255, blue: 179 / 255)
+    private let background = Color(red: 241 / 255, green: 239 / 255, blue: 254 / 255)
+    private let border = Color(red: 199 / 255, green: 194 / 255, blue: 243 / 255)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("V")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(cardAccent, in: Circle())
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(station.identifier)
+                            .font(.subheadline.weight(.bold))
+                        Spacer(minLength: 8)
+                        frequencyText
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(station.identifier)
+                            .font(.subheadline.weight(.bold))
+                        frequencyText
+                    }
+                }
+
+                if let displayedAssociation {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(stateLabel)
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(cardAccent)
+                        Text(waypointSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(accessibilityLabel)
+                    .accessibilityIdentifier("navigation-aid-association-summary-\(displayedAssociation.id.uuidString.lowercased())")
+                }
+                Text("Plan reference · receiver state unknown")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .padding(11)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(cardBorder) }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(station.identifier), \(formattedFrequency) megahertz, VOR/DME")
+        .accessibilityIdentifier("navigation-aid-station-\(station.id.uuidString.lowercased())")
+    }
+
+    private var frequencyText: some View {
+        Text("\(formattedFrequency) MHz")
+            .font(.subheadline.weight(.bold))
+            .monospacedDigit()
+    }
+
+    private var formattedFrequency: String {
+        station.frequencyMHz.formatted(.number.precision(.fractionLength(3)))
+    }
+
+    private var remainingAssociations: [CockpitOperationalCueState.NavigationAidPlan.Association] {
+        station.associations.filter { $0.state != .history }
+    }
+
+    private var displayedAssociation: CockpitOperationalCueState.NavigationAidPlan.Association? {
+        remainingAssociations.first ?? station.associations.last
+    }
+
+    private var remainingWaypoints: [String] {
+        remainingAssociations.reduce(into: []) { waypoints, association in
+            guard !waypoints.contains(association.arrivalWaypoint) else { return }
+            waypoints.append(association.arrivalWaypoint)
+        }
+    }
+
+    private var isPassed: Bool { remainingAssociations.isEmpty }
+    private var isCurrent: Bool { displayedAssociation?.state == .current }
+
+    private var waypointSummary: String {
+        guard let displayedAssociation else { return "" }
+        if isPassed { return "Last used at \(displayedAssociation.arrivalWaypoint)" }
+
+        let first = displayedAssociation.arrivalWaypoint
+        let additionalCount = remainingWaypoints.count - 1
+        guard additionalCount > 0 else { return "For arrival at \(first)" }
+        let noun = additionalCount == 1 ? "other waypoint" : "other waypoints"
+        return "For arrival at \u{2068}\(first)\u{2069} + \(additionalCount) \(noun)"
+    }
+
+    private var stateLabel: String {
+        guard !isPassed, let state = displayedAssociation?.state else { return "PASSED · VOR/DME" }
+        return switch state {
+        case .firstFlownLeg: "PLANNED FOR FIRST FLOWN LEG · VOR/DME"
+        case .upcomingLeg: "UPCOMING LEG REFERENCE · VOR/DME"
+        case .current: "PLANNED CURRENT · VOR/DME"
+        case .later: "LATER · VOR/DME"
+        case .history: "PASSED · VOR/DME"
+        }
+    }
+
+    private var accessibilityLabel: String {
+        guard let displayedAssociation else { return "Plan reference, receiver state unknown" }
+        if isPassed {
+            return "Passed, last used at \(displayedAssociation.arrivalWaypoint), plan reference, receiver state unknown"
+        }
+        let waypoints = remainingWaypoints.joined(separator: ", ")
+        return "\(accessibilityStateLabel(for: displayedAssociation.state)), for arrival at \(waypoints), plan reference, receiver state unknown"
+    }
+
+    private var cardAccent: Color {
+        if isPassed { return .secondary }
+        if isCurrent { return .green }
+        return accent
+    }
+
+    private var cardBackground: Color {
+        if isPassed { return Color(.secondarySystemBackground) }
+        if isCurrent { return Color.green.opacity(0.12) }
+        return background
+    }
+
+    private var cardBorder: Color {
+        if isPassed { return Color.secondary.opacity(0.2) }
+        if isCurrent { return Color.green.opacity(0.35) }
+        return border
+    }
+
+    private func accessibilityStateLabel(for state: CockpitOperationalCueState.NavigationAidPlan.Association.State) -> String {
+        switch state {
+        case .firstFlownLeg: "Planned for first flown leg"
+        case .upcomingLeg: "Upcoming leg reference"
+        case .current: "Planned current"
+        case .later: "Later"
+        case .history: "Planned history"
         }
     }
 }

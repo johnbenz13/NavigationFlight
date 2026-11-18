@@ -785,6 +785,7 @@ struct CockpitView: View {
         CockpitFrequencyPlanView(
             plan: data.frequencyPlan,
             communicationPlan: operationalCues?.communicationPlan,
+            navigationAidPlan: operationalCues?.navigationAidPlan,
             references: data.references,
             onClose: { cockpitPresentationState.setFrequencyPlanPresented(false) }
         )

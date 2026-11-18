@@ -685,6 +685,187 @@ struct CockpitOperationalCueProjectorTests {
         #expect(state.communicationPlan.entries.filter { $0.phase == .enRoute }.allSatisfy { $0.state == .past })
     }
 
+    @Test("Selected nonfirst Ready leg marks its arrival references for the first flown leg")
+    func selectedNonfirstReadyLegMarksArrivalReferences() throws {
+        let flightPlan = try multiLegFixtureFlightPlan()
+        let reference = try #require(flightPlan.vorDmeReferences.last)
+        let legIndex = try #require(flightPlan.legs.firstIndex { $0.arrival.id == reference.waypointID })
+        #expect(legIndex > 0)
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: legIndex,
+            executionMode: .noWind
+        )
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: Date(timeIntervalSince1970: 13_000)
+        )
+
+        let entries = state.navigationAidPlan.stations.flatMap(\.associations)
+        let selectedEntries = entries.filter { $0.arrivalWaypoint == flightPlan.legs[legIndex].arrival.name }
+        #expect(!selectedEntries.isEmpty)
+        #expect(selectedEntries.allSatisfy { $0.state == .firstFlownLeg })
+        #expect(entries.count == flightPlan.vorDmeReferences.count)
+
+        let nextUseIndexes = state.navigationAidPlan.stations.compactMap { station in
+            station.associations.first(where: { $0.state != .history })?.routeIndex
+        }
+        #expect(nextUseIndexes == nextUseIndexes.sorted())
+        let firstPassedIndex = state.navigationAidPlan.stations.firstIndex {
+            $0.associations.allSatisfy { $0.state == .history }
+        }
+        if let firstPassedIndex {
+            #expect(state.navigationAidPlan.stations[firstPassedIndex...].allSatisfy {
+                $0.associations.allSatisfy { $0.state == .history }
+            })
+        }
+    }
+
+    @Test("Active, completed, and absent navigation-aid states follow flight progress")
+    func navigationAidStatesFollowFlightProgress() throws {
+        let flightPlan = try fixtureFlightPlan()
+        let start = Date(timeIntervalSince1970: 14_000)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+
+        let active = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start
+        )
+        let activeArrival = flightPlan.legs[0].arrival.name
+        #expect(active.navigationAidPlan.stations.flatMap(\.associations).filter { $0.arrivalWaypoint == activeArrival }
+            .allSatisfy { $0.state == .current })
+
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(60))
+        let completed = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(61)
+        )
+        #expect(completed.navigationAidPlan.stations.flatMap(\.associations).allSatisfy { $0.state == .history })
+        let passedLastUseIndexes = completed.navigationAidPlan.stations.compactMap {
+            $0.associations.last?.routeIndex
+        }
+        #expect(passedLastUseIndexes == passedLastUseIndexes.sorted(by: >))
+
+        let planned = try #require(flightPlan.plannedNavigation.plannedNavigation)
+        let noReferences = FlightPlan(
+            id: flightPlan.id,
+            title: flightPlan.title,
+            createdAt: flightPlan.createdAt,
+            modifiedAt: flightPlan.modifiedAt,
+            parameters: flightPlan.parameters,
+            waypoints: flightPlan.waypoints,
+            legs: flightPlan.legs,
+            identificationPoints: flightPlan.identificationPoints,
+            altitudeChanges: flightPlan.altitudeChanges,
+            frequencyChanges: flightPlan.frequencyChanges,
+            vorDmeReferences: [],
+            operationalContext: flightPlan.operationalContext,
+            plannedNavigation: .eligible(.init(
+                calculationVersion: planned.calculationVersion,
+                altitudeReference: planned.altitudeReference,
+                legs: planned.legs,
+                annotations: planned.annotations,
+                vorDmeReferences: [],
+                frequenciesByPhase: planned.frequenciesByPhase,
+                defaultMode: planned.defaultMode
+            ))
+        )
+        let absent = try CockpitOperationalCueProjector().project(
+            flightPlan: noReferences,
+            flight: flight,
+            at: start.addingTimeInterval(61)
+        )
+        #expect(absent.navigationAidPlan.stations.isEmpty)
+    }
+
+    @Test("Every VOR DME reference for the active arrival is planned current")
+    func multipleActiveArrivalReferencesAreCurrent() throws {
+        let sourcePlan = try fixtureFlightPlan()
+        let planned = try #require(sourcePlan.plannedNavigation.plannedNavigation)
+        let sourceReference = try #require(sourcePlan.vorDmeReferences.first {
+            $0.waypointID == sourcePlan.legs[0].arrival.id
+        })
+        let resolved = try #require(planned.vorDmeReferences.first { $0.referenceID == sourceReference.id })
+        let duplicateID = try #require(UUID(uuidString: "DDDDDDDD-DDDD-4DDD-8DDD-DDDDDDDDDDDD"))
+        let duplicateReference = VORDMEReference(
+            id: duplicateID,
+            waypointID: sourceReference.waypointID,
+            calculation: sourceReference.calculation,
+            navigationAid: sourceReference.navigationAid
+        )
+        let duplicateResolved = PlannedVORDMEReference(
+            referenceID: duplicateID,
+            frequency: resolved.frequency,
+            stationElevationMsl: resolved.stationElevationMsl,
+            magneticRadialFrom: resolved.magneticRadialFrom,
+            slantRange: resolved.slantRange,
+            source: resolved.source
+        )
+        let flightPlan = FlightPlan(
+            id: sourcePlan.id,
+            title: sourcePlan.title,
+            createdAt: sourcePlan.createdAt,
+            modifiedAt: sourcePlan.modifiedAt,
+            parameters: sourcePlan.parameters,
+            waypoints: sourcePlan.waypoints,
+            legs: sourcePlan.legs,
+            identificationPoints: sourcePlan.identificationPoints,
+            altitudeChanges: sourcePlan.altitudeChanges,
+            frequencyChanges: sourcePlan.frequencyChanges,
+            vorDmeReferences: sourcePlan.vorDmeReferences + [duplicateReference],
+            operationalContext: sourcePlan.operationalContext,
+            plannedNavigation: .eligible(.init(
+                calculationVersion: planned.calculationVersion,
+                altitudeReference: planned.altitudeReference,
+                legs: planned.legs,
+                annotations: planned.annotations,
+                vorDmeReferences: planned.vorDmeReferences + [duplicateResolved],
+                frequenciesByPhase: planned.frequenciesByPhase,
+                defaultMode: planned.defaultMode
+            ))
+        )
+        let start = Date(timeIntervalSince1970: 15_000)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start
+        )
+        let current = state.navigationAidPlan.stations.flatMap(\.associations).filter { $0.state == .current }
+        #expect(current.count == 2)
+        #expect(current.map(\.id) == [sourceReference.id, duplicateID])
+        let groupedStation = try #require(state.navigationAidPlan.stations.first {
+            $0.identifier == sourceReference.navigationAid.identifier
+                && $0.frequencyMHz == resolved.frequency.value
+        })
+        let expectedIDs = sourcePlan.vorDmeReferences.compactMap { reference -> UUID? in
+            guard reference.navigationAid.identifier == sourceReference.navigationAid.identifier,
+                  planned.vorDmeReferences.first(where: { $0.referenceID == reference.id })?.frequency == resolved.frequency
+            else { return nil }
+            return reference.id
+        } + [duplicateID]
+        #expect(Set(groupedStation.associations.map(\.id)) == Set(expectedIDs))
+        #expect(groupedStation.associations.map(\.routeIndex) == groupedStation.associations.map(\.routeIndex).sorted())
+    }
+
     private func fixtureFlightPlan() throws -> FlightPlan {
         let bundle = Bundle(for: FixtureLocator.self)
         let nested = bundle.url(
@@ -693,6 +874,18 @@ struct CockpitOperationalCueProjectorTests {
             subdirectory: "Fixtures/FPLNav/V7/Official"
         )
         let flat = bundle.url(forResource: "representative-v7", withExtension: "fplnav")
+        let url = try #require(nested ?? flat)
+        return try FPLNavDecoder().decode(Data(contentsOf: url))
+    }
+
+    private func multiLegFixtureFlightPlan() throws -> FlightPlan {
+        let bundle = Bundle(for: FixtureLocator.self)
+        let nested = bundle.url(
+            forResource: "llhz-llib-via-jerusalem-v7",
+            withExtension: "fplnav",
+            subdirectory: "Fixtures/FPLNav/V7/Official"
+        )
+        let flat = bundle.url(forResource: "llhz-llib-via-jerusalem-v7", withExtension: "fplnav")
         let url = try #require(nested ?? flat)
         return try FPLNavDecoder().decode(Data(contentsOf: url))
     }

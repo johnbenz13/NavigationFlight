@@ -441,9 +441,15 @@ Presentation enums should model meaningful states rather than expose Boolean com
 
 Views receive presentation values and typed intent closures. They do not receive mutable session bindings and do not calculate target eligibility, Reference ETA, operational heading, or undo validity.
 
-Planned VOR/DME presentation is optional and contains station identifier, service/type, frequency, radial, distance, arrival association, and planned provenance. Its compact map label and expanded waypoint/frequency-plan details derive from the same value. Absence produces `nil` and omits the presentation entirely; it never creates placeholder or error UI. Label offset is presentation state only.
+The map and destination-callout planned VOR/DME projection is optional and contains the arrival waypoint's station identifier, service/type, frequency, radial, distance, association, and planned provenance. Absence produces `nil` and omits those presentations entirely; it never creates placeholder or error UI. Label offset is presentation state only. The authority for this map-specific projection remains [compact, node `211:913`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913), and [details, node `211:965`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965); these nodes do not govern Frequency Plan grouping.
 
-The authoritative VOR/DME states are [compact, node `211:913`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913), and [details, node `211:965`](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965).
+Frequency Plan uses the separate `CockpitOperationalCueState.NavigationAidPlan` multi-reference projection. `CockpitOperationalCueProjector.makeNavigationAidPlan` resolves every `FlightPlan.vorDmeReferences` entry against `PlannedNavigation.vorDmeReferences`, maps its arrival waypoint and route index, and assigns one of `firstFlownLeg`, `upcomingLeg`, `current`, `later`, or `history`. It groups references only when both station identifier and frequency match exactly. Associations within a station are route-ordered, using import order as the stable tie-breaker.
+
+Station ordering is also route-relative. Stations with a non-history association appear first, ordered by their first remaining route index. Passed stations follow and are ordered by their last route index descending, so the most recently used station appears first. Stable import grouping order breaks equal-route ties. This ordering belongs in the projector rather than the SwiftUI view.
+
+`CockpitNavigationAidStationView` excludes `history` associations from visible remaining use, deduplicates waypoint names while preserving route order, and renders the first remaining waypoint plus the number of additional distinct remaining waypoints. A station with no remaining association renders its final association as **Passed** and **Last used at**. Current uses receive the green semantic treatment, future/ready uses purple, and Passed uses the neutral treatment. The accessibility value enumerates all distinct remaining waypoints in route order, or the last-used waypoint for Passed. All variants retain planned provenance and unknown receiver state.
+
+The authoritative grouped Frequency Plan designs are [iPad portrait, node `100:5`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-5), [route-relative state matrix, node `100:373`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-373), [iPad landscape, node `100:203`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-203), [iPhone portrait, node `100:298`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-298), and [accessibility and responsive contract, node `100:404`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-404). Earlier one-card-per-reference nodes `70:2`, `73:182`, `73:234`, `73:258`, and `73:283` are historical context only.
 
 ## SwiftUI composition and adaptive layout
 
@@ -574,7 +580,10 @@ The interface of each deep module is its test surface. Tests use explicit UUIDs 
 - every target outcome maps to one valid callout state;
 - Planned, Revised, Reference, and Actual labels and signed differences are correct;
 - operational heading selects imported baseline or latest commit correctly;
-- VOR/DME content is complete when present and wholly omitted when absent;
+- map and callout VOR/DME content is complete when present and wholly omitted when absent;
+- Frequency Plan retains every imported VOR/DME association, groups exact station-and-frequency matches, and route-orders associations and usable stations;
+- grouped station summaries count only distinct remaining waypoints, decrease with route progress, and transition after final use to most-recent-first Passed ordering;
+- first-flown, upcoming, current, later, Passed, completed-navigation, and absent navigation-aid states project the specified semantic and accessibility treatments;
 - fixed frequency presentation contains only Planned now and Planned next, while Frequency Plan preserves the complete imported sequence;
 - closed Checklist, Previous Leg, and Next Leg projections remain independently available;
 - Previous Leg contains complete target and heading history without retroactive checks;
@@ -591,7 +600,7 @@ The interface of each deep module is its test surface. Tests use explicit UUIDs 
 - distinct transient whole-leg and destination controls, auto-hide, and reappearance after map interaction;
 - closed disclosure coexistence and expanded Map Tools, App Sections, Frequency Plan, Checklist, Previous Leg, and Next Leg states;
 - previewing the next leg without progression or timer mutation;
-- planned VOR/DME compact, detailed, absent, and draggable-label states;
+- planned VOR/DME compact, detailed, absent, and draggable-label states, plus grouped Frequency Plan next-use, countdown, current, future, Passed, and completed states;
 - iPad portrait, iPad landscape, iPhone portrait map prominence, Larger Text, Reduce Motion, and VoiceOver order.
 
 Use Swift Testing for deterministic domain and presentation coverage and XCUIAutomation for end-to-end interactions. Simulator review is required for the affected SwiftUI behavior and supported orientations.
@@ -634,6 +643,6 @@ Use Swift Testing for deterministic domain and presentation coverage and XCUIAut
 - Revised ETA editing and commitment cannot select or commit a value earlier than the running leg timer; the five-second editor uses the rounded-up current elapsed time as its floor.
 - **Show Whole Active Leg** and **Show Destination Waypoint** are separate camera intents. Their transient visibility is presentation-only and does not participate in undo invalidation.
 - Only one disclosure expands at a time. Closed Checklist, Previous Leg, and Next Leg chips remain simultaneously visible when applicable, and expanded content never owns flight state.
-- Planned VOR/DME has one optional projection shared by the compact map label and detailed disclosures; dragging persists only its local label offset.
+- Planned VOR/DME has two presentation projections: one optional arrival reference shared by the compact map label and destination callout, and one multi-reference grouped Frequency Plan derived from the complete imported plan. Dragging persists only the map label's local offset.
 
 The reconciled paired baseline has no open technical-design question that blocks the first implementation checkpoint. Final cross-device visual acceptance remains a human judgment gate under [issue #16](https://github.com/johnbenz13/NavigationFlight/issues/16).

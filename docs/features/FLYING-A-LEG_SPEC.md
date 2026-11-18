@@ -65,13 +65,20 @@ The first release does not:
 
 ## Figma
 
+- Grouped Frequency Plan design status: **approved**
+- Approved iteration: **Issue #172 — grouped route-relative navigation-aid cards**
+- Approved by: **feature owner (John), 2026-11-18**
+- Reconciled spec revision under review: [pull request #183](https://github.com/johnbenz13/NavigationFlight/pull/183). Replace or supplement this branch-level reference with the merged commit permalink at final approval.
 - Stable proposal: [NavigationFlight — Flying a Leg](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I)
+- Stable grouped Frequency Plan proposal: [Issue #172 grouped navigation-aid cards](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M)
 - Current approved cockpit direction: [Iteration 10 — Complete Cockpit Coverage](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=198-2)
 - Current iPad portrait baseline: [Iteration 09 — Reduced-Density Cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=190-96)
 - Current adaptations: [iPad landscape](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-24) and [iPhone portrait](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=194-73)
 - Current interaction coverage: [Iteration 10 coverage index](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=201-921)
 - Current map-focus behavior: [transient controls visible](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-719), [auto-hidden](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-780), and [closed disclosures coexisting](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=206-984)
-- Current VOR/DME coverage: [compact planned reference](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913) and [complete destination details](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965)
+- Current map and destination-callout VOR/DME coverage: [compact planned reference](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-913) and [complete destination details](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=211-965). These nodes do not define the grouped **Frequency Plan** cards.
+- Current grouped Frequency Plan VOR/DME coverage: [iPad portrait](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-5), [route-relative state matrix](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-373), [iPad landscape](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-203), [iPhone portrait](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-298), and [accessibility and responsive contract](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-404).
+- Earlier one-card-per-reference Frequency Plan nodes `70:2`, `73:182`, `73:234`, `73:258`, and `73:283` are historical context only and are not implementation authority.
 - Previous approved product-spec revision: [`6033067`](https://github.com/johnbenz13/NavigationFlight/blob/60330670950c53cabf7645b7984c72c998c80237/docs/features/FLYING-A-LEG_SPEC.md)
 - Previous main-screen direction: [Iteration 02 — real-chart iPad portrait cockpit](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-2)
 - Main-screen frame: [iPad Pro 11-inch portrait — IP2 reached](https://www.figma.com/design/yvLXb8bUFBiZHqsag4hq6I?node-id=16-3)
@@ -503,7 +510,17 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 131. Closed **Checklist**, **Previous Leg**, and **Next Leg** disclosures share one compact strip above the fixed console. On compact widths the strip may scroll horizontally, but it does not stack into persistent rows that materially reduce the resting map height.
 
-132. On iPhone portrait, the resting cockpit keeps approximately two thirds of the usable height for the map. Expanded disclosures temporarily overlay the map as sheets rather than permanently shrinking it. On iPad landscape, the fixed operational console remains in a side rail and disclosure panels temporarily occupy part of the map area. In every supported presentation, heading, timer, ETA, planned altitude, **Planned now**, **Planned next**, and the primary report action remain available in the resting cockpit.
+132. **Frequency Plan** groups imported VOR/DME references by exact station identifier and frequency. Each group is one station card, while every imported waypoint association remains represented in route order in the underlying plan.
+
+133. A usable station card shows its next remaining arrival waypoint and, when applicable, the number of additional distinct remaining waypoint uses as **+ N other waypoint(s)**. Historical uses do not appear in this summary or its count. The suffix is omitted for the final remaining use.
+
+134. Usable station cards are ordered by their next remaining route use, with imported order breaking ties. Their route-relative state is **Planned for first flown leg**, **Upcoming leg reference**, **Planned current**, or **Later**. The current station is green; other usable stations are purple. Text labels accompany color so state is never conveyed by color alone.
+
+135. After a station's final route use, its card becomes **Passed**, moves below all usable stations, uses the neutral passed treatment, and shows only its last-used waypoint. Passed cards are ordered by most recent last use first. When navigation is complete, all retained station cards are Passed.
+
+136. VoiceOver describes every distinct remaining waypoint association in route order for a usable card, or the last-used waypoint for a Passed card. Bidirectional text isolation preserves waypoint and numeric readability. Every card retains the planned-data provenance and unknown receiver-state disclaimer; no state implies live tuning or signal reception.
+
+137. On iPhone portrait, the resting cockpit keeps approximately two thirds of the usable height for the map. Expanded disclosures temporarily overlay the map as sheets rather than permanently shrinking it. On iPad landscape, the fixed operational console remains in a side rail and disclosure panels temporarily occupy part of the map area. In every supported presentation, heading, timer, ETA, planned altitude, **Planned now**, **Planned next**, and the primary report action remain available in the resting cockpit.
 
 ## Complete desired leg flow
 
@@ -630,7 +647,11 @@ Given an active leg with a successor, opening **Next Leg** or choosing **Show Ne
 
 ### Planned VOR/DME reference
 
-Given an arrival waypoint with an imported VOR/DME reference, the map presents a draggable compact label containing the station, magnetic radial, and planned DME distance; **Frequency Plan** presents the station, service, frequency, and arrival association; and the destination callout presents the complete reference with explicit planned-data provenance. Dragging or opening the reference changes presentation only. Given no imported VOR/DME reference, all three presentations omit it without an error or placeholder.
+Given an arrival waypoint with an imported VOR/DME reference, the map presents a draggable compact label containing the station, magnetic radial, and planned DME distance, and the destination callout presents the complete reference with explicit planned-data provenance. Dragging or opening the reference changes presentation only.
+
+Given multiple imported VOR/DME references, **Frequency Plan** groups exact station-and-frequency matches into one card, retains their associations in route order, and orders usable cards by next remaining route use. Each usable card summarizes only its next distinct waypoint plus the number of additional distinct remaining waypoints. As legs advance, that count decreases; the current card uses the green treatment and other usable cards use purple. After the last use, the card becomes neutral **Passed**, moves below usable cards, and identifies its last-used waypoint. Historical associations never inflate the remaining count or produce additional visible rows. VoiceOver enumerates all remaining distinct waypoint associations in route order.
+
+Given no imported VOR/DME reference, the map, destination callout, and Frequency Plan navigation-aid section omit the reference without an error or placeholder. The grouped Frequency Plan behavior is governed by nodes [`100:5`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-5), [`100:373`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-373), [`100:203`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-203), [`100:298`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-298), and [`100:404`](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=100-404). Earlier one-card-per-reference nodes are historical context only.
 
 ## As-is gaps and delivery phases
 

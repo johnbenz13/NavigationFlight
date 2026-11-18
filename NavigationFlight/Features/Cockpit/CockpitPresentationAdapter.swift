@@ -889,10 +889,10 @@ struct CockpitPresentationAdapter: Sendable {
         }
 
         let sourceReferences = Dictionary(uniqueKeysWithValues: flightPlan.vorDmeReferences.map { ($0.id, $0) })
-        let endpointIDs = [sourceLeg.departure.id: sourceLeg.departure.name, sourceLeg.arrival.id: sourceLeg.arrival.name]
+        let waypointNames = Dictionary(uniqueKeysWithValues: flightPlan.waypoints.map { ($0.id, $0.name) })
         let references = plannedNavigation.vorDmeReferences.compactMap { resolved -> CockpitPresentationData.PlannedReference? in
             guard let source = sourceReferences[resolved.referenceID],
-                  let endpointName = endpointIDs[source.waypointID] else { return nil }
+                  let endpointName = waypointNames[source.waypointID] else { return nil }
             return CockpitPresentationData.PlannedReference(
                 id: resolved.referenceID,
                 endpointName: endpointName,

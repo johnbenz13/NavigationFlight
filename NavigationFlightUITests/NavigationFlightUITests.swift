@@ -977,7 +977,7 @@ final class NavigationFlightUITests: XCTestCase {
         if compactFrequencies.exists {
             compactFrequencies.tap()
             let groupedVOR = app.descendants(matching: .any).matching(
-                NSPredicate(format: "label BEGINSWITH 'BGN · VOR/DME'")
+                NSPredicate(format: "label CONTAINS 'BGN' AND label CONTAINS 'VOR/DME' AND label CONTAINS 'megahertz'")
             )
             XCTAssertGreaterThanOrEqual(groupedVOR.count, 1)
         } else {

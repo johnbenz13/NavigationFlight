@@ -1,6 +1,32 @@
 import Foundation
 
 struct CockpitOperationalCueState: Equatable, Sendable {
+    struct NavigationAidPlan: Equatable, Sendable {
+        struct Station: Identifiable, Equatable, Sendable {
+            let id: UUID
+            let identifier: String
+            let frequencyMHz: Double
+            let associations: [Association]
+        }
+
+        struct Association: Identifiable, Equatable, Sendable {
+            enum State: Equatable, Sendable {
+                case firstFlownLeg
+                case upcomingLeg
+                case current
+                case later
+                case history
+            }
+
+            let id: UUID
+            let state: State
+            let arrivalWaypoint: String
+            let routeIndex: Int
+        }
+
+        let stations: [Station]
+    }
+
     struct CommunicationPlan: Equatable, Sendable {
         struct Entry: Identifiable, Equatable, Sendable {
             enum State: Equatable, Sendable {
@@ -50,6 +76,7 @@ struct CockpitOperationalCueState: Equatable, Sendable {
 
     let frequencies: [FrequencyCue]
     let communicationPlan: CommunicationPlan
+    let navigationAidPlan: NavigationAidPlan
     let currentAltitude: AltitudeFeet
     let nextAltitude: AltitudeCue?
     let dueAltitude: AltitudeCue?
@@ -58,6 +85,7 @@ struct CockpitOperationalCueState: Equatable, Sendable {
     init(
         frequencies: [FrequencyCue],
         communicationPlan: CommunicationPlan = .init(entries: [], compactEntries: []),
+        navigationAidPlan: NavigationAidPlan = .init(stations: []),
         currentAltitude: AltitudeFeet,
         nextAltitude: AltitudeCue?,
         dueAltitude: AltitudeCue?,
@@ -65,6 +93,7 @@ struct CockpitOperationalCueState: Equatable, Sendable {
     ) {
         self.frequencies = frequencies
         self.communicationPlan = communicationPlan
+        self.navigationAidPlan = navigationAidPlan
         self.currentAltitude = currentAltitude
         self.nextAltitude = nextAltitude
         self.dueAltitude = dueAltitude
@@ -299,6 +328,11 @@ struct CockpitOperationalCueProjector: Sendable {
             flight: flight,
             elapsedSeconds: elapsedSeconds
         )
+        let navigationAidPlan = makeNavigationAidPlan(
+            flightPlan: flightPlan,
+            plannedNavigation: plannedNavigation,
+            flight: flight
+        )
 
         let orderedAltitudeChanges = flightPlan.altitudeChanges.enumerated()
             .compactMap { sourceIndex, change -> (change: AltitudeChange, time: Int, sourceIndex: Int)? in
@@ -359,6 +393,7 @@ struct CockpitOperationalCueProjector: Sendable {
         return CockpitOperationalCueState(
             frequencies: frequencies,
             communicationPlan: communicationPlan,
+            navigationAidPlan: navigationAidPlan,
             currentAltitude: currentAltitude,
             nextAltitude: nextAltitude,
             dueAltitude: currentAltitudeChange.map {
@@ -369,6 +404,125 @@ struct CockpitOperationalCueProjector: Sendable {
             } ?? initialAltitudeDue,
             dueEvents: dueEvents
         )
+    }
+
+    private func makeNavigationAidPlan(
+        flightPlan: FlightPlan,
+        plannedNavigation: PlannedNavigation,
+        flight: Flight
+    ) -> CockpitOperationalCueState.NavigationAidPlan {
+        let resolvedByID = Dictionary(
+            uniqueKeysWithValues: plannedNavigation.vorDmeReferences.map { ($0.referenceID, $0) }
+        )
+        let waypointNames = Dictionary(uniqueKeysWithValues: flightPlan.waypoints.map { ($0.id, $0.name) })
+        let arrivalLegIndexByWaypointID = Dictionary(
+            uniqueKeysWithValues: flightPlan.legs.enumerated().map { ($1.arrival.id, $0) }
+        )
+
+        struct ResolvedAssociation {
+            let station: String
+            let frequencyMHz: Double
+            let association: CockpitOperationalCueState.NavigationAidPlan.Association
+        }
+
+        let associations = flightPlan.vorDmeReferences.compactMap { reference -> ResolvedAssociation? in
+            guard let resolved = resolvedByID[reference.id],
+                  let arrivalWaypoint = waypointNames[reference.waypointID] else { return nil }
+
+            let referenceLegIndex = arrivalLegIndexByWaypointID[reference.waypointID]
+            let state: CockpitOperationalCueState.NavigationAidPlan.Association.State
+            switch flight.legState {
+            case .completed:
+                state = .history
+            case .active:
+                if referenceLegIndex == flight.activeLegIndex {
+                    state = .current
+                } else if let referenceLegIndex, referenceLegIndex < flight.activeLegIndex {
+                    state = .history
+                } else {
+                    state = .later
+                }
+            case .ready:
+                if referenceLegIndex == flight.activeLegIndex {
+                    state = flight.hasNavigationProgress ? .upcomingLeg : .firstFlownLeg
+                } else if let referenceLegIndex, referenceLegIndex < flight.activeLegIndex {
+                    state = .history
+                } else {
+                    state = .later
+                }
+            }
+
+            return ResolvedAssociation(
+                station: reference.navigationAid.identifier,
+                frequencyMHz: resolved.frequency.value,
+                association: .init(
+                    id: reference.id,
+                    state: state,
+                    arrivalWaypoint: arrivalWaypoint,
+                    routeIndex: referenceLegIndex ?? .max
+                )
+            )
+        }
+
+        var stations: [CockpitOperationalCueState.NavigationAidPlan.Station] = []
+        for item in associations {
+            if let index = stations.firstIndex(where: {
+                $0.identifier == item.station && $0.frequencyMHz == item.frequencyMHz
+            }) {
+                let station = stations[index]
+                stations[index] = .init(
+                    id: station.id,
+                    identifier: station.identifier,
+                    frequencyMHz: station.frequencyMHz,
+                    associations: station.associations + [item.association]
+                )
+            } else {
+                stations.append(.init(
+                    id: item.association.id,
+                    identifier: item.station,
+                    frequencyMHz: item.frequencyMHz,
+                    associations: [item.association]
+                ))
+            }
+        }
+
+        stations = stations.map { station in
+            let orderedAssociations = station.associations.enumerated().sorted { lhs, rhs in
+                if lhs.element.routeIndex != rhs.element.routeIndex {
+                    return lhs.element.routeIndex < rhs.element.routeIndex
+                }
+                return lhs.offset < rhs.offset
+            }.map(\.element)
+            return .init(
+                id: station.id,
+                identifier: station.identifier,
+                frequencyMHz: station.frequencyMHz,
+                associations: orderedAssociations
+            )
+        }
+
+        let orderedStations = stations.enumerated().sorted { lhs, rhs in
+            let lhsRemaining = lhs.element.associations.filter { $0.state != .history }
+            let rhsRemaining = rhs.element.associations.filter { $0.state != .history }
+
+            switch (lhsRemaining.first, rhsRemaining.first) {
+            case let (lhsNext?, rhsNext?):
+                if lhsNext.routeIndex != rhsNext.routeIndex {
+                    return lhsNext.routeIndex < rhsNext.routeIndex
+                }
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            case (nil, nil):
+                let lhsLast = lhs.element.associations.last?.routeIndex ?? .min
+                let rhsLast = rhs.element.associations.last?.routeIndex ?? .min
+                if lhsLast != rhsLast { return lhsLast > rhsLast }
+            }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
+
+        return .init(stations: orderedStations)
     }
 
     private func time(

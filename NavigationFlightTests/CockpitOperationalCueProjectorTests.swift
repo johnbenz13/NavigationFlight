@@ -587,6 +587,104 @@ struct CockpitOperationalCueProjectorTests {
         #expect(state.frequencies.allSatisfy { $0.status == .other })
     }
 
+    @Test("Ready projection preserves phases and uses the same compact communication entries")
+    func readyCommunicationProjectionPreservesPhases() throws {
+        let flightPlan = try mutatedFixtureFlightPlan { object in
+            var execution = try required(object["execution"] as? [String: Any])
+            var phases = try required(execution["frequenciesByPhase"] as? [String: Any])
+            var departure = try required(phases["departure"] as? [[String: Any]])
+            departure[0]["id"] = "departure:synthetic"
+            departure[0]["name"] = "Synthetic tower"
+            departure[0]["frequencyMhz"] = 122.2
+            departure[0]["source"] = "departure"
+            phases["departure"] = departure
+            var arrival = try required(phases["arrival"] as? [[String: Any]])
+            arrival[0]["id"] = "arrival:synthetic"
+            arrival[0]["name"] = "Synthetic arrival"
+            arrival[0]["frequencyMhz"] = 119.65
+            arrival[0]["source"] = "arrival"
+            phases["arrival"] = arrival
+            execution["frequenciesByPhase"] = phases
+            object["execution"] = execution
+        }
+        let flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: Date(timeIntervalSince1970: 10_000)
+        )
+
+        #expect(state.communicationPlan.entries.map(\.phase).contains(.departure))
+        #expect(state.communicationPlan.entries.map(\.phase).contains(.enRoute))
+        #expect(state.communicationPlan.entries.map(\.phase).contains(.arrival))
+        #expect(state.communicationPlan.compactEntries.first?.state == .departurePlan)
+        #expect(state.communicationPlan.compactEntries.first?.dueContext == "Before navigation")
+        #expect(state.communicationPlan.compactEntries.dropFirst().allSatisfy { $0.dueContext.contains("→") })
+        #expect(state.communicationPlan.compactEntries.dropFirst().first?.phase == .enRoute)
+        #expect(state.communicationPlan.entries.allSatisfy { $0.frequencyMHz >= 118 })
+    }
+
+    @Test("Communication projection changes atomically at the exact boundary")
+    func communicationProjectionChangesAtomicallyAtBoundary() throws {
+        let flightPlan = try fixtureFlightPlan()
+        let start = Date(timeIntervalSince1970: 11_000)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+        let projector = CockpitOperationalCueProjector()
+
+        let before = try projector.project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(27.49)
+        )
+        let atBoundary = try projector.project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(27.5)
+        )
+
+        #expect(before.communicationPlan.compactEntries.first?.state == .next)
+        #expect(atBoundary.communicationPlan.compactEntries.first?.state == .current)
+        #expect(before.communicationPlan.compactEntries.first?.id == atBoundary.communicationPlan.compactEntries.first?.id)
+        #expect(atBoundary.communicationPlan.entries.filter { $0.state == .current }.map(\.id)
+            == atBoundary.communicationPlan.compactEntries.filter { $0.state == .current }.map(\.id))
+    }
+
+    @Test("Completed navigation presents arrival without implying aircraft position")
+    func completedNavigationPresentsArrival() throws {
+        let flightPlan = try fixtureFlightPlan()
+        let start = Date(timeIntervalSince1970: 12_000)
+        var flight = Flight(
+            flightPlanID: flightPlan.id,
+            legIDs: flightPlan.legs.map(\.id),
+            activeLegIndex: 0,
+            executionMode: .noWind
+        )
+        try flight.startLeg(at: start)
+        try flight.reachCurrentWaypoint(at: start.addingTimeInterval(60))
+
+        let state = try CockpitOperationalCueProjector().project(
+            flightPlan: flightPlan,
+            flight: flight,
+            at: start.addingTimeInterval(61)
+        )
+
+        #expect(state.communicationPlan.compactEntries.allSatisfy { $0.state == .arrival })
+        #expect(state.communicationPlan.compactEntries.allSatisfy { $0.dueContext == "After navigation" })
+        #expect(state.communicationPlan.entries.filter { $0.phase == .enRoute }.allSatisfy { $0.state == .past })
+    }
+
     private func fixtureFlightPlan() throws -> FlightPlan {
         let bundle = Bundle(for: FixtureLocator.self)
         let nested = bundle.url(

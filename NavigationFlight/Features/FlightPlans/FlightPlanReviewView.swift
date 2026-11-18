@@ -22,6 +22,8 @@ struct FlightPlanReviewPresentation: Equatable {
     let duration: String
     let legs: [Leg]
     let frequencyPlan: CockpitFrequencyPlan
+    let communicationPlan: CockpitOperationalCueState.CommunicationPlan?
+    let frequencyReferences: [CockpitPresentationData.PlannedReference]
     let map: AviationMapPresentation?
 
     init(record: LibraryFlightPlan, isLoaded: Bool) {
@@ -88,6 +90,11 @@ struct FlightPlanReviewPresentation: Equatable {
             frequencies: frequencies,
             references: references
         )
+        frequencyReferences = references
+        communicationPlan = Self.readyCommunicationPlan(
+            flightPlan: plan,
+            frequencies: frequencies
+        )
 
         if let firstLeg = plan.legs.first, let lastLeg = plan.legs.last {
             let waypoints = plan.waypoints.map { waypoint in
@@ -148,6 +155,57 @@ struct FlightPlanReviewPresentation: Equatable {
         let minutes = (seconds % 3_600) / 60
         return hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
     }
+
+    private static func readyCommunicationPlan(
+        flightPlan: FlightPlan,
+        frequencies: [FlightPhase: [CockpitPresentationData.Frequency]]
+    ) -> CockpitOperationalCueState.CommunicationPlan {
+        let changeByID = flightPlan.frequencyChanges.reduce(into: [String: FrequencyChange]()) {
+            $0["route:\($1.id.uuidString.lowercased())"] = $1
+        }
+        let legByID = flightPlan.legs.reduce(into: [UUID: NavigationLeg]()) {
+            $0[$1.id] = $1
+        }
+        let entries = FlightPhase.allCases.flatMap { phase in
+            (frequencies[phase] ?? []).filter {
+                $0.source != .vorDme && $0.frequencyMHz >= 118
+            }.map { frequency -> CockpitOperationalCueState.CommunicationPlan.Entry in
+                let state: CockpitOperationalCueState.CommunicationPlan.Entry.State
+                let dueContext: String
+                switch phase {
+                case .departure:
+                    state = .departurePlan
+                    dueContext = "Before navigation"
+                case .arrival:
+                    state = .arrival
+                    dueContext = "After navigation"
+                case .enRoute:
+                    if let change = changeByID[frequency.id],
+                       let leg = legByID[change.legID] {
+                        state = change.progress.fraction == 0 ? .atStart : .later
+                        dueContext = "\(leg.departure.name) → \(leg.arrival.name) · "
+                            + (change.progress.fraction == 0 ? "at start" : "later this leg")
+                    } else {
+                        state = .later
+                        dueContext = "Planned in route"
+                    }
+                }
+                return CockpitOperationalCueState.CommunicationPlan.Entry(
+                    id: frequency.id,
+                    phase: frequency.phase,
+                    role: frequency.role,
+                    service: frequency.service,
+                    frequencyMHz: frequency.frequencyMHz,
+                    state: state,
+                    dueContext: dueContext
+                )
+            }
+        }
+        let departureEntries = entries.filter { $0.phase == .departure }
+        let enRouteEntries = entries.filter { $0.phase == .enRoute }
+        let compactEntries = Array((Array(departureEntries.prefix(1)) + Array(enRouteEntries.prefix(2))).prefix(3))
+        return .init(entries: entries, compactEntries: compactEntries)
+    }
 }
 
 struct FlightPlanReviewView: View {
@@ -201,21 +259,57 @@ struct FlightPlanReviewView: View {
         .background(Color(.systemBackground))
         .navigationTitle(presentation.title)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $presentedSheet) { sheet in
-            switch sheet {
-            case .frequencyPlan:
-                CockpitFrequencyPlanView(plan: presentation.frequencyPlan) {
-                    presentedSheet = nil
-                }
-                .presentationDetents([.large])
-            case .routeDetails:
-                FlightPlanRouteDetailsView(presentation: presentation) {
-                    presentedSheet = nil
-                }
-                .presentationDetents([.large])
+        .accessibilityHidden(presentedSheet == .frequencyPlan)
+        .overlay {
+            if presentedSheet == .frequencyPlan {
+                frequencyPlanOverlay
             }
         }
+        .sheet(isPresented: routeDetailsBinding) {
+            FlightPlanRouteDetailsView(presentation: presentation) {
+                presentedSheet = nil
+            }
+            .presentationDetents([.large])
+        }
         .accessibilityIdentifier("flight-plan-inspection")
+    }
+
+    private var routeDetailsBinding: Binding<Bool> {
+        Binding(
+            get: { presentedSheet == .routeDetails },
+            set: { isPresented in
+                if !isPresented { presentedSheet = nil }
+            }
+        )
+    }
+
+    private var frequencyPlanOverlay: some View {
+        ZStack {
+            Button {
+                presentedSheet = nil
+            } label: {
+                Color.black.opacity(0.22)
+                    .ignoresSafeArea()
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close frequency plan")
+
+            CockpitFrequencyPlanView(
+                plan: presentation.frequencyPlan,
+                communicationPlan: presentation.communicationPlan,
+                references: presentation.frequencyReferences
+            ) {
+                presentedSheet = nil
+            }
+            .frame(maxWidth: 690, maxHeight: 760)
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .shadow(color: .black.opacity(0.2), radius: 18, y: 8)
+            .padding(24)
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(.isModal)
+            .accessibilitySortPriority(1)
+        }
+        .accessibilityIdentifier("flight-plan-frequency-overlay")
     }
 
     private var mapSurface: some View {

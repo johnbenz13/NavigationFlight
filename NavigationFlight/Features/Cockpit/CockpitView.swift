@@ -240,7 +240,10 @@ struct CockpitView: View {
         GeometryReader { geometry in
             ZStack {
                 restingCockpitLayout(in: geometry.size)
-                    .accessibilityHidden(activeHeadingState?.isEditing == true)
+                    .accessibilityHidden(
+                        activeHeadingState?.isEditing == true
+                            || cockpitPresentationState.isFrequencyPlanPresented
+                    )
                 if isPilotETAEditing {
                     etaConsoleDismissBackdrop(in: geometry.size)
                 }
@@ -257,6 +260,25 @@ struct CockpitView: View {
                 if let headingState = activeHeadingState, headingState.isEditing {
                     ModalDismissBackdrop(onDismiss: onCancelPilotHeading)
                     headingEditor(state: headingState)
+                }
+                if cockpitPresentationState.isFrequencyPlanPresented {
+                    ModalDismissBackdrop(isDimmed: true) {
+                        cockpitPresentationState.setFrequencyPlanPresented(false)
+                    }
+                    frequencyPlanPanel
+                        .frame(maxWidth: horizontalSizeClass == .compact ? .infinity : 380)
+                        .frame(maxHeight: 760)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
+                        .padding(horizontalSizeClass == .compact ? 16 : 18)
+                        .frame(
+                            maxWidth: .infinity,
+                            maxHeight: .infinity,
+                            alignment: horizontalSizeClass == .compact ? .center : .topTrailing
+                        )
+                        .accessibilityElement(children: .contain)
+                        .accessibilityAddTraits(.isModal)
+                        .accessibilitySortPriority(1)
                 }
                 if horizontalSizeClass != .compact,
                    cockpitPresentationState.isPreviousLegPresented,
@@ -321,11 +343,6 @@ struct CockpitView: View {
         .sheet(isPresented: compactMapToolsBinding) {
             mapToolsPanel
                 .presentationDetents([.large])
-        }
-        .sheet(isPresented: compactFrequencyPlanBinding) {
-            frequencyPlanPanel
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: compactChecklistBinding) {
             if let legStartChecklist,
@@ -575,17 +592,6 @@ struct CockpitView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .accessibilitySortPriority(95)
             }
-            if horizontalSizeClass != .compact, cockpitPresentationState.isFrequencyPlanPresented {
-                frequencyPlanPanel
-                    .frame(width: min(380, mapWidth - 40))
-                    .frame(maxHeight: 760)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
-                    .padding(.vertical, 18)
-                    .padding(.trailing, 18)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .accessibilitySortPriority(95)
-            }
             if let recovery = positionCheck?.recovery {
                 PositionCheckRecoveryGuidanceView(recovery: recovery)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -721,13 +727,6 @@ struct CockpitView: View {
         )
     }
 
-    private var compactFrequencyPlanBinding: Binding<Bool> {
-        Binding(
-            get: { horizontalSizeClass == .compact && cockpitPresentationState.isFrequencyPlanPresented },
-            set: { cockpitPresentationState.setFrequencyPlanPresented($0) }
-        )
-    }
-
     private var compactChecklistBinding: Binding<Bool> {
         Binding(
             get: { isCompactChecklistPresented },
@@ -785,6 +784,8 @@ struct CockpitView: View {
     private var frequencyPlanPanel: some View {
         CockpitFrequencyPlanView(
             plan: data.frequencyPlan,
+            communicationPlan: operationalCues?.communicationPlan,
+            references: data.references,
             onClose: { cockpitPresentationState.setFrequencyPlanPresented(false) }
         )
     }
@@ -1816,15 +1817,24 @@ struct CockpitView: View {
         _ cue: CockpitOperationalCueState.FrequencyCue?,
         index: Int
     ) -> some View {
-        let sequence = index == 0 ? "Planned now" : "Planned next"
+        let sequence = immediateFrequencyStateLabel(at: index)
         return VStack(alignment: .leading, spacing: 3) {
             Text(sequence)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(cue.map { "\($0.frequency.service) · \(Self.frequency($0.frequency.frequencyMHz)) MHz" } ?? "None in imported plan")
+            Text(cue.map { "\($0.frequency.service) · \(Self.frequency($0.frequency.frequencyMHz)) MHz" }
+                ?? (operationalCues == nil ? "None in imported plan" : "None later in plan"))
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
+            if let due = operationalCues?.communicationPlan.compactEntries.indices.contains(index) == true
+                ? operationalCues?.communicationPlan.compactEntries[index].dueContext
+                : nil {
+                Text(due)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
@@ -1842,10 +1852,30 @@ struct CockpitView: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(immediateFrequencyAccessibilityLabel(cue, index: index))
-        .accessibilityIdentifier(sequence == "Planned now" ? "planned-now" : "planned-next")
+        .accessibilityIdentifier(index == 0 ? "planned-now" : "planned-next")
     }
 
     private func immediateFrequencyCue(at index: Int) -> CockpitOperationalCueState.FrequencyCue? {
+        if let entries = operationalCues?.communicationPlan.compactEntries,
+           entries.indices.contains(index) {
+            let entry = entries[index]
+            let status: CockpitOperationalCueState.FrequencyCue.Status = switch entry.state {
+            case .current, .departurePlan: .current
+            case .next: .next
+            case .atStart, .later, .past, .arrival: .other
+            }
+            return CockpitOperationalCueState.FrequencyCue(
+                frequency: .init(
+                    id: entry.id,
+                    phases: [entry.phase],
+                    service: entry.service,
+                    serviceType: entry.role ?? Self.phaseAbbreviation(entry.phase),
+                    frequencyMHz: entry.frequencyMHz,
+                    source: .route
+                ),
+                status: status
+            )
+        }
         guard let operationalCues else {
             guard data.displayFrequencies.indices.contains(index) else { return nil }
             return CockpitOperationalCueState.FrequencyCue(
@@ -1865,9 +1895,31 @@ struct CockpitView: View {
         _ cue: CockpitOperationalCueState.FrequencyCue?,
         index: Int
     ) -> String {
-        let sequence = index == 0 ? "Planned now" : "Planned next"
+        let sequence = immediateFrequencyStateLabel(at: index)
         guard let cue else { return "\(sequence), none in imported plan" }
-        return "\(sequence), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz"
+        let due: String? = if let entries = operationalCues?.communicationPlan.compactEntries,
+                              entries.indices.contains(index) {
+            entries[index].dueContext
+        } else {
+            nil
+        }
+        return "\(sequence), \(cue.frequency.service), \(Self.frequency(cue.frequency.frequencyMHz)) megahertz\(due.map { ", \($0)" } ?? "")"
+    }
+
+    private func immediateFrequencyStateLabel(at index: Int) -> String {
+        guard let entries = operationalCues?.communicationPlan.compactEntries,
+              entries.indices.contains(index) else {
+            return index == 0 ? "Planned now" : "Planned next"
+        }
+        switch entries[index].state {
+        case .departurePlan: return "Departure plan"
+        case .atStart: return "Planned at start"
+        case .current: return "Planned now"
+        case .next: return "Planned next"
+        case .later: return "Planned later"
+        case .past: return "Planned history"
+        case .arrival: return "Planned after navigation"
+        }
     }
 
     private func immediateFrequencyBackground(
@@ -1888,6 +1940,7 @@ struct CockpitView: View {
 
     private func readyFrequencyCard(_ cue: CockpitOperationalCueState.FrequencyCue) -> some View {
         let frequency = cue.frequency
+        let communicationEntry = operationalCues?.communicationPlan.compactEntries.first { $0.id == cue.id }
         let isEmphasized = cue.status == .current && containsFrequencyEmphasis
         return VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 5) {
@@ -1895,7 +1948,7 @@ struct CockpitView: View {
                     .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 4)
-                if let statusLabel = cue.statusLabel {
+                if let statusLabel = communicationEntry.map({ stateLabel(for: $0.state).uppercased() }) ?? cue.statusLabel {
                     Text(statusLabel)
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(cueForeground(for: cue.status))
@@ -1908,6 +1961,11 @@ struct CockpitView: View {
             Text(frequency.phases.map(Self.phaseAbbreviation).joined(separator: " → "))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+            if let dueContext = communicationEntry?.dueContext {
+                Text(dueContext)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -1928,6 +1986,18 @@ struct CockpitView: View {
         .accessibilityLabel(cue.accessibilityDescription)
         .accessibilityValue(cue.statusLabel?.lowercased() ?? "planned")
         .accessibilityIdentifier("frequency-\(frequency.id)")
+    }
+
+    private func stateLabel(for state: CockpitOperationalCueState.CommunicationPlan.Entry.State) -> String {
+        switch state {
+        case .departurePlan: "Departure plan"
+        case .atStart: "Planned at start"
+        case .current: "Planned now"
+        case .next: "Planned next"
+        case .later: "Planned later"
+        case .past: "Planned history"
+        case .arrival: "Planned after navigation"
+        }
     }
 
     private var readyStartRow: some View {
@@ -2121,7 +2191,27 @@ struct CockpitView: View {
     }
 
     private var orderedFrequencyCues: [CockpitOperationalCueState.FrequencyCue] {
-        operationalCues?.frequencies ?? orderedFrequencies.map {
+        if let entries = operationalCues?.communicationPlan.compactEntries, !entries.isEmpty {
+            return entries.map { entry in
+                let status: CockpitOperationalCueState.FrequencyCue.Status = switch entry.state {
+                case .current, .departurePlan: .current
+                case .next: .next
+                case .atStart, .later, .past, .arrival: .other
+                }
+                return .init(
+                    frequency: .init(
+                        id: entry.id,
+                        phases: [entry.phase],
+                        service: entry.service,
+                        serviceType: entry.role ?? Self.phaseAbbreviation(entry.phase),
+                        frequencyMHz: entry.frequencyMHz,
+                        source: .route
+                    ),
+                    status: status
+                )
+            }
+        }
+        return operationalCues?.frequencies ?? orderedFrequencies.map {
             CockpitOperationalCueState.FrequencyCue(frequency: $0, status: .other)
         }
     }
@@ -2885,12 +2975,16 @@ private struct LegStartChecklistOverlay: View {
 }
 
 private struct ModalDismissBackdrop: View {
+    var isDimmed = false
     let onDismiss: () -> Void
 
     var body: some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onDismiss)
+        Button(action: onDismiss) {
+            Color.black.opacity(isDimmed ? 0.22 : 0.001)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+        }
+            .buttonStyle(.plain)
             .accessibilityHidden(true)
     }
 }

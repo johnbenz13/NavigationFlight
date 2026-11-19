@@ -46,12 +46,25 @@ nonisolated struct FlightEvidenceContext: Equatable, Sendable {
 
 nonisolated struct FlightEvidenceSnapshot: Equatable, Sendable {
     let capturedAt: Date
+    let sourceState: FlightEvidenceBundleV1.SourceState
     let recording: FlightRecordingReadSnapshot
     let context: FlightEvidenceContext
+
+    init(
+        capturedAt: Date,
+        sourceState: FlightEvidenceBundleV1.SourceState = .closed,
+        recording: FlightRecordingReadSnapshot,
+        context: FlightEvidenceContext
+    ) {
+        self.capturedAt = capturedAt
+        self.sourceState = sourceState
+        self.recording = recording
+        self.context = context
+    }
 }
 
 nonisolated enum FlightEvidenceMappingError: Error, Equatable, Sendable {
-    case recordingNotClosed(UUID)
+    case sourceStateClosureMismatch(UUID)
     case durationOutOfRange
 }
 
@@ -61,13 +74,13 @@ nonisolated struct FlightEvidenceMapper: Sendable {
         bundleIdentifier: UUID = UUID()
     ) throws -> FlightEvidenceBundleV1 {
         let recording = snapshot.recording.recording
-        guard let closure = recording.closure else {
-            throw FlightEvidenceMappingError.recordingNotClosed(recording.id)
+        guard (snapshot.sourceState == .closed) == (recording.closure != nil) else {
+            throw FlightEvidenceMappingError.sourceStateClosureMismatch(recording.id)
         }
         return FlightEvidenceBundleV1(
             bundleIdentifier: bundleIdentifier,
             capturedAt: snapshot.capturedAt,
-            sourceState: .closed,
+            sourceState: snapshot.sourceState,
             applicationContext: .init(
                 appVersion: snapshot.context.appVersion,
                 appBuild: snapshot.context.appBuild,
@@ -89,13 +102,15 @@ nonisolated struct FlightEvidenceMapper: Sendable {
                 legIdentifiers: recording.flightPlanSnapshot.legIDs,
                 sourceData: recording.flightPlanSnapshot.sourceData
             ),
-            closure: .init(
-                outcome: closure.outcome == .complete ? "complete" : "incomplete",
-                cause: closureCause(closure.cause),
-                closedAt: closure.closedAt,
-                elapsedNanoseconds: try nanoseconds(closure.elapsed),
-                landingEvidenceAvailable: closure.landingEvidenceAvailable
-            ),
+            closure: try recording.closure.map { closure in
+                .init(
+                    outcome: closure.outcome == .complete ? "complete" : "incomplete",
+                    cause: closureCause(closure.cause),
+                    closedAt: closure.closedAt,
+                    elapsedNanoseconds: try nanoseconds(closure.elapsed),
+                    landingEvidenceAvailable: closure.landingEvidenceAvailable
+                )
+            },
             orderedEvents: try snapshot.recording.events.map(event),
             trackSegments: snapshot.recording.trackSegments.map(segment)
         )

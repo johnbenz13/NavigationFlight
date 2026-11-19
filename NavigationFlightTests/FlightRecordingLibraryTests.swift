@@ -321,6 +321,103 @@ struct FlightRecordingLibraryTests {
         #expect(bundle.detectorPolicyContext?.version == retainedPolicy.version)
     }
 
+    @Test("Active diagnostic export is an immutable point-in-time snapshot")
+    func activeDiagnosticExportIsPointInTime() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(id: UUID(), startedAt: startedAt)
+        let segmentID = UUID()
+        let originalSample = trackSample(
+            latitude: 32,
+            longitude: 34,
+            at: startedAt.addingTimeInterval(10),
+            altitude: 100
+        )
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(.init(
+            recording: recording,
+            events: [],
+            trackSegments: [.init(id: segmentID, samples: [originalSample])]
+        ))])
+        let library = FlightRecordingLibrary(store: store)
+        let capturedAt = startedAt.addingTimeInterval(20)
+
+        let result = try await library.exportDiagnosticBundle(
+            id: recording.id,
+            sourceState: .active,
+            using: DiagnosticBundleExporter(temporaryDirectory: directory),
+            capturedAt: capturedAt
+        )
+
+        let laterSample = trackSample(
+            latitude: 33,
+            longitude: 35,
+            at: startedAt.addingTimeInterval(30),
+            altitude: 200
+        )
+        try await store.appendTrackBatch(.init(
+            recordingID: recording.id,
+            segmentID: segmentID,
+            samples: [laterSample]
+        ))
+        let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
+        let current = try await store.readSnapshot(id: recording.id)
+
+        #expect(bundle.sourceState == .active)
+        #expect(bundle.capturedAt == capturedAt)
+        #expect(bundle.trackSegments.flatMap(\.samples).count == 1)
+        #expect(current.trackSegments.flatMap(\.samples).count == 2)
+        #expect(current.recording.closure == nil)
+    }
+
+    @Test("Failed and cancelled snapshot exports do not interrupt later ingestion")
+    func unsuccessfulSnapshotExportsPreserveIngestion() async throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(id: UUID(), startedAt: startedAt)
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(.init(
+            recording: recording,
+            events: []
+        ))])
+        let library = FlightRecordingLibrary(store: store)
+
+        await #expect(throws: FlightEvidenceMappingError.self) {
+            try await library.exportDiagnosticBundle(
+                id: recording.id,
+                sourceState: .closed,
+                using: DiagnosticBundleExporter()
+            )
+        }
+
+        let cancelledExport = Task {
+            try await library.exportDiagnosticBundle(
+                id: recording.id,
+                sourceState: .active,
+                using: DiagnosticBundleExporter(preparationDelay: .seconds(10))
+            )
+        }
+        try await Task.sleep(for: .milliseconds(50))
+        cancelledExport.cancel()
+        await #expect(throws: CancellationError.self) {
+            try await cancelledExport.value
+        }
+
+        let laterEvent = RecordedFlightEvent(
+            id: UUID(),
+            sequence: 0,
+            occurredAt: startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            origin: .pilot,
+            payload: .positionCheckRequested
+        )
+        try await store.appendEvent(laterEvent, recordingID: recording.id, synchronize: true)
+
+        let current = try await store.readSnapshot(id: recording.id)
+        #expect(current.events == [laterEvent])
+        #expect(current.recording.closure == nil)
+    }
+
     @Test("Diagnostic export keeps legacy detector policy unavailable")
     func diagnosticExportDoesNotReconstructLegacyPolicy() async throws {
         let directory = FileManager.default.temporaryDirectory

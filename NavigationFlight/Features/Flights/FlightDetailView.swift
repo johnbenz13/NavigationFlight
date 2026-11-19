@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreTransferable
+import FlightEvidenceCore
 import UniformTypeIdentifiers
 
 struct FlightDetailLoaderView: View {
@@ -16,6 +17,9 @@ struct FlightDetailLoaderView: View {
     @State private var detail: FlightDetailPresentation?
     @State private var loadFailed = false
     @State private var exportChoicePresented = false
+    @State private var snapshotConfirmationPresented = false
+    @State private var pendingSnapshotState: FlightEvidenceBundleV1.SourceState?
+    @State private var pendingCapturedAt: Date?
     @State private var exportResult: FlightExportResult?
     @State private var failedFormat: FlightExportFormat?
     @State private var exportTask: Task<Void, Never>?
@@ -57,11 +61,28 @@ struct FlightDetailLoaderView: View {
         .sheet(isPresented: $exportChoicePresented) {
             FlightExportChoiceView(canExportGPX: detail?.canExportGPX ?? false) { format in
                 exportChoicePresented = false
-                beginExport(format)
+                prepareExport(format)
             }
             .presentationSizing(.page)
             .presentationDetents([.height(430)])
             .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $snapshotConfirmationPresented) {
+            if let pendingSnapshotState, let pendingCapturedAt {
+                ProvisionalFlightExportConfirmationView(
+                    sourceState: pendingSnapshotState,
+                    capturedAt: pendingCapturedAt
+                ) {
+                    beginExport(
+                        .diagnosticBundle,
+                        sourceState: pendingSnapshotState,
+                        capturedAt: pendingCapturedAt
+                    )
+                }
+                .presentationSizing(.page)
+                .presentationDetents([.height(390)])
+                .presentationDragIndicator(.visible)
+            }
         }
         .overlay {
             if isExporting {
@@ -103,7 +124,34 @@ struct FlightDetailLoaderView: View {
         }
     }
 
-    private func beginExport(_ format: FlightExportFormat) {
+    private func prepareExport(_ format: FlightExportFormat) {
+        guard format == .diagnosticBundle, let sourceState = currentSourceState, sourceState != .closed else {
+            beginExport(format)
+            return
+        }
+        pendingSnapshotState = sourceState
+        pendingCapturedAt = Date()
+        Task { @MainActor in
+            await Task.yield()
+            snapshotConfirmationPresented = true
+        }
+    }
+
+    private var currentSourceState: FlightEvidenceBundleV1.SourceState? {
+        guard let detail else { return nil }
+        return switch detail.status {
+        case .inProgress: .active
+        case .recoveryRequired: .recoverable
+        case .complete, .incomplete, .manuallyEnded: .closed
+        case .unavailable: nil
+        }
+    }
+
+    private func beginExport(
+        _ format: FlightExportFormat,
+        sourceState: FlightEvidenceBundleV1.SourceState? = nil,
+        capturedAt: Date? = nil
+    ) {
         guard exportTask == nil else { return }
         exportingFormat = format
         exportProgress = 0.12
@@ -118,7 +166,9 @@ struct FlightDetailLoaderView: View {
                     exportResult = .diagnostic(
                         try await library.exportDiagnosticBundle(
                             id: id,
+                            sourceState: sourceState ?? currentSourceState ?? .closed,
                             using: diagnosticExporter,
+                            capturedAt: capturedAt ?? Date(),
                             progress: { progress in
                                 await MainActor.run { exportProgress = progress }
                             }
@@ -179,7 +229,9 @@ struct FlightDetailView: View {
                         .buttonBorderShape(.roundedRectangle(radius: 14))
                         .controlSize(.large)
                         .accessibilityIdentifier("flight-detail.continue")
-                } else if detail.canExportDiagnostic {
+                }
+
+                if detail.canExportDiagnostic {
                     Button(action: onExport) {
                         if isExporting {
                             ProgressView("Preparing Export")

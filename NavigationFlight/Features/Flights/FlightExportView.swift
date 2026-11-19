@@ -1,4 +1,5 @@
 import CoreTransferable
+import FlightEvidenceCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,6 +11,74 @@ enum FlightExportFormat: Equatable, Sendable {
 enum FlightExportResult: Sendable {
     case diagnostic(DiagnosticExportResult)
     case gpx(GPXExportResult)
+}
+
+struct ProvisionalFlightExportConfirmationView: View {
+    let sourceState: FlightEvidenceBundleV1.SourceState
+    let capturedAt: Date
+    let onConfirm: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text(title)
+                .font(.title2.weight(.semibold))
+            Text("Snapshot · \(capturedAt.formatted(date: .abbreviated, time: .standard))")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+                .accessibilityIdentifier("flight-export.snapshot-time")
+            Text("The bundle will include evidence recorded up to this time. Later Flight evidence will not be included. \(continuationText)")
+                .font(.body)
+                .foregroundStyle(.secondary)
+            Text("This snapshot is provisional: duration, track, events, and outcome may change.")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.brown)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color.orange.opacity(0.12), in: .rect(cornerRadius: 14))
+                .accessibilityIdentifier("flight-export.provisional-disclosure")
+            GeometryReader { proxy in
+                let availableWidth = proxy.size.width - 14
+                HStack(spacing: 14) {
+                    Button {
+                        dismiss()
+                        onConfirm()
+                    } label: {
+                        Text("Export Snapshot")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .frame(width: availableWidth * 2 / 3)
+                    .accessibilityIdentifier("flight-export.confirm-snapshot")
+
+                    Button(role: .cancel) {
+                        dismiss()
+                    } label: {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .frame(width: availableWidth / 3)
+                    .accessibilityIdentifier("flight-export.cancel-snapshot")
+                }
+                .buttonBorderShape(.roundedRectangle(radius: 14))
+                .controlSize(.large)
+            }
+            .frame(height: 50)
+        }
+        .padding(24)
+    }
+
+    private var title: LocalizedStringResource {
+        sourceState == .active ? "Export Active Recording?" : "Export Recoverable Recording?"
+    }
+
+    private var continuationText: LocalizedStringResource {
+        sourceState == .active
+            ? "Recording and navigation continue unchanged."
+            : "Recovery availability and the stored recording remain unchanged."
+    }
 }
 
 struct FlightExportChoiceView: View {

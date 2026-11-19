@@ -1,3 +1,4 @@
+import FlightEvidenceCore
 import Foundation
 
 nonisolated struct FlightRecordingSummary: Equatable, Sendable, Identifiable {
@@ -102,6 +103,7 @@ actor FlightRecordingLibrary {
 
     func exportDiagnosticBundle(
         id: UUID,
+        sourceState: FlightEvidenceBundleV1.SourceState = .closed,
         using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
         capturedAt: Date = Date(),
         context: FlightEvidenceContext = .current,
@@ -110,6 +112,7 @@ actor FlightRecordingLibrary {
         let snapshot = try await store.readSnapshot(id: id)
         return try await exporter.export(FlightEvidenceSnapshot(
             capturedAt: capturedAt,
+            sourceState: sourceState,
             recording: snapshot,
             context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
         ), progress: progress)
@@ -150,7 +153,7 @@ actor FlightRecordingLibrary {
             maximumBarometricAltitudeMeters: summary.maximumBarometricAltitudeMeters,
             latestDeviceHeadingDegrees: summary.latestDeviceHeadingDegrees,
             approximateSizeBytes: snapshot.approximateSizeBytes,
-            canExportDiagnostic: recording.closure != nil,
+            canExportDiagnostic: true,
             canExportGPX: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
             isReadOnlySnapshot: recording.closure == nil

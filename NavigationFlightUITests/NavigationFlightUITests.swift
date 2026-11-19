@@ -328,6 +328,26 @@ final class NavigationFlightUITests: XCTestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("In Progress"))
         XCTAssertTrue(app.buttons["flight-detail.continue"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.export"].exists)
+        XCTAssertFalse(app.buttons["flight-detail.delete"].exists)
+    }
+
+    @MainActor
+    func testActiveSnapshotDisclosurePreservesActiveFlightStatus() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        openFlightDetail(id: "01000000-0000-0000-0000-000000000001", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.diagnostic"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
+
+        XCTAssertTrue(app.staticTexts["Export Active Recording?"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Snapshot ·")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["This snapshot is provisional: duration, track, events, and outcome may change."].exists)
+        app.buttons["flight-export.cancel-snapshot"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("In Progress"))
+        XCTAssertTrue(app.buttons["flight-detail.continue"].isHittable)
         XCTAssertFalse(app.buttons["flight-detail.delete"].exists)
     }
 

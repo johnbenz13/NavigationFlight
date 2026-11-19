@@ -97,7 +97,11 @@ struct FlightDetailLoaderView: View {
                         self.failedFormat = nil
                         let snapshot = self.failedSnapshot
                         self.failedSnapshot = nil
-                        beginExport(failedFormat, snapshot: snapshot)
+                        if let snapshot {
+                            beginExport(failedFormat, snapshot: snapshot)
+                        } else {
+                            prepareExport(failedFormat)
+                        }
                     },
                     onCancel: {
                         self.failedFormat = nil
@@ -136,6 +140,7 @@ struct FlightDetailLoaderView: View {
                     sourceState: sourceState
                 )
             } catch {
+                failedSnapshot = nil
                 failedFormat = format
             }
         }

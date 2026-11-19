@@ -344,13 +344,11 @@ struct FlightRecordingLibraryTests {
         let library = FlightRecordingLibrary(store: store)
         let capturedAt = startedAt.addingTimeInterval(20)
 
-        let result = try await library.exportDiagnosticBundle(
+        let evidence = try await library.prepareDiagnosticSnapshot(
             id: recording.id,
             sourceState: .active,
-            using: DiagnosticBundleExporter(temporaryDirectory: directory),
             capturedAt: capturedAt
         )
-
         let laterSample = trackSample(
             latitude: 33,
             longitude: 35,
@@ -362,6 +360,10 @@ struct FlightRecordingLibraryTests {
             segmentID: segmentID,
             samples: [laterSample]
         ))
+        let result = try await library.exportDiagnosticBundle(
+            evidence,
+            using: DiagnosticBundleExporter(temporaryDirectory: directory)
+        )
         let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
         let current = try await store.readSnapshot(id: recording.id)
 
@@ -370,6 +372,55 @@ struct FlightRecordingLibraryTests {
         #expect(bundle.trackSegments.flatMap(\.samples).count == 1)
         #expect(current.trackSegments.flatMap(\.samples).count == 2)
         #expect(current.recording.closure == nil)
+    }
+
+    @Test("Retry reuses the disclosed immutable snapshot after export failure")
+    func retryReusesPreparedSnapshot() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        let invalidDirectory = directory.appending(path: "not-a-directory")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try Data().write(to: invalidDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(id: UUID(), startedAt: startedAt)
+        let store = InMemoryFlightRecordingStore(packageResults: [.available(.init(
+            recording: recording,
+            events: []
+        ))])
+        let library = FlightRecordingLibrary(store: store)
+        let capturedAt = startedAt.addingTimeInterval(20)
+        let evidence = try await library.prepareDiagnosticSnapshot(
+            id: recording.id,
+            sourceState: .active,
+            capturedAt: capturedAt
+        )
+
+        await #expect(throws: (any Error).self) {
+            try await library.exportDiagnosticBundle(
+                evidence,
+                using: DiagnosticBundleExporter(temporaryDirectory: invalidDirectory)
+            )
+        }
+        let laterEvent = RecordedFlightEvent(
+            id: UUID(),
+            sequence: 0,
+            occurredAt: startedAt.addingTimeInterval(30),
+            elapsed: .seconds(30),
+            origin: .pilot,
+            payload: .positionCheckRequested
+        )
+        try await store.appendEvent(laterEvent, recordingID: recording.id, synchronize: true)
+
+        let result = try await library.exportDiagnosticBundle(
+            evidence,
+            using: DiagnosticBundleExporter(temporaryDirectory: directory)
+        )
+        let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
+
+        #expect(bundle.capturedAt == capturedAt)
+        #expect(bundle.orderedEvents.isEmpty)
+        #expect(try await store.readSnapshot(id: recording.id).events == [laterEvent])
     }
 
     @Test("Failed and cancelled snapshot exports do not interrupt later ingestion")

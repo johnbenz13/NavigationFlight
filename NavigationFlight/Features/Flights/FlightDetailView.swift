@@ -17,11 +17,10 @@ struct FlightDetailLoaderView: View {
     @State private var detail: FlightDetailPresentation?
     @State private var loadFailed = false
     @State private var exportChoicePresented = false
-    @State private var snapshotConfirmationPresented = false
-    @State private var pendingSnapshotState: FlightEvidenceBundleV1.SourceState?
-    @State private var pendingCapturedAt: Date?
+    @State private var pendingSnapshot: FlightEvidenceSnapshot?
     @State private var exportResult: FlightExportResult?
     @State private var failedFormat: FlightExportFormat?
+    @State private var failedSnapshot: FlightEvidenceSnapshot?
     @State private var exportTask: Task<Void, Never>?
     @State private var exportingFormat: FlightExportFormat?
     @State private var exportProgress = 0.12
@@ -67,22 +66,18 @@ struct FlightDetailLoaderView: View {
             .presentationDetents([.height(430)])
             .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: $snapshotConfirmationPresented) {
-            if let pendingSnapshotState, let pendingCapturedAt {
+        .fullScreenCover(item: $pendingSnapshot) { snapshot in
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.24)
                 ProvisionalFlightExportConfirmationView(
-                    sourceState: pendingSnapshotState,
-                    capturedAt: pendingCapturedAt
+                    sourceState: snapshot.sourceState,
+                    capturedAt: snapshot.capturedAt
                 ) {
-                    beginExport(
-                        .diagnosticBundle,
-                        sourceState: pendingSnapshotState,
-                        capturedAt: pendingCapturedAt
-                    )
+                    beginExport(.diagnosticBundle, snapshot: snapshot)
                 }
-                .presentationSizing(.page)
-                .presentationDetents([.height(390)])
-                .presentationDragIndicator(.visible)
             }
+            .ignoresSafeArea()
+            .presentationBackground(.clear)
         }
         .overlay {
             if isExporting {
@@ -100,9 +95,14 @@ struct FlightDetailLoaderView: View {
                     format: failedFormat,
                     onRetry: {
                         self.failedFormat = nil
-                        beginExport(failedFormat)
+                        let snapshot = self.failedSnapshot
+                        self.failedSnapshot = nil
+                        beginExport(failedFormat, snapshot: snapshot)
                     },
-                    onCancel: { self.failedFormat = nil }
+                    onCancel: {
+                        self.failedFormat = nil
+                        self.failedSnapshot = nil
+                    }
                 )
             }
         }
@@ -129,11 +129,15 @@ struct FlightDetailLoaderView: View {
             beginExport(format)
             return
         }
-        pendingSnapshotState = sourceState
-        pendingCapturedAt = Date()
-        Task { @MainActor in
-            await Task.yield()
-            snapshotConfirmationPresented = true
+        Task {
+            do {
+                pendingSnapshot = try await library.prepareDiagnosticSnapshot(
+                    id: id,
+                    sourceState: sourceState
+                )
+            } catch {
+                failedFormat = format
+            }
         }
     }
 
@@ -149,8 +153,7 @@ struct FlightDetailLoaderView: View {
 
     private func beginExport(
         _ format: FlightExportFormat,
-        sourceState: FlightEvidenceBundleV1.SourceState? = nil,
-        capturedAt: Date? = nil
+        snapshot: FlightEvidenceSnapshot? = nil
     ) {
         guard exportTask == nil else { return }
         exportingFormat = format
@@ -163,17 +166,24 @@ struct FlightDetailLoaderView: View {
             do {
                 switch format {
                 case .diagnosticBundle:
-                    exportResult = .diagnostic(
-                        try await library.exportDiagnosticBundle(
-                            id: id,
-                            sourceState: sourceState ?? currentSourceState ?? .closed,
+                    if let snapshot {
+                        exportResult = .diagnostic(try await library.exportDiagnosticBundle(
+                            snapshot,
                             using: diagnosticExporter,
-                            capturedAt: capturedAt ?? Date(),
                             progress: { progress in
                                 await MainActor.run { exportProgress = progress }
                             }
-                        )
-                    )
+                        ))
+                    } else {
+                        exportResult = .diagnostic(try await library.exportDiagnosticBundle(
+                            id: id,
+                            sourceState: currentSourceState ?? .closed,
+                            using: diagnosticExporter,
+                            progress: { progress in
+                                await MainActor.run { exportProgress = progress }
+                            }
+                        ))
+                    }
                 case .gpx:
                     exportResult = .gpx(try await library.export(id: id, using: exporter))
                 }
@@ -181,6 +191,7 @@ struct FlightDetailLoaderView: View {
                 return
             } catch {
                 failedFormat = format
+                failedSnapshot = snapshot
             }
         }
     }

@@ -109,13 +109,40 @@ actor FlightRecordingLibrary {
         context: FlightEvidenceContext = .current,
         progress: @escaping @Sendable (Double) async -> Void = { _ in }
     ) async throws -> DiagnosticExportResult {
-        let snapshot = try await store.readSnapshot(id: id)
-        return try await exporter.export(FlightEvidenceSnapshot(
+        let evidence = try await prepareDiagnosticSnapshot(
+            id: id,
+            sourceState: sourceState,
             capturedAt: capturedAt,
+            context: context
+        )
+        return try await exportDiagnosticBundle(
+            evidence,
+            using: exporter,
+            progress: progress
+        )
+    }
+
+    func prepareDiagnosticSnapshot(
+        id: UUID,
+        sourceState: FlightEvidenceBundleV1.SourceState,
+        capturedAt: Date? = nil,
+        context: FlightEvidenceContext = .current
+    ) async throws -> FlightEvidenceSnapshot {
+        let snapshot = try await store.readSnapshot(id: id)
+        return FlightEvidenceSnapshot(
+            capturedAt: capturedAt ?? Date(),
             sourceState: sourceState,
             recording: snapshot,
             context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
-        ), progress: progress)
+        )
+    }
+
+    func exportDiagnosticBundle(
+        _ evidence: FlightEvidenceSnapshot,
+        using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
+        progress: @escaping @Sendable (Double) async -> Void = { _ in }
+    ) async throws -> DiagnosticExportResult {
+        try await exporter.export(evidence, progress: progress)
     }
 
     func detail(

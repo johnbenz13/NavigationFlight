@@ -21,26 +21,38 @@ struct ProvisionalFlightExportConfirmationView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule()
+                .fill(Color(red: 0.65, green: 0.66, blue: 0.70))
+                .frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 14)
+                .padding(.bottom, 25)
             Text(title)
-                .font(.title2.weight(.semibold))
+                .font(.system(size: 26, weight: .semibold))
+                .padding(.bottom, 8)
             Text("Snapshot · \(capturedAt.formatted(date: .abbreviated, time: .standard))")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color(red: 184 / 255, green: 92 / 255, blue: 5 / 255))
                 .accessibilityIdentifier("flight-export.snapshot-time")
+                .padding(.bottom, 20)
             Text("The bundle will include evidence recorded up to this time. Later Flight evidence will not be included. \(continuationText)")
                 .font(.body)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 46)
             Text("This snapshot is provisional: duration, track, events, and outcome may change.")
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.brown)
+                .foregroundStyle(Color(red: 122 / 255, green: 62 / 255, blue: 0))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
-                .background(Color.orange.opacity(0.12), in: .rect(cornerRadius: 14))
+                .frame(height: 58)
+                .padding(.horizontal, 16)
+                .background(Color(red: 1, green: 243 / 255, blue: 217 / 255), in: .rect(cornerRadius: 14))
                 .accessibilityIdentifier("flight-export.provisional-disclosure")
+                .padding(.bottom, 20)
             GeometryReader { proxy in
-                let availableWidth = proxy.size.width - 14
-                HStack(spacing: 14) {
+                let availableWidth = proxy.size.width - 16
+                HStack(spacing: 16) {
                     Button {
                         dismiss()
                         onConfirm()
@@ -48,8 +60,10 @@ struct ProvisionalFlightExportConfirmationView: View {
                         Text("Export Snapshot")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .frame(width: availableWidth * 2 / 3)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .frame(width: availableWidth * 51 / 77, height: 48)
+                    .background(Color(red: 20 / 255, green: 102 / 255, blue: 194 / 255), in: .rect(cornerRadius: 13))
                     .accessibilityIdentifier("flight-export.confirm-snapshot")
 
                     Button(role: .cancel) {
@@ -58,16 +72,21 @@ struct ProvisionalFlightExportConfirmationView: View {
                         Text("Cancel")
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.bordered)
-                    .frame(width: availableWidth / 3)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(red: 11 / 255, green: 70 / 255, blue: 143 / 255))
+                    .frame(width: availableWidth * 26 / 77, height: 48)
+                    .background(Color(red: 239 / 255, green: 242 / 255, blue: 246 / 255), in: .rect(cornerRadius: 13))
                     .accessibilityIdentifier("flight-export.cancel-snapshot")
                 }
-                .buttonBorderShape(.roundedRectangle(radius: 14))
-                .controlSize(.large)
             }
-            .frame(height: 50)
+            .frame(height: 48)
         }
-        .padding(24)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 32)
+        .frame(maxWidth: .infinity)
+        .frame(height: 390, alignment: .top)
+        .background(Color(.systemBackground))
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
     }
 
     private var title: LocalizedStringResource {

@@ -63,6 +63,10 @@ nonisolated struct FlightEvidenceSnapshot: Equatable, Sendable {
     }
 }
 
+extension FlightEvidenceSnapshot: Identifiable {
+    var id: UUID { recording.recording.id }
+}
+
 nonisolated enum FlightEvidenceMappingError: Error, Equatable, Sendable {
     case sourceStateClosureMismatch(UUID)
     case durationOutOfRange

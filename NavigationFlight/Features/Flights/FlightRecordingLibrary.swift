@@ -1,3 +1,4 @@
+import FlightEvidenceCore
 import Foundation
 
 nonisolated struct FlightRecordingSummary: Equatable, Sendable, Identifiable {
@@ -102,17 +103,46 @@ actor FlightRecordingLibrary {
 
     func exportDiagnosticBundle(
         id: UUID,
+        sourceState: FlightEvidenceBundleV1.SourceState = .closed,
         using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
         capturedAt: Date = Date(),
         context: FlightEvidenceContext = .current,
         progress: @escaping @Sendable (Double) async -> Void = { _ in }
     ) async throws -> DiagnosticExportResult {
-        let snapshot = try await store.readSnapshot(id: id)
-        return try await exporter.export(FlightEvidenceSnapshot(
+        let evidence = try await prepareDiagnosticSnapshot(
+            id: id,
+            sourceState: sourceState,
             capturedAt: capturedAt,
+            context: context
+        )
+        return try await exportDiagnosticBundle(
+            evidence,
+            using: exporter,
+            progress: progress
+        )
+    }
+
+    func prepareDiagnosticSnapshot(
+        id: UUID,
+        sourceState: FlightEvidenceBundleV1.SourceState,
+        capturedAt: Date? = nil,
+        context: FlightEvidenceContext = .current
+    ) async throws -> FlightEvidenceSnapshot {
+        let snapshot = try await store.readSnapshot(id: id)
+        return FlightEvidenceSnapshot(
+            capturedAt: capturedAt ?? Date(),
+            sourceState: sourceState,
             recording: snapshot,
             context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
-        ), progress: progress)
+        )
+    }
+
+    func exportDiagnosticBundle(
+        _ evidence: FlightEvidenceSnapshot,
+        using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
+        progress: @escaping @Sendable (Double) async -> Void = { _ in }
+    ) async throws -> DiagnosticExportResult {
+        try await exporter.export(evidence, progress: progress)
     }
 
     func detail(
@@ -150,7 +180,7 @@ actor FlightRecordingLibrary {
             maximumBarometricAltitudeMeters: summary.maximumBarometricAltitudeMeters,
             latestDeviceHeadingDegrees: summary.latestDeviceHeadingDegrees,
             approximateSizeBytes: snapshot.approximateSizeBytes,
-            canExportDiagnostic: recording.closure != nil,
+            canExportDiagnostic: true,
             canExportGPX: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
             isReadOnlySnapshot: recording.closure == nil

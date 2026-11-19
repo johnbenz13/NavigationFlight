@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreTransferable
+import FlightEvidenceCore
 import UniformTypeIdentifiers
 
 struct FlightDetailLoaderView: View {
@@ -16,8 +17,10 @@ struct FlightDetailLoaderView: View {
     @State private var detail: FlightDetailPresentation?
     @State private var loadFailed = false
     @State private var exportChoicePresented = false
+    @State private var pendingSnapshot: FlightEvidenceSnapshot?
     @State private var exportResult: FlightExportResult?
     @State private var failedFormat: FlightExportFormat?
+    @State private var failedSnapshot: FlightEvidenceSnapshot?
     @State private var exportTask: Task<Void, Never>?
     @State private var exportingFormat: FlightExportFormat?
     @State private var exportProgress = 0.12
@@ -57,11 +60,24 @@ struct FlightDetailLoaderView: View {
         .sheet(isPresented: $exportChoicePresented) {
             FlightExportChoiceView(canExportGPX: detail?.canExportGPX ?? false) { format in
                 exportChoicePresented = false
-                beginExport(format)
+                prepareExport(format)
             }
             .presentationSizing(.page)
             .presentationDetents([.height(430)])
             .presentationDragIndicator(.visible)
+        }
+        .fullScreenCover(item: $pendingSnapshot) { snapshot in
+            ZStack(alignment: .bottom) {
+                Color.black.opacity(0.24)
+                ProvisionalFlightExportConfirmationView(
+                    sourceState: snapshot.sourceState,
+                    capturedAt: snapshot.capturedAt
+                ) {
+                    beginExport(.diagnosticBundle, snapshot: snapshot)
+                }
+            }
+            .ignoresSafeArea()
+            .presentationBackground(.clear)
         }
         .overlay {
             if isExporting {
@@ -79,9 +95,18 @@ struct FlightDetailLoaderView: View {
                     format: failedFormat,
                     onRetry: {
                         self.failedFormat = nil
-                        beginExport(failedFormat)
+                        let snapshot = self.failedSnapshot
+                        self.failedSnapshot = nil
+                        if let snapshot {
+                            beginExport(failedFormat, snapshot: snapshot)
+                        } else {
+                            prepareExport(failedFormat)
+                        }
                     },
-                    onCancel: { self.failedFormat = nil }
+                    onCancel: {
+                        self.failedFormat = nil
+                        self.failedSnapshot = nil
+                    }
                 )
             }
         }
@@ -103,7 +128,38 @@ struct FlightDetailLoaderView: View {
         }
     }
 
-    private func beginExport(_ format: FlightExportFormat) {
+    private func prepareExport(_ format: FlightExportFormat) {
+        guard format == .diagnosticBundle, let sourceState = currentSourceState, sourceState != .closed else {
+            beginExport(format)
+            return
+        }
+        Task {
+            do {
+                pendingSnapshot = try await library.prepareDiagnosticSnapshot(
+                    id: id,
+                    sourceState: sourceState
+                )
+            } catch {
+                failedSnapshot = nil
+                failedFormat = format
+            }
+        }
+    }
+
+    private var currentSourceState: FlightEvidenceBundleV1.SourceState? {
+        guard let detail else { return nil }
+        return switch detail.status {
+        case .inProgress: .active
+        case .recoveryRequired: .recoverable
+        case .complete, .incomplete, .manuallyEnded: .closed
+        case .unavailable: nil
+        }
+    }
+
+    private func beginExport(
+        _ format: FlightExportFormat,
+        snapshot: FlightEvidenceSnapshot? = nil
+    ) {
         guard exportTask == nil else { return }
         exportingFormat = format
         exportProgress = 0.12
@@ -115,15 +171,24 @@ struct FlightDetailLoaderView: View {
             do {
                 switch format {
                 case .diagnosticBundle:
-                    exportResult = .diagnostic(
-                        try await library.exportDiagnosticBundle(
-                            id: id,
+                    if let snapshot {
+                        exportResult = .diagnostic(try await library.exportDiagnosticBundle(
+                            snapshot,
                             using: diagnosticExporter,
                             progress: { progress in
                                 await MainActor.run { exportProgress = progress }
                             }
-                        )
-                    )
+                        ))
+                    } else {
+                        exportResult = .diagnostic(try await library.exportDiagnosticBundle(
+                            id: id,
+                            sourceState: currentSourceState ?? .closed,
+                            using: diagnosticExporter,
+                            progress: { progress in
+                                await MainActor.run { exportProgress = progress }
+                            }
+                        ))
+                    }
                 case .gpx:
                     exportResult = .gpx(try await library.export(id: id, using: exporter))
                 }
@@ -131,6 +196,7 @@ struct FlightDetailLoaderView: View {
                 return
             } catch {
                 failedFormat = format
+                failedSnapshot = snapshot
             }
         }
     }
@@ -179,7 +245,9 @@ struct FlightDetailView: View {
                         .buttonBorderShape(.roundedRectangle(radius: 14))
                         .controlSize(.large)
                         .accessibilityIdentifier("flight-detail.continue")
-                } else if detail.canExportDiagnostic {
+                }
+
+                if detail.canExportDiagnostic {
                     Button(action: onExport) {
                         if isExporting {
                             ProgressView("Preparing Export")

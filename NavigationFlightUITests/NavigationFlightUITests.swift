@@ -278,6 +278,30 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testActivePreparationFailureRetryReturnsThroughSnapshotDisclosure() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            exportPreparationFailure: true
+        )
+        openFlightDetail(id: "01000000-0000-0000-0000-000000000001", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.failure"].waitForExistence(timeout: 5))
+
+        app.buttons["Try Again"].tap()
+
+        XCTAssertTrue(app.staticTexts["Export Active Recording?"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH 'Snapshot ·'")
+        ).firstMatch.exists)
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.provisional-disclosure"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["flight-export.result"].exists)
+    }
+
+    @MainActor
     func testDiagnosticExportCancellationReturnsToRetryableFlightDetail() throws {
         let app = launchFlights(
             state: "populated",
@@ -328,6 +352,26 @@ final class NavigationFlightUITests: XCTestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("In Progress"))
         XCTAssertTrue(app.buttons["flight-detail.continue"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.export"].exists)
+        XCTAssertFalse(app.buttons["flight-detail.delete"].exists)
+    }
+
+    @MainActor
+    func testActiveSnapshotDisclosurePreservesActiveFlightStatus() throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        openFlightDetail(id: "01000000-0000-0000-0000-000000000001", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.diagnostic"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
+
+        XCTAssertTrue(app.staticTexts["Export Active Recording?"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Snapshot ·")).firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["This snapshot is provisional: duration, track, events, and outcome may change."].exists)
+        app.buttons["flight-export.cancel-snapshot"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("In Progress"))
+        XCTAssertTrue(app.buttons["flight-detail.continue"].isHittable)
         XCTAssertFalse(app.buttons["flight-detail.delete"].exists)
     }
 
@@ -1777,6 +1821,7 @@ final class NavigationFlightUITests: XCTestCase {
         planData: Data? = nil,
         preferredContentSizeCategory: String? = nil,
         exportFailure: Bool = false,
+        exportPreparationFailure: Bool = false,
         exportDelay: Bool = false,
         deletionFailure: Bool = false
     ) -> XCUIApplication {
@@ -1786,6 +1831,9 @@ final class NavigationFlightUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] = state
         if exportFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] = "1"
+        }
+        if exportPreparationFailure {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_PREPARATION_FAILURE"] = "1"
         }
         if exportDelay {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_DELAY"] = "1"

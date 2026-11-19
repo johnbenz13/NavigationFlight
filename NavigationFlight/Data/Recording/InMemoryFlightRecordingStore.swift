@@ -11,13 +11,17 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
     private var snapshotsByID: [UUID: FlightRecordingReadSnapshot] = [:]
     private var unavailablePackageResults: [FlightRecordingPackageResult] = []
     private let failure: Failure?
+    private let failReadOnCall: Int?
+    private var readCallCount = 0
     private(set) var removeCallCount = 0
 
     init(
         failure: Failure? = nil,
+        failReadOnCall: Int? = nil,
         packageResults: [FlightRecordingPackageResult] = []
     ) {
         self.failure = failure
+        self.failReadOnCall = failReadOnCall
         for result in packageResults {
             switch result {
             case .available(let snapshot):
@@ -121,6 +125,10 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
     }
 
     func readSnapshot(id: UUID) throws -> FlightRecordingReadSnapshot {
+        readCallCount += 1
+        if readCallCount == failReadOnCall {
+            throw FlightRecordingStoreError.operationFailed(id: id)
+        }
         guard let snapshot = snapshotsByID[id] else {
             throw FlightRecordingStoreError.corruptPackage(id: id)
         }

@@ -1,4 +1,5 @@
 import CoreTransferable
+import FlightEvidenceCore
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,6 +11,93 @@ enum FlightExportFormat: Equatable, Sendable {
 enum FlightExportResult: Sendable {
     case diagnostic(DiagnosticExportResult)
     case gpx(GPXExportResult)
+}
+
+struct ProvisionalFlightExportConfirmationView: View {
+    let sourceState: FlightEvidenceBundleV1.SourceState
+    let capturedAt: Date
+    let onConfirm: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Capsule()
+                .fill(Color(red: 0.65, green: 0.66, blue: 0.70))
+                .frame(width: 40, height: 5)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 14)
+                .padding(.bottom, 25)
+            Text(title)
+                .font(.system(size: 26, weight: .semibold))
+                .padding(.bottom, 8)
+            Text("Snapshot · \(capturedAt.formatted(date: .abbreviated, time: .standard))")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color(red: 184 / 255, green: 92 / 255, blue: 5 / 255))
+                .accessibilityIdentifier("flight-export.snapshot-time")
+                .padding(.bottom, 20)
+            Text("The bundle will include evidence recorded up to this time. Later Flight evidence will not be included. \(continuationText)")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 46)
+            Text("This snapshot is provisional: duration, track, events, and outcome may change.")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(Color(red: 122 / 255, green: 62 / 255, blue: 0))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 58)
+                .padding(.horizontal, 16)
+                .background(Color(red: 1, green: 243 / 255, blue: 217 / 255), in: .rect(cornerRadius: 14))
+                .accessibilityIdentifier("flight-export.provisional-disclosure")
+                .padding(.bottom, 20)
+            GeometryReader { proxy in
+                let availableWidth = proxy.size.width - 16
+                HStack(spacing: 16) {
+                    Button {
+                        dismiss()
+                        onConfirm()
+                    } label: {
+                        Text("Export Snapshot")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                    .frame(width: availableWidth * 51 / 77, height: 48)
+                    .background(Color(red: 20 / 255, green: 102 / 255, blue: 194 / 255), in: .rect(cornerRadius: 13))
+                    .accessibilityIdentifier("flight-export.confirm-snapshot")
+
+                    Button(role: .cancel) {
+                        dismiss()
+                    } label: {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color(red: 11 / 255, green: 70 / 255, blue: 143 / 255))
+                    .frame(width: availableWidth * 26 / 77, height: 48)
+                    .background(Color(red: 239 / 255, green: 242 / 255, blue: 246 / 255), in: .rect(cornerRadius: 13))
+                    .accessibilityIdentifier("flight-export.cancel-snapshot")
+                }
+            }
+            .frame(height: 48)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 32)
+        .frame(maxWidth: .infinity)
+        .frame(height: 390, alignment: .top)
+        .background(Color(.systemBackground))
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28))
+    }
+
+    private var title: LocalizedStringResource {
+        sourceState == .active ? "Export Active Recording?" : "Export Recoverable Recording?"
+    }
+
+    private var continuationText: LocalizedStringResource {
+        sourceState == .active
+            ? "Recording and navigation continue unchanged."
+            : "Recovery availability and the stored recording remain unchanged."
+    }
 }
 
 struct FlightExportChoiceView: View {

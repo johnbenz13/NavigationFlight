@@ -2,7 +2,6 @@ import FlightEvidenceCore
 import Foundation
 
 nonisolated enum DiagnosticExportError: Error, Equatable, Sendable {
-    case recordingNotClosed(UUID)
     case publishedFileValidationFailed
 }
 
@@ -34,10 +33,6 @@ actor DiagnosticBundleExporter {
         _ snapshot: FlightEvidenceSnapshot,
         progress: @escaping @Sendable (Double) async -> Void = { _ in }
     ) async throws -> DiagnosticExportResult {
-        guard snapshot.recording.recording.closure != nil else {
-            throw DiagnosticExportError.recordingNotClosed(snapshot.recording.recording.id)
-        }
-
         try Task.checkCancellation()
         await progress(0.12)
         let bundleIdentifier = UUID()

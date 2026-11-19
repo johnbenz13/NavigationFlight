@@ -166,6 +166,9 @@ struct RootView: View {
             )
             recordingStore = InMemoryFlightRecordingStore(
                 failure: environment["NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE"] == "1" ? .remove : nil,
+                failReadOnCall: environment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_PREPARATION_FAILURE"] == "1"
+                    ? 2
+                    : nil,
                 packageResults: fixture.packages
             )
             debugFlightsActiveRecordingID = fixture.activeRecordingID

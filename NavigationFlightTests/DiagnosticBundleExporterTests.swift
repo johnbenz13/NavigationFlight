@@ -40,21 +40,29 @@ struct DiagnosticBundleExporterTests {
         #expect(snapshot == evidence.recording)
     }
 
-    @Test("Active evidence is rejected without publishing a file")
-    func rejectsActiveEvidence() async throws {
+    @Test("Active and recoverable evidence publish timestamped provisional snapshots", arguments: [
+        FlightEvidenceBundleV1.SourceState.active,
+        FlightEvidenceBundleV1.SourceState.recoverable,
+    ])
+    func exportsProvisionalEvidence(sourceState: FlightEvidenceBundleV1.SourceState) async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let recording = try activeRecording()
+        let capturedAt = Date(timeIntervalSince1970: 2_500)
         let evidence = FlightEvidenceSnapshot(
-            capturedAt: Date(),
+            capturedAt: capturedAt,
+            sourceState: sourceState,
             recording: FlightRecordingReadSnapshot(recording: recording, events: []),
             context: .init(appVersion: "1", appBuild: "1", platform: "iOS", osVersion: "27")
         )
 
-        await #expect(throws: DiagnosticExportError.recordingNotClosed(recording.id)) {
-            try await DiagnosticBundleExporter(temporaryDirectory: directory).export(evidence)
-        }
-        #expect(try publishedFiles(in: directory).isEmpty)
+        let result = try await DiagnosticBundleExporter(temporaryDirectory: directory).export(evidence)
+        let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
+
+        #expect(bundle.sourceState == sourceState)
+        #expect(bundle.capturedAt == capturedAt)
+        #expect(bundle.closure == nil)
+        #expect(bundle.recordingManifest.recordingIdentifier == recording.id)
     }
 
     @Test("Cancellation leaves no partial or publishable file and permits retry")

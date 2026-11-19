@@ -20,15 +20,18 @@ nonisolated struct FlightRecordingSeed: Equatable, Sendable {
     let recording: FlightRecording
     let events: [RecordedFlightEvent]
     let trackSegments: [RecordedTrackSegment]
+    let detectorPolicy: PhysicalFlightDetectionPolicySnapshot
 
     init(
         recording: FlightRecording,
         events: [RecordedFlightEvent],
-        trackSegments: [RecordedTrackSegment] = []
+        trackSegments: [RecordedTrackSegment] = [],
+        detectorPolicy: PhysicalFlightDetectionPolicySnapshot = .production
     ) {
         self.recording = recording
         self.events = events
         self.trackSegments = trackSegments
+        self.detectorPolicy = detectorPolicy
     }
 }
 
@@ -38,18 +41,21 @@ nonisolated struct FlightRecordingReadSnapshot: Equatable, Sendable {
     var trackSegments: [RecordedTrackSegment]
     let approximateSizeBytes: Int64?
     let evidenceSummary: FlightRecordingEvidenceSummary
+    let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
 
     init(
         recording: FlightRecording,
         events: [RecordedFlightEvent],
         trackSegments: [RecordedTrackSegment] = [],
         approximateSizeBytes: Int64? = nil,
-        evidenceSummary: FlightRecordingEvidenceSummary? = nil
+        evidenceSummary: FlightRecordingEvidenceSummary? = nil,
+        detectorPolicy: PhysicalFlightDetectionPolicySnapshot? = nil
     ) {
         self.recording = recording
         self.events = events
         self.trackSegments = trackSegments
         self.approximateSizeBytes = approximateSizeBytes
+        self.detectorPolicy = detectorPolicy
         self.evidenceSummary = evidenceSummary ?? FlightRecordingSummaryProjector().project(
             trackSegments: trackSegments,
             startedAt: recording.startedAt,

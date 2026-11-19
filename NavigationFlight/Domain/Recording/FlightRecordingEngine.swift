@@ -78,6 +78,7 @@ actor FlightRecordingEngine {
 
     private let store: any FlightRecordingStore
     private let flightPlanSnapshot: RecordedFlightPlanSnapshot
+    private let detectorPolicySnapshot: PhysicalFlightDetectionPolicySnapshot
     private var detector: PhysicalFlightDetector
     private var flight: Flight
     private var recording: FlightRecording?
@@ -102,7 +103,8 @@ actor FlightRecordingEngine {
         self.store = store
         self.flight = flight
         self.flightPlanSnapshot = flightPlanSnapshot
-        detector = PhysicalFlightDetector(policy: detectorPolicy)
+        detectorPolicySnapshot = PhysicalFlightDetectionPolicySnapshot(policy: detectorPolicy)
+        detector = PhysicalFlightDetector(policy: detectorPolicySnapshot.policy)
     }
 
     init(
@@ -110,6 +112,7 @@ actor FlightRecordingEngine {
         recoveredFlight: Flight,
         recoveredRecording: FlightRecording,
         detectorPolicy: PhysicalFlightDetectionPolicy = .production,
+        detectorPolicySnapshot: PhysicalFlightDetectionPolicySnapshot? = nil,
         storageDegradations: Set<RecordingStorageDegradation> = []
     ) {
         self.store = store
@@ -117,7 +120,10 @@ actor FlightRecordingEngine {
         flightPlanSnapshot = recoveredRecording.flightPlanSnapshot
         recording = recoveredRecording
         self.storageDegradations = storageDegradations
-        detector = PhysicalFlightDetector(policy: detectorPolicy)
+        let restoredPolicy = detectorPolicySnapshot
+            ?? PhysicalFlightDetectionPolicySnapshot(policy: detectorPolicy)
+        self.detectorPolicySnapshot = restoredPolicy
+        detector = PhysicalFlightDetector(policy: restoredPolicy.policy)
         segmentNeedsReopening = true
     }
 
@@ -183,7 +189,8 @@ actor FlightRecordingEngine {
                         try await store.create(FlightRecordingSeed(
                             recording: promotion.recording,
                             events: promotion.events,
-                            trackSegments: [RecordedTrackSegment(id: segmentID, samples: rollingBuffer)]
+                            trackSegments: [RecordedTrackSegment(id: segmentID, samples: rollingBuffer)],
+                            detectorPolicy: detectorPolicySnapshot
                         ))
                     } catch {
                         activeSegmentID = nil
@@ -448,7 +455,8 @@ actor FlightRecordingEngine {
             try await store.create(FlightRecordingSeed(
                 recording: promotion.recording,
                 events: promotion.events,
-                trackSegments: bufferedSegment
+                trackSegments: bufferedSegment,
+                detectorPolicy: detectorPolicySnapshot
             ))
             flight = candidateFlight
             recording = promotion.recording

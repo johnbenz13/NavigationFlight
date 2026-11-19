@@ -29,7 +29,17 @@ nonisolated struct FlightEvidenceContext: Equatable, Sendable {
             appBuild: info?["CFBundleVersion"] as? String ?? "unavailable",
             platform: "iOS",
             osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
-            detectorPolicy: .production
+            detectorPolicy: nil
+        )
+    }
+
+    func replacingDetectorPolicy(_ detectorPolicy: PhysicalFlightDetectionPolicySnapshot?) -> Self {
+        Self(
+            appVersion: appVersion,
+            appBuild: appBuild,
+            platform: platform,
+            osVersion: osVersion,
+            detectorPolicy: detectorPolicy
         )
     }
 }

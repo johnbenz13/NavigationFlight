@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 nonisolated struct FlightRecordingManifestDTO: Codable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     let schemaVersion: Int
     let id: UUID
@@ -15,8 +15,9 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
     var nextEventSequence: UInt64
     var recoveryWindowSeconds: TimeInterval?
     var lastRecoveryCheckpointAt: Date?
+    let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
 
-    init(recording: FlightRecording) {
+    init(recording: FlightRecording, detectorPolicy: PhysicalFlightDetectionPolicySnapshot) {
         schemaVersion = Self.currentSchemaVersion
         id = recording.id
         flightID = recording.flightID
@@ -28,6 +29,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
         nextEventSequence = recording.nextEventSequence
         recoveryWindowSeconds = recording.recoveryWindowSeconds
         lastRecoveryCheckpointAt = recording.lastRecoveryCheckpointAt
+        self.detectorPolicy = detectorPolicy
     }
 
     func domain(
@@ -37,7 +39,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
         gpsCoverage restoredGPSCoverage: GPSCoverageState? = nil,
         nextEventSequence: UInt64? = nil
     ) throws -> FlightRecording {
-        guard schemaVersion == Self.currentSchemaVersion else {
+        guard schemaVersion == 1 || schemaVersion == Self.currentSchemaVersion else {
             throw FlightRecordingStoreError.unsupportedVersion(id: id, schemaVersion: schemaVersion)
         }
         guard let physicalState = PhysicalFlightState(storageValue: physicalState),

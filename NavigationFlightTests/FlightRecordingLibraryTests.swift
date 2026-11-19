@@ -1,3 +1,4 @@
+import FlightEvidenceCore
 import Foundation
 import Testing
 @testable import NavigationFlight
@@ -276,6 +277,73 @@ struct FlightRecordingLibraryTests {
 
         #expect(FileManager.default.fileExists(atPath: result.fileURL.path))
         #expect(try await store.readSnapshot(id: id) == snapshot)
+    }
+
+    @Test("Diagnostic export uses retained policy and never the export-time policy")
+    func diagnosticExportUsesRetainedPolicy() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(
+            id: UUID(),
+            startedAt: startedAt,
+            closedAt: startedAt.addingTimeInterval(60)
+        )
+        let retainedPolicy = PhysicalFlightDetectionPolicySnapshot(
+            version: "recorded-policy-7",
+            policy: .production
+        )
+        let snapshot = FlightRecordingReadSnapshot(
+            recording: recording,
+            events: [],
+            detectorPolicy: retainedPolicy
+        )
+        let library = FlightRecordingLibrary(
+            store: InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        )
+
+        let result = try await library.exportDiagnosticBundle(
+            id: recording.id,
+            using: DiagnosticBundleExporter(temporaryDirectory: directory),
+            capturedAt: startedAt.addingTimeInterval(120),
+            context: .init(
+                appVersion: "1",
+                appBuild: "1",
+                platform: "iOS",
+                osVersion: "27",
+                detectorPolicy: .production
+            )
+        )
+        let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
+
+        #expect(bundle.detectorPolicyContext?.version == retainedPolicy.version)
+    }
+
+    @Test("Diagnostic export keeps legacy detector policy unavailable")
+    func diagnosticExportDoesNotReconstructLegacyPolicy() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(
+            id: UUID(),
+            startedAt: startedAt,
+            closedAt: startedAt.addingTimeInterval(60)
+        )
+        let library = FlightRecordingLibrary(store: InMemoryFlightRecordingStore(
+            packageResults: [.available(FlightRecordingReadSnapshot(recording: recording, events: []))]
+        ))
+
+        let result = try await library.exportDiagnosticBundle(
+            id: recording.id,
+            using: DiagnosticBundleExporter(temporaryDirectory: directory)
+        )
+        let bundle = try DiagnosticBundleCodec().decode(Data(contentsOf: result.fileURL))
+
+        #expect(bundle.detectorPolicyContext == nil)
     }
 
     private func recording(

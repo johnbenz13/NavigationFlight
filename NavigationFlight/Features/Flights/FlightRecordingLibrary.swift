@@ -110,7 +110,7 @@ actor FlightRecordingLibrary {
         return try await exporter.export(FlightEvidenceSnapshot(
             capturedAt: capturedAt,
             recording: snapshot,
-            context: context
+            context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
         ))
     }
 

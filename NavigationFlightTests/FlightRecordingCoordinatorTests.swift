@@ -29,6 +29,7 @@ struct FlightRecordingCoordinatorTests {
         )
         let coordinator = FlightRecordingCoordinator(
             store: store,
+            detectorPolicy: .fixture,
             supplementalSensorSource: source
         )
 
@@ -46,6 +47,7 @@ struct FlightRecordingCoordinatorTests {
 
         let snapshot = try await store.readSnapshot(id: started.recording.id)
         #expect(snapshot.trackSegments.flatMap(\.samples).count == 1)
+        #expect(snapshot.detectorPolicy == PhysicalFlightDetectionPolicySnapshot(policy: .fixture))
         #expect(coordinator.status == .recording)
         #expect(coordinator.lastError == nil)
     }

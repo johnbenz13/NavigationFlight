@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated struct PhysicalFlightDetectionPolicy: Equatable, Sendable {
+nonisolated struct PhysicalFlightDetectionPolicy: Codable, Equatable, Sendable {
     let maximumHorizontalAccuracyMeters: Double
     let maximumSpeedAccuracyMetersPerSecond: Double
     let groundMovementSpeedMetersPerSecond: Double
@@ -38,7 +38,7 @@ extension PhysicalFlightDetectionPolicy {
     )
 }
 
-nonisolated struct PhysicalFlightDetectionPolicySnapshot: Equatable, Sendable {
+nonisolated struct PhysicalFlightDetectionPolicySnapshot: Codable, Equatable, Sendable {
     static let currentVersion = "1"
 
     let version: String

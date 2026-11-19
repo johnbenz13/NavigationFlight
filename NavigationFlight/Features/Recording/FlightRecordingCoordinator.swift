@@ -118,6 +118,7 @@ final class FlightRecordingCoordinator {
             recoveredFlight: recovered.flight,
             recoveredRecording: recovered.recording,
             detectorPolicy: detectorPolicy,
+            detectorPolicySnapshot: stored?.detectorPolicy,
             storageDegradations: degradations
         )
         await candidate.arm()

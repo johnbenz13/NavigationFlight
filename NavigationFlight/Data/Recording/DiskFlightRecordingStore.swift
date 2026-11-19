@@ -50,7 +50,10 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             try fileManager.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
             try fileManager.createDirectory(at: temporary, withIntermediateDirectories: false)
             try writeAndSynchronize(
-                FlightRecordingCoding.encoder.encode(FlightRecordingManifestDTO(recording: seed.recording)),
+                FlightRecordingCoding.encoder.encode(FlightRecordingManifestDTO(
+                    recording: seed.recording,
+                    detectorPolicy: seed.detectorPolicy
+                )),
                 to: temporary.appending(path: "manifest.json")
             )
             try writeAndSynchronize(
@@ -81,7 +84,8 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             let initialSnapshot = FlightRecordingReadSnapshot(
                 recording: seed.recording,
                 events: seed.events,
-                trackSegments: seed.trackSegments
+                trackSegments: seed.trackSegments,
+                detectorPolicy: seed.detectorPolicy
             )
             try? writeAndSynchronize(
                 FlightRecordingCoding.encoder.encode(initialSnapshot.evidenceSummary),
@@ -334,7 +338,8 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 ),
                 events: events,
                 trackSegments: trackSegments,
-                approximateSizeBytes: approximatePackageSize(at: directory)
+                approximateSizeBytes: approximatePackageSize(at: directory),
+                detectorPolicy: manifest.detectorPolicy
             )
             let summaryURL = directory.appending(path: "summary.json")
             let summary: FlightRecordingEvidenceSummary
@@ -353,7 +358,8 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 events: snapshot.events,
                 trackSegments: snapshot.trackSegments,
                 approximateSizeBytes: approximatePackageSize(at: directory),
-                evidenceSummary: summary
+                evidenceSummary: summary,
+                detectorPolicy: snapshot.detectorPolicy
             )
         } catch let error as FlightRecordingStoreError {
             throw error

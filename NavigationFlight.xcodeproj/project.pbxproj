@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		520EF92E30AE4E5500CEE740 /* FlightEvidenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = 520EF92D30AE4E5500CEE740 /* FlightEvidenceCore */; };
 		52D6EA70307D6F4200C34E8E /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = 52D6EA6F307D6F4200C34E8E /* MapLibre */; };
 /* End PBXBuildFile section */
 
@@ -80,6 +81,7 @@
 		5269A1DC307A4CC2009CD5A1 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				520EF92E30AE4E5500CEE740 /* FlightEvidenceCore in Frameworks */,
 				52D6EA70307D6F4200C34E8E /* MapLibre in Frameworks */,
 			);
 		};
@@ -147,6 +149,7 @@
 			name = NavigationFlight;
 			packageProductDependencies = (
 				52D6EA6F307D6F4200C34E8E /* MapLibre */,
+				520EF92D30AE4E5500CEE740 /* FlightEvidenceCore */,
 			);
 			productName = NavigationFlight;
 			productReference = 5269A1DF307A4CC2009CD5A1 /* NavigationFlight.app */;
@@ -228,6 +231,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				52D6EA65307D6C6600C34E8E /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */,
+				520EF92C30AE4E5500CEE740 /* XCLocalSwiftPackageReference "FlightEvidenceCore" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5269A1E0307A4CC2009CD5A1 /* Products */;
@@ -595,6 +599,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		520EF92C30AE4E5500CEE740 /* XCLocalSwiftPackageReference "FlightEvidenceCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = FlightEvidenceCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		52D6EA65307D6C6600C34E8E /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -607,6 +618,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		520EF92D30AE4E5500CEE740 /* FlightEvidenceCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FlightEvidenceCore;
+		};
 		52D6EA6F307D6F4200C34E8E /* MapLibre */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 52D6EA65307D6C6600C34E8E /* XCRemoteSwiftPackageReference "maplibre-gl-native-distribution" */;

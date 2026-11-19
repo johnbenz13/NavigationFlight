@@ -124,6 +124,67 @@ struct DiskFlightRecordingStoreTests {
         #expect(await store.packages() == [.available(snapshot)])
     }
 
+    @Test("Manifest version two preserves the detector policy through checkpoint and closure")
+    func detectorPolicyPersistence() async throws {
+        let root = temporaryDirectory()
+        let policy = PhysicalFlightDetectionPolicySnapshot(
+            version: "recorded-policy-7",
+            policy: .production
+        )
+        let baseSeed = try makeSeed()
+        let seed = FlightRecordingSeed(
+            recording: baseSeed.recording,
+            events: baseSeed.events,
+            trackSegments: baseSeed.trackSegments,
+            detectorPolicy: policy
+        )
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+
+        let manifestURL = packageDirectory(for: seed.recording.id, root: root)
+            .appending(path: "manifest.json")
+        let manifest = try FlightRecordingCoding.decoder.decode(
+            FlightRecordingManifestDTO.self,
+            from: Data(contentsOf: manifestURL)
+        )
+        #expect(manifest.schemaVersion == 2)
+        #expect(manifest.detectorPolicy == policy)
+
+        let checkpoint = seed.recording.startedAt.addingTimeInterval(30)
+        try await store.updateRecoveryCheckpoint(recordingID: seed.recording.id, at: checkpoint)
+        #expect(try await store.readSnapshot(id: seed.recording.id).detectorPolicy == policy)
+
+        try await store.close(id: seed.recording.id, closure: FlightRecordingClosure(
+            outcome: .incomplete,
+            cause: .manual,
+            closedAt: seed.recording.startedAt.addingTimeInterval(60),
+            elapsed: .seconds(60),
+            landingEvidenceAvailable: false
+        ))
+        #expect(try await store.readSnapshot(id: seed.recording.id).detectorPolicy == policy)
+    }
+
+    @Test("Legacy manifest remains readable with detector policy unavailable")
+    func legacyManifestHasUnavailableDetectorPolicy() async throws {
+        let root = temporaryDirectory()
+        let seed = try makeSeed()
+        let store = DiskFlightRecordingStore(rootDirectory: root)
+        try await store.create(seed)
+        let manifestURL = packageDirectory(for: seed.recording.id, root: root)
+            .appending(path: "manifest.json")
+        var object = try #require(
+            try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
+        )
+        object["schemaVersion"] = 1
+        object.removeValue(forKey: "detectorPolicy")
+        try JSONSerialization.data(withJSONObject: object).write(to: manifestURL)
+
+        let snapshot = try await store.readSnapshot(id: seed.recording.id)
+
+        #expect(snapshot.detectorPolicy == nil)
+        #expect(snapshot.recording.id == seed.recording.id)
+    }
+
     @Test("Missing or corrupt summary cache is recalculated without corrupting the package")
     func corruptSummaryCacheFallsBackToEvidence() async throws {
         let root = temporaryDirectory()

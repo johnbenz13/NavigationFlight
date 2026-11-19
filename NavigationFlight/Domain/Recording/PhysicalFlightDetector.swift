@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated struct PhysicalFlightDetectionPolicy: Equatable, Sendable {
+nonisolated struct PhysicalFlightDetectionPolicy: Codable, Equatable, Sendable {
     let maximumHorizontalAccuracyMeters: Double
     let maximumSpeedAccuracyMetersPerSecond: Double
     let groundMovementSpeedMetersPerSecond: Double
@@ -36,6 +36,20 @@ extension PhysicalFlightDetectionPolicy {
         provisionalTimeout: .seconds(600),
         airborneLaunchWindow: .seconds(15)
     )
+}
+
+nonisolated struct PhysicalFlightDetectionPolicySnapshot: Codable, Equatable, Sendable {
+    static let currentVersion = "1"
+
+    let version: String
+    let policy: PhysicalFlightDetectionPolicy
+
+    init(version: String = Self.currentVersion, policy: PhysicalFlightDetectionPolicy) {
+        self.version = version
+        self.policy = policy
+    }
+
+    static let production = Self(policy: .production)
 }
 
 nonisolated struct PhysicalFlightDetector: Equatable, Sendable {

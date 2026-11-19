@@ -2,6 +2,8 @@
 
 Status: **approved by John on 2026-11-17**
 
+Slice 1 detector-policy retention expansion approved by John on 2026-11-19.
+
 Product baseline: [approved specification revision `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md)
 
 Design baseline: [approved Figma Directions 01–05](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL)
@@ -33,13 +35,13 @@ The existing implementation already contains useful deep modules:
 - `FlightRecordingLibrary` is an actor that projects stored snapshots into list/detail presentation and currently delegates GPX export.
 - `FlightDetailView` is a SwiftUI presentation surface with an async GPX action and existing unavailable/active distinctions.
 
-The current persisted manifest is schema version 1. Event envelopes are payload version 1; track envelopes currently read versions 1–2. New diagnostic bundle versioning must remain independent of these internal storage versions.
+The persisted manifest begins at schema version 1. Slice 1 introduces manifest schema version 2 to retain detector-policy context while continuing to read version 1. Event envelopes are payload version 1; track envelopes currently read versions 1–2. Diagnostic bundle versioning remains independent of these internal storage versions.
 
 ## Module design
 
 ### 1. Flight evidence snapshot
 
-`FlightRecordingReadSnapshot` remains the external interface of the storage module for readable evidence. Callers receive one value and never traverse package files directly.
+`FlightRecordingReadSnapshot` remains the external interface of the storage module for readable evidence. Callers receive one value and never traverse package files directly. It exposes the optional detector-policy snapshot retained by storage so export and later replay do not consult process-global current policy.
 
 Required extension:
 
@@ -60,7 +62,7 @@ nonisolated struct FlightEvidenceSnapshot: Equatable, Sendable {
 }
 ```
 
-`SourceState` distinguishes closed, active, and recoverable evidence. Snapshot construction reads the recording package once and captures context without mutating recovery freshness or recording state.
+`SourceState` distinguishes closed, active, and recoverable evidence. Snapshot construction reads the recording package once and combines export-time application/platform metadata with the detector-policy snapshot already retained at recording start. It does not mutate recovery freshness or recording state and never reconstructs historical policy from the current executable.
 
 The store interface does not gain export-specific methods. Snapshot consistency is a storage responsibility already represented by `readSnapshot(id:)`; the disk adapter must complete pending in-actor writes before returning.
 
@@ -258,7 +260,11 @@ Rejected alternatives:
 
 ## Persistence and compatibility
 
-- Existing disk packages remain schema version 1 and are not rewritten merely to support export.
+- Manifest schema version 2 adds a required, versioned detector-policy snapshot for newly created recordings. `FlightRecordingSeed` carries the policy snapshot that configured the detector, and package creation writes it atomically with the initial manifest before the recording becomes visible.
+- The retained snapshot is immutable recording evidence. Checkpoint, close, summary, and track/event writes preserve it byte-for-byte; none may replace it with the process's current policy.
+- The manifest decoder supports schema versions 1 and 2. Version 1 maps detector-policy context to `nil` and is not rewritten merely to support export; unknown later versions remain unsupported.
+- Recovery uses the retained version-2 policy to continue detection consistently. A version-1 recording may continue under the app's compatibility fallback, but export and replay still report its historical policy as unavailable rather than claiming that fallback was the original policy.
+- `FlightRecordingReadSnapshot` carries the optional retained policy context. Diagnostic export maps that value only and never injects `PhysicalFlightDetectionPolicySnapshot.production` or another current policy for a disk-loaded recording.
 - Portable bundle schema starts at version 1 and has its own decoder compatibility table.
 - Older readable recordings export available fields and explicit missing context.
 - Unsupported disk packages remain unsupported; preserved raw material may use a separately labelled limited export and never masquerades as a v1 complete bundle.
@@ -284,6 +290,9 @@ New unit tests use Swift Testing and run independently in parallel. XCUITest rem
 
 ### Bundle and export
 
+- Round-trip the exact detector-policy snapshot through manifest-v2 creation, package enumeration, direct reads, checkpoint updates, closure, and recovery.
+- Read schema-v1 manifest fixtures as available recordings with `nil` detector-policy context; reject unknown manifest versions without rewriting them.
+- Prove exporting schema-v1 evidence omits detector-policy context and exporting schema-v2 evidence uses the retained snapshot even when the executable's current policy differs.
 - Round-trip every event payload and every optional measurement.
 - Preserve event sequence, sample order, segment boundaries, missing values, and plan source bytes.
 - Reject unknown versions and malformed order without partial decoding.

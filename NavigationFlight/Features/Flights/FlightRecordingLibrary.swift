@@ -39,7 +39,8 @@ nonisolated struct FlightDetailPresentation: Equatable, Sendable, Identifiable {
     let maximumBarometricAltitudeMeters: Double?
     let latestDeviceHeadingDegrees: Double?
     let approximateSizeBytes: Int64?
-    let canExport: Bool
+    let canExportDiagnostic: Bool
+    let canExportGPX: Bool
     let canDelete: Bool
     let isReadOnlySnapshot: Bool
 }
@@ -99,6 +100,21 @@ actor FlightRecordingLibrary {
         return try await exporter.export(snapshot: snapshot)
     }
 
+    func exportDiagnosticBundle(
+        id: UUID,
+        using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
+        capturedAt: Date = Date(),
+        context: FlightEvidenceContext = .current,
+        progress: @escaping @Sendable (Double) async -> Void = { _ in }
+    ) async throws -> DiagnosticExportResult {
+        let snapshot = try await store.readSnapshot(id: id)
+        return try await exporter.export(FlightEvidenceSnapshot(
+            capturedAt: capturedAt,
+            recording: snapshot,
+            context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
+        ), progress: progress)
+    }
+
     func detail(
         id: UUID,
         activeRecordingID: UUID? = nil
@@ -134,7 +150,8 @@ actor FlightRecordingLibrary {
             maximumBarometricAltitudeMeters: summary.maximumBarometricAltitudeMeters,
             latestDeviceHeadingDegrees: summary.latestDeviceHeadingDegrees,
             approximateSizeBytes: snapshot.approximateSizeBytes,
-            canExport: snapshot.trackSegments.contains { !$0.samples.isEmpty },
+            canExportDiagnostic: recording.closure != nil,
+            canExportGPX: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
             isReadOnlySnapshot: recording.closure == nil
         )
@@ -169,7 +186,8 @@ actor FlightRecordingLibrary {
             maximumBarometricAltitudeMeters: nil,
             latestDeviceHeadingDegrees: nil,
             approximateSizeBytes: nil,
-            canExport: false,
+            canExportDiagnostic: false,
+            canExportGPX: false,
             canDelete: true,
             isReadOnlySnapshot: false
         )

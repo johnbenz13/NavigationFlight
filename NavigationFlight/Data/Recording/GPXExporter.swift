@@ -11,18 +11,24 @@ nonisolated struct GPXExportResult: Equatable, Sendable {
 nonisolated struct GPXExporter: Sendable {
     private let temporaryDirectory: URL
     private let batchSize: Int
+    private let preparationDelay: Duration
 
     init(
         temporaryDirectory: URL = FileManager.default.temporaryDirectory,
-        batchSize: Int = 256
+        batchSize: Int = 256,
+        preparationDelay: Duration = .zero
     ) {
         self.temporaryDirectory = temporaryDirectory
         self.batchSize = max(1, batchSize)
+        self.preparationDelay = preparationDelay
     }
 
     func export(snapshot: FlightRecordingReadSnapshot) async throws -> GPXExportResult {
         guard let closure = snapshot.recording.closure else {
             throw GPXExportError.recordingNotClosed(id: snapshot.recording.id)
+        }
+        if preparationDelay > .zero {
+            try await Task.sleep(for: preparationDelay)
         }
         try Task.checkCancellation()
         let filename = Self.filename(for: snapshot)

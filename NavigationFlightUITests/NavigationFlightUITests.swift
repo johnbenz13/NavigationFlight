@@ -230,7 +230,7 @@ final class NavigationFlightUITests: XCTestCase {
         openFlightDetail(id: "04000000-0000-0000-0000-000000000004", in: app)
 
         XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("Incomplete"))
-        XCTAssertEqual(app.buttons["flight-detail.export"].label, "Export partial GPX")
+        XCTAssertEqual(app.buttons["flight-detail.export"].label, "Export Flight")
     }
 
     @MainActor
@@ -239,9 +239,11 @@ final class NavigationFlightUITests: XCTestCase {
         openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
 
         app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
 
         XCTAssertTrue(app.descendants(matching: .any)["flight-export.result"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.descendants(matching: .any)["flight-export.filename"].label.hasSuffix(".gpx"))
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.filename"].label.hasSuffix(".nflightbundle"))
         let share = app.buttons["flight-export.share"]
         XCTAssertTrue(share.isHittable)
         share.tap()
@@ -266,10 +268,56 @@ final class NavigationFlightUITests: XCTestCase {
         openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
 
         app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
 
-        XCTAssertTrue(app.alerts["GPX export failed"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["No file was shared. The recording is unchanged and remains available to export again."].exists)
-        XCTAssertTrue(app.alerts["GPX export failed"].buttons["Retry"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.failure"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Export Couldn’t Be Completed"].exists)
+        XCTAssertTrue(app.staticTexts["Storage became unavailable while assembling the bundle."].exists)
+        XCTAssertTrue(app.buttons["Try Again"].exists)
+    }
+
+    @MainActor
+    func testDiagnosticExportCancellationReturnsToRetryableFlightDetail() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            exportDelay: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
+
+        let progress = app.staticTexts["Preparing Diagnostic Bundle"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 3))
+        app.buttons["flight-export.cancel-progress"].tap()
+        XCTAssertTrue(progress.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["flight-detail.export"].isHittable)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.diagnostic"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.result"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
+    func testGPXExportUsesTrackSpecificProgressCopy() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            exportDelay: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.gpx"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.gpx"].tap()
+
+        XCTAssertTrue(app.staticTexts["Preparing GPX Track"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["Preparing Diagnostic Bundle"].exists)
+        app.buttons["flight-export.cancel-progress"].tap()
     }
 
     @MainActor
@@ -284,14 +332,18 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    func testMissingEvidenceDetailUsesUnavailableInsteadOfZero() throws {
+    func testActionOnlyFlightOffersDiagnosticExportWithoutGPX() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
 
         openFlightDetail(id: "05000000-0000-0000-0000-000000000005", in: app)
 
         XCTAssertTrue(app.staticTexts["Unavailable"].firstMatch.exists)
         XCTAssertFalse(app.staticTexts["0 km"].exists)
-        XCTAssertFalse(app.buttons["flight-detail.export"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.export"].exists)
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.diagnostic"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["flight-export.gpx"].exists)
+        app.buttons["flight-export.cancel"].tap()
         XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
         let detail = app.descendants(matching: .any)["flight-detail.05000000-0000-0000-0000-000000000005"]
         for _ in 0..<3 where !app.descendants(matching: .any)["flight-detail.supplemental-evidence"].exists {
@@ -1725,6 +1777,7 @@ final class NavigationFlightUITests: XCTestCase {
         planData: Data? = nil,
         preferredContentSizeCategory: String? = nil,
         exportFailure: Bool = false,
+        exportDelay: Bool = false,
         deletionFailure: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
@@ -1733,6 +1786,9 @@ final class NavigationFlightUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_FLIGHTS_STATE"] = state
         if exportFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_FAILURE"] = "1"
+        }
+        if exportDelay {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EXPORT_DELAY"] = "1"
         }
         if deletionFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE"] = "1"

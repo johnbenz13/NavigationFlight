@@ -36,7 +36,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         snapshotsByID[seed.recording.id] = FlightRecordingReadSnapshot(
             recording: seed.recording,
             events: seed.events,
-            trackSegments: seed.trackSegments
+            trackSegments: seed.trackSegments,
+            detectorPolicy: seed.detectorPolicy
         )
     }
 
@@ -54,7 +55,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
                 gpsCoverage: current.trackSegments.count == 1 ? .available : .partial
             ),
             events: current.events,
-            trackSegments: current.trackSegments
+            trackSegments: current.trackSegments,
+            detectorPolicy: current.detectorPolicy
         )
         snapshotsByID[batch.recordingID] = current
     }
@@ -72,7 +74,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
             recording: current.recording.restoringRecoveryCheckpoint(at: timestamp),
             events: current.events,
-            trackSegments: current.trackSegments
+            trackSegments: current.trackSegments,
+            detectorPolicy: current.detectorPolicy
         )
     }
 
@@ -108,7 +111,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
             recording: recording,
             events: events,
-            trackSegments: current.trackSegments
+            trackSegments: current.trackSegments,
+            detectorPolicy: current.detectorPolicy
         )
     }
 
@@ -134,7 +138,8 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
                 nextEventSequence: UInt64(current.events.count)
             ),
             events: current.events,
-            trackSegments: current.trackSegments
+            trackSegments: current.trackSegments,
+            detectorPolicy: current.detectorPolicy
         )
     }
 

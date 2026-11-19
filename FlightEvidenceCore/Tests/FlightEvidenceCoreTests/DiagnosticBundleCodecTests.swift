@@ -36,9 +36,40 @@ struct DiagnosticBundleCodecTests {
         }
     }
 
+    @Test("Negative accuracy values fail explicitly")
+    func negativeAccuracy() throws {
+        let bundle = sampleBundle(verticalAccuracyMeters: -1)
+        #expect(throws: DiagnosticBundleCodecError.invalidMeasurement) {
+            try DiagnosticBundleCodec().encode(bundle)
+        }
+    }
+
+    @Test("Malformed event payload shapes fail explicitly")
+    func malformedEventPayload() throws {
+        let payload = FlightEvidenceBundleV1.EventPayload(
+            kind: "waypointReached",
+            values: ["legID": .identifier(UUID())]
+        )
+        let bundle = sampleBundle(events: [sampleEvent(sequence: 0, payload: payload)])
+        #expect(throws: DiagnosticBundleCodecError.invalidEventPayload(kind: "waypointReached")) {
+            try DiagnosticBundleCodec().encode(bundle)
+        }
+    }
+
+    @Test("Out-of-order samples within a segment fail explicitly")
+    func invalidSampleOrder() throws {
+        let timestamp = Date(timeIntervalSince1970: 1_763_374_400.123)
+        let bundle = sampleBundle(sampleObservedAts: [timestamp, timestamp.addingTimeInterval(-1)])
+        #expect(throws: DiagnosticBundleCodecError.invalidMeasurement) {
+            try DiagnosticBundleCodec().encode(bundle)
+        }
+    }
+
     private func sampleBundle(
         schemaVersion: Int = FlightEvidenceBundleV1.schemaVersion,
-        events: [FlightEvidenceBundleV1.EventEvidence]? = nil
+        events: [FlightEvidenceBundleV1.EventEvidence]? = nil,
+        verticalAccuracyMeters: Double? = nil,
+        sampleObservedAts: [Date]? = nil
     ) -> FlightEvidenceBundleV1 {
         let timestamp = Date(timeIntervalSince1970: 1_763_374_400.123)
         return FlightEvidenceBundleV1(
@@ -72,13 +103,13 @@ struct DiagnosticBundleCodecTests {
             orderedEvents: events ?? [sampleEvent(sequence: 0)],
             trackSegments: [.init(
                 identifier: UUID(uuidString: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")!,
-                samples: [.init(
+                samples: (sampleObservedAts ?? [timestamp]).map { observedAt in .init(
                     latitudeDegrees: 32.1,
                     longitudeDegrees: 34.8,
-                    observedAt: timestamp,
+                    observedAt: observedAt,
                     horizontalAccuracyMeters: 4,
                     altitudeMeters: 123,
-                    verticalAccuracyMeters: nil,
+                    verticalAccuracyMeters: verticalAccuracyMeters,
                     groundSpeedMetersPerSecond: 45,
                     speedAccuracyMetersPerSecond: 1.5,
                     courseDegrees: 91,
@@ -86,19 +117,25 @@ struct DiagnosticBundleCodecTests {
                     barometricAltitudeMeters: 120,
                     deviceHeadingDegrees: nil,
                     deviceHeadingAccuracyDegrees: nil
-                )]
+                ) }
             )]
         )
     }
 
-    private func sampleEvent(sequence: UInt64) -> FlightEvidenceBundleV1.EventEvidence {
+    private func sampleEvent(
+        sequence: UInt64,
+        payload: FlightEvidenceBundleV1.EventPayload? = nil
+    ) -> FlightEvidenceBundleV1.EventEvidence {
         .init(
             identifier: UUID(),
             sequence: sequence,
             recordedAt: Date(timeIntervalSince1970: 1_763_374_400.123),
             elapsedNanoseconds: 10,
             origin: "pilot",
-            payload: .init(kind: "waypointReached", values: ["legID": .identifier(UUID())])
+            payload: payload ?? .init(
+                kind: "waypointReached",
+                values: ["legIdentifier": .identifier(UUID())]
+            )
         )
     }
 }

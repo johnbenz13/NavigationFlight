@@ -13,7 +13,13 @@ struct DiagnosticBundleExporterTests {
         let evidence = FlightEvidenceSnapshot(
             capturedAt: Date(timeIntervalSince1970: 2_000),
             recording: snapshot,
-            context: .init(appVersion: "1.2", appBuild: "34", platform: "iPadOS", osVersion: "27.0")
+            context: .init(
+                appVersion: "1.2",
+                appBuild: "34",
+                platform: "iPadOS",
+                osVersion: "27.0",
+                detectorPolicy: .production
+            )
         )
 
         let result = try await DiagnosticBundleExporter(temporaryDirectory: directory).export(evidence)
@@ -29,6 +35,8 @@ struct DiagnosticBundleExporterTests {
         #expect(bundle.trackSegments.map(\.identifier) == snapshot.trackSegments.map(\.id))
         #expect(bundle.trackSegments[0].samples[0].barometricAltitudeMeters == 101)
         #expect(bundle.trackSegments[0].samples[0].deviceHeadingDegrees == 275)
+        #expect(bundle.detectorPolicyContext?.version == "1")
+        #expect(bundle.detectorPolicyContext?.values["takeoffSpeedMetersPerSecond"] == .number(25))
         #expect(snapshot == evidence.recording)
     }
 
@@ -150,6 +158,7 @@ struct DiagnosticBundleExporterTests {
         #expect(roundTripped.orderedEvents.map(\.sequence) == events.map(\.sequence))
         #expect(roundTripped.orderedEvents.map(\.payload) == mapped.orderedEvents.map(\.payload))
         #expect(roundTripped.orderedEvents.count == payloads.count)
+        #expect(roundTripped.detectorPolicyContext == nil)
     }
 
     private func closedSnapshot() throws -> FlightRecordingReadSnapshot {

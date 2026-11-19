@@ -100,7 +100,8 @@ struct FlightRecordingLibraryTests {
         #expect(detail.id == id)
         #expect(detail.flightPlanTitle == "Unavailable recording")
         #expect(detail.status == .unavailable)
-        #expect(detail.canExport == false)
+        #expect(detail.canExportDiagnostic == false)
+        #expect(detail.canExportGPX == false)
         #expect(detail.canDelete)
         #expect(detail.isReadOnlySnapshot == false)
     }
@@ -209,9 +210,40 @@ struct FlightRecordingLibraryTests {
         #expect(detail.distanceMeters != nil)
         #expect(detail.maximumAltitudeMeters == 250)
         #expect(detail.approximateSizeBytes == 4_800_000)
-        #expect(detail.canExport)
+        #expect(detail.canExportDiagnostic)
+        #expect(detail.canExportGPX)
         #expect(detail.canDelete)
         #expect(detail.isReadOnlySnapshot == false)
+    }
+
+    @Test("Closed action-only evidence offers diagnostic export without offering GPX")
+    func actionOnlyDiagnosticEligibility() async throws {
+        let id = UUID()
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let recording = try recording(
+            id: id,
+            startedAt: startedAt,
+            closedAt: startedAt.addingTimeInterval(60)
+        )
+        let snapshot = FlightRecordingReadSnapshot(
+            recording: recording,
+            events: [RecordedFlightEvent(
+                id: UUID(),
+                sequence: 0,
+                occurredAt: startedAt,
+                elapsed: .zero,
+                origin: .pilot,
+                payload: .positionCheckRequested
+            )]
+        )
+        let library = FlightRecordingLibrary(
+            store: InMemoryFlightRecordingStore(packageResults: [.available(snapshot)])
+        )
+
+        let detail = try await library.detail(id: id)
+
+        #expect(detail.canExportDiagnostic)
+        #expect(detail.canExportGPX == false)
     }
 
     @Test("Export uses a closed immutable snapshot without changing the recording")

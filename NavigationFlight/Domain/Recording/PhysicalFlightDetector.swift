@@ -38,6 +38,20 @@ extension PhysicalFlightDetectionPolicy {
     )
 }
 
+nonisolated struct PhysicalFlightDetectionPolicySnapshot: Equatable, Sendable {
+    static let currentVersion = "1"
+
+    let version: String
+    let policy: PhysicalFlightDetectionPolicy
+
+    init(version: String = Self.currentVersion, policy: PhysicalFlightDetectionPolicy) {
+        self.version = version
+        self.policy = policy
+    }
+
+    static let production = Self(policy: .production)
+}
+
 nonisolated struct PhysicalFlightDetector: Equatable, Sendable {
     enum Event: Equatable, Sendable {
         case groundMovementBegan

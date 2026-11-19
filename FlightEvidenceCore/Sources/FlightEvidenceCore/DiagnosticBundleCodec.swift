@@ -5,6 +5,7 @@ public enum DiagnosticBundleCodecError: Error, Equatable, Sendable {
     case invalidEventOrder
     case duplicateTrackSegmentIdentifier(UUID)
     case invalidMeasurement
+    case invalidEventPayload(kind: String)
     case sourceStateClosureMismatch
 }
 
@@ -29,14 +30,17 @@ public struct DiagnosticBundleCodec: Sendable {
         guard zip(bundle.orderedEvents, bundle.orderedEvents.dropFirst()).allSatisfy({ $0.sequence < $1.sequence }) else {
             throw DiagnosticBundleCodecError.invalidEventOrder
         }
-        let segmentIDs = bundle.trackSegments.map(\.identifier)
-        guard Set(segmentIDs).count == segmentIDs.count else {
-            throw DiagnosticBundleCodecError.duplicateTrackSegmentIdentifier(
-                segmentIDs.first { id in segmentIDs.filter { $0 == id }.count > 1 }!
-            )
+        var segmentIDs = Set<UUID>()
+        for segment in bundle.trackSegments where !segmentIDs.insert(segment.identifier).inserted {
+            throw DiagnosticBundleCodecError.duplicateTrackSegmentIdentifier(segment.identifier)
         }
         guard bundle.sourceState == .closed ? bundle.closure != nil : bundle.closure == nil else {
             throw DiagnosticBundleCodecError.sourceStateClosureMismatch
+        }
+        for segment in bundle.trackSegments {
+            guard zip(segment.samples, segment.samples.dropFirst()).allSatisfy({ $0.observedAt <= $1.observedAt }) else {
+                throw DiagnosticBundleCodecError.invalidMeasurement
+            }
         }
         for sample in bundle.trackSegments.flatMap(\.samples) {
             let optionalValues = [
@@ -49,10 +53,99 @@ public struct DiagnosticBundleCodec: Sendable {
             guard sample.latitudeDegrees.isFinite, (-90...90).contains(sample.latitudeDegrees),
                   sample.longitudeDegrees.isFinite, (-180...180).contains(sample.longitudeDegrees),
                   sample.horizontalAccuracyMeters.isFinite, sample.horizontalAccuracyMeters >= 0,
+                  nonnegative(sample.groundSpeedMetersPerSecond),
+                  nonnegative(sample.verticalAccuracyMeters),
+                  nonnegative(sample.speedAccuracyMetersPerSecond),
+                  nonnegative(sample.courseAccuracyDegrees),
+                  nonnegative(sample.deviceHeadingAccuracyDegrees),
+                  degrees(sample.courseDegrees),
+                  degrees(sample.deviceHeadingDegrees),
                   optionalValues.compactMap({ $0 }).allSatisfy(\.isFinite) else {
                 throw DiagnosticBundleCodecError.invalidMeasurement
             }
         }
+        for event in bundle.orderedEvents {
+            try validate(event.payload)
+        }
+    }
+
+    private func nonnegative(_ value: Double?) -> Bool {
+        value.map { $0 >= 0 } ?? true
+    }
+
+    private func degrees(_ value: Double?) -> Bool {
+        value.map { (0..<360).contains($0) } ?? true
+    }
+
+    private func validate(_ payload: FlightEvidenceBundleV1.EventPayload) throws {
+        let keys = Set(payload.values.keys)
+        let valid: Bool = switch payload.kind {
+        case "recordingStarted":
+            keys == ["cause"] && payload.values["cause"]?.stringValue.map {
+                ["startLegWithoutLocation", "automaticTakeoff", "partialStart"].contains($0)
+            } == true
+        case "legStarted", "destinationIdentified", "waypointReached", "finalWaypointReached", "automaticLegRecovery":
+            keys == ["legIdentifier"] && payload.values["legIdentifier"]?.isIdentifier == true
+        case "identificationPointReached":
+            keys == ["legIdentifier", "identificationPointIdentifier"]
+                && payload.values.values.allSatisfy(\.isIdentifier)
+        case "automaticNextLegTransition":
+            keys == ["fromLegIdentifier", "toLegIdentifier"]
+                && payload.values.values.allSatisfy(\.isIdentifier)
+        case "etaRevised":
+            (keys == ["legIdentifier", "targetKind", "targetIdentifier", "committedSeconds"]
+                || keys == ["legIdentifier", "targetKind", "targetIdentifier", "priorSeconds", "committedSeconds"])
+                && payload.values["legIdentifier"]?.isIdentifier == true
+                && payload.values["targetKind"]?.stringValue.map {
+                    ["identificationPoint", "destination"].contains($0)
+                } == true
+                && payload.values["targetIdentifier"]?.isIdentifier == true
+                && payload.values["committedSeconds"]?.isInteger == true
+                && (payload.values["priorSeconds"] == nil || payload.values["priorSeconds"]?.isInteger == true)
+        case "headingRevised":
+            keys == ["legIdentifier", "priorDegrees", "committedDegrees"]
+                && payload.values["legIdentifier"]?.isIdentifier == true
+                && payload.values["priorDegrees"]?.isInteger == true
+                && payload.values["committedDegrees"]?.isInteger == true
+        case "reachUndone": keys == ["originalEventIdentifier"] && payload.values.values.allSatisfy(\.isIdentifier)
+        case "positionCheckRequested", "navigationCompleted", "recoveryContinued", "manualEnd": keys.isEmpty
+        case "positionCheckEnded": validatePositionCheck(payload.values)
+        case "storageDegraded":
+            keys == ["reason"] && payload.values["reason"]?.stringValue.map {
+                ["trackWriteFailed", "lowStorage", "bufferOverflow"].contains($0)
+            } == true
+        case "locationAvailabilityChanged":
+            keys == ["availability"] && payload.values["availability"]?.stringValue.map {
+                ["servicesDisabled", "signalLost", "permissionDenied", "permissionRestricted", "resumed"].contains($0)
+            } == true
+        case "physicalStateChanged":
+            keys == ["from", "to"] && payload.values.values.allSatisfy(\.isString)
+        case "physicalStateCorrected":
+            keys == ["originalEventIdentifier", "from", "to"]
+                && payload.values["originalEventIdentifier"]?.isIdentifier == true
+                && payload.values["from"]?.isString == true
+                && payload.values["to"]?.isString == true
+        case "recordingClosed": keys == ["outcome", "cause"] && payload.values.values.allSatisfy(\.isString)
+        default: false
+        }
+        guard valid else { throw DiagnosticBundleCodecError.invalidEventPayload(kind: payload.kind) }
+    }
+
+    private func validatePositionCheck(_ values: [String: PortableValue]) -> Bool {
+        if Set(values.keys) == ["outcome"] {
+            return values["outcome"]?.stringValue == "endedWithoutDisclosure"
+        }
+        guard Set(values.keys) == ["outcome", "sample"],
+              values["outcome"]?.stringValue == "disclosed",
+              let sample = values["sample"]?.objectValue,
+              Set(sample.keys) == [
+                "latitudeDegrees", "longitudeDegrees", "observedAt", "horizontalAccuracyMeters",
+              ],
+              sample["latitudeDegrees"]?.isNumber == true,
+              sample["longitudeDegrees"]?.isNumber == true,
+              sample["observedAt"]?.isTimestamp == true,
+              sample["horizontalAccuracyMeters"]?.isNumber == true else { return false }
+        return true
     }
 
     private static let encoder: JSONEncoder = {
@@ -84,4 +177,14 @@ public struct DiagnosticBundleCodec: Sendable {
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         return formatter
     }
+}
+
+private extension PortableValue {
+    var isString: Bool { if case .string = self { true } else { false } }
+    var stringValue: String? { if case .string(let value) = self { value } else { nil } }
+    var isInteger: Bool { if case .integer = self { true } else { false } }
+    var isIdentifier: Bool { if case .identifier = self { true } else { false } }
+    var isNumber: Bool { if case .number = self { true } else { false } }
+    var isTimestamp: Bool { if case .timestamp = self { true } else { false } }
+    var objectValue: [String: PortableValue]? { if case .object(let value) = self { value } else { nil } }
 }

@@ -19,6 +19,7 @@ struct FlightDetailLoaderView: View {
     @State private var exportResult: FlightExportResult?
     @State private var failedFormat: FlightExportFormat?
     @State private var exportTask: Task<Void, Never>?
+    @State private var exportingFormat: FlightExportFormat?
 
     private var isExporting: Bool { exportTask != nil }
 
@@ -53,7 +54,7 @@ struct FlightDetailLoaderView: View {
             }
         }
         .sheet(isPresented: $exportChoicePresented) {
-            FlightExportChoiceView { format in
+            FlightExportChoiceView(canExportGPX: detail?.canExportGPX ?? false) { format in
                 exportChoicePresented = false
                 beginExport(format)
             }
@@ -63,7 +64,7 @@ struct FlightDetailLoaderView: View {
         }
         .overlay {
             if isExporting {
-                DiagnosticExportProgressView {
+                FlightExportProgressView(format: exportingFormat ?? .diagnosticBundle) {
                     exportTask?.cancel()
                 }
             }
@@ -99,8 +100,12 @@ struct FlightDetailLoaderView: View {
 
     private func beginExport(_ format: FlightExportFormat) {
         guard exportTask == nil else { return }
+        exportingFormat = format
         exportTask = Task {
-            defer { exportTask = nil }
+            defer {
+                exportTask = nil
+                exportingFormat = nil
+            }
             do {
                 switch format {
                 case .diagnosticBundle:
@@ -162,7 +167,7 @@ struct FlightDetailView: View {
                         .buttonBorderShape(.roundedRectangle(radius: 14))
                         .controlSize(.large)
                         .accessibilityIdentifier("flight-detail.continue")
-                } else if detail.canExport {
+                } else if detail.canExportDiagnostic {
                     Button(action: onExport) {
                         if isExporting {
                             ProgressView("Preparing Export")
@@ -228,7 +233,7 @@ struct FlightDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Stored evidence")
                 .font(.title3.weight(.bold))
-            Text("GPS track and operational history are retained on device for future debrief features. This release exposes summaries and GPX export only.")
+            Text("GPS track and operational history are retained on device for future debrief features. Diagnostic evidence and GPX tracks can be exported separately.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

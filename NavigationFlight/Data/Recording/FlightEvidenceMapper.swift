@@ -6,6 +6,21 @@ nonisolated struct FlightEvidenceContext: Equatable, Sendable {
     let appBuild: String
     let platform: String
     let osVersion: String
+    let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
+
+    init(
+        appVersion: String,
+        appBuild: String,
+        platform: String,
+        osVersion: String,
+        detectorPolicy: PhysicalFlightDetectionPolicySnapshot? = nil
+    ) {
+        self.appVersion = appVersion
+        self.appBuild = appBuild
+        self.platform = platform
+        self.osVersion = osVersion
+        self.detectorPolicy = detectorPolicy
+    }
 
     static var current: Self {
         let info = Bundle.main.infoDictionary
@@ -13,7 +28,8 @@ nonisolated struct FlightEvidenceContext: Equatable, Sendable {
             appVersion: info?["CFBundleShortVersionString"] as? String ?? "unavailable",
             appBuild: info?["CFBundleVersion"] as? String ?? "unavailable",
             platform: "iOS",
-            osVersion: ProcessInfo.processInfo.operatingSystemVersionString
+            osVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+            detectorPolicy: .production
         )
     }
 }
@@ -48,7 +64,7 @@ nonisolated struct FlightEvidenceMapper: Sendable {
                 platform: snapshot.context.platform,
                 osVersion: snapshot.context.osVersion
             ),
-            detectorPolicyContext: nil,
+            detectorPolicyContext: snapshot.context.detectorPolicy.map(detectorPolicyContext),
             recordingManifest: .init(
                 recordingIdentifier: recording.id,
                 flightIdentifier: recording.flightID,
@@ -205,6 +221,34 @@ nonisolated struct FlightEvidenceMapper: Sendable {
             throw FlightEvidenceMappingError.durationOutOfRange
         }
         return value
+    }
+
+    private func detectorPolicyContext(
+        _ snapshot: PhysicalFlightDetectionPolicySnapshot
+    ) -> FlightEvidenceBundleV1.DetectorPolicyContext {
+        let policy = snapshot.policy
+        return .init(version: snapshot.version, values: [
+            "maximumHorizontalAccuracyMeters": .number(policy.maximumHorizontalAccuracyMeters),
+            "maximumSpeedAccuracyMetersPerSecond": .number(policy.maximumSpeedAccuracyMetersPerSecond),
+            "groundMovementSpeedMetersPerSecond": .number(policy.groundMovementSpeedMetersPerSecond),
+            "groundMovementWindowSeconds": .number(seconds(policy.groundMovementWindow)),
+            "candidateInterruptionToleranceSeconds": .number(seconds(policy.candidateInterruptionTolerance)),
+            "takeoffSpeedMetersPerSecond": .number(policy.takeoffSpeedMetersPerSecond),
+            "takeoffAltitudeGainMeters": .number(policy.takeoffAltitudeGainMeters),
+            "takeoffWindowSeconds": .number(seconds(policy.takeoffWindow)),
+            "landingSpeedMetersPerSecond": .number(policy.landingSpeedMetersPerSecond),
+            "landingAltitudeToleranceMeters": .number(policy.landingAltitudeToleranceMeters),
+            "landingWindowSeconds": .number(seconds(policy.landingWindow)),
+            "stoppedSpeedMetersPerSecond": .number(policy.stoppedSpeedMetersPerSecond),
+            "stoppedWindowSeconds": .number(seconds(policy.stoppedWindow)),
+            "provisionalTimeoutSeconds": .number(seconds(policy.provisionalTimeout)),
+            "airborneLaunchWindowSeconds": .number(seconds(policy.airborneLaunchWindow)),
+        ])
+    }
+
+    private func seconds(_ duration: Duration) -> Double {
+        let components = duration.components
+        return Double(components.seconds) + Double(components.attoseconds) / 1e18
     }
 
     private func timingTargetKind(_ kind: NavigationTimingTargetKey.Kind) -> String {

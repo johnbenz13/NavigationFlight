@@ -13,6 +13,7 @@ enum FlightExportResult: Sendable {
 }
 
 struct FlightExportChoiceView: View {
+    let canExportGPX: Bool
     let onSelect: (FlightExportFormat) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +21,10 @@ struct FlightExportChoiceView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 10) {
+                Text("Export Flight")
+                    .font(.title2.bold())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 Text("Choose the evidence you need. Exporting does not change or end this recording.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -32,12 +37,14 @@ struct FlightExportChoiceView: View {
                     detail: "Complete evidence",
                     format: .diagnosticBundle
                 )
-                choice(
-                    title: "GPX Track",
-                    description: "Portable GPS track for compatible mapping tools. Events and detector context are not included.",
-                    detail: "Track only",
-                    format: .gpx
-                )
+                if canExportGPX {
+                    choice(
+                        title: "GPX Track",
+                        description: "Portable GPS track for compatible mapping tools. Events and detector context are not included.",
+                        detail: "Track only",
+                        format: .gpx
+                    )
+                }
 
                 Label(
                     "Created on this iPad. Nothing is uploaded automatically.",
@@ -47,8 +54,11 @@ struct FlightExportChoiceView: View {
                 .foregroundStyle(.green)
                 .padding(.vertical, 6)
 
-                Button("Cancel", role: .cancel) {
+                Button(role: .cancel) {
                     dismiss()
+                } label: {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .buttonBorderShape(.roundedRectangle(radius: 14))
@@ -57,8 +67,7 @@ struct FlightExportChoiceView: View {
                 .accessibilityIdentifier("flight-export.cancel")
             }
             .padding(24)
-            .navigationTitle("Export Flight")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
         }
         .accessibilityIdentifier("flight-export.choice")
     }
@@ -108,7 +117,8 @@ struct FlightExportChoiceView: View {
     }
 }
 
-struct DiagnosticExportProgressView: View {
+struct FlightExportProgressView: View {
+    let format: FlightExportFormat
     let onCancel: () -> Void
 
     var body: some View {
@@ -116,12 +126,12 @@ struct DiagnosticExportProgressView: View {
             Color.black.opacity(0.24)
                 .ignoresSafeArea()
             VStack(spacing: 22) {
-                Text("Preparing Diagnostic Bundle")
+                Text(title)
                     .font(.title3.weight(.semibold))
                 ProgressView()
                     .progressViewStyle(.linear)
                     .tint(.blue)
-                Text("Validating retained track samples and recorded events…")
+                Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Text("The Flight recording remains unchanged. No file is shared until preparation completes.")
@@ -141,6 +151,16 @@ struct DiagnosticExportProgressView: View {
             .shadow(radius: 18, y: 8)
             .padding(24)
         }
+    }
+
+    private var title: String {
+        format == .diagnosticBundle ? "Preparing Diagnostic Bundle" : "Preparing GPX Track"
+    }
+
+    private var detail: String {
+        format == .diagnosticBundle
+            ? "Validating retained track samples and recorded events…"
+            : "Preparing valid GPS samples for compatible mapping tools…"
     }
 }
 

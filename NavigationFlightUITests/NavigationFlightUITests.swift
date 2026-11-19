@@ -302,6 +302,24 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testGPXExportUsesTrackSpecificProgressCopy() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try oneLegPlanData(),
+            exportDelay: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.gpx"].waitForExistence(timeout: 3))
+        app.buttons["flight-export.gpx"].tap()
+
+        XCTAssertTrue(app.staticTexts["Preparing GPX Track"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["Preparing Diagnostic Bundle"].exists)
+        app.buttons["flight-export.cancel-progress"].tap()
+    }
+
+    @MainActor
     func testActiveFlightDetailIsReadOnlyAndContinuable() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
 
@@ -313,14 +331,18 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    func testMissingEvidenceDetailUsesUnavailableInsteadOfZero() throws {
+    func testActionOnlyFlightOffersDiagnosticExportWithoutGPX() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
 
         openFlightDetail(id: "05000000-0000-0000-0000-000000000005", in: app)
 
         XCTAssertTrue(app.staticTexts["Unavailable"].firstMatch.exists)
         XCTAssertFalse(app.staticTexts["0 km"].exists)
-        XCTAssertFalse(app.buttons["flight-detail.export"].exists)
+        XCTAssertTrue(app.buttons["flight-detail.export"].exists)
+        app.buttons["flight-detail.export"].tap()
+        XCTAssertTrue(app.buttons["flight-export.diagnostic"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["flight-export.gpx"].exists)
+        app.buttons["flight-export.cancel"].tap()
         XCTAssertTrue(app.buttons["flight-detail.delete"].exists)
         let detail = app.descendants(matching: .any)["flight-detail.05000000-0000-0000-0000-000000000005"]
         for _ in 0..<3 where !app.descendants(matching: .any)["flight-detail.supplemental-evidence"].exists {

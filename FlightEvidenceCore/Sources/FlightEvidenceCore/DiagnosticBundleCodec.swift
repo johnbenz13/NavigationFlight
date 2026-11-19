@@ -119,13 +119,25 @@ public struct DiagnosticBundleCodec: Sendable {
                 ["servicesDisabled", "signalLost", "permissionDenied", "permissionRestricted", "resumed"].contains($0)
             } == true
         case "physicalStateChanged":
-            keys == ["from", "to"] && payload.values.values.allSatisfy(\.isString)
+            keys == ["from", "to"]
+                && validPhysicalState(payload.values["from"])
+                && validPhysicalState(payload.values["to"])
         case "physicalStateCorrected":
             keys == ["originalEventIdentifier", "from", "to"]
                 && payload.values["originalEventIdentifier"]?.isIdentifier == true
-                && payload.values["from"]?.isString == true
-                && payload.values["to"]?.isString == true
-        case "recordingClosed": keys == ["outcome", "cause"] && payload.values.values.allSatisfy(\.isString)
+                && validPhysicalState(payload.values["from"])
+                && validPhysicalState(payload.values["to"])
+        case "recordingClosed":
+            keys == ["outcome", "cause"]
+                && payload.values["outcome"]?.stringValue.map {
+                    ["complete", "incomplete"].contains($0)
+                } == true
+                && payload.values["cause"]?.stringValue.map {
+                    [
+                        "automatic", "manual", "recoveryExpired", "endedDuringRecovery",
+                        "supersededDuringRecovery",
+                    ].contains($0)
+                } == true
         default: false
         }
         guard valid else { throw DiagnosticBundleCodecError.invalidEventPayload(kind: payload.kind) }
@@ -141,11 +153,24 @@ public struct DiagnosticBundleCodec: Sendable {
               Set(sample.keys) == [
                 "latitudeDegrees", "longitudeDegrees", "observedAt", "horizontalAccuracyMeters",
               ],
-              sample["latitudeDegrees"]?.isNumber == true,
-              sample["longitudeDegrees"]?.isNumber == true,
+              let latitude = sample["latitudeDegrees"]?.numberValue,
+              latitude.isFinite,
+              (-90...90).contains(latitude),
+              let longitude = sample["longitudeDegrees"]?.numberValue,
+              longitude.isFinite,
+              (-180...180).contains(longitude),
               sample["observedAt"]?.isTimestamp == true,
-              sample["horizontalAccuracyMeters"]?.isNumber == true else { return false }
+              let horizontalAccuracy = sample["horizontalAccuracyMeters"]?.numberValue,
+              horizontalAccuracy.isFinite,
+              horizontalAccuracy >= 0 else { return false }
         return true
+    }
+
+    private func validPhysicalState(_ value: PortableValue?) -> Bool {
+        value?.stringValue.map {
+            ["preparing", "groundMovement", "airborne", "landedAwaitingStop", "stopped", "unavailable"]
+                .contains($0)
+        } == true
     }
 
     private static let encoder: JSONEncoder = {
@@ -180,11 +205,10 @@ public struct DiagnosticBundleCodec: Sendable {
 }
 
 private extension PortableValue {
-    var isString: Bool { if case .string = self { true } else { false } }
     var stringValue: String? { if case .string(let value) = self { value } else { nil } }
     var isInteger: Bool { if case .integer = self { true } else { false } }
     var isIdentifier: Bool { if case .identifier = self { true } else { false } }
-    var isNumber: Bool { if case .number = self { true } else { false } }
+    var numberValue: Double? { if case .number(let value) = self { value } else { nil } }
     var isTimestamp: Bool { if case .timestamp = self { true } else { false } }
     var objectValue: [String: PortableValue]? { if case .object(let value) = self { value } else { nil } }
 }

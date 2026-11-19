@@ -56,6 +56,68 @@ struct DiagnosticBundleCodecTests {
         }
     }
 
+    @Test("Physical-state and closure payloads reject unsupported enum values")
+    func invalidPayloadEnumValues() throws {
+        let payloads = [
+            FlightEvidenceBundleV1.EventPayload(
+                kind: "physicalStateChanged",
+                values: ["from": .string("invented"), "to": .string("airborne")]
+            ),
+            FlightEvidenceBundleV1.EventPayload(
+                kind: "physicalStateCorrected",
+                values: [
+                    "originalEventIdentifier": .identifier(UUID()),
+                    "from": .string("airborne"),
+                    "to": .string("invented"),
+                ]
+            ),
+            FlightEvidenceBundleV1.EventPayload(
+                kind: "recordingClosed",
+                values: ["outcome": .string("invented"), "cause": .string("manual")]
+            ),
+            FlightEvidenceBundleV1.EventPayload(
+                kind: "recordingClosed",
+                values: ["outcome": .string("complete"), "cause": .string("invented")]
+            ),
+        ]
+
+        for payload in payloads {
+            #expect(throws: DiagnosticBundleCodecError.invalidEventPayload(kind: payload.kind)) {
+                try DiagnosticBundleCodec().encode(sampleBundle(events: [sampleEvent(sequence: 0, payload: payload)]))
+            }
+        }
+    }
+
+    @Test("Disclosed position samples reject invalid coordinates and horizontal accuracy")
+    func invalidDisclosedPositionMeasurements() throws {
+        let invalidMeasurements: [(latitude: Double, longitude: Double, accuracy: Double)] = [
+            (91, 34.8, 4),
+            (32.1, -181, 4),
+            (32.1, 34.8, -1),
+            (.infinity, 34.8, 4),
+            (32.1, .nan, 4),
+            (32.1, 34.8, .infinity),
+        ]
+
+        for measurement in invalidMeasurements {
+            let payload = FlightEvidenceBundleV1.EventPayload(
+                kind: "positionCheckEnded",
+                values: [
+                    "outcome": .string("disclosed"),
+                    "sample": .object([
+                        "latitudeDegrees": .number(measurement.latitude),
+                        "longitudeDegrees": .number(measurement.longitude),
+                        "observedAt": .timestamp(Date(timeIntervalSince1970: 1_763_374_400.123)),
+                        "horizontalAccuracyMeters": .number(measurement.accuracy),
+                    ]),
+                ]
+            )
+            #expect(throws: DiagnosticBundleCodecError.invalidEventPayload(kind: payload.kind)) {
+                try DiagnosticBundleCodec().encode(sampleBundle(events: [sampleEvent(sequence: 0, payload: payload)]))
+            }
+        }
+    }
+
     @Test("Out-of-order samples within a segment fail explicitly")
     func invalidSampleOrder() throws {
         let timestamp = Date(timeIntervalSince1970: 1_763_374_400.123)

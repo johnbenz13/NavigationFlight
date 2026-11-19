@@ -2,6 +2,8 @@
 
 Status: **approved and published on 2026-11-17**
 
+Slice 1 detector-policy retention expansion approved on 2026-11-19.
+
 Authoritative contracts:
 
 - [Approved product specification](FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md)
@@ -21,7 +23,8 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 **End-to-end scope:**
 
 - Add the minimum `FlightEvidenceCore` package, portable v1 values, and deterministic codec required by this export.
-- Map recording, plan, closure, events, segmented track, accuracy, and supplemental evidence without changing disk schema.
+- Evolve the recording manifest compatibly so every newly created recording retains the exact versioned detector-policy snapshot used at its start; keep existing schema-v1 recordings readable with unavailable policy context.
+- Map recording, plan, closure, events, segmented track, accuracy, supplemental evidence, and the retained detector-policy snapshot into the portable bundle.
 - Generate, validate, atomically publish, clean up, cancel, retry, and share diagnostic files.
 - Add Flight Detail format choice, progress, failure, retry, and system-share presentation.
 - Preserve recording behavior and GPX export.
@@ -34,10 +37,11 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 - Unsupported or malformed portable versions fail explicitly.
 - Cancellation/failure leaves no publishable partial file and permits retry.
 - Export does not mutate the source recording.
+- A newly created recording round-trips its immutable detector-policy snapshot through disk persistence, closure, and recovery; a schema-v1 recording exports no detector policy rather than the current policy.
 - Swift Testing covers codec/file lifecycle; XCUITest covers choice, cancellation, retry, and share boundary.
 - Existing recording/disk/GPX tests pass; app builds and iPad portrait matches the cited frames.
 
-**Exclusions:** Active/recoverable snapshots, debrief, analyzer, private recordings, and policy changes.
+**Exclusions:** Active/recoverable snapshot export, debrief, analyzer, private recordings, and changes to detector thresholds or behavior.
 
 **Blockers:** None.
 
@@ -136,7 +140,7 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 **End-to-end scope:**
 
 - Extract one pure evaluator shared by production detection and replay without changing production policy behavior.
-- Define versioned policy snapshots and per-sample explanations.
+- Consume the retained versioned policy snapshot and define per-sample explanations; report replay as unavailable when the required historical policy context is absent.
 - Add one-bundle CLI validation and self-contained HTML generation.
 - Distinguish recorded history from replay and disclose missing-context assumptions.
 
@@ -144,7 +148,7 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 
 **Acceptance and verification:**
 
-- Production and replay emit identical transitions for identical input/current policy.
+- Production and replay emit identical transitions for identical input/retained policy.
 - Explanations include measurements/accuracy, thresholds, timing, resets, ground reference, and emitted transition.
 - Same bundle/policy produces deterministic replay/report output.
 - Report works offline, escapes evidence text, distinguishes recorded/replayed results, and names invalid input.

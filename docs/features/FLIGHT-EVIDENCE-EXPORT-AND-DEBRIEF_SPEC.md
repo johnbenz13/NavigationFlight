@@ -4,6 +4,8 @@ Status: product specification approved; experience and technical design not star
 
 Product approver: John, 2026-11-17.
 
+Slice 1 detector-policy retention expansion approved by John, 2026-11-19.
+
 ## Summary
 
 NavigationFlight lets a pilot privately export the complete evidence retained for a Flight, compare the planned route with the recorded execution, and understand why automatic physical-flight detection did or did not recognize takeoff, landing, taxiing, and sustained stop. The same trustworthy evidence supports an eventual in-app debrief and local engineering analysis without uploading flight data or rewriting recorded history.
@@ -96,7 +98,7 @@ The approved main-screen direction is the visual and interaction baseline for th
 
 12. **FE-012 — Segment boundaries and gaps are preserved.** The bundle retains the distinction between recorded track segments. Export never inserts estimated samples or a fictional path through a gap.
 
-13. **FE-013 — Interpretation context accompanies evidence.** The bundle identifies its portable schema version and the available app, build, platform, and physical-flight detector policy context needed to interpret or replay it. Context that was not recorded at Flight time is labelled unavailable rather than reconstructed as fact.
+13. **FE-013 — Interpretation context accompanies evidence.** The bundle identifies its portable schema version and the available app, build, platform, and physical-flight detector policy context needed to interpret or replay it. A recording created after detector-policy retention is introduced captures the exact versioned policy used when that recording begins and retains it unchanged with the recording. Export uses only that retained policy context; context that was not recorded at Flight time is labelled unavailable rather than reconstructed from the policy installed when export occurs.
 
 14. **FE-014 — Export is forward-manageable.** A bundle identifies unsupported versions clearly. A newer analyzer may read older supported bundles without silently dropping evidence; an analyzer that cannot safely interpret a bundle reports that limitation without modifying the file.
 
@@ -178,7 +180,7 @@ The approved main-screen direction is the visual and interaction baseline for th
 
 49. **FE-049 — Deleting the source ends in-app access.** Existing deletion confirmation continues to identify that the retained track and action history will be removed. After successful deletion, the app cannot open its debrief or regenerate exports from that recording.
 
-50. **FE-050 — Existing recordings degrade honestly.** Recordings created before this feature remain eligible for export and debrief to the extent their retained schema can be read. Newly introduced context is shown as unavailable when it was not captured historically.
+50. **FE-050 — Existing recordings degrade honestly.** Recordings created before this feature remain eligible for export and debrief to the extent their retained schema can be read. A recording without retained detector-policy context remains readable and exportable, but that context is shown as unavailable; the current detector policy is never presented as its historical policy.
 
 ### Historical playback
 

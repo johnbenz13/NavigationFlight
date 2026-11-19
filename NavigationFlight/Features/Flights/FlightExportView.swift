@@ -119,6 +119,7 @@ struct FlightExportChoiceView: View {
 
 struct FlightExportProgressView: View {
     let format: FlightExportFormat
+    let progress: Double
     let onCancel: () -> Void
 
     var body: some View {
@@ -128,9 +129,18 @@ struct FlightExportProgressView: View {
             VStack(spacing: 22) {
                 Text(title)
                     .font(.title3.weight(.semibold))
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .tint(.blue)
+                VStack(spacing: 8) {
+                    HStack {
+                        Spacer()
+                        Text(progress, format: .percent.precision(.fractionLength(0)))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.blue)
+                            .monospacedDigit()
+                    }
+                    ProgressView(value: progress)
+                        .progressViewStyle(.linear)
+                        .tint(.blue)
+                }
                 Text(detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -138,7 +148,10 @@ struct FlightExportProgressView: View {
                     .font(.footnote)
                     .foregroundStyle(.green)
                     .multilineTextAlignment(.center)
-                Button("Cancel Export", action: onCancel)
+                Button(action: onCancel) {
+                    Text("Cancel Export")
+                        .frame(maxWidth: .infinity)
+                }
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.roundedRectangle(radius: 14))
                     .controlSize(.large)
@@ -146,7 +159,7 @@ struct FlightExportProgressView: View {
                     .accessibilityIdentifier("flight-export.cancel-progress")
             }
             .padding(24)
-            .frame(maxWidth: 480)
+            .frame(maxWidth: 570, minHeight: 301)
             .background(.regularMaterial, in: .rect(cornerRadius: 24))
             .shadow(radius: 18, y: 8)
             .padding(24)
@@ -161,6 +174,68 @@ struct FlightExportProgressView: View {
         format == .diagnosticBundle
             ? "Validating retained track samples and recorded events…"
             : "Preparing valid GPS samples for compatible mapping tools…"
+    }
+}
+
+struct FlightExportFailureView: View {
+    let format: FlightExportFormat
+    let onRetry: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.24)
+                .ignoresSafeArea()
+            VStack(spacing: 24) {
+                Text("Export Couldn’t Be Completed")
+                    .font(.title3.weight(.semibold))
+                Text(explanation)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Text(reason)
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 12))
+                HStack(spacing: 16) {
+                    Button(action: onRetry) {
+                        Text("Try Again")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("flight-export.retry")
+
+                    Button(role: .cancel, action: onCancel) {
+                        Text("Cancel")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("flight-export.cancel-failure")
+                }
+                .buttonBorderShape(.roundedRectangle(radius: 14))
+                .controlSize(.large)
+            }
+            .padding(24)
+            .frame(maxWidth: 570, minHeight: 330)
+            .background(.regularMaterial, in: .rect(cornerRadius: 24))
+            .shadow(radius: 18, y: 8)
+            .padding(24)
+        }
+        .accessibilityIdentifier("flight-export.failure")
+    }
+
+    private var explanation: LocalizedStringResource {
+        format == .diagnosticBundle
+            ? "The diagnostic bundle could not be prepared. No incomplete file was shared, and the Flight recording was not changed."
+            : "The GPX track could not be prepared. No incomplete file was shared, and the Flight recording was not changed."
+    }
+
+    private var reason: LocalizedStringResource {
+        format == .diagnosticBundle
+            ? "Storage became unavailable while assembling the bundle."
+            : "Storage became unavailable while assembling the track."
     }
 }
 

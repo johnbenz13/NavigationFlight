@@ -20,6 +20,7 @@ struct FlightDetailLoaderView: View {
     @State private var failedFormat: FlightExportFormat?
     @State private var exportTask: Task<Void, Never>?
     @State private var exportingFormat: FlightExportFormat?
+    @State private var exportProgress = 0.12
 
     private var isExporting: Bool { exportTask != nil }
 
@@ -64,9 +65,24 @@ struct FlightDetailLoaderView: View {
         }
         .overlay {
             if isExporting {
-                FlightExportProgressView(format: exportingFormat ?? .diagnosticBundle) {
+                FlightExportProgressView(
+                    format: exportingFormat ?? .diagnosticBundle,
+                    progress: exportProgress
+                ) {
                     exportTask?.cancel()
                 }
+            }
+        }
+        .overlay {
+            if let failedFormat {
+                FlightExportFailureView(
+                    format: failedFormat,
+                    onRetry: {
+                        self.failedFormat = nil
+                        beginExport(failedFormat)
+                    },
+                    onCancel: { self.failedFormat = nil }
+                )
             }
         }
         .navigationDestination(isPresented: Binding(
@@ -76,17 +92,6 @@ struct FlightDetailLoaderView: View {
             if let exportResult {
                 FlightExportResultView(result: exportResult)
             }
-        }
-        .alert("Export Couldn’t Be Completed", isPresented: Binding(
-            get: { failedFormat != nil },
-            set: { if !$0 { failedFormat = nil } }
-        )) {
-            Button("Try Again") {
-                if let failedFormat { beginExport(failedFormat) }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("No incomplete file was shared, and the Flight recording was not changed.")
         }
         .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
             if wasPresent, !isPresent {
@@ -101,6 +106,7 @@ struct FlightDetailLoaderView: View {
     private func beginExport(_ format: FlightExportFormat) {
         guard exportTask == nil else { return }
         exportingFormat = format
+        exportProgress = 0.12
         exportTask = Task {
             defer {
                 exportTask = nil
@@ -110,7 +116,13 @@ struct FlightDetailLoaderView: View {
                 switch format {
                 case .diagnosticBundle:
                     exportResult = .diagnostic(
-                        try await library.exportDiagnosticBundle(id: id, using: diagnosticExporter)
+                        try await library.exportDiagnosticBundle(
+                            id: id,
+                            using: diagnosticExporter,
+                            progress: { progress in
+                                await MainActor.run { exportProgress = progress }
+                            }
+                        )
                     )
                 case .gpx:
                     exportResult = .gpx(try await library.export(id: id, using: exporter))

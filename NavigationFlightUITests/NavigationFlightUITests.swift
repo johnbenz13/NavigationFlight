@@ -271,9 +271,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["flight-export.choice"].waitForExistence(timeout: 3))
         app.buttons["flight-export.diagnostic"].tap()
 
-        XCTAssertTrue(app.alerts["Export Couldn’t Be Completed"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["No incomplete file was shared, and the Flight recording was not changed."].exists)
-        XCTAssertTrue(app.alerts["Export Couldn’t Be Completed"].buttons["Try Again"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["flight-export.failure"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Export Couldn’t Be Completed"].exists)
+        XCTAssertTrue(app.staticTexts["Storage became unavailable while assembling the bundle."].exists)
+        XCTAssertTrue(app.buttons["Try Again"].exists)
     }
 
     @MainActor

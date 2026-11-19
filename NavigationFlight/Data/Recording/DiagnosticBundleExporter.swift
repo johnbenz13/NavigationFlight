@@ -30,16 +30,21 @@ actor DiagnosticBundleExporter {
         self.preparationDelay = preparationDelay
     }
 
-    func export(_ snapshot: FlightEvidenceSnapshot) async throws -> DiagnosticExportResult {
+    func export(
+        _ snapshot: FlightEvidenceSnapshot,
+        progress: @escaping @Sendable (Double) async -> Void = { _ in }
+    ) async throws -> DiagnosticExportResult {
         guard snapshot.recording.recording.closure != nil else {
             throw DiagnosticExportError.recordingNotClosed(snapshot.recording.recording.id)
         }
 
         try Task.checkCancellation()
+        await progress(0.12)
         let bundleIdentifier = UUID()
         let bundle = try mapper.bundle(from: snapshot, bundleIdentifier: bundleIdentifier)
         let data = try codec.encode(bundle)
         try Task.checkCancellation()
+        await progress(0.64)
         if preparationDelay > .zero {
             try await Task.sleep(for: preparationDelay)
         }
@@ -70,7 +75,9 @@ actor DiagnosticBundleExporter {
             }
 
             try Task.checkCancellation()
+            await progress(0.86)
             try FileManager.default.moveItem(at: partialURL, to: publishedURL)
+            await progress(1)
             return DiagnosticExportResult(
                 fileURL: publishedURL,
                 byteCount: data.count,

@@ -104,14 +104,15 @@ actor FlightRecordingLibrary {
         id: UUID,
         using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),
         capturedAt: Date = Date(),
-        context: FlightEvidenceContext = .current
+        context: FlightEvidenceContext = .current,
+        progress: @escaping @Sendable (Double) async -> Void = { _ in }
     ) async throws -> DiagnosticExportResult {
         let snapshot = try await store.readSnapshot(id: id)
         return try await exporter.export(FlightEvidenceSnapshot(
             capturedAt: capturedAt,
             recording: snapshot,
             context: context.replacingDetectorPolicy(snapshot.detectorPolicy)
-        ))
+        ), progress: progress)
     }
 
     func detail(

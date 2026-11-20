@@ -247,7 +247,6 @@ final class NavigationFlightUITests: XCTestCase {
         analysisMode = app.buttons["Show analysis"]
         XCTAssertEqual(analysisMode.value as? String, "Compact replay console")
         XCTAssertFalse(app.buttons["Start Leg"].exists)
-        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'reach'")).firstMatch.exists)
 
         let timeline = app.sliders["flight-debrief.timeline"]
         timeline.adjust(toNormalizedSliderPosition: 0.5)
@@ -264,15 +263,21 @@ final class NavigationFlightUITests: XCTestCase {
         event.tap()
         XCTAssertEqual(event.value as? String, "Selected")
 
+        app.buttons["flight-debrief.fit-full-flight"].tap()
+        let mapEvent = app.descendants(matching: .any)[
+            "flight-debrief.map-event.07000000-0000-0000-0000-000000000007"
+        ]
+        XCTAssertTrue(mapEvent.waitForExistence(timeout: 5))
         let map = app.descendants(matching: .any)["flight-debrief.map-section"]
-        XCTAssertTrue(map.exists)
-        map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        XCTAssertTrue(app.descendants(matching: .any)["flight-debrief.selection"].exists)
+        let targetEvent = app.buttons["flight-debrief.event.07000000-0000-0000-0000-000000000007"]
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: 0.5)).tap()
+        XCTAssertEqual(targetEvent.value as? String, "Selected")
+        XCTAssertTrue(app.staticTexts["Position check ended"].exists)
 
         let orientation = app.buttons["flight-debrief.orientation"]
         orientation.tap()
         XCTAssertEqual(orientation.value as? String, "Track-up")
-        app.buttons["flight-debrief.free-look"].tap()
+        map.swipeLeft()
         XCTAssertEqual(app.buttons["flight-debrief.free-look"].value as? String, "On")
         app.buttons["flight-debrief.recenter"].tap()
         XCTAssertEqual(app.buttons["flight-debrief.recenter"].value as? String, "Following aircraft")
@@ -319,6 +324,21 @@ final class NavigationFlightUITests: XCTestCase {
         noPositionApp.buttons["flight-detail.debrief"].tap()
         XCTAssertTrue(noPositionApp.staticTexts["No recorded position"].waitForExistence(timeout: 5))
         XCTAssertTrue(noPositionApp.staticTexts["Actions & phases"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.orientation"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.recenter"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.free-look"].exists)
+        noPositionApp.terminate()
+
+        let unreliableCourseApp = launchFlights(
+            state: "populated",
+            planData: try debriefPlanData(),
+            debriefHasUnreliableCourse: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: unreliableCourseApp)
+        unreliableCourseApp.buttons["flight-detail.debrief"].tap()
+        XCTAssertTrue(unreliableCourseApp.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
+        unreliableCourseApp.sliders["flight-debrief.timeline"].adjust(toNormalizedSliderPosition: 0.9)
+        XCTAssertTrue(unreliableCourseApp.staticTexts["87"].exists)
     }
 
     @MainActor
@@ -1939,7 +1959,8 @@ final class NavigationFlightUITests: XCTestCase {
         exportDelay: Bool = false,
         deletionFailure: Bool = false,
         debriefHasNoPosition: Bool = false,
-        debriefHasShortDuration: Bool = false
+        debriefHasShortDuration: Bool = false,
+        debriefHasUnreliableCourse: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1962,6 +1983,9 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if debriefHasShortDuration {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_SHORT_DEBRIEF"] = "1"
+        }
+        if debriefHasUnreliableCourse {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_UNRELIABLE_COURSE"] = "1"
         }
         if let planData {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()

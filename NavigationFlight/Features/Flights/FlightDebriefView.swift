@@ -109,6 +109,14 @@ private struct FlightDebriefMapSection: View {
                 onSelectEvent: model.select
                 )
                 .frame(height: height)
+                .accessibilityChildren {
+                    ForEach(debrief.events.filter(\.hasMapPosition)) { event in
+                        Button("Select map action: \(event.title)") {
+                            model.select(eventID: event.id)
+                        }
+                            .accessibilityIdentifier("flight-debrief.map-event.\(event.id.uuidString)")
+                    }
+                }
             } else {
                 Color(.secondarySystemBackground).frame(height: height)
             }
@@ -137,7 +145,6 @@ private struct FlightDebriefMapSection: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(mapAccessibilityLabel)
         .accessibilityIdentifier("flight-debrief.map-section")
     }
 
@@ -147,10 +154,6 @@ private struct FlightDebriefMapSection: View {
         case .correlated(_, let delta, let accuracy): "Correlated GPS sample \(delta.timeOffsetText) · ±\(accuracy.formatted(.number.precision(.fractionLength(0)))) m"
         case .unavailable: "No trustworthy position is available"
         }
-    }
-
-    private var mapAccessibilityLabel: String {
-        "Historical map in \(model.mapOrientation == .northUp ? "North-up" : "Track-up"), \(model.cameraMode == .followAircraft ? "following aircraft" : "Free Look"). Planned leg and \(debrief.trackSegments.count) recorded track segments are shown. Track gaps are not connected."
     }
 
 }
@@ -319,6 +322,7 @@ private struct FlightDebriefCompactTelemetrySection: View {
                 instrument("Altitude", value: altitudeValue, unit: "ft", symbol: "arrow.up.and.down")
                 instrument("Ground speed", value: speedValue, unit: "kt", symbol: "gauge.with.dots.needle.67percent")
                 instrument("Course", value: courseValue, unit: "°", symbol: "location.north.line")
+                    .accessibilityIdentifier("flight-debrief.course")
             }
         }
         .padding(.horizontal, 24)
@@ -552,8 +556,10 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
         @objc func selectAction(_ gesture: UITapGestureRecognizer) {
             guard gesture.state == .ended,
                   let mapView = gesture.view as? MLNMapView else { return }
+            let location = gesture.location(in: mapView)
+            let hitArea = CGRect(x: location.x - 22, y: location.y - 22, width: 44, height: 44)
             let features = mapView.visibleFeatures(
-                at: gesture.location(in: mapView),
+                in: hitArea,
                 styleLayerIdentifiers: ["debrief-actions"]
             )
             let eventIDs = features.compactMap { feature -> UUID? in
@@ -577,8 +583,10 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
-            guard let aircraft = annotation as? HistoricalAircraftAnnotation else { return nil }
-            return HistoricalAircraftAnnotationView(annotation: aircraft, reuseIdentifier: "historical-aircraft")
+            if let aircraft = annotation as? HistoricalAircraftAnnotation {
+                return HistoricalAircraftAnnotationView(annotation: aircraft, reuseIdentifier: "historical-aircraft")
+            }
+            return nil
         }
 
         private func installContentIfNeeded(on mapView: MLNMapView, style: MLNStyle) {
@@ -706,7 +714,6 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
             layer.circleStrokeWidth = NSExpression(forConstantValue: 1.5)
             style.addLayer(layer)
         }
-
 
         private func addDriftLines(to style: MLNStyle) {
             guard let first = debrief.plannedRoute.first, let last = debrief.plannedRoute.last,
@@ -868,5 +875,14 @@ private extension Duration {
     var timeOffsetText: String {
         let value = timeInterval
         return String(format: "%+.1f s", value)
+    }
+}
+
+private extension FlightDebriefEvent {
+    var hasMapPosition: Bool {
+        switch position {
+        case .direct, .correlated: true
+        case .unavailable: false
+        }
     }
 }

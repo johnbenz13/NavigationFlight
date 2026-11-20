@@ -444,6 +444,9 @@ struct RootView: View {
         let usesShortDebrief = ProcessInfo.processInfo.environment[
             "NAVIGATION_FLIGHT_UI_TEST_SHORT_DEBRIEF"
         ] == "1"
+        let usesUnreliableCourse = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_UNRELIABLE_COURSE"
+        ] == "1"
         let completedFlightDuration = usesShortDebrief
             ? 1
             : DebriefQAFlightTrack.duration(for: plan.title) ?? 3_960
@@ -543,7 +546,7 @@ struct RootView: View {
                 planTitle: plan.title
             )
             let samples = if isCompletedFixture, let realDebriefSamples {
-                realDebriefSamples
+                usesUnreliableCourse ? Self.withUnreliableCourse(realDebriefSamples) : realDebriefSamples
             } else {
                 [
                     RecordedTrackSample(
@@ -579,9 +582,49 @@ struct RootView: View {
             let firstSegment = RecordedTrackSegment(id: UUID(), samples: samples)
             let trackSegments = definition.coverage == .unavailable
                 || (isCompletedFixture && debriefHasNoPosition) ? [] : [firstSegment]
+            let reviewBounds = samples.dropFirst().reduce(
+                into: (
+                    minimumLatitude: samples[0].coordinate.latitudeDegrees,
+                    maximumLatitude: samples[0].coordinate.latitudeDegrees,
+                    minimumLongitude: samples[0].coordinate.longitudeDegrees,
+                    maximumLongitude: samples[0].coordinate.longitudeDegrees
+                )
+            ) { bounds, sample in
+                bounds.minimumLatitude = min(bounds.minimumLatitude, sample.coordinate.latitudeDegrees)
+                bounds.maximumLatitude = max(bounds.maximumLatitude, sample.coordinate.latitudeDegrees)
+                bounds.minimumLongitude = min(bounds.minimumLongitude, sample.coordinate.longitudeDegrees)
+                bounds.maximumLongitude = max(bounds.maximumLongitude, sample.coordinate.longitudeDegrees)
+            }
+            let reviewEventCoordinate = WGS84Coordinate(
+                latitudeDegrees: (reviewBounds.minimumLatitude + reviewBounds.maximumLatitude) / 2,
+                longitudeDegrees: (reviewBounds.minimumLongitude + reviewBounds.maximumLongitude) / 2
+            )
+            let reviewEventDate = startedAt.addingTimeInterval(completedFlightDuration / 2)
+            let events = if isCompletedFixture {
+                promotion.events + [
+                    RecordedFlightEvent(
+                        id: UUID(uuid: (7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7)),
+                        sequence: 2,
+                        occurredAt: startedAt.addingTimeInterval(completedFlightDuration / 2),
+                        elapsed: .seconds(completedFlightDuration / 2),
+                        origin: .pilot,
+                        payload: .positionCheckEnded(
+                            outcome: .disclosed(
+                                sample: .init(
+                                    coordinate: reviewEventCoordinate,
+                                    observedAt: reviewEventDate,
+                                    horizontalAccuracyMeters: 5
+                                )
+                            )
+                        )
+                    ),
+                ]
+            } else {
+                promotion.events
+            }
             return .available(FlightRecordingReadSnapshot(
                 recording: recording,
-                events: promotion.events,
+                events: events,
                 trackSegments: trackSegments,
                 approximateSizeBytes: definition.size
             ))
@@ -589,6 +632,25 @@ struct RootView: View {
             .corrupt(id: UUID(uuid: (6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6))),
         ]
         return (packages, definitions.first?.id)
+    }
+
+    private static func withUnreliableCourse(_ samples: [RecordedTrackSample]) -> [RecordedTrackSample] {
+        samples.enumerated().map { index, sample in
+            RecordedTrackSample(
+                coordinate: sample.coordinate,
+                observedAt: sample.observedAt,
+                horizontalAccuracyMeters: sample.horizontalAccuracyMeters,
+                altitudeMeters: sample.altitudeMeters,
+                verticalAccuracyMeters: sample.verticalAccuracyMeters,
+                groundSpeedMetersPerSecond: index == 0 ? 40 : 0.5,
+                speedAccuracyMetersPerSecond: sample.speedAccuracyMetersPerSecond,
+                courseDegrees: index == 0 ? 87 : nil,
+                courseAccuracyDegrees: index == 0 ? 3 : nil,
+                barometricAltitudeMeters: sample.barometricAltitudeMeters,
+                deviceHeadingDegrees: sample.deviceHeadingDegrees,
+                deviceHeadingAccuracyDegrees: sample.deviceHeadingAccuracyDegrees
+            )
+        }
     }
 #endif
 

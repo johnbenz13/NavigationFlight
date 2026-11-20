@@ -3,7 +3,7 @@
 Status: breakdown and GitHub publication approved by John, 2026-11-21 (“I approve”).
 All four implementation contracts are published and read back. Product, Iteration 01
 direction, Iteration 02 design, and technical design are approved. Implementation
-is not approved; published-baseline and Cockpit warning-treatment gates remain.
+is not approved; the Cockpit warning-treatment gate remains.
 
 Authorities: [product](SETTINGS_SPEC.md), [design review and retained images](SETTINGS_DESIGN_REVIEW.md),
 [technical design](../technical/SETTINGS_TECHNICAL.md). Baseline inspected:
@@ -13,7 +13,7 @@ Authorities: [product](SETTINGS_SPEC.md), [design review and retained images](SE
 
 | Draft | Outcome | GitHub action after approval | Genuine blockers |
 | --- | --- | --- | --- |
-| S1 | Choose either bundled checklist or No checklist; persist it and preserve started-leg/recovered state | Updated [#161](https://github.com/johnbenz13/NavigationFlight/issues/161) | Published paired baseline; approved Cockpit persistence-warning treatment |
+| S1 | Choose either bundled checklist or No checklist; persist it and preserve started-leg/recovered state | Updated [#161](https://github.com/johnbenz13/NavigationFlight/issues/161) | Approved Cockpit persistence-warning treatment (published baseline resolved) |
 | S2 | Save a drift-line default for new/restarted Flights, retaining current-Flight override | [#190](https://github.com/johnbenz13/NavigationFlight/issues/190) | S1’s shared preference composition, storage and recording context |
 | S3 | Save Automatic/Manual progression for new/restarted Flights and recover it correctly | [#191](https://github.com/johnbenz13/NavigationFlight/issues/191) | S1’s shared preference composition, storage and recording context |
 | S4 | Choose 1/2/5/10-minute recovery for new recordings | [#192](https://github.com/johnbenz13/NavigationFlight/issues/192) | S1’s shared preference composition and storage |
@@ -35,7 +35,7 @@ not deferred to a catch-all testing ticket.
 The sections below preserve the approved source contracts published into the
 issues above. Each issue includes this shared contract and its scoped behavior.
 The parent preserves the full approved product and technical contracts while
-repository document publication remains pending.
+the immutable repository baseline is now published at `9d2628a5cf1db9a551f1852271f2b48f33747efd`.
 
 - Link product requirements, exact approved Figma nodes and the technical design.
   Replace local links with published immutable repository permalinks before marking
@@ -133,7 +133,7 @@ choice, but recovery must not invent its persistence.
 storage-format compatibility, preserving original delivery history. Record real
 schema decisions and extension steps. Do not mark other settings delivered.
 
-**Blockers.** Published paired baseline; Cockpit warning-copy/design decision.
+**Blocker.** Cockpit warning-copy/design decision. Published paired baseline resolved.
 Label stays `needs-info` until external blockers clear; do not retain the obsolete
 claim that the Settings selector itself lacks approval.
 
@@ -284,9 +284,9 @@ under repository policy, not planning approval.
    retain existing recording warning geometry, but use accurate cause-specific copy
    that says saved checklist/display state may be incomplete; do not say GPS track
    data was lost when it was not. This recommendation is not an approval.
-3. Commit/publish the approved spec, technical design and design evidence only with
-   explicit authorization; update Figma’s spec link to its immutable permalink and
-   record the paired baseline. Current uncommitted GitHub URLs are not ready links.
+3. **Done:** John authorized commit/push/PR/merge on 2026-11-21; the approved
+   artifact checkpoint `9d2628a5cf1db9a551f1852271f2b48f33747efd` is pushed and its product
+   permalink is recorded in both Figma indexes.
 4. **Done:** published #189 and #190–192, updated #161, and verified native
    child and blocker relationships.
 5. **Done:** read back bodies, labels and relationships; real issue IDs recorded.
@@ -299,7 +299,7 @@ parents and native blocking edges. No issue is marked ready-for-agent or closed.
 The issue publication approval is separate from implementation acceptance.
 
 No application code, builds, tests or simulator runs were performed. Local links
-and staged/unstaged whitespace checks passed. Planning remains partial until the
-published paired-baseline and Cockpit warning-treatment gates are resolved.
+and staged/unstaged whitespace checks passed. Planning remains partial until the Cockpit warning-treatment gate is resolved.
 John subsequently authorized commit, push, PR creation and merge on 2026-11-21.
-The publication checkpoint will record the immutable baseline after committing.
+Published checkpoint: [`9d2628a`](https://github.com/johnbenz13/NavigationFlight/blob/9d2628a5cf1db9a551f1852271f2b48f33747efd/docs/features/SETTINGS_SPEC.md).
+The PR publication and merge record is available in Git history and the linked tracker.

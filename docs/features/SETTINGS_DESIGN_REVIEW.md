@@ -2,8 +2,7 @@
 
 Status: Iteration 02 approved by John on 2026-11-21 (“I approve”). Product and
 Iteration 01 main-screen direction were also explicitly approved. No implementation
-or technical-design approval is implied. Final paired-baseline publication remains
-pending; see Evidence and limits.
+or technical-design approval is implied. The paired baseline is published and linked in Figma; see Evidence and limits.
 
 Authority: [Settings product spec](SETTINGS_SPEC.md), SET-01–17. Stable Figma file:
 [NavigationFlight · Settings](https://www.figma.com/design/HludOIJu7Ko46X4pmkGvTx).
@@ -87,11 +86,12 @@ persistence check, or assistive-technology runtime check was performed or claime
 Current code inspection remains anchored at `3c59aa835aeff27c558c7279ea649faa5c2439c0`.
 A Figma node does not prove any timing, storage, migration, undo, or recovery behavior.
 
-The product text is approved locally. The intended shared GitHub spec URL is
-marked pending publication in Figma; an immutable published specification permalink
-is still required before recording final paired-baseline approval. Design review did not itself authorize commit or push; John separately authorized
-publication through commit, push, PR and merge on 2026-11-21. This publication prerequisite is separate
-from approval of the visible design direction and complete proposal.
+The approved product text is published at
+[9d2628a](https://github.com/johnbenz13/NavigationFlight/blob/9d2628a5cf1db9a551f1852271f2b48f33747efd/docs/features/SETTINGS_SPEC.md).
+Both Figma indexes link to this immutable revision. Product and design approvals
+were granted by John on 2026-11-21; paired-baseline publication was recorded that
+date under his separate commit/push/PR/merge authorization. This publication does
+not resolve the separately identified Cockpit persistence-warning copy blocker.
 
 Final screenshot SHA-256 values:
 
@@ -109,4 +109,4 @@ Final screenshot SHA-256 values:
 | iteration-02-iphone-dark.png | `66e98ad638e9c740a90904fc41b8c8111128eeabbd9d88c9fb1155b83aad4da3` |
 | iteration-02-save-failure.png | `e522dc9c21b2565a1b5d21ce11af8565f8c93e8c02938099d390bcf9a111c2a1` |
 | iteration-02-larger-text.png | `81cbdf95c9983ab21ba713d55889a315ba27d596c1a123e3c2db2ee39fa6f9e9` |
-| iteration-02-index.png | `a03c1ad4dc3f2a51aa87da1d47b7d0d1926b2b8efee194eed4cd8b2114a56de6` |
+| iteration-02-index.png | `1dd2309cb165792a9ced8a382b8d5333abffe15b12583ebc6af2a8bb630d7c77` |

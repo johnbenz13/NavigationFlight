@@ -19,7 +19,8 @@ Implementation remains unapproved; readiness gates are recorded in the delivery 
   [#190](https://github.com/johnbenz13/NavigationFlight/issues/190),
   [#191](https://github.com/johnbenz13/NavigationFlight/issues/191),
   [#192](https://github.com/johnbenz13/NavigationFlight/issues/192).
-- Next: resolve warning treatment and published paired baseline per the
+- Paired baseline published: product/design approvals linked to commit `9d2628a5cf1db9a551f1852271f2b48f33747efd` on 2026-11-21.
+- Next: resolve Cockpit warning treatment per the
   [delivery plan](SETTINGS_DELIVERY_PLAN.md); implementation approval remains separate.
 - Related ticket: [#161](https://github.com/johnbenz13/NavigationFlight/issues/161).
   Updated to the approved three-choice contract; original G16 trace preserved.
@@ -195,7 +196,8 @@ approval, implementation authorization, and acceptance remain separate.
 
 ## Figma
 
-- Design status: approved (visible proposal); paired-baseline publication pending.
+- Design status: approved; paired baseline published and linked in Figma.
+- Approved product revision: [9d2628a](https://github.com/johnbenz13/NavigationFlight/blob/9d2628a5cf1db9a551f1852271f2b48f33747efd/docs/features/SETTINGS_SPEC.md), John’s 2026-11-21 approved product text.
 - Direction status: Iteration 01 approved by John, 2026-11-21.
 - Candidate complete iteration: [Iteration 02 coverage index](https://www.figma.com/design/HludOIJu7Ko46X4pmkGvTx?node-id=7-1029).
 - Coverage map and previews: [Settings design review](SETTINGS_DESIGN_REVIEW.md).
@@ -234,11 +236,12 @@ Visible requirements: SET-01–03, SET-05–12 (main-screen presentation), SET-1
 Expanded states now appear in Iteration 02; see its coverage map for the precise
 distinction between inspected presentation and future runtime verification.
 
-The Figma index links to the intended shared specification URL, explicitly marked
-pending publication because this specification is local and uncommitted. John authorized commit, push, PR creation and merge of this planning work on
-2026-11-21. The immutable product-spec permalink
-remains a paired-baseline approval prerequisite; the inspected code revision alone
-does not identify this newly approved product text.
+The Figma indexes now link to the immutable approved product revision
+[`9d2628a`](https://github.com/johnbenz13/NavigationFlight/blob/9d2628a5cf1db9a551f1852271f2b48f33747efd/docs/features/SETTINGS_SPEC.md).
+Product, main-screen direction and Iteration 02 were approved by John on
+2026-11-21; the paired baseline was linked on the same date under his separate
+commit/push/PR/merge authorization. Cockpit presentation-persistence warning copy
+remains a separate implementation blocker.
 
 ## Later planning stages
 

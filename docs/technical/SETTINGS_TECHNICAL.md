@@ -250,9 +250,10 @@ John approved file-backed independent preferences, app-owned Observation state,
 explicit capture inputs, and schema-3 recording/replay additions.
 No broad domain or map refactor is proposed.
 
-Before implementation tickets are ready: audit the recording degradation-state
-reuse noted above and resolve any resulting design gap; publish the approved spec/design
-permalink baseline under John’s separate 2026-11-21 commit/push/PR/merge authorization, and retain the approved vertical-slice breakdown. The approved tickets are now
+Before implementation tickets are ready: resolve the recording degradation-state
+design gap noted below. The approved spec/design permalink baseline is published
+at `9d2628a5cf1db9a551f1852271f2b48f33747efd` under John’s separate 2026-11-21
+commit/push/PR/merge authorization. The approved tickets are
 published under #189; #161 was updated in place to the three-choice contract.
 
 

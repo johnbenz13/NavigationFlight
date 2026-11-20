@@ -335,9 +335,15 @@ struct FlightDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Stored evidence")
                 .font(.title3.weight(.bold))
-            Text("GPS track and operational history are retained on device for future debrief features. Diagnostic evidence and GPX tracks can be exported separately.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if detail.status == .unavailable {
+                Text("Diagnostic and GPX export are unavailable for this recording.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("GPS track and operational history are retained on device for future debrief features. Diagnostic evidence and GPX tracks can be exported separately.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

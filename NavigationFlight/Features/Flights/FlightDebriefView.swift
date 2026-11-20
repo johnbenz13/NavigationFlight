@@ -137,9 +137,7 @@ private struct FlightDebriefUnavailableView: View {
     }
 
     private var exportDisclosure: LocalizedStringKey {
-        reason == .unsupported
-            ? "Preserved raw diagnostic material may still be exported only with an explicit Unsupported label."
-            : "Preserved raw diagnostic material may still be exported only with an explicit unreadable-evidence label."
+        "Diagnostic and GPX export are unavailable for this recording."
     }
 }
 
@@ -235,8 +233,7 @@ private struct FlightDebriefIdentityView: View {
     }
 
     private var coverageText: String {
-        guard let fraction = debrief.gpsCoverageFraction else { return "unavailable" }
-        return fraction.formatted(.percent.precision(.fractionLength(0)))
+        debrief.gpsCoverageText
     }
 
     private var statusText: LocalizedStringKey {
@@ -488,12 +485,13 @@ private struct FlightDebriefPlot: View {
             Canvas { context, size in
                 guard observations.count > 1, let maximum = observations.map(\.value).max(), maximum > 0,
                       let total = observations.last?.elapsed.timeInterval, total > 0 else { return }
-                var path = Path()
-                for (index, observation) in observations.enumerated() {
-                    let point = CGPoint(x: size.width * observation.elapsed.timeInterval / total, y: size.height * (1 - observation.value / maximum))
-                    index == 0 ? path.move(to: point) : path.addLine(to: point)
-                }
+                let path = FlightDebriefPlotPath.make(observations: observations, size: size, maximum: maximum, total: total)
                 context.stroke(path, with: .color(.teal), lineWidth: 2)
+                // Isolated samples remain visible without connecting them over gaps.
+                for observation in observations {
+                    let point = CGPoint(x: size.width * observation.elapsed.timeInterval / total, y: size.height * (1 - observation.value / maximum))
+                    context.fill(Path(ellipseIn: CGRect(x: point.x - 1.5, y: point.y - 1.5, width: 3, height: 3)), with: .color(.teal))
+                }
                 let selectedX = size.width * min(selectedTime.timeInterval / total, 1)
                 context.stroke(Path(CGRect(x: selectedX, y: 0, width: 1, height: size.height)), with: .color(.orange), lineWidth: 1)
             }

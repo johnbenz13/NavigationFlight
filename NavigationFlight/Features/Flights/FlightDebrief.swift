@@ -40,6 +40,17 @@ nonisolated struct FlightDebrief: Equatable, Sendable {
         trackSegments.filter { !$0.samples.isEmpty }.count > 1
     }
 
+    var gpsCoverageText: String {
+        if gpsCoverage == .unavailable { return String(localized: "Unavailable") }
+        if gpsCoverage == .partial || hasTrackGaps {
+            // The fraction is based on explicit gap events; segmented evidence may
+            // still report 1 when those events are missing. Do not imply completeness.
+            return String(localized: "Partial")
+        }
+        guard let fraction = gpsCoverageFraction else { return String(localized: "Unavailable") }
+        return fraction.formatted(.percent.precision(.fractionLength(0)))
+    }
+
     func selection(at elapsed: Duration) -> FlightDebriefSelection {
         let clamped = min(max(elapsed, .zero), duration)
         let date = startedAt.addingTimeInterval(clamped.timeInterval)
@@ -114,6 +125,7 @@ nonisolated struct FlightDebriefTrackSegment: Equatable, Sendable, Identifiable 
 nonisolated struct FlightDebriefObservation: Equatable, Sendable, Identifiable {
     enum Source: String, Equatable, Sendable { case gpsAltitude, barometricAltitude, groundSpeed }
     let id: String
+    let segmentID: UUID
     let elapsed: Duration
     let value: Double
     let source: Source
@@ -175,7 +187,6 @@ nonisolated struct FlightDebriefProjector: Sendable {
                 position: position(for: $0, in: segments)
             )
         }
-        let samples = segments.flatMap(\.samples)
         let plannedDurationSeconds: Int? = switch plan?.plannedNavigation {
         case .emptyPlan(let navigation), .eligible(let navigation):
             navigation.legs.reduce(0) { $0 + $1.noWind.durationSeconds }
@@ -199,10 +210,12 @@ nonisolated struct FlightDebriefProjector: Sendable {
             gpsCoverageFraction: snapshot.evidenceSummary.gpsCoverageFraction,
             plannedDistanceMeters: plan.map { distance(of: $0.waypoints.map(\.position)) },
             actualDistanceMeters: segments.reduce(0) { $0 + distance(of: $1.samples.map(\.coordinate)) },
-            altitudeObservations: altitudeObservations(samples, startedAt: recording.startedAt),
-            groundSpeedObservations: samples.compactMap { sample in
-                sample.groundSpeedMetersPerSecond.map {
-                    FlightDebriefObservation(id: "speed-\(sample.observedAt.timeIntervalSinceReferenceDate)", elapsed: .seconds(sample.observedAt.timeIntervalSince(recording.startedAt)), value: $0, source: .groundSpeed)
+            altitudeObservations: segments.flatMap { altitudeObservations($0, startedAt: recording.startedAt) },
+            groundSpeedObservations: segments.flatMap { segment in
+                segment.samples.compactMap { sample in
+                    sample.groundSpeedMetersPerSecond.map {
+                        FlightDebriefObservation(id: "speed-\(sample.observedAt.timeIntervalSinceReferenceDate)", segmentID: segment.id, elapsed: .seconds(sample.observedAt.timeIntervalSince(recording.startedAt)), value: $0, source: .groundSpeed)
+                    }
                 }
             }
         )
@@ -235,12 +248,12 @@ nonisolated struct FlightDebriefProjector: Sendable {
         return .correlated(sample.coordinate, delta: .seconds(delta), accuracyMeters: sample.horizontalAccuracyMeters)
     }
 
-    private func altitudeObservations(_ samples: [RecordedTrackSample], startedAt: Date) -> [FlightDebriefObservation] {
-        samples.flatMap { sample in
+    private func altitudeObservations(_ segment: FlightDebriefTrackSegment, startedAt: Date) -> [FlightDebriefObservation] {
+        segment.samples.flatMap { sample in
             let elapsed = Duration.seconds(sample.observedAt.timeIntervalSince(startedAt))
             return [
-                sample.altitudeMeters.map { FlightDebriefObservation(id: "gps-\(sample.observedAt.timeIntervalSinceReferenceDate)", elapsed: elapsed, value: $0, source: .gpsAltitude) },
-                sample.barometricAltitudeMeters.map { FlightDebriefObservation(id: "baro-\(sample.observedAt.timeIntervalSinceReferenceDate)", elapsed: elapsed, value: $0, source: .barometricAltitude) },
+                sample.altitudeMeters.map { FlightDebriefObservation(id: "gps-\(sample.observedAt.timeIntervalSinceReferenceDate)", segmentID: segment.id, elapsed: elapsed, value: $0, source: .gpsAltitude) },
+                sample.barometricAltitudeMeters.map { FlightDebriefObservation(id: "baro-\(sample.observedAt.timeIntervalSinceReferenceDate)", segmentID: segment.id, elapsed: elapsed, value: $0, source: .barometricAltitude) },
             ].compactMap { $0 }
         }
     }

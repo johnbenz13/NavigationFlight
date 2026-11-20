@@ -386,6 +386,14 @@ final class NavigationFlightUITests: XCTestCase {
         openFlightDetail(id: id, in: app)
         let debriefButton = app.buttons["flight-detail.debrief"]
         XCTAssertTrue(debriefButton.waitForExistence(timeout: 3))
+        let isUnavailable = id == "07000000-0000-0000-0000-000000000007"
+            || id == "06000000-0000-0000-0000-000000000006"
+        let unavailableExportCopy = "Diagnostic and GPX export are unavailable for this recording."
+        if isUnavailable {
+            XCTAssertTrue(app.staticTexts[unavailableExportCopy].exists)
+            XCTAssertFalse(app.buttons["flight-detail.export"].exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'can be exported separately'")).firstMatch.exists)
+        }
         debriefButton.tap()
         let disclosure = app.staticTexts.matching(
             NSPredicate(format: "label CONTAINS %@", expectedText)
@@ -394,6 +402,14 @@ final class NavigationFlightUITests: XCTestCase {
             disclosure.waitForExistence(timeout: 5),
             "Expected retained-state disclosure \(expectedText). UI: \(app.debugDescription)"
         )
+        if id == "04000000-0000-0000-0000-000000000004" {
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'GPS coverage Partial'")).firstMatch.exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'GPS coverage 100' ")).firstMatch.exists)
+        }
+        if isUnavailable {
+            XCTAssertTrue(app.staticTexts[unavailableExportCopy].exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'may still be exported'")).firstMatch.exists)
+        }
         app.terminate()
     }
 
@@ -421,6 +437,8 @@ final class NavigationFlightUITests: XCTestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].label.contains("Incomplete"))
         XCTAssertEqual(app.buttons["flight-detail.export"].label, "Export Flight")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'can be exported separately'")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts["Diagnostic and GPX export are unavailable for this recording."].exists)
     }
 
     @MainActor

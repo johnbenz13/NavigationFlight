@@ -110,11 +110,13 @@ private struct FlightDebriefMapSection: View {
                 )
                 .frame(height: height)
                 .accessibilityChildren {
-                    ForEach(debrief.events.filter(\.hasMapPosition)) { event in
-                        Button("Select map action: \(event.title)") {
-                            model.select(eventID: event.id)
-                        }
+                    if model.selection?.sample != nil {
+                        ForEach(debrief.events.filter(\.hasMapPosition)) { event in
+                            Button("Select map action: \(event.title)") {
+                                model.select(eventID: event.id)
+                            }
                             .accessibilityIdentifier("flight-debrief.map-event.\(event.id.uuidString)")
+                        }
                     }
                 }
             } else {
@@ -463,11 +465,15 @@ private struct FlightDebriefTimelineSection: View {
             }
             .pickerStyle(.menu)
             .accessibilityIdentifier("flight-debrief.rate")
-            Button("Fit full flight", systemImage: "arrow.up.left.and.arrow.down.right") {
-                model.showFullFlight()
+            if model.selection?.sample != nil {
+                Button(
+                    "Fit full flight",
+                    systemImage: "arrow.up.left.and.arrow.down.right",
+                    action: model.showFullFlight
+                )
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("flight-debrief.fit-full-flight")
             }
-            .buttonStyle(.bordered)
-            .accessibilityIdentifier("flight-debrief.fit-full-flight")
         }
     }
 

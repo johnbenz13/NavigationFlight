@@ -327,6 +327,12 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertFalse(noPositionApp.buttons["flight-debrief.orientation"].exists)
         XCTAssertFalse(noPositionApp.buttons["flight-debrief.recenter"].exists)
         XCTAssertFalse(noPositionApp.buttons["flight-debrief.free-look"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.fit-full-flight"].exists)
+        XCTAssertFalse(
+            noPositionApp.buttons.matching(
+                NSPredicate(format: "identifier BEGINSWITH 'flight-debrief.map-event.'")
+            ).firstMatch.exists
+        )
         noPositionApp.terminate()
 
         let unreliableCourseApp = launchFlights(

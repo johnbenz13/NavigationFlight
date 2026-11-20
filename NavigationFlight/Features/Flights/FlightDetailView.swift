@@ -121,7 +121,12 @@ struct FlightDetailLoaderView: View {
             }
         }
         .navigationDestination(isPresented: $debriefPresented) {
-            FlightDebriefLoaderView(id: id, library: library)
+            FlightDebriefLoaderView(
+                id: id,
+                library: library,
+                sourceState: currentSourceState,
+                unavailableReason: detail?.unavailableReason
+            )
         }
         .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
             if wasPresent, !isPresent {
@@ -270,7 +275,7 @@ struct FlightDetailView: View {
                         .accessibilityIdentifier("flight-detail.export")
                 }
 
-                if detail.status == .complete {
+                if detail.status != .unavailable || detail.unavailableReason != nil {
                     Button(action: onDebrief) {
                         Label("Open Debrief", systemImage: "chart.xyaxis.line")
                             .frame(maxWidth: .infinity)

@@ -24,6 +24,11 @@ nonisolated struct FlightRecordingSummary: Equatable, Sendable, Identifiable {
 }
 
 nonisolated struct FlightDetailPresentation: Equatable, Sendable, Identifiable {
+    enum UnavailableReason: Equatable, Sendable {
+        case unsupported
+        case unreadable
+    }
+
     let id: UUID
     let flightPlanTitle: String
     let route: String?
@@ -44,6 +49,7 @@ nonisolated struct FlightDetailPresentation: Equatable, Sendable, Identifiable {
     let canExportGPX: Bool
     let canDelete: Bool
     let isReadOnlySnapshot: Bool
+    let unavailableReason: UnavailableReason?
 }
 
 actor FlightRecordingLibrary {
@@ -137,14 +143,19 @@ actor FlightRecordingLibrary {
         )
     }
 
-    func debriefEvidence(id: UUID, capturedAt: Date = Date()) async throws -> FlightEvidenceSnapshot {
+    func debriefEvidence(
+        id: UUID,
+        sourceState: FlightEvidenceBundleV1.SourceState,
+        capturedAt: Date? = nil
+    ) async throws -> FlightEvidenceSnapshot {
         let snapshot = try await store.readSnapshot(id: id)
-        guard snapshot.recording.closure != nil else {
-            throw FlightDebriefProjectionError.recordingNotClosed
-        }
+        let durationComponents = snapshot.evidenceSummary.duration?.components
+        let evidenceDuration = durationComponents.map {
+            TimeInterval($0.seconds) + TimeInterval($0.attoseconds) / 1e18
+        } ?? 0
         return FlightEvidenceSnapshot(
-            capturedAt: capturedAt,
-            sourceState: .closed,
+            capturedAt: capturedAt ?? snapshot.recording.startedAt.addingTimeInterval(evidenceDuration),
+            sourceState: sourceState,
             recording: snapshot,
             context: .current.replacingDetectorPolicy(snapshot.detectorPolicy)
         )
@@ -197,21 +208,22 @@ actor FlightRecordingLibrary {
             canExportGPX: snapshot.trackSegments.contains { !$0.samples.isEmpty },
             canDelete: recording.closure != nil,
             isReadOnlySnapshot: recording.closure == nil
+            , unavailableReason: nil
         )
     }
 
     private func unavailableDetail(id: UUID) async -> FlightDetailPresentation? {
-        let title = await store.packages().compactMap { result -> String? in
+        let unavailable = await store.packages().compactMap { result -> (String, FlightDetailPresentation.UnavailableReason)? in
             switch result {
             case .unsupported(let packageID, _) where packageID == id:
-                "Unsupported recording"
+                ("Unsupported recording", .unsupported)
             case .corrupt(let packageID) where packageID == id:
-                "Unavailable recording"
+                ("Unreadable recording", .unreadable)
             case .available, .unsupported, .corrupt:
                 nil
             }
         }.first
-        guard let title else { return nil }
+        guard let (title, reason) = unavailable else { return nil }
         return FlightDetailPresentation(
             id: id,
             flightPlanTitle: title,
@@ -232,7 +244,8 @@ actor FlightRecordingLibrary {
             canExportDiagnostic: false,
             canExportGPX: false,
             canDelete: true,
-            isReadOnlySnapshot: false
+            isReadOnlySnapshot: false,
+            unavailableReason: reason
         )
     }
 

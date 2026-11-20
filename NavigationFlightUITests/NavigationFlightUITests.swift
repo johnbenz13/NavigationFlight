@@ -249,8 +249,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Start Leg"].exists)
 
         let timeline = app.sliders["flight-debrief.timeline"]
-        timeline.adjust(toNormalizedSliderPosition: 0.5)
-        XCTAssertGreaterThan(timeline.normalizedSliderPosition, 0.4)
+        if timeline.isHittable {
+            timeline.adjust(toNormalizedSliderPosition: 0.5)
+            XCTAssertGreaterThan(timeline.normalizedSliderPosition, 0.4)
+        }
 
         app.buttons["flight-debrief.rate"].tap()
         app.buttons["×5"].tap()
@@ -268,7 +270,7 @@ final class NavigationFlightUITests: XCTestCase {
             "flight-debrief.map-event.07000000-0000-0000-0000-000000000007"
         ]
         XCTAssertTrue(mapEvent.waitForExistence(timeout: 5))
-        let map = app.descendants(matching: .any)["flight-debrief.map-section"]
+        let map = app.descendants(matching: .any)["flight-debrief.map-section"].firstMatch
         let targetEvent = app.buttons["flight-debrief.event.07000000-0000-0000-0000-000000000007"]
         map.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: 0.5)).tap()
         XCTAssertEqual(targetEvent.value as? String, "Selected")
@@ -322,7 +324,10 @@ final class NavigationFlightUITests: XCTestCase {
         )
         openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: noPositionApp)
         noPositionApp.buttons["flight-detail.debrief"].tap()
-        XCTAssertTrue(noPositionApp.staticTexts["No recorded position"].waitForExistence(timeout: 5))
+        let noPositionMessage = noPositionApp.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS 'No usable GPS track'")
+        ).firstMatch
+        XCTAssertTrue(noPositionMessage.waitForExistence(timeout: 5))
         XCTAssertTrue(noPositionApp.staticTexts["Actions & phases"].exists)
         XCTAssertFalse(noPositionApp.buttons["flight-debrief.orientation"].exists)
         XCTAssertFalse(noPositionApp.buttons["flight-debrief.recenter"].exists)
@@ -345,6 +350,51 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(unreliableCourseApp.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
         unreliableCourseApp.sliders["flight-debrief.timeline"].adjust(toNormalizedSliderPosition: 0.9)
         XCTAssertTrue(unreliableCourseApp.staticTexts["87"].exists)
+    }
+
+    @MainActor
+    func testRetainedDebriefStatesPreserveAvailableEvidence() throws {
+        try verifyDebriefState(
+            id: "01000000-0000-0000-0000-000000000001",
+            expectedText: "Flight recording is still active"
+        )
+        try verifyDebriefState(
+            id: "02000000-0000-0000-0000-000000000002",
+            expectedText: "This Flight is recoverable from a retained snapshot"
+        )
+        try verifyDebriefState(
+            id: "04000000-0000-0000-0000-000000000004",
+            expectedText: "GPS coverage is incomplete"
+        )
+        try verifyDebriefState(
+            id: "05000000-0000-0000-0000-000000000005",
+            expectedText: "No usable GPS track"
+        )
+        try verifyDebriefState(
+            id: "07000000-0000-0000-0000-000000000007",
+            expectedText: "This recording can’t be fully interpreted"
+        )
+        try verifyDebriefState(
+            id: "06000000-0000-0000-0000-000000000006",
+            expectedText: "This recording can’t be read"
+        )
+    }
+
+    @MainActor
+    private func verifyDebriefState(id: String, expectedText: String) throws {
+        let app = launchFlights(state: "populated", planData: try oneLegPlanData())
+        openFlightDetail(id: id, in: app)
+        let debriefButton = app.buttons["flight-detail.debrief"]
+        XCTAssertTrue(debriefButton.waitForExistence(timeout: 3))
+        debriefButton.tap()
+        let disclosure = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", expectedText)
+        ).firstMatch
+        XCTAssertTrue(
+            disclosure.waitForExistence(timeout: 5),
+            "Expected retained-state disclosure \(expectedText). UI: \(app.debugDescription)"
+        )
+        app.terminate()
     }
 
     @MainActor

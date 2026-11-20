@@ -1,12 +1,23 @@
 import Foundation
+import FlightEvidenceCore
 import Observation
 
 nonisolated struct FlightDebrief: Equatable, Sendable {
+    enum RecordingState: Equatable, Sendable {
+        case complete
+        case incomplete
+        case manuallyEnded
+        case active
+        case recoverable
+    }
+
     let recordingID: UUID
     let title: String
     let routeName: String
     let startedAt: Date
     let endedAt: Date
+    let recordingState: RecordingState
+    let gpsCoverage: GPSCoverageState
     let plannedRoute: [WGS84Coordinate]
     let plannedDurationSeconds: Int?
     let plannedDriftAngleDegrees: Double?
@@ -18,6 +29,16 @@ nonisolated struct FlightDebrief: Equatable, Sendable {
     let actualDistanceMeters: Double
     let altitudeObservations: [FlightDebriefObservation]
     let groundSpeedObservations: [FlightDebriefObservation]
+
+    var hasTrustworthyPosition: Bool {
+        trackSegments.contains { segment in
+            segment.samples.contains { $0.horizontalAccuracyMeters <= 50 }
+        }
+    }
+
+    var hasTrackGaps: Bool {
+        trackSegments.filter { !$0.samples.isEmpty }.count > 1
+    }
 
     func selection(at elapsed: Duration) -> FlightDebriefSelection {
         let clamped = min(max(elapsed, .zero), duration)
@@ -138,7 +159,7 @@ nonisolated struct FlightDebriefProjector: Sendable {
     func project(_ evidence: FlightEvidenceSnapshot) throws -> FlightDebrief {
         let snapshot = evidence.recording
         let recording = snapshot.recording
-        guard let closure = recording.closure else { throw FlightDebriefProjectionError.recordingNotClosed }
+        let closure = recording.closure
         let plan = recording.flightPlanSnapshot.sourceData.flatMap { try? FPLNavDecoder().decode($0) }
         let segments = snapshot.trackSegments.map {
             FlightDebriefTrackSegment(id: $0.id, samples: $0.samples.sorted { $0.observedAt < $1.observedAt })
@@ -166,13 +187,15 @@ nonisolated struct FlightDebriefProjector: Sendable {
             title: recording.flightPlanSnapshot.title,
             routeName: routeName(plan),
             startedAt: recording.startedAt,
-            endedAt: closure.closedAt,
+            endedAt: closure?.closedAt ?? evidence.capturedAt,
+            recordingState: recordingState(for: evidence),
+            gpsCoverage: recording.gpsCoverage,
             plannedRoute: plan?.waypoints.map(\.position) ?? [],
             plannedDurationSeconds: plannedDurationSeconds,
             plannedDriftAngleDegrees: plan?.parameters.driftAngle.value,
             trackSegments: segments,
             events: events,
-            duration: closure.elapsed,
+            duration: closure?.elapsed ?? .seconds(max(0, evidence.capturedAt.timeIntervalSince(recording.startedAt))),
             gpsCoverageFraction: snapshot.evidenceSummary.gpsCoverageFraction,
             plannedDistanceMeters: plan.map { distance(of: $0.waypoints.map(\.position)) },
             actualDistanceMeters: segments.reduce(0) { $0 + distance(of: $1.samples.map(\.coordinate)) },
@@ -183,6 +206,19 @@ nonisolated struct FlightDebriefProjector: Sendable {
                 }
             }
         )
+    }
+
+    private func recordingState(for evidence: FlightEvidenceSnapshot) -> FlightDebrief.RecordingState {
+        switch evidence.sourceState {
+        case .active:
+            return .active
+        case .recoverable:
+            return .recoverable
+        case .closed:
+            guard let closure = evidence.recording.recording.closure else { return .incomplete }
+            if closure.cause == .manual { return .manuallyEnded }
+            return closure.outcome == .complete ? .complete : .incomplete
+        }
     }
 
     private func position(for event: RecordedFlightEvent, in segments: [FlightDebriefTrackSegment]) -> FlightDebriefEvent.Position {

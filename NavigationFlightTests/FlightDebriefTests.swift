@@ -1,9 +1,44 @@
 import Foundation
+import FlightEvidenceCore
 import Testing
 @testable import NavigationFlight
 
 @Suite("Flight debrief")
 struct FlightDebriefTests {
+    @Test("Retained recording states remain explicit and provisional snapshots preserve evidence")
+    func retainedRecordingStates() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10], [30, 40]])
+        let closed = try FlightDebriefProjector().project(fixture.evidence)
+        let activeEvidence = FlightEvidenceSnapshot(
+            capturedAt: fixture.evidence.capturedAt,
+            sourceState: .active,
+            recording: fixture.evidence.recording,
+            context: fixture.evidence.context
+        )
+        let recoverableEvidence = FlightEvidenceSnapshot(
+            capturedAt: fixture.evidence.capturedAt,
+            sourceState: .recoverable,
+            recording: fixture.evidence.recording,
+            context: fixture.evidence.context
+        )
+
+        #expect(closed.recordingState == .manuallyEnded)
+        #expect(closed.hasTrackGaps)
+        #expect(try FlightDebriefProjector().project(activeEvidence).recordingState == .active)
+        #expect(try FlightDebriefProjector().project(recoverableEvidence).recordingState == .recoverable)
+    }
+
+    @Test("Action-only evidence retains events without inventing a position")
+    func actionOnlyEvidence() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [])
+        let debrief = try FlightDebriefProjector().project(fixture.evidence)
+
+        #expect(!debrief.hasTrustworthyPosition)
+        #expect(debrief.trackSegments.isEmpty)
+        #expect(debrief.events.count == 1)
+        #expect(debrief.events[0].position == .unavailable)
+    }
+
     @Test("Correlation stays inside a track segment and preserves event time")
     func correlationDoesNotCrossGap() throws {
         let fixture = try makeEvidence(eventTime: 30, segmentTimes: [[0, 10], [40, 50]])

@@ -579,9 +579,17 @@ struct RootView: View {
                     ),
                 ]
             }
-            let firstSegment = RecordedTrackSegment(id: UUID(), samples: samples)
-            let trackSegments = definition.coverage == .unavailable
-                || (isCompletedFixture && debriefHasNoPosition) ? [] : [firstSegment]
+            let trackSegments: [RecordedTrackSegment]
+            if definition.coverage == .unavailable || (isCompletedFixture && debriefHasNoPosition) {
+                trackSegments = []
+            } else if definition.coverage == .partial, samples.count > 1 {
+                trackSegments = [
+                    RecordedTrackSegment(id: UUID(), samples: [samples[0]]),
+                    RecordedTrackSegment(id: UUID(), samples: [samples[samples.count - 1]]),
+                ]
+            } else {
+                trackSegments = [RecordedTrackSegment(id: UUID(), samples: samples)]
+            }
             let reviewBounds = samples.dropFirst().reduce(
                 into: (
                     minimumLatitude: samples[0].coordinate.latitudeDegrees,
@@ -629,6 +637,10 @@ struct RootView: View {
                 approximateSizeBytes: definition.size
             ))
         } + [
+            .unsupported(
+                id: UUID(uuid: (7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7)),
+                schemaVersion: 99
+            ),
             .corrupt(id: UUID(uuid: (6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6))),
         ]
         return (packages, definitions.first?.id)

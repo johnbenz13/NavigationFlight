@@ -121,7 +121,12 @@ struct FlightDetailLoaderView: View {
             }
         }
         .navigationDestination(isPresented: $debriefPresented) {
-            FlightDebriefLoaderView(id: id, library: library)
+            FlightDebriefLoaderView(
+                id: id,
+                library: library,
+                sourceState: currentSourceState,
+                unavailableReason: detail?.unavailableReason
+            )
         }
         .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
             if wasPresent, !isPresent {
@@ -270,7 +275,7 @@ struct FlightDetailView: View {
                         .accessibilityIdentifier("flight-detail.export")
                 }
 
-                if detail.status == .complete {
+                if detail.status != .unavailable || detail.unavailableReason != nil {
                     Button(action: onDebrief) {
                         Label("Open Debrief", systemImage: "chart.xyaxis.line")
                             .frame(maxWidth: .infinity)
@@ -330,9 +335,15 @@ struct FlightDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Stored evidence")
                 .font(.title3.weight(.bold))
-            Text("GPS track and operational history are retained on device for future debrief features. Diagnostic evidence and GPX tracks can be exported separately.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if detail.status == .unavailable {
+                Text("Diagnostic and GPX export are unavailable for this recording.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("GPS track and operational history are retained on device for future debrief features. Diagnostic evidence and GPX tracks can be exported separately.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

@@ -1,24 +1,36 @@
 import MapLibre
 import SwiftUI
+import FlightEvidenceCore
 
 struct FlightDebriefLoaderView: View {
     @State private var model: FlightDebriefModel
+    private let unavailableReason: FlightDetailPresentation.UnavailableReason?
 
-    init(id: UUID, library: FlightRecordingLibrary) {
+    init(
+        id: UUID,
+        library: FlightRecordingLibrary,
+        sourceState: FlightEvidenceBundleV1.SourceState?,
+        unavailableReason: FlightDetailPresentation.UnavailableReason?
+    ) {
+        self.unavailableReason = unavailableReason
         _model = State(initialValue: FlightDebriefModel {
-            try await library.debriefEvidence(id: id)
+            try await library.debriefEvidence(id: id, sourceState: sourceState ?? .closed)
         })
     }
 
     var body: some View {
         Group {
-            switch model.state {
+            if let unavailableReason {
+                FlightDebriefUnavailableView(reason: unavailableReason)
+            } else {
+                switch model.state {
             case .loading:
                 ProgressView("Preparing Debrief")
             case .failed:
                 ContentUnavailableView("Debrief unavailable", systemImage: "exclamationmark.triangle", description: Text("The retained evidence could not be projected."))
             case .loaded(let debrief):
                 FlightDebriefView(model: model, debrief: debrief)
+                }
             }
         }
         .task { await model.load() }
@@ -29,31 +41,172 @@ struct FlightDebriefLoaderView: View {
 }
 
 struct FlightDebriefView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let model: FlightDebriefModel
     let debrief: FlightDebrief
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                FlightDebriefIdentityView(debrief: debrief)
-                FlightDebriefMapSection(
-                    model: model,
-                    debrief: debrief,
-                    height: model.consoleMode == .compact ? 600 : 472
-                )
-                if model.consoleMode == .compact {
-                    FlightDebriefCompactTelemetrySection(model: model)
+        GeometryReader { geometry in
+            ScrollView {
+                if geometry.size.width >= 1_000, !dynamicTypeSize.isAccessibilitySize {
+                    FlightDebriefWideLayout(model: model, debrief: debrief)
                 } else {
-                    FlightDebriefTelemetrySection(model: model, debrief: debrief)
+                    LazyVStack(spacing: 0) {
+                        FlightDebriefIdentityView(debrief: debrief)
+                        FlightDebriefStateBanner(debrief: debrief)
+                        FlightDebriefMapSummary(debrief: debrief, selection: model.selection)
+                        FlightDebriefMapSection(
+                            model: model,
+                            debrief: debrief,
+                            height: geometry.size.width < 600 ? 464 : (model.consoleMode == .compact ? 600 : 472)
+                        )
+                        if model.consoleMode == .compact {
+                            FlightDebriefCompactTelemetrySection(model: model)
+                        } else {
+                            FlightDebriefTelemetrySection(model: model, debrief: debrief)
+                        }
+                        FlightDebriefTimelineSection(model: model, debrief: debrief, isCompact: model.consoleMode == .compact)
+                        Color.clear
+                            .frame(height: geometry.size.width < 600 ? 72 : 0)
+                            .accessibilityHidden(true)
+                    }
                 }
-                FlightDebriefTimelineSection(
-                    model: model,
-                    debrief: debrief,
-                    isCompact: model.consoleMode == .compact
-                )
+            }
+            .background(Color(.systemBackground))
+        }
+    }
+}
+
+private struct FlightDebriefWideLayout: View {
+    let model: FlightDebriefModel
+    let debrief: FlightDebrief
+
+    var body: some View {
+        VStack(spacing: 0) {
+            FlightDebriefIdentityView(debrief: debrief)
+            FlightDebriefStateBanner(debrief: debrief)
+            HStack(alignment: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    FlightDebriefMapSummary(debrief: debrief, selection: model.selection)
+                    FlightDebriefMapSection(model: model, debrief: debrief, height: 420)
+                }
+                .frame(maxWidth: .infinity)
+                VStack(spacing: 0) {
+                    if model.consoleMode == .compact {
+                        FlightDebriefCompactTelemetrySection(model: model)
+                    } else {
+                        FlightDebriefTelemetrySection(model: model, debrief: debrief)
+                    }
+                    FlightDebriefTimelineSection(model: model, debrief: debrief, isCompact: true)
+                }
+                .frame(width: 580, alignment: .top)
             }
         }
-        .background(Color(.systemBackground))
+    }
+}
+
+private struct FlightDebriefUnavailableView: View {
+    let reason: FlightDetailPresentation.UnavailableReason
+
+    var body: some View {
+        ScrollView {
+            ContentUnavailableView {
+                Label(title, systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(description)
+            }
+            .padding(.top, 180)
+            Text(exportDisclosure)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding()
+                .background(Color.orange.opacity(0.12), in: .rect(cornerRadius: 14))
+                .padding(.horizontal)
+        }
+        .accessibilityIdentifier("flight-debrief.limited-evidence")
+    }
+
+    private var title: LocalizedStringKey {
+        reason == .unsupported ? "This recording can’t be fully interpreted" : "This recording can’t be read"
+    }
+
+    private var description: LocalizedStringKey {
+        reason == .unsupported
+            ? "NavigationFlight does not recognize this evidence version. It will not guess at track, events, measurements, or outcome."
+            : "NavigationFlight could not decode the retained evidence. It will not guess at track, events, measurements, or outcome."
+    }
+
+    private var exportDisclosure: LocalizedStringKey {
+        "Diagnostic and GPX export are unavailable for this recording."
+    }
+}
+
+private struct FlightDebriefStateBanner: View {
+    let debrief: FlightDebrief
+
+    var body: some View {
+        if let message {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message.title).font(.headline)
+                Text(message.detail).font(.subheadline).foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .background(message.color.opacity(0.14), in: .rect(cornerRadius: 16))
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+        }
+    }
+
+    private var message: (title: LocalizedStringKey, detail: LocalizedStringKey, color: Color)? {
+        switch debrief.recordingState {
+        case .active:
+            return ("Flight recording is still active", "This is a read-only snapshot. Duration, track, events, and outcome may change; operational controls remain in Cockpit.", .blue)
+        case .recoverable:
+            return ("This Flight is recoverable from a retained snapshot", "This is a read-only snapshot. Duration, track, events, and outcome may change; operational controls remain in Cockpit.", .blue)
+        case .complete, .incomplete, .manuallyEnded:
+            break
+        }
+        if debrief.gpsCoverage == .partial {
+            return ("GPS coverage is incomplete", "The track stops at recorded segment boundaries. Events inside a gap remain in time order without an invented path.", .orange)
+        }
+        switch debrief.recordingState {
+        case .complete: return nil
+        case .incomplete, .manuallyEnded:
+            return ("Recording ended before automatic closure", "Navigation history and retained evidence remain available. The stored outcome is not changed by this debrief.", .orange)
+        case .active, .recoverable: return nil
+        }
+    }
+}
+
+private struct FlightDebriefMapSummary: View {
+    let debrief: FlightDebrief
+    let selection: FlightDebriefSelection?
+
+    var body: some View {
+        Text(summary)
+            .font(.subheadline)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityIdentifier("flight-debrief.map-summary")
+    }
+
+    private var summary: String {
+        guard debrief.hasTrustworthyPosition else {
+            return "No usable GPS track. Recorded actions remain available in chronological order."
+        }
+        let gap = debrief.hasTrackGaps ? " The recorded track contains gaps; no path is inferred between segments." : ""
+        guard let event = selection?.event else { return "Planned leg and recorded track are available as historical evidence.\(gap)" }
+        return "Selected action: \(event.title) at \(event.elapsed.formatted(.time(pattern: .hourMinuteSecond))). \(positionDisclosure(event.position)).\(gap)"
+    }
+
+    private func positionDisclosure(_ position: FlightDebriefEvent.Position) -> String {
+        switch position {
+        case .direct: "A direct recorded position is available"
+        case .correlated(_, let delta, let accuracy): "A correlated position is available \(delta.timeOffsetText), accuracy plus or minus \(accuracy.formatted(.number.precision(.fractionLength(0)))) metres"
+        case .unavailable: "No trustworthy position is available for this action"
+        }
     }
 }
 
@@ -69,7 +222,7 @@ private struct FlightDebriefIdentityView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("Complete · Historical")
+            Text(statusText)
                 .font(.caption)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -80,8 +233,17 @@ private struct FlightDebriefIdentityView: View {
     }
 
     private var coverageText: String {
-        guard let fraction = debrief.gpsCoverageFraction else { return "unavailable" }
-        return fraction.formatted(.percent.precision(.fractionLength(0)))
+        debrief.gpsCoverageText
+    }
+
+    private var statusText: LocalizedStringKey {
+        switch debrief.recordingState {
+        case .complete: "Complete · Historical"
+        case .incomplete: "Incomplete · Historical"
+        case .manuallyEnded: "Incomplete · Manually ended"
+        case .active: "Active · Provisional"
+        case .recoverable: "Recoverable · Provisional"
+        }
     }
 }
 
@@ -93,7 +255,9 @@ private struct FlightDebriefMapSection: View {
 
     var body: some View {
         ZStack {
-            if true {
+            Color.clear
+                .accessibilityIdentifier("flight-debrief.map-section")
+            if debrief.hasTrustworthyPosition {
                 HistoricalFlightMapView(
                 debrief: debrief,
                 selectedSample: model.selection?.sample,
@@ -109,27 +273,19 @@ private struct FlightDebriefMapSection: View {
                 onSelectEvent: model.select
                 )
                 .frame(height: height)
-                .accessibilityChildren {
-                    if model.selection?.sample != nil {
-                        ForEach(debrief.events.filter(\.hasMapPosition)) { event in
-                            Button("Select map action: \(event.title)") {
-                                model.select(eventID: event.id)
-                            }
-                            .accessibilityIdentifier("flight-debrief.map-event.\(event.id.uuidString)")
-                        }
-                    }
-                }
+                .accessibilityHidden(true)
             } else {
                 Color(.secondarySystemBackground).frame(height: height)
             }
             if model.selection?.sample == nil {
                 ContentUnavailableView(
-                    "No recorded position",
+                    "No usable GPS track",
                     systemImage: "location.slash",
                     description: Text("Flight evidence remains available below, but the recording has no trustworthy GPS position to place on the chart.")
                 )
                 .padding(32)
                 .background(.regularMaterial, in: .rect(cornerRadius: 18))
+                .accessibilityHidden(true)
             } else {
                 VStack {
                     HStack(alignment: .top) {
@@ -145,9 +301,30 @@ private struct FlightDebriefMapSection: View {
                 }
                 .padding(16)
             }
+            if debrief.hasTrackGaps, debrief.hasTrustworthyPosition {
+                Text("GPS GAP")
+                    .font(.caption.weight(.semibold))
+                    .padding()
+                    .background(.regularMaterial, in: .rect(cornerRadius: 10))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.secondary, style: .init(lineWidth: 2, dash: [6]))
+                    }
+                    .accessibilityHidden(true)
+            }
+            if debrief.hasTrustworthyPosition {
+                Color.clear
+                    .frame(width: 1, height: 1)
+                    .accessibilityChildren {
+                        ForEach(debrief.events.filter(\.hasMapPosition)) { event in
+                            Button("Select map action: \(event.title)") {
+                                model.select(eventID: event.id)
+                            }
+                            .accessibilityIdentifier("flight-debrief.map-event.\(event.id.uuidString)")
+                        }
+                    }
+            }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("flight-debrief.map-section")
     }
 
     private func positionDisclosure(_ position: FlightDebriefEvent.Position) -> String {
@@ -239,21 +416,37 @@ private struct FlightDebriefSelectionCard: View {
 }
 
 private struct FlightDebriefTelemetrySection: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let model: FlightDebriefModel
     let debrief: FlightDebrief
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Flight parameters").font(.title3)
-                Spacer()
-                Text(model.selection?.elapsed.formatted(.time(pattern: .hourMinuteSecond)) ?? "00:00:00")
-                    .font(.caption)
-                    .foregroundStyle(.tint)
-                Text(courseText)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.tint)
-                FlightDebriefConsoleModeButton(model: model)
+            if horizontalSizeClass == .compact {
+                HStack {
+                    Text("Flight parameters").font(.title3)
+                    Spacer()
+                    FlightDebriefConsoleModeButton(model: model)
+                }
+                HStack {
+                    Text(model.selection?.elapsed.formatted(.time(pattern: .hourMinuteSecond)) ?? "00:00:00")
+                    Spacer()
+                    Text(courseText)
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.tint)
+            } else {
+                HStack {
+                    Text("Flight parameters").font(.title3)
+                    Spacer()
+                    Text(model.selection?.elapsed.formatted(.time(pattern: .hourMinuteSecond)) ?? "00:00:00")
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                    Text(courseText)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.tint)
+                    FlightDebriefConsoleModeButton(model: model)
+                }
             }
             FlightDebriefPlot(title: "Altitude", value: altitudeText, rangeLabel: altitudeRange, observations: debrief.altitudeObservations, selectedTime: model.selection?.elapsed ?? .zero)
             FlightDebriefPlot(title: "Ground speed", value: speedText, rangeLabel: speedRange, observations: debrief.groundSpeedObservations, selectedTime: model.selection?.elapsed ?? .zero)
@@ -292,12 +485,13 @@ private struct FlightDebriefPlot: View {
             Canvas { context, size in
                 guard observations.count > 1, let maximum = observations.map(\.value).max(), maximum > 0,
                       let total = observations.last?.elapsed.timeInterval, total > 0 else { return }
-                var path = Path()
-                for (index, observation) in observations.enumerated() {
-                    let point = CGPoint(x: size.width * observation.elapsed.timeInterval / total, y: size.height * (1 - observation.value / maximum))
-                    index == 0 ? path.move(to: point) : path.addLine(to: point)
-                }
+                let path = FlightDebriefPlotPath.make(observations: observations, size: size, maximum: maximum, total: total)
                 context.stroke(path, with: .color(.teal), lineWidth: 2)
+                // Isolated samples remain visible without connecting them over gaps.
+                for observation in observations {
+                    let point = CGPoint(x: size.width * observation.elapsed.timeInterval / total, y: size.height * (1 - observation.value / maximum))
+                    context.fill(Path(ellipseIn: CGRect(x: point.x - 1.5, y: point.y - 1.5, width: 3, height: 3)), with: .color(.teal))
+                }
                 let selectedX = size.width * min(selectedTime.timeInterval / total, 1)
                 context.stroke(Path(CGRect(x: selectedX, y: 0, width: 1, height: size.height)), with: .color(.orange), lineWidth: 1)
             }
@@ -368,6 +562,8 @@ private struct FlightDebriefConsoleModeButton: View {
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
         .controlSize(.small)
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
         .accessibilityValue(model.consoleMode == .compact ? "Compact replay console" : "Full analysis")
         .accessibilityIdentifier("flight-debrief.analysis-mode")
     }
@@ -393,6 +589,7 @@ private struct FlightTelemetryValues: View {
 }
 
 private struct FlightDebriefTimelineSection: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     let model: FlightDebriefModel
     let debrief: FlightDebrief
     let isCompact: Bool
@@ -418,7 +615,7 @@ private struct FlightDebriefTimelineSection: View {
                                     Text(event.origin.rawValue.capitalized).font(.caption2).foregroundStyle(.tertiary)
                                 }
                             }
-                            .frame(width: isCompact ? 124 : 112, height: isCompact ? 62 : 118, alignment: .topLeading)
+                            .frame(width: 104, height: isCompact ? 62 : 118, alignment: .topLeading)
                             .padding(10)
                             .background(Color(.systemBackground), in: .rect(cornerRadius: 12))
                             .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5) }
@@ -445,35 +642,70 @@ private struct FlightDebriefTimelineSection: View {
     }
 
     private var playbackControls: some View {
-        HStack(spacing: 16) {
+        Group {
+            if horizontalSizeClass == .compact {
+                VStack(spacing: 10) {
+                    timelineControl
+                    HStack(spacing: 12) {
+                        playButton
+                        Spacer()
+                        playbackRatePicker
+                        fitFullFlightButton
+                    }
+                }
+            } else {
+                HStack(spacing: 16) {
+                    playButton
+                    timelineControl
+                    playbackRatePicker
+                    fitFullFlightButton
+                }
+            }
+        }
+    }
+
+    private var playButton: some View {
             Button(model.isPlaying ? "Pause" : "Play", systemImage: model.isPlaying ? "pause.fill" : "play.fill") {
                 model.isPlaying ? model.pause() : model.play()
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("flight-debrief.play-pause")
-            VStack {
-                HStack {
-                    Text((model.selection?.elapsed ?? .zero).formatted(.time(pattern: .hourMinuteSecond)))
-                    Spacer()
-                    Text(debrief.duration.formatted(.time(pattern: .hourMinuteSecond)))
-                }.font(.caption)
-                Slider(value: selectedSeconds, in: 0...max(debrief.duration.timeInterval, 1))
-                    .accessibilityIdentifier("flight-debrief.timeline")
+    }
+
+    private var timelineControl: some View {
+        VStack {
+            HStack {
+                Text((model.selection?.elapsed ?? .zero).formatted(.time(pattern: .hourMinuteSecond)))
+                Spacer()
+                Text(debrief.duration.formatted(.time(pattern: .hourMinuteSecond)))
             }
+            .font(.caption)
+            .monospacedDigit()
+            .lineLimit(1)
+            Slider(value: selectedSeconds, in: 0...max(debrief.duration.timeInterval, 1))
+                .accessibilityIdentifier("flight-debrief.timeline")
+        }
+    }
+
+    private var playbackRatePicker: some View {
             Picker("Playback speed", selection: Binding(get: { model.playbackRate }, set: { model.playbackRate = $0 })) {
                 ForEach(FlightDebriefModel.PlaybackRate.allCases) { rate in Text("×\(rate.rawValue)").tag(rate) }
             }
             .pickerStyle(.menu)
             .accessibilityIdentifier("flight-debrief.rate")
-            if model.selection?.sample != nil {
-                Button(
-                    "Fit full flight",
-                    systemImage: "arrow.up.left.and.arrow.down.right",
-                    action: model.showFullFlight
-                )
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("flight-debrief.fit-full-flight")
-            }
+    }
+
+    @ViewBuilder private var fitFullFlightButton: some View {
+        if model.selection?.sample != nil {
+            Button(
+                horizontalSizeClass == .compact ? "Fit" : "Fit full flight",
+                systemImage: "arrow.up.left.and.arrow.down.right",
+                action: model.showFullFlight
+            )
+            .buttonStyle(.bordered)
+            .lineLimit(1)
+            .accessibilityLabel("Fit full flight")
+            .accessibilityIdentifier("flight-debrief.fit-full-flight")
         }
     }
 

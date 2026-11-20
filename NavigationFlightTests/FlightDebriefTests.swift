@@ -1,9 +1,101 @@
 import Foundation
+import FlightEvidenceCore
 import Testing
+import SwiftUI
 @testable import NavigationFlight
 
 @Suite("Flight debrief")
 struct FlightDebriefTests {
+    @Test("Partial segmented evidence never claims complete GPS coverage")
+    func partialCoverageRemainsExplicit() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10], [30, 40]], coverage: .partial)
+        let debrief = try FlightDebriefProjector().project(fixture.evidence)
+
+        // No explicit gap events were retained, so the summary fraction alone
+        // incorrectly suggests complete coverage despite the segmented track.
+        #expect(debrief.gpsCoverageFraction == 1)
+        #expect(debrief.gpsCoverageText == "Partial")
+        let available = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10]], coverage: .available)
+        #expect(try FlightDebriefProjector().project(available.evidence).gpsCoverageText == 1.0.formatted(.percent.precision(.fractionLength(0))))
+        let unavailable = try makeEvidence(eventTime: 9, segmentTimes: [], coverage: .unavailable)
+        #expect(try FlightDebriefProjector().project(unavailable.evidence).gpsCoverageText == "Unavailable")
+    }
+
+    @Test("Analysis paths restart at segment boundaries without bridging missing GPS")
+    func analysisPathsPreserveSegmentGaps() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10], [30, 40]])
+        let debrief = try FlightDebriefProjector().project(fixture.evidence)
+        for observations in [debrief.altitudeObservations, debrief.groundSpeedObservations] {
+            #expect(observations.map(\.segmentID) == debrief.trackSegments.flatMap { segment in
+                segment.samples.map { _ in segment.id }
+            })
+            let path = FlightDebriefPlotPath.make(observations: observations, size: CGSize(width: 400, height: 100), maximum: 200, total: 40)
+            var moves: [CGFloat] = []
+            var lines: [CGFloat] = []
+            path.forEach { element in
+                switch element {
+                case .move(let point): moves.append(point.x)
+                case .line(let point): lines.append(point.x)
+                default: Issue.record("Unexpected plot path element")
+                }
+            }
+            #expect(moves == [0, 300])
+            #expect(lines == [100, 400])
+        }
+    }
+
+    @Test("Isolated telemetry and independent altitude sources never gain connecting lines")
+    func isolatedAnalysisSamplesDoNotConnect() {
+        let firstID = UUID()
+        let secondID = UUID()
+        let observations = [
+            FlightDebriefObservation(id: "gps-0", segmentID: firstID, elapsed: .zero, value: 100, source: .gpsAltitude),
+            FlightDebriefObservation(id: "baro-0", segmentID: firstID, elapsed: .zero, value: 90, source: .barometricAltitude),
+            FlightDebriefObservation(id: "gps-40", segmentID: secondID, elapsed: .seconds(40), value: 140, source: .gpsAltitude),
+        ]
+        let path = FlightDebriefPlotPath.make(observations: observations, size: CGSize(width: 400, height: 100), maximum: 200, total: 40)
+        var moves = 0
+        path.forEach { element in
+            if case .move = element { moves += 1 } else { Issue.record("Isolated observations must not be joined") }
+        }
+        #expect(moves == 3)
+        #expect(FlightDebriefPlotPath.make(observations: [], size: .zero, maximum: 0, total: 0).isEmpty)
+    }
+
+    @Test("Retained recording states remain explicit and provisional snapshots preserve evidence")
+    func retainedRecordingStates() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10], [30, 40]])
+        let closed = try FlightDebriefProjector().project(fixture.evidence)
+        let activeEvidence = FlightEvidenceSnapshot(
+            capturedAt: fixture.evidence.capturedAt,
+            sourceState: .active,
+            recording: fixture.evidence.recording,
+            context: fixture.evidence.context
+        )
+        let recoverableEvidence = FlightEvidenceSnapshot(
+            capturedAt: fixture.evidence.capturedAt,
+            sourceState: .recoverable,
+            recording: fixture.evidence.recording,
+            context: fixture.evidence.context
+        )
+
+        #expect(closed.recordingState == .manuallyEnded)
+        #expect(closed.hasTrackGaps)
+        #expect(try FlightDebriefProjector().project(activeEvidence).recordingState == .active)
+        #expect(try FlightDebriefProjector().project(recoverableEvidence).recordingState == .recoverable)
+    }
+
+    @Test("Action-only evidence retains events without inventing a position")
+    func actionOnlyEvidence() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [])
+        let debrief = try FlightDebriefProjector().project(fixture.evidence)
+
+        #expect(!debrief.hasTrustworthyPosition)
+        #expect(debrief.trackSegments.isEmpty)
+        #expect(debrief.events.count == 1)
+        #expect(debrief.events[0].position == .unavailable)
+    }
+
     @Test("Correlation stays inside a track segment and preserves event time")
     func correlationDoesNotCrossGap() throws {
         let fixture = try makeEvidence(eventTime: 30, segmentTimes: [[0, 10], [40, 50]])
@@ -167,7 +259,7 @@ struct FlightDebriefTests {
         model.pause()
     }
 
-    private func makeEvidence(eventTime: TimeInterval, segmentTimes: [[TimeInterval]], direct: Bool = false) throws -> Fixture {
+    private func makeEvidence(eventTime: TimeInterval, segmentTimes: [[TimeInterval]], direct: Bool = false, coverage: GPSCoverageState = .available) throws -> Fixture {
         let startedAt = Date(timeIntervalSince1970: 1_000)
         let eventID = UUID()
         let legID = UUID()
@@ -178,7 +270,7 @@ struct FlightDebriefTests {
             legID: legID,
             startedAt: startedAt,
             eventIDs: [UUID(), UUID()]
-        ).recording
+        ).recording.restoring(gpsCoverage: coverage)
         _ = try recording.endManually(at: startedAt.addingTimeInterval(60), elapsed: .seconds(60), eventIDs: [UUID(), UUID()])
         let payload: RecordedFlightEventPayload = direct
             ? .positionCheckEnded(outcome: .disclosed(sample: .init(coordinate: .init(latitudeDegrees: 31.9, longitudeDegrees: 34.7), observedAt: startedAt.addingTimeInterval(eventTime), horizontalAccuracyMeters: 3)))

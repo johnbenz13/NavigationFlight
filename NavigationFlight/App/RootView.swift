@@ -438,6 +438,10 @@ struct RootView: View {
             return ([], nil)
         }
         let baseDate = Date(timeIntervalSince1970: 1_794_000_000)
+        let completedFlightDuration = DebriefQAFlightTrack.duration(for: plan.title) ?? 3_960
+        let completedRecordingID = UUID(
+            uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)
+        )
         let definitions: [(
             id: UUID,
             title: String,
@@ -463,14 +467,14 @@ struct RootView: View {
                 3_600_000
             ),
             (
-                UUID(uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
-                "Jerusalem Corridor Practice",
+                completedRecordingID,
+                plan.title,
                 -86_400,
                 FlightRecordingClosure(
                     outcome: .complete,
                     cause: .automatic,
-                    closedAt: baseDate.addingTimeInterval(-82_440),
-                    elapsed: .seconds(3_960),
+                    closedAt: baseDate.addingTimeInterval(-86_400 + completedFlightDuration),
+                    elapsed: .seconds(completedFlightDuration),
                     landingEvidenceAvailable: true
                 ),
                 .available,
@@ -525,37 +529,46 @@ struct RootView: View {
                 recording = recording.restoring(closure: closure)
             }
             let evidenceEnd = definition.closure?.closedAt ?? startedAt.addingTimeInterval(3_600)
-            let firstSegmentID = UUID()
-            let firstSegment = RecordedTrackSegment(id: firstSegmentID, samples: [
-                RecordedTrackSample(
-                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
-                    observedAt: startedAt,
-                    horizontalAccuracyMeters: 5,
-                    altitudeMeters: 500,
-                    verticalAccuracyMeters: 5,
-                    groundSpeedMetersPerSecond: 42,
-                    speedAccuracyMetersPerSecond: 1,
-                    courseDegrees: 90,
-                    courseAccuracyDegrees: 2,
-                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 490 : nil,
-                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 88 : nil,
-                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
-                ),
-                RecordedTrackSample(
-                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
-                    observedAt: evidenceEnd,
-                    horizontalAccuracyMeters: 5,
-                    altitudeMeters: 1_280,
-                    verticalAccuracyMeters: 5,
-                    groundSpeedMetersPerSecond: 44,
-                    speedAccuracyMetersPerSecond: 1,
-                    courseDegrees: 90,
-                    courseAccuracyDegrees: 2,
-                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 1_270 : nil,
-                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 92 : nil,
-                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
-                ),
-            ])
+            let isCompletedFixture = definition.id == completedRecordingID
+            let realDebriefSamples = DebriefQAFlightTrack.samples(
+                startedAt: startedAt,
+                planTitle: plan.title
+            )
+            let samples = if isCompletedFixture, let realDebriefSamples {
+                realDebriefSamples
+            } else {
+                [
+                    RecordedTrackSample(
+                        coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
+                        observedAt: startedAt,
+                        horizontalAccuracyMeters: 5,
+                        altitudeMeters: 500,
+                        verticalAccuracyMeters: 5,
+                        groundSpeedMetersPerSecond: 42,
+                        speedAccuracyMetersPerSecond: 1,
+                        courseDegrees: 90,
+                        courseAccuracyDegrees: 2,
+                        barometricAltitudeMeters: isCompletedFixture ? 490 : nil,
+                        deviceHeadingDegrees: isCompletedFixture ? 88 : nil,
+                        deviceHeadingAccuracyDegrees: isCompletedFixture ? 3 : nil
+                    ),
+                    RecordedTrackSample(
+                        coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
+                        observedAt: evidenceEnd,
+                        horizontalAccuracyMeters: 5,
+                        altitudeMeters: 1_280,
+                        verticalAccuracyMeters: 5,
+                        groundSpeedMetersPerSecond: 44,
+                        speedAccuracyMetersPerSecond: 1,
+                        courseDegrees: 90,
+                        courseAccuracyDegrees: 2,
+                        barometricAltitudeMeters: isCompletedFixture ? 1_270 : nil,
+                        deviceHeadingDegrees: isCompletedFixture ? 92 : nil,
+                        deviceHeadingAccuracyDegrees: isCompletedFixture ? 3 : nil
+                    ),
+                ]
+            }
+            let firstSegment = RecordedTrackSegment(id: UUID(), samples: samples)
             let trackSegments = definition.coverage == .unavailable ? [] : [firstSegment]
             return .available(FlightRecordingReadSnapshot(
                 recording: recording,

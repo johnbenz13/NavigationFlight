@@ -1,0 +1,1734 @@
+{
+  "format": "fpl-navigation-project",
+  "formatVersion": 7,
+  "project": {
+    "id": "9c6ef812-089a-4d97-8fa4-8d67b134d893",
+    "title": "LLHZ - LLIB via Jerusalem",
+    "createdAt": "2026-11-03T12:11:30.445Z",
+    "modifiedAt": "2026-11-03T21:51:06.793Z"
+  },
+  "navigation": {
+    "parameters": {
+      "magneticVariationEastDegrees": 5,
+      "defaultAltitudeFeet": 3000,
+      "driftAngleDegrees": 10,
+      "nextGeneratedWaypointNumber": 30,
+      "planningAirspeedKnots": 90,
+      "fuelBurnUsGallonsPerHour": 8,
+      "fuelAtStartUsGallons": 40,
+      "fuelAllowances": {
+        "startupTaxiUsGallons": 1,
+        "takeoffUsGallons": 0.5,
+        "landingUsGallons": 1.5,
+        "reserveUsGallons": 4,
+        "alternateUsGallons": 5
+      }
+    },
+    "route": {
+      "waypointOrder": [
+        "e3955ac6-9ee4-420e-8a4f-37deb515e7ba",
+        "e53ea472-de0f-46a7-9803-13ce26710cdc",
+        "b161b17f-a0c4-463a-9c5e-488a9979f7d7",
+        "363d1656-18cb-4258-8e8d-ea7354db720d",
+        "93303587-1914-4eea-92c0-d84369c5a186",
+        "eb10a08a-dded-4cfd-a47f-230e0f0bf5e2",
+        "4c22b5b4-ed12-49aa-9d35-90c5a14b3e23",
+        "5ee02590-a6fe-4378-ad73-66923e5938af",
+        "fb17b84a-92cf-44ee-bead-64fa8b664246",
+        "0dee38ec-b839-4474-8840-3f46b3a77605",
+        "0e724ef6-438d-46cf-9404-ec218d0f2d77",
+        "aa010769-a4a0-4101-92e8-827068ba1ef0",
+        "68d89c18-aa01-4f54-8107-28b54c0ae24f",
+        "428f7da0-efdb-46f0-82e7-692e8979815b",
+        "4cb17827-cd44-4f3a-a994-083ed882c006",
+        "6eaffc61-9a2e-498f-a06d-c91a71bb1439",
+        "0694f82a-18e5-4896-84a7-608ac2d575fb",
+        "cf05718f-bff1-4a58-944b-bfe4028dec4a",
+        "27e450f4-e889-4f35-808b-3971d6f2e27a",
+        "0837f562-a4b5-4305-8a49-1f2ff644ef70",
+        "b0c6f782-9276-44a0-a199-1269122e2c8d",
+        "4e50e143-4335-440b-8a8b-cef67f9ff512",
+        "1377e026-4d4a-4bba-8f83-d3837cfa4947",
+        "f832ab96-87cd-4301-958e-94fa5cb9aa1f",
+        "b36cda54-27b6-4d89-83b7-8fccee135666",
+        "bc0ed958-dba9-42d4-9c44-fe7f6858ebac"
+      ],
+      "waypoints": [
+        {
+          "id": "e3955ac6-9ee4-420e-8a4f-37deb515e7ba",
+          "name": "שפיים",
+          "position": {
+            "latitude": 32.21055555999999,
+            "longitude": 34.80722222
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 1,
+          "reportingPointReference": {
+            "catalogId": "sfaim",
+            "snapshot": {
+              "name": "שפיים",
+              "position": {
+                "latitude": 32.21055556,
+                "longitude": 34.80722222
+              }
+            }
+          }
+        },
+        {
+          "id": "e53ea472-de0f-46a7-9803-13ce26710cdc",
+          "name": "רידינג",
+          "position": {
+            "latitude": 32.11027777999999,
+            "longitude": 34.7625
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 2,
+          "reportingPointReference": {
+            "catalogId": "ridng",
+            "snapshot": {
+              "name": "רידינג",
+              "position": {
+                "latitude": 32.11027778,
+                "longitude": 34.7625
+              }
+            }
+          }
+        },
+        {
+          "id": "b161b17f-a0c4-463a-9c5e-488a9979f7d7",
+          "name": "תל יונה",
+          "position": {
+            "latitude": 32.00472221999996,
+            "longitude": 34.72722222
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 3,
+          "reportingPointReference": {
+            "catalogId": "tyona",
+            "snapshot": {
+              "name": "תל יונה",
+              "position": {
+                "latitude": 32.00472222,
+                "longitude": 34.72722222
+              }
+            }
+          }
+        },
+        {
+          "id": "363d1656-18cb-4258-8e8d-ea7354db720d",
+          "name": "סופרלנד",
+          "position": {
+            "latitude": 31.97638889000001,
+            "longitude": 34.74166667
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 4,
+          "reportingPointReference": {
+            "catalogId": "super",
+            "snapshot": {
+              "name": "סופרלנד",
+              "position": {
+                "latitude": 31.97638889,
+                "longitude": 34.74166667
+              }
+            }
+          }
+        },
+        {
+          "id": "93303587-1914-4eea-92c0-d84369c5a186",
+          "name": "נטעים",
+          "position": {
+            "latitude": 31.94361111000002,
+            "longitude": 34.78083333
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 5,
+          "reportingPointReference": {
+            "catalogId": "ntaim",
+            "snapshot": {
+              "name": "נטעים",
+              "position": {
+                "latitude": 31.94361111,
+                "longitude": 34.78083333
+              }
+            }
+          }
+        },
+        {
+          "id": "eb10a08a-dded-4cfd-a47f-230e0f0bf5e2",
+          "name": "נצר סירני",
+          "position": {
+            "latitude": 31.928055560000004,
+            "longitude": 34.83
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 6,
+          "reportingPointReference": {
+            "catalogId": "sirni",
+            "snapshot": {
+              "name": "נצר סירני",
+              "position": {
+                "latitude": 31.92805556,
+                "longitude": 34.83
+              }
+            }
+          }
+        },
+        {
+          "id": "4c22b5b4-ed12-49aa-9d35-90c5a14b3e23",
+          "name": "מחלף נשרים",
+          "position": {
+            "latitude": 31.90916667000002,
+            "longitude": 34.89166667
+          },
+          "altitudeFeet": 800,
+          "generatedNumber": 7,
+          "reportingPointReference": {
+            "catalogId": "nshrm",
+            "snapshot": {
+              "name": "מחלף נשרים",
+              "position": {
+                "latitude": 31.90916667,
+                "longitude": 34.89166667
+              }
+            }
+          }
+        },
+        {
+          "id": "5ee02590-a6fe-4378-ad73-66923e5938af",
+          "name": "איילון",
+          "position": {
+            "latitude": 31.87166667000001,
+            "longitude": 34.94361111
+          },
+          "altitudeFeet": 1200,
+          "generatedNumber": 8,
+          "reportingPointReference": {
+            "catalogId": "aylon",
+            "snapshot": {
+              "name": "איילון",
+              "position": {
+                "latitude": 31.87166667,
+                "longitude": 34.94361111
+              }
+            }
+          }
+        },
+        {
+          "id": "fb17b84a-92cf-44ee-bead-64fa8b664246",
+          "name": "לטרון",
+          "position": {
+            "latitude": 31.838611109999988,
+            "longitude": 34.98666667
+          },
+          "altitudeFeet": 1800,
+          "generatedNumber": 9,
+          "reportingPointReference": {
+            "catalogId": "ltrun",
+            "snapshot": {
+              "name": "לטרון",
+              "position": {
+                "latitude": 31.83861111,
+                "longitude": 34.98666667
+              }
+            }
+          }
+        },
+        {
+          "id": "0dee38ec-b839-4474-8840-3f46b3a77605",
+          "name": "שער הגיא",
+          "position": {
+            "latitude": 31.81972221999999,
+            "longitude": 35.02111111
+          },
+          "altitudeFeet": 2800,
+          "generatedNumber": 10,
+          "reportingPointReference": {
+            "catalogId": "sharg",
+            "snapshot": {
+              "name": "שער הגיא",
+              "position": {
+                "latitude": 31.81972222,
+                "longitude": 35.02111111
+              }
+            }
+          }
+        },
+        {
+          "id": "0e724ef6-438d-46cf-9404-ec218d0f2d77",
+          "name": "שורש",
+          "position": {
+            "latitude": 31.79972222000002,
+            "longitude": 35.07611111
+          },
+          "altitudeFeet": 4500,
+          "generatedNumber": 11,
+          "reportingPointReference": {
+            "catalogId": "sores",
+            "snapshot": {
+              "name": "שורש",
+              "position": {
+                "latitude": 31.79972222,
+                "longitude": 35.07611111
+              }
+            }
+          }
+        },
+        {
+          "id": "aa010769-a4a0-4101-92e8-827068ba1ef0",
+          "name": "מחלף הראל",
+          "position": {
+            "latitude": 31.79861111000001,
+            "longitude": 35.14611111
+          },
+          "altitudeFeet": 4500,
+          "generatedNumber": 12,
+          "reportingPointReference": {
+            "catalogId": "harel",
+            "snapshot": {
+              "name": "מחלף הראל",
+              "position": {
+                "latitude": 31.79861111,
+                "longitude": 35.14611111
+              }
+            }
+          }
+        },
+        {
+          "id": "68d89c18-aa01-4f54-8107-28b54c0ae24f",
+          "name": "בית חנינא",
+          "position": {
+            "latitude": 31.830277780000003,
+            "longitude": 35.2075
+          },
+          "altitudeFeet": 4500,
+          "generatedNumber": 13,
+          "reportingPointReference": {
+            "catalogId": "hnina",
+            "snapshot": {
+              "name": "בית חנינא",
+              "position": {
+                "latitude": 31.83027778,
+                "longitude": 35.2075
+              }
+            }
+          }
+        },
+        {
+          "id": "428f7da0-efdb-46f0-82e7-692e8979815b",
+          "name": "ענאתא",
+          "position": {
+            "latitude": 31.821825554585672,
+            "longitude": 35.273037587221886
+          },
+          "altitudeFeet": 4500,
+          "generatedNumber": 14
+        },
+        {
+          "id": "4cb17827-cd44-4f3a-a994-083ed882c006",
+          "name": "כפר אדומים",
+          "position": {
+            "latitude": 31.80388889000001,
+            "longitude": 35.32472222
+          },
+          "altitudeFeet": 4000,
+          "generatedNumber": 15,
+          "reportingPointReference": {
+            "catalogId": "dumim",
+            "snapshot": {
+              "name": "כפר אדומים",
+              "position": {
+                "latitude": 31.80388889,
+                "longitude": 35.32472222
+              }
+            }
+          }
+        },
+        {
+          "id": "6eaffc61-9a2e-498f-a06d-c91a71bb1439",
+          "name": "מעלה מכמש",
+          "position": {
+            "latitude": 31.85291421111077,
+            "longitude": 35.32868099758019
+          },
+          "altitudeFeet": 4000,
+          "generatedNumber": 16
+        },
+        {
+          "id": "0694f82a-18e5-4896-84a7-608ac2d575fb",
+          "name": "אחרי כוכב השחר",
+          "position": {
+            "latitude": 31.98426467713388,
+            "longitude": 35.33389366202537
+          },
+          "altitudeFeet": 4000,
+          "generatedNumber": 19
+        },
+        {
+          "id": "cf05718f-bff1-4a58-944b-bfe4028dec4a",
+          "name": "אלון",
+          "position": {
+            "latitude": 32.04138888999999,
+            "longitude": 35.36666667
+          },
+          "altitudeFeet": 4000,
+          "generatedNumber": 20,
+          "reportingPointReference": {
+            "catalogId": "allon",
+            "snapshot": {
+              "name": "אלון",
+              "position": {
+                "latitude": 32.04138889,
+                "longitude": 35.36666667
+              }
+            }
+          }
+        },
+        {
+          "id": "27e450f4-e889-4f35-808b-3971d6f2e27a",
+          "name": "צומת פצאל",
+          "position": {
+            "latitude": 32.04805555999998,
+            "longitude": 35.46305556
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 21,
+          "reportingPointReference": {
+            "catalogId": "fazel",
+            "snapshot": {
+              "name": "צומת פצאל",
+              "position": {
+                "latitude": 32.04805556,
+                "longitude": 35.46305556
+              }
+            }
+          }
+        },
+        {
+          "id": "0837f562-a4b5-4305-8a49-1f2ff644ef70",
+          "name": "אחרי ארגמן",
+          "position": {
+            "latitude": 32.20763148618832,
+            "longitude": 35.54674890504523
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 23
+        },
+        {
+          "id": "b0c6f782-9276-44a0-a199-1269122e2c8d",
+          "name": "טירת צבי",
+          "position": {
+            "latitude": 32.42444444,
+            "longitude": 35.52666667
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 24,
+          "reportingPointReference": {
+            "catalogId": "tirat",
+            "snapshot": {
+              "name": "טירת צבי",
+              "position": {
+                "latitude": 32.42444444,
+                "longitude": 35.52666667
+              }
+            }
+          }
+        },
+        {
+          "id": "4e50e143-4335-440b-8a8b-cef67f9ff512",
+          "name": "נווה איתן",
+          "position": {
+            "latitude": 32.493618100837935,
+            "longitude": 35.523973409018055
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 25
+        },
+        {
+          "id": "1377e026-4d4a-4bba-8f83-d3837cfa4947",
+          "name": "כוכב הירדן",
+          "position": {
+            "latitude": 32.5975,
+            "longitude": 35.54361111
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 26,
+          "reportingPointReference": {
+            "catalogId": "koyar",
+            "snapshot": {
+              "name": "כוכב הירדן",
+              "position": {
+                "latitude": 32.5975,
+                "longitude": 35.54361111
+              }
+            }
+          }
+        },
+        {
+          "id": "f832ab96-87cd-4301-958e-94fa5cb9aa1f",
+          "name": "אלומות",
+          "position": {
+            "latitude": 32.71416667,
+            "longitude": 35.54638889
+          },
+          "altitudeFeet": 3500,
+          "generatedNumber": 27,
+          "reportingPointReference": {
+            "catalogId": "alumt",
+            "snapshot": {
+              "name": "אלומות",
+              "position": {
+                "latitude": 32.71416667,
+                "longitude": 35.54638889
+              }
+            }
+          }
+        },
+        {
+          "id": "b36cda54-27b6-4d89-83b7-8fccee135666",
+          "name": "כרי דשא",
+          "position": {
+            "latitude": 32.86999999999999,
+            "longitude": 35.5325
+          },
+          "altitudeFeet": 2500,
+          "generatedNumber": 28,
+          "reportingPointReference": {
+            "catalogId": "deshe",
+            "snapshot": {
+              "name": "כרי דשא",
+              "position": {
+                "latitude": 32.87,
+                "longitude": 35.5325
+              }
+            }
+          }
+        },
+        {
+          "id": "bc0ed958-dba9-42d4-9c44-fe7f6858ebac",
+          "name": "אמנון",
+          "position": {
+            "latitude": 32.90555556000001,
+            "longitude": 35.56666667
+          },
+          "altitudeFeet": 3000,
+          "generatedNumber": 29,
+          "reportingPointReference": {
+            "catalogId": "amnon",
+            "snapshot": {
+              "name": "אמנון",
+              "position": {
+                "latitude": 32.90555556,
+                "longitude": 35.56666667
+              }
+            }
+          }
+        }
+      ],
+      "legs": [
+        {
+          "id": "9abbbb7b-6c55-416c-89af-842bff237751",
+          "departureWaypointId": "e3955ac6-9ee4-420e-8a4f-37deb515e7ba",
+          "arrivalWaypointId": "e53ea472-de0f-46a7-9803-13ce26710cdc"
+        },
+        {
+          "id": "230d9d9c-883d-45c7-92ad-34602ca23e09",
+          "departureWaypointId": "e53ea472-de0f-46a7-9803-13ce26710cdc",
+          "arrivalWaypointId": "b161b17f-a0c4-463a-9c5e-488a9979f7d7"
+        },
+        {
+          "id": "ec74fd72-12fc-42dd-8992-1bfce40918bb",
+          "departureWaypointId": "b161b17f-a0c4-463a-9c5e-488a9979f7d7",
+          "arrivalWaypointId": "363d1656-18cb-4258-8e8d-ea7354db720d"
+        },
+        {
+          "id": "f077a42b-0194-463c-a2b9-aafa3f4bd130",
+          "departureWaypointId": "363d1656-18cb-4258-8e8d-ea7354db720d",
+          "arrivalWaypointId": "93303587-1914-4eea-92c0-d84369c5a186"
+        },
+        {
+          "id": "65809ece-bb4c-4798-9ac7-90bcdfde8707",
+          "departureWaypointId": "93303587-1914-4eea-92c0-d84369c5a186",
+          "arrivalWaypointId": "eb10a08a-dded-4cfd-a47f-230e0f0bf5e2"
+        },
+        {
+          "id": "da241b2c-c740-460a-b628-4bb4327661ce",
+          "departureWaypointId": "eb10a08a-dded-4cfd-a47f-230e0f0bf5e2",
+          "arrivalWaypointId": "4c22b5b4-ed12-49aa-9d35-90c5a14b3e23"
+        },
+        {
+          "id": "85c31dce-7734-4cc9-ba9d-38344c44f91c",
+          "departureWaypointId": "4c22b5b4-ed12-49aa-9d35-90c5a14b3e23",
+          "arrivalWaypointId": "5ee02590-a6fe-4378-ad73-66923e5938af"
+        },
+        {
+          "id": "5944ae53-b7ac-445c-be5e-16dd24f0ef16",
+          "departureWaypointId": "5ee02590-a6fe-4378-ad73-66923e5938af",
+          "arrivalWaypointId": "fb17b84a-92cf-44ee-bead-64fa8b664246"
+        },
+        {
+          "id": "4584b18b-d9b7-4d40-a4f3-b01dd5549373",
+          "departureWaypointId": "fb17b84a-92cf-44ee-bead-64fa8b664246",
+          "arrivalWaypointId": "0dee38ec-b839-4474-8840-3f46b3a77605"
+        },
+        {
+          "id": "4b0022b3-1577-4b8a-9028-42cf3bec4c3b",
+          "departureWaypointId": "0dee38ec-b839-4474-8840-3f46b3a77605",
+          "arrivalWaypointId": "0e724ef6-438d-46cf-9404-ec218d0f2d77"
+        },
+        {
+          "id": "87533f16-16a1-4101-b2c4-d8182e0f0a17",
+          "departureWaypointId": "0e724ef6-438d-46cf-9404-ec218d0f2d77",
+          "arrivalWaypointId": "aa010769-a4a0-4101-92e8-827068ba1ef0"
+        },
+        {
+          "id": "0f576e8d-44d0-4c9c-8e5a-804afd830af1",
+          "departureWaypointId": "aa010769-a4a0-4101-92e8-827068ba1ef0",
+          "arrivalWaypointId": "68d89c18-aa01-4f54-8107-28b54c0ae24f"
+        },
+        {
+          "id": "171c57ca-f683-4b28-9a58-e3ad173bdb9f",
+          "departureWaypointId": "68d89c18-aa01-4f54-8107-28b54c0ae24f",
+          "arrivalWaypointId": "428f7da0-efdb-46f0-82e7-692e8979815b"
+        },
+        {
+          "id": "576e30e6-ee7b-4f38-9120-8a0fbb2bdeff",
+          "departureWaypointId": "428f7da0-efdb-46f0-82e7-692e8979815b",
+          "arrivalWaypointId": "4cb17827-cd44-4f3a-a994-083ed882c006"
+        },
+        {
+          "id": "4ecca194-01f4-4ffc-840a-e4cd52830152",
+          "departureWaypointId": "4cb17827-cd44-4f3a-a994-083ed882c006",
+          "arrivalWaypointId": "6eaffc61-9a2e-498f-a06d-c91a71bb1439"
+        },
+        {
+          "id": "70fc7756-ed77-45cf-bf5e-92c490aec9f5",
+          "departureWaypointId": "6eaffc61-9a2e-498f-a06d-c91a71bb1439",
+          "arrivalWaypointId": "0694f82a-18e5-4896-84a7-608ac2d575fb"
+        },
+        {
+          "id": "9afc11a0-db2d-4e31-8b28-2c615ec32c97",
+          "departureWaypointId": "0694f82a-18e5-4896-84a7-608ac2d575fb",
+          "arrivalWaypointId": "cf05718f-bff1-4a58-944b-bfe4028dec4a"
+        },
+        {
+          "id": "91224754-af78-4d5f-baf1-5ff9b72ad0e0",
+          "departureWaypointId": "cf05718f-bff1-4a58-944b-bfe4028dec4a",
+          "arrivalWaypointId": "27e450f4-e889-4f35-808b-3971d6f2e27a"
+        },
+        {
+          "id": "b1e041c3-a318-4906-9cb7-9e97a5115651",
+          "departureWaypointId": "27e450f4-e889-4f35-808b-3971d6f2e27a",
+          "arrivalWaypointId": "0837f562-a4b5-4305-8a49-1f2ff644ef70"
+        },
+        {
+          "id": "1123387e-0f01-4e94-9dff-d0cd03d06553",
+          "departureWaypointId": "0837f562-a4b5-4305-8a49-1f2ff644ef70",
+          "arrivalWaypointId": "b0c6f782-9276-44a0-a199-1269122e2c8d"
+        },
+        {
+          "id": "64a1604a-2c47-499c-a113-0b1278a319e1",
+          "departureWaypointId": "b0c6f782-9276-44a0-a199-1269122e2c8d",
+          "arrivalWaypointId": "4e50e143-4335-440b-8a8b-cef67f9ff512"
+        },
+        {
+          "id": "3ed9aef5-6080-45c8-bc31-eeb5e8b9bd57",
+          "departureWaypointId": "4e50e143-4335-440b-8a8b-cef67f9ff512",
+          "arrivalWaypointId": "1377e026-4d4a-4bba-8f83-d3837cfa4947"
+        },
+        {
+          "id": "4d6cade6-bd00-4eef-8fc3-7ed251a2ec1c",
+          "departureWaypointId": "1377e026-4d4a-4bba-8f83-d3837cfa4947",
+          "arrivalWaypointId": "f832ab96-87cd-4301-958e-94fa5cb9aa1f"
+        },
+        {
+          "id": "0bea6990-73f9-401a-8d3c-be0895dda82d",
+          "departureWaypointId": "f832ab96-87cd-4301-958e-94fa5cb9aa1f",
+          "arrivalWaypointId": "b36cda54-27b6-4d89-83b7-8fccee135666"
+        },
+        {
+          "id": "038575ae-55cf-46b9-ada4-35d7dac09c1e",
+          "departureWaypointId": "b36cda54-27b6-4d89-83b7-8fccee135666",
+          "arrivalWaypointId": "bc0ed958-dba9-42d4-9c44-fe7f6858ebac"
+        }
+      ]
+    },
+    "identificationPoints": [
+      {
+        "id": "c14c00c6-f7c2-4d99-acb4-f50ef624b715",
+        "legId": "1123387e-0f01-4e94-9dff-d0cd03d06553",
+        "legProgress": 0.6405021888603263,
+        "lateralOffsetMetres": 0,
+        "timeLabelArrangement": {
+          "longitudinalMetres": 2866.232029765444,
+          "lateralMetres": -224.3634362962555,
+          "rotationDegrees": -4.475882471832434
+        }
+      },
+      {
+        "id": "2183d463-48c2-4bf9-8744-b95f327c0f46",
+        "legId": "b1e041c3-a318-4906-9cb7-9e97a5115651",
+        "legProgress": 0.5022185118730457,
+        "lateralOffsetMetres": 0,
+        "timeLabelArrangement": {
+          "longitudinalMetres": 2627.4881815057,
+          "lateralMetres": 1167.0179330446758,
+          "rotationDegrees": 23.948746856807333
+        }
+      },
+      {
+        "id": "7a801f4d-6577-4fa1-8712-81e65eb794ae",
+        "legId": "70fc7756-ed77-45cf-bf5e-92c490aec9f5",
+        "legProgress": 0.619926642238059,
+        "lateralOffsetMetres": 0,
+        "timeLabelArrangement": {
+          "longitudinalMetres": 2873.3703086319756,
+          "lateralMetres": 96.78878794667126,
+          "rotationDegrees": 1.929265088241793
+        }
+      }
+    ],
+    "altitudeChanges": [],
+    "radioFrequencyChanges": [
+      {
+        "id": "e06e433e-1d80-4412-b71e-cf674cb599c2",
+        "legId": "9abbbb7b-6c55-416c-89af-842bff237751",
+        "legProgress": 0,
+        "service": {
+          "catalogId": "pluto-west",
+          "name": "PLUTO WEST"
+        },
+        "frequencyMhz": 118.4,
+        "flippedHorizontally": true,
+        "arrangement": {
+          "longitudinalMetres": -3171.269740122798,
+          "lateralMetres": 10305.472915295284,
+          "rotationDegrees": 0
+        }
+      },
+      {
+        "id": "cda1afc1-18ea-495d-a765-a2bd07c27f6a",
+        "legId": "ec74fd72-12fc-42dd-8992-1bfce40918bb",
+        "legProgress": 0,
+        "service": {
+          "catalogId": "palmachim",
+          "name": "PALMACHIM"
+        },
+        "frequencyMhz": 135.55,
+        "flippedHorizontally": true,
+        "arrangement": {
+          "longitudinalMetres": -4102.460269866459,
+          "lateralMetres": 10049.783653312616,
+          "rotationDegrees": 0
+        }
+      },
+      {
+        "id": "57ef5f3e-735d-4c07-b203-1ca87cdd2f65",
+        "legId": "65809ece-bb4c-4798-9ac7-90bcdfde8707",
+        "legProgress": 0,
+        "service": {
+          "catalogId": "tel-nof",
+          "name": "TEL NOF"
+        },
+        "frequencyMhz": 128.15,
+        "flippedHorizontally": false,
+        "arrangement": {
+          "longitudinalMetres": -2773.5856590392386,
+          "lateralMetres": -10189.18842818169,
+          "rotationDegrees": 0
+        }
+      },
+      {
+        "id": "852a8be1-e9fb-4760-b1d0-0877e19d2e64",
+        "legId": "87533f16-16a1-4101-b2c4-d8182e0f0a17",
+        "legProgress": 0,
+        "service": {
+          "catalogId": "pluto-east",
+          "name": "PLUTO EAST"
+        },
+        "frequencyMhz": 123.85,
+        "flippedHorizontally": false,
+        "arrangement": {
+          "longitudinalMetres": -2699.4202552358815,
+          "lateralMetres": -9704.769211014069,
+          "rotationDegrees": 0
+        }
+      },
+      {
+        "id": "6456f87f-d1da-4675-9576-7bcbcb2577cf",
+        "legId": "038575ae-55cf-46b9-ada4-35d7dac09c1e",
+        "legProgress": 0,
+        "service": {
+          "catalogId": "rosh-pina",
+          "name": "ROSH PINA"
+        },
+        "frequencyMhz": 118.45,
+        "flippedHorizontally": false,
+        "arrangement": {
+          "longitudinalMetres": -3707.7328436908806,
+          "lateralMetres": -10664.153512637047,
+          "rotationDegrees": 0
+        }
+      },
+      {
+        "id": "cd189be1-c4be-41e2-8189-03c6906594ec",
+        "legId": "0bea6990-73f9-401a-8d3c-be0895dda82d",
+        "legProgress": 0.5026398710914933,
+        "service": {
+          "name": "RP ATIS"
+        },
+        "frequencyMhz": 132.45,
+        "flippedHorizontally": false,
+        "arrangement": {
+          "longitudinalMetres": -3016.2021881025,
+          "lateralMetres": -7194.023766611686,
+          "rotationDegrees": 0
+        }
+      }
+    ],
+    "presentation": {
+      "showArrivalNameInEta": true,
+      "showTotalEllapsedTimeInEta": false,
+      "stylePreset": {
+        "id": "application-default",
+        "version": 1
+      },
+      "annotationArrangements": [
+        {
+          "legId": "ec74fd72-12fc-42dd-8992-1bfce40918bb",
+          "kind": "eta",
+          "arrangement": {
+            "longitudinalMetres": 173.69241982348967,
+            "lateralMetres": -10055.905740388618,
+            "rotationDegrees": 0
+          }
+        },
+        {
+          "legId": "f077a42b-0194-463c-a2b9-aafa3f4bd130",
+          "kind": "eta",
+          "arrangement": {
+            "longitudinalMetres": -1772.61176035897,
+            "lateralMetres": 18576.126420935652,
+            "rotationDegrees": 0
+          }
+        }
+      ],
+      "globalStyleOverrides": {
+        "aat": {
+          "visible": false
+        }
+      },
+      "entityStyleOverrides": [],
+      "navigationLog": {
+        "legLabelMode": "from-to",
+        "optionalColumns": [],
+        "windEnabled": false,
+        "printFormat": "A5-landscape"
+      }
+    },
+    "operationalContext": {
+      "departureAerodromeReference": {
+        "catalogId": "llhz",
+        "snapshot": {
+          "name": "HERZLIA airfield",
+          "position": {
+            "latitude": 32.17944444,
+            "longitude": 34.83444444
+          },
+          "icao": "LLHZ"
+        }
+      },
+      "arrivalAerodromeReference": {
+        "catalogId": "llib",
+        "snapshot": {
+          "name": "ROSH-PINA airport",
+          "position": {
+            "latitude": 32.98055556,
+            "longitude": 35.57083333
+          },
+          "icao": "LLIB"
+        }
+      },
+      "frequencyEntries": [],
+      "frequencyOrderByPhase": {
+        "departure": [],
+        "en-route": [],
+        "arrival": []
+      }
+    },
+    "vorDmeReferences": [
+      {
+        "id": "b7435dfe-817d-48ee-aac4-162eb489bcc8",
+        "waypointId": "bc0ed958-dba9-42d4-9c44-fe7f6858ebac",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "rop",
+          "snapshot": {
+            "identifier": "ROP",
+            "name": "ROSH-PINA VOR/DME",
+            "position": {
+              "latitude": 32.9825,
+              "longitude": 35.57277777777778
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": -3924.872841907426,
+            "lateralMetres": 4863.9359756125,
+            "rotationDegrees": 38.90122191815829
+          }
+        }
+      },
+      {
+        "id": "ae3d2347-8c5f-4ea3-943a-8532162e3996",
+        "waypointId": "b36cda54-27b6-4d89-83b7-8fccee135666",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "rop",
+          "snapshot": {
+            "identifier": "ROP",
+            "name": "ROSH-PINA VOR/DME",
+            "position": {
+              "latitude": 32.9825,
+              "longitude": 35.57277777777778
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": -3924.872841907426,
+            "lateralMetres": 4863.9359756125,
+            "rotationDegrees": 38.90122191815829
+          }
+        }
+      },
+      {
+        "id": "115446cf-bc83-42c8-9c7d-5b7c4c287eb9",
+        "waypointId": "f832ab96-87cd-4301-958e-94fa5cb9aa1f",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "rop",
+          "snapshot": {
+            "identifier": "ROP",
+            "name": "ROSH-PINA VOR/DME",
+            "position": {
+              "latitude": 32.9825,
+              "longitude": 35.57277777777778
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 466.96271392679307,
+            "lateralMetres": 6232.531253335367,
+            "rotationDegrees": -4.284791572733884
+          }
+        }
+      },
+      {
+        "id": "ebd5b1b1-d38b-4c9b-9c4c-a1f890d4c165",
+        "waypointId": "b161b17f-a0c4-463a-9c5e-488a9979f7d7",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": -2480.45568806975,
+            "lateralMetres": -5736.709821798765,
+            "rotationDegrees": 156.61716603014065
+          }
+        }
+      },
+      {
+        "id": "9bf4c06e-f381-4915-af6c-0c8ca41364a8",
+        "waypointId": "eb10a08a-dded-4cfd-a47f-230e0f0bf5e2",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 8350.99583973037,
+            "lateralMetres": 4798.11983758444,
+            "rotationDegrees": 109.84298386486974
+          }
+        }
+      },
+      {
+        "id": "af393501-a89e-4417-9c5a-b0215f77f5bf",
+        "waypointId": "4c22b5b4-ed12-49aa-9d35-90c5a14b3e23",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 6845.642520711292,
+            "lateralMetres": 5717.092604839709,
+            "rotationDegrees": 130.37331741718813
+          }
+        }
+      },
+      {
+        "id": "5bffa8c2-0869-4223-a56a-534254e14bf4",
+        "waypointId": "5ee02590-a6fe-4378-ad73-66923e5938af",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 7249.527489644941,
+            "lateralMetres": 6300.113025739323,
+            "rotationDegrees": 132.10978660021317
+          }
+        }
+      },
+      {
+        "id": "2caa3064-c0de-4dcb-8acc-d1a84dd4151a",
+        "waypointId": "fb17b84a-92cf-44ee-bead-64fa8b664246",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 7304.632317382377,
+            "lateralMetres": 4367.345388821326,
+            "rotationDegrees": 122.8400860862105
+          }
+        }
+      },
+      {
+        "id": "f1e4cf2e-79b0-481f-bdd6-c6783ccb2c6d",
+        "waypointId": "0dee38ec-b839-4474-8840-3f46b3a77605",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 8316.46117479913,
+            "lateralMetres": 4349.268171782605,
+            "rotationDegrees": 113.16639836384176
+          }
+        }
+      },
+      {
+        "id": "de46fba3-f9e3-498a-8a29-968bb8e2753b",
+        "waypointId": "0e724ef6-438d-46cf-9404-ec218d0f2d77",
+        "calculation": {
+          "mode": "automatic"
+        },
+        "navigationAid": {
+          "catalogId": "bgn",
+          "snapshot": {
+            "identifier": "BGN",
+            "name": "BEN-GURION DVOR/DME",
+            "position": {
+              "latitude": 32.01305555555555,
+              "longitude": 34.875277777777775
+            }
+          }
+        },
+        "mapAnnotation": {
+          "arrangement": {
+            "longitudinalMetres": 9655.10758506786,
+            "lateralMetres": 1892.2220020326786,
+            "rotationDegrees": 97.76135575779513
+          }
+        }
+      }
+    ]
+  },
+  "workspace": {
+    "selectedMapId": "north-navigation",
+    "frame": {
+      "center": {
+        "latitude": 32.672823979874266,
+        "longitude": 35.56413631064886
+      },
+      "paperSize": "A4",
+      "orientation": "portrait",
+      "rotationDegrees": 0
+    },
+    "referenceLayers": {
+      "reportingPointsVisible": true,
+      "aerodromesVisible": true,
+      "navigationAidsVisible": true
+    }
+  },
+  "printDocument": {
+    "id": "4e015b95-393b-4a91-ba5b-d600980e91c2",
+    "items": []
+  },
+  "execution": {
+    "calculationVersion": "editor-execution-1/editor-navigation-1/editor-annotations-1/editor-vor-dme-slant-1",
+    "altitudeReference": "MSL",
+    "legs": [
+      {
+        "legId": "9abbbb7b-6c55-416c-89af-842bff237751",
+        "trueCourseDegrees": 200.6841328990073,
+        "magneticCourseDegrees": 195.6841328990073,
+        "distanceNauticalMiles": 6.435555831403651,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 257,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "230d9d9c-883d-45c7-92ad-34602ca23e09",
+        "trueCourseDegrees": 195.81470275453623,
+        "magneticCourseDegrees": 190.81470275453626,
+        "distanceNauticalMiles": 6.58694109378298,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 263,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "ec74fd72-12fc-42dd-8992-1bfce40918bb",
+        "trueCourseDegrees": 156.61716603014065,
+        "magneticCourseDegrees": 151.61716603014065,
+        "distanceNauticalMiles": 1.853358117199744,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 74,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "f077a42b-0194-463c-a2b9-aafa3f4bd130",
+        "trueCourseDegrees": 134.60773732298867,
+        "magneticCourseDegrees": 129.60773732298867,
+        "distanceNauticalMiles": 2.802417722396057,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 112,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "65809ece-bb4c-4798-9ac7-90bcdfde8707",
+        "trueCourseDegrees": 110.4460877282794,
+        "magneticCourseDegrees": 105.4460877282794,
+        "distanceNauticalMiles": 2.6736171047263624,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 107,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "da241b2c-c740-460a-b628-4bb4327661ce",
+        "trueCourseDegrees": 109.84298386486972,
+        "magneticCourseDegrees": 104.84298386486972,
+        "distanceNauticalMiles": 3.341052429922967,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 134,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "85c31dce-7734-4cc9-ba9d-38344c44f91c",
+        "trueCourseDegrees": 130.3733174171881,
+        "magneticCourseDegrees": 125.3733174171881,
+        "distanceNauticalMiles": 3.4758277997859373,
+        "initialAltitudeFeetMsl": 800,
+        "noWind": {
+          "plannedDurationSeconds": 139,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "5944ae53-b7ac-445c-be5e-16dd24f0ef16",
+        "trueCourseDegrees": 132.10978660021317,
+        "magneticCourseDegrees": 127.10978660021317,
+        "distanceNauticalMiles": 2.9597550698762354,
+        "initialAltitudeFeetMsl": 1200,
+        "noWind": {
+          "plannedDurationSeconds": 118,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "4584b18b-d9b7-4d40-a4f3-b01dd5549373",
+        "trueCourseDegrees": 122.84008608621048,
+        "magneticCourseDegrees": 117.84008608621048,
+        "distanceNauticalMiles": 2.0912911096775755,
+        "initialAltitudeFeetMsl": 1800,
+        "noWind": {
+          "plannedDurationSeconds": 84,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "4b0022b3-1577-4b8a-9028-42cf3bec4c3b",
+        "trueCourseDegrees": 113.16639836384178,
+        "magneticCourseDegrees": 108.16639836384178,
+        "distanceNauticalMiles": 3.05236965512526,
+        "initialAltitudeFeetMsl": 2800,
+        "noWind": {
+          "plannedDurationSeconds": 122,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "87533f16-16a1-4101-b2c4-d8182e0f0a17",
+        "trueCourseDegrees": 91.06994917926204,
+        "magneticCourseDegrees": 86.06994917926204,
+        "distanceNauticalMiles": 3.5726161997637527,
+        "initialAltitudeFeetMsl": 4500,
+        "noWind": {
+          "plannedDurationSeconds": 143,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "0f576e8d-44d0-4c9c-8e5a-804afd830af1",
+        "trueCourseDegrees": 58.74062572407291,
+        "magneticCourseDegrees": 53.74062572407291,
+        "distanceNauticalMiles": 3.663973510027523,
+        "initialAltitudeFeetMsl": 4500,
+        "noWind": {
+          "plannedDurationSeconds": 147,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "171c57ca-f683-4b28-9a58-e3ad173bdb9f",
+        "trueCourseDegrees": 98.63096085475672,
+        "magneticCourseDegrees": 93.63096085475672,
+        "distanceNauticalMiles": 3.3816050768683876,
+        "initialAltitudeFeetMsl": 4500,
+        "noWind": {
+          "plannedDurationSeconds": 135,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "576e30e6-ee7b-4f38-9120-8a0fbb2bdeff",
+        "trueCourseDegrees": 112.21468271400704,
+        "magneticCourseDegrees": 107.21468271400704,
+        "distanceNauticalMiles": 2.848425208865586,
+        "initialAltitudeFeetMsl": 4500,
+        "noWind": {
+          "plannedDurationSeconds": 114,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "4ecca194-01f4-4ffc-840a-e4cd52830152",
+        "trueCourseDegrees": 3.924766166332631,
+        "magneticCourseDegrees": 358.92476616633263,
+        "distanceNauticalMiles": 2.950426137911709,
+        "initialAltitudeFeetMsl": 4000,
+        "noWind": {
+          "plannedDurationSeconds": 118,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "70fc7756-ed77-45cf-bf5e-92c490aec9f5",
+        "trueCourseDegrees": 1.9292650882403564,
+        "magneticCourseDegrees": 356.92926508824036,
+        "distanceNauticalMiles": 7.890825827490499,
+        "initialAltitudeFeetMsl": 4000,
+        "noWind": {
+          "plannedDurationSeconds": 316,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "9afc11a0-db2d-4e31-8b28-2c615ec32c97",
+        "trueCourseDegrees": 25.941515825207716,
+        "magneticCourseDegrees": 20.941515825207716,
+        "distanceNauticalMiles": 3.8140703333097252,
+        "initialAltitudeFeetMsl": 4000,
+        "noWind": {
+          "plannedDurationSeconds": 153,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "91224754-af78-4d5f-baf1-5ff9b72ad0e0",
+        "trueCourseDegrees": 85.33517824076182,
+        "magneticCourseDegrees": 80.33517824076182,
+        "distanceNauticalMiles": 4.921766609206581,
+        "initialAltitudeFeetMsl": 4000,
+        "noWind": {
+          "plannedDurationSeconds": 197,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "b1e041c3-a318-4906-9cb7-9e97a5115651",
+        "trueCourseDegrees": 23.94874685680736,
+        "magneticCourseDegrees": 18.94874685680736,
+        "distanceNauticalMiles": 10.483565931879085,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 419,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "1123387e-0f01-4e94-9dff-d0cd03d06553",
+        "trueCourseDegrees": 355.52411752816704,
+        "magneticCourseDegrees": 350.52411752816704,
+        "distanceNauticalMiles": 13.057388317687433,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 522,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "64a1604a-2c47-499c-a113-0b1278a319e1",
+        "trueCourseDegrees": 358.1183841315159,
+        "magneticCourseDegrees": 353.1183841315159,
+        "distanceNauticalMiles": 4.155464571039205,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 166,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "3ed9aef5-6080-45c8-bc31-eeb5e8b9bd57",
+        "trueCourseDegrees": 9.054116091855974,
+        "magneticCourseDegrees": 4.054116091855974,
+        "distanceNauticalMiles": 6.315819503716156,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 253,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "4d6cade6-bd00-4eef-8fc3-7ed251a2ec1c",
+        "trueCourseDegrees": 1.148391064189184,
+        "magneticCourseDegrees": 356.1483910641892,
+        "distanceNauticalMiles": 7.0061371171515905,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 280,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "0bea6990-73f9-401a-8d3c-be0895dda82d",
+        "trueCourseDegrees": 355.71520842726613,
+        "magneticCourseDegrees": 350.71520842726613,
+        "distanceNauticalMiles": 9.382541487848641,
+        "initialAltitudeFeetMsl": 3500,
+        "noWind": {
+          "plannedDurationSeconds": 375,
+          "plannedGroundSpeedKnots": 90
+        }
+      },
+      {
+        "legId": "038575ae-55cf-46b9-ada4-35d7dac09c1e",
+        "trueCourseDegrees": 38.901221918158285,
+        "magneticCourseDegrees": 33.901221918158285,
+        "distanceNauticalMiles": 2.7431166686928115,
+        "initialAltitudeFeetMsl": 2500,
+        "noWind": {
+          "plannedDurationSeconds": 110,
+          "plannedGroundSpeedKnots": 90
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "entityId": "c14c00c6-f7c2-4d99-acb4-f50ef624b715",
+        "kind": "identification-point",
+        "legId": "1123387e-0f01-4e94-9dff-d0cd03d06553",
+        "position": {
+          "latitude": 32.34656041814846,
+          "longitude": 35.53388618954155
+        },
+        "noWindTimeFromLegStartSeconds": 334
+      },
+      {
+        "entityId": "2183d463-48c2-4bf9-8744-b95f327c0f46",
+        "kind": "identification-point",
+        "legId": "b1e041c3-a318-4906-9cb7-9e97a5115651",
+        "position": {
+          "latitude": 32.12823243073463,
+          "longitude": 35.505087907202295
+        },
+        "noWindTimeFromLegStartSeconds": 210
+      },
+      {
+        "entityId": "7a801f4d-6577-4fa1-8712-81e65eb794ae",
+        "kind": "identification-point",
+        "legId": "70fc7756-ed77-45cf-bf5e-92c490aec9f5",
+        "position": {
+          "latitude": 31.934363963480905,
+          "longitude": 35.3319124671468
+        },
+        "noWindTimeFromLegStartSeconds": 196
+      },
+      {
+        "entityId": "e06e433e-1d80-4412-b71e-cf674cb599c2",
+        "kind": "radio-frequency-change",
+        "legId": "9abbbb7b-6c55-416c-89af-842bff237751",
+        "position": {
+          "latitude": 32.21055555999999,
+          "longitude": 34.80722222
+        },
+        "noWindTimeFromLegStartSeconds": 0
+      },
+      {
+        "entityId": "cda1afc1-18ea-495d-a765-a2bd07c27f6a",
+        "kind": "radio-frequency-change",
+        "legId": "ec74fd72-12fc-42dd-8992-1bfce40918bb",
+        "position": {
+          "latitude": 32.00472221999996,
+          "longitude": 34.72722222
+        },
+        "noWindTimeFromLegStartSeconds": 0
+      },
+      {
+        "entityId": "57ef5f3e-735d-4c07-b203-1ca87cdd2f65",
+        "kind": "radio-frequency-change",
+        "legId": "65809ece-bb4c-4798-9ac7-90bcdfde8707",
+        "position": {
+          "latitude": 31.94361111000002,
+          "longitude": 34.78083333
+        },
+        "noWindTimeFromLegStartSeconds": 0
+      },
+      {
+        "entityId": "852a8be1-e9fb-4760-b1d0-0877e19d2e64",
+        "kind": "radio-frequency-change",
+        "legId": "87533f16-16a1-4101-b2c4-d8182e0f0a17",
+        "position": {
+          "latitude": 31.79972222000002,
+          "longitude": 35.07611111
+        },
+        "noWindTimeFromLegStartSeconds": 0
+      },
+      {
+        "entityId": "6456f87f-d1da-4675-9576-7bcbcb2577cf",
+        "kind": "radio-frequency-change",
+        "legId": "038575ae-55cf-46b9-ada4-35d7dac09c1e",
+        "position": {
+          "latitude": 32.86999999999999,
+          "longitude": 35.5325
+        },
+        "noWindTimeFromLegStartSeconds": 0
+      },
+      {
+        "entityId": "cd189be1-c4be-41e2-8189-03c6906594ec",
+        "kind": "radio-frequency-change",
+        "legId": "0bea6990-73f9-401a-8d3c-be0895dda82d",
+        "position": {
+          "latitude": 32.792528846674614,
+          "longitude": 35.5394077801208
+        },
+        "noWindTimeFromLegStartSeconds": 188
+      }
+    ],
+    "vorDmeReferences": [
+      {
+        "referenceId": "b7435dfe-817d-48ee-aac4-162eb489bcc8",
+        "frequencyMhz": 115.3,
+        "stationElevationFeetMsl": 900,
+        "magneticRadialFromDegrees": 179,
+        "slantRangeNauticalMiles": 4.642917411386567,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "ae3d2347-8c5f-4ea3-943a-8532162e3996",
+        "frequencyMhz": 115.3,
+        "stationElevationFeetMsl": 900,
+        "magneticRadialFromDegrees": 192,
+        "slantRangeNauticalMiles": 7.057883601379707,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "115446cf-bc83-42c8-9c7d-5b7c4c287eb9",
+        "frequencyMhz": 115.3,
+        "stationElevationFeetMsl": 900,
+        "magneticRadialFromDegrees": 180,
+        "slantRangeNauticalMiles": 16.171432813530995,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "ebd5b1b1-d38b-4c9b-9c4c-a1f890d4c165",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 261,
+        "slantRangeNauticalMiles": 7.555318207690308,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "9bf4c06e-f381-4915-af6c-0c8ca41364a8",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 199,
+        "slantRangeNauticalMiles": 5.601500194265572,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "af393501-a89e-4417-9c5a-b0215f77f5bf",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 167,
+        "slantRangeNauticalMiles": 6.294218000102689,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "5bffa8c2-0869-4223-a56a-534254e14bf4",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 153,
+        "slantRangeNauticalMiles": 9.177039276096403,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "2caa3064-c0de-4dcb-8acc-d1a84dd4151a",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 147,
+        "slantRangeNauticalMiles": 11.916235937881162,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "f1e4cf2e-79b0-481f-bdd6-c6783ccb2c6d",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 142,
+        "slantRangeNauticalMiles": 13.790460407727473,
+        "source": "automatic"
+      },
+      {
+        "referenceId": "de46fba3-f9e3-498a-8a29-968bb8e2753b",
+        "frequencyMhz": 113.5,
+        "stationElevationFeetMsl": 100,
+        "magneticRadialFromDegrees": 136,
+        "slantRangeNauticalMiles": 16.412422966405977,
+        "source": "automatic"
+      }
+    ],
+    "frequenciesByPhase": {
+      "departure": [
+        {
+          "id": "catalog:herzlia:primary",
+          "name": "HERZLIA",
+          "role": "primary",
+          "frequencyMhz": 122.2,
+          "source": "departure"
+        },
+        {
+          "id": "catalog:herzlia:secondary",
+          "name": "HERZLIA",
+          "role": "secondary",
+          "frequencyMhz": 129.4,
+          "source": "departure"
+        },
+        {
+          "id": "catalog:herzlia:cpt",
+          "name": "HERZLIA",
+          "role": "cpt",
+          "frequencyMhz": 121.7,
+          "source": "departure"
+        }
+      ],
+      "en-route": [
+        {
+          "id": "route:e06e433e-1d80-4412-b71e-cf674cb599c2",
+          "name": "PLUTO WEST",
+          "frequencyMhz": 118.4,
+          "source": "route"
+        },
+        {
+          "id": "route:cda1afc1-18ea-495d-a765-a2bd07c27f6a",
+          "name": "PALMACHIM",
+          "frequencyMhz": 135.55,
+          "source": "route"
+        },
+        {
+          "id": "route:57ef5f3e-735d-4c07-b203-1ca87cdd2f65",
+          "name": "TEL NOF",
+          "frequencyMhz": 128.15,
+          "source": "route"
+        },
+        {
+          "id": "route:852a8be1-e9fb-4760-b1d0-0877e19d2e64",
+          "name": "PLUTO EAST",
+          "frequencyMhz": 123.85,
+          "source": "route"
+        },
+        {
+          "id": "route:cd189be1-c4be-41e2-8189-03c6906594ec",
+          "name": "RP ATIS",
+          "frequencyMhz": 132.45,
+          "source": "route"
+        },
+        {
+          "id": "route:6456f87f-d1da-4675-9576-7bcbcb2577cf",
+          "name": "ROSH PINA",
+          "frequencyMhz": 118.45,
+          "source": "route"
+        },
+        {
+          "id": "vor-dme:ebd5b1b1-d38b-4c9b-9c4c-a1f890d4c165",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:9bf4c06e-f381-4915-af6c-0c8ca41364a8",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:af393501-a89e-4417-9c5a-b0215f77f5bf",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:5bffa8c2-0869-4223-a56a-534254e14bf4",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:2caa3064-c0de-4dcb-8acc-d1a84dd4151a",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:f1e4cf2e-79b0-481f-bdd6-c6783ccb2c6d",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:de46fba3-f9e3-498a-8a29-968bb8e2753b",
+          "name": "BGN",
+          "frequencyMhz": 113.5,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:115446cf-bc83-42c8-9c7d-5b7c4c287eb9",
+          "name": "ROP",
+          "frequencyMhz": 115.3,
+          "source": "vor-dme"
+        },
+        {
+          "id": "vor-dme:ae3d2347-8c5f-4ea3-943a-8532162e3996",
+          "name": "ROP",
+          "frequencyMhz": 115.3,
+          "source": "vor-dme"
+        }
+      ],
+      "arrival": [
+        {
+          "id": "catalog:rosh-pina:primary",
+          "name": "ROSH PINA",
+          "role": "primary",
+          "frequencyMhz": 118.45,
+          "source": "arrival"
+        },
+        {
+          "id": "catalog:rosh-pina:secondary",
+          "name": "ROSH PINA",
+          "role": "secondary",
+          "frequencyMhz": 119.65,
+          "source": "arrival"
+        },
+        {
+          "id": "catalog:rosh-pina:atis",
+          "name": "ROSH PINA",
+          "role": "atis",
+          "frequencyMhz": 132.45,
+          "source": "arrival"
+        },
+        {
+          "id": "vor-dme:b7435dfe-817d-48ee-aac4-162eb489bcc8",
+          "name": "ROP",
+          "frequencyMhz": 115.3,
+          "source": "vor-dme"
+        }
+      ]
+    }
+  }
+}

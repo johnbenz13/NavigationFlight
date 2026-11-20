@@ -1,10 +1,12 @@
 # Flight Evidence Export and Debrief — Product Specification
 
-Status: product specification approved; experience and technical design not started.
+Status: product specification and canonical completed-Flight Debrief design approved; implementation acceptance pending.
 
 Product approver: John, 2026-11-17.
 
 Slice 1 detector-policy retention expansion approved by John, 2026-11-19.
+
+Historical replay camera and aircraft-presentation expansion approved by John, 2026-11-19.
 
 ## Summary
 
@@ -35,22 +37,26 @@ This specification deliberately supersedes Automatic Flight Recording and Recove
 ## Figma
 
 - Stable proposal: [NavigationFlight — Flight Evidence Export and Debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL).
-- Design status: `approved`.
-- Current iteration: Directions 01–05 — complete coverage candidate.
+- Design status: `approved`. Direction 07 is the canonical completed-Flight Debrief presentation on iPad portrait; Direction 06 Revision 02 remains the authority for replay-camera states not redrawn in Direction 07. Directions 01–05 remain the approved baseline for unaffected export, retained-state, responsive, accessibility, and analyzer regions.
+- Current iteration: Direction 07 — canonical compact and full-analysis Debrief.
 - Direction cover: [Direction 01 cover](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-671).
-- Main-screen direction: [completed Flight debrief on iPad portrait](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-676).
+- Canonical compact Debrief: [Direction 07 compact replay console](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321).
+- Canonical full analysis: [Direction 07 full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-487).
+- Historical main-screen context: [Direction 01 completed Flight debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-676). It is no longer the implementation target for the completed-Flight resting screen or replay console.
 - Diagnostic-export candidate flow: [Direction 02 export states](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=16-10).
 - Debrief-state candidate set: [Direction 03 state variants](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-10).
 - Responsive and accessibility candidate set: [Direction 04 adaptations](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=24-10).
 - Comparative-analysis candidate: [Direction 05 detector analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=26-10).
-- Direction scope: real offline aviation-map context with planned route versus actual track, selected reached event with correlation uncertainty, synchronized altitude and ground-speed traces, elapsed-time scrubber, separate play/pause transport, separate ×1/×2/×5 playback-rate selector, and ordered action/phase timeline.
+- Direction scope: real offline aviation-map context with Cockpit-equivalent planned-leg geometry versus actual track, selected action with correlation uncertainty, the approved four-control map toolbar, synchronized current altitude/ground speed/course, optional synchronized altitude and ground-speed plots, elapsed-time scrubber, separate play/pause transport, separate playback-rate selector, Fit full flight beside the playback bar, and an ordered action/phase timeline.
 - Revision 02 incorporates owner feedback from 2026-11-17: the schematic map was replaced by a real app-rendered aviation chart, and the turtle/rabbit slider was replaced by controls that distinguish seeking from playback rate.
 - Deferred until direction approval: diagnostic-export states, active/recoverable snapshots, partial or unavailable GPS, comparative engineering report, error states, accessibility variants, iPad landscape, and iPhone portrait.
 - Required primary design target: iPad Pro 11-inch in portrait.
 - Required adaptations: iPad Pro 11-inch landscape and iPhone 16 Pro portrait.
 - iPhone landscape remains outside the design baseline.
-- Human direction approvals: Directions 01–05 approved by John, 2026-11-17.
-- Paired baseline approval: product specification revision 02 and Figma Directions 01–05 approved by John, 2026-11-17.
+- Human direction approvals: Directions 01–05 approved by John, 2026-11-17; Direction 06 Revision 02 approved by John, 2026-11-19; Direction 07 approved by John, 2026-11-20.
+- Paired baseline approval: this specification with Direction 07 nodes `73:321` and `73:487`, approved by John on 2026-11-20. The immutable specification permalink remains pending the documentation checkpoint.
+- Supersession: Direction 07 replaces earlier completed-debrief resting-screen and replay-console presentation. Direction 06 Revision 02 remains the replay-camera state authority and must inherit Direction 07's canonical component treatments.
+- Replay-camera state authority: [Direction 06 Revision 02 · North-up Follow Aircraft](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=57-271) and its approved FE-054–FE-062 state derivatives. Those states inherit Direction 07's canonical legend, toolbar, replay-console placement, and compact/full-analysis component treatment.
 - Approved specification revision: [commit `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md).
 
 ### Design coverage checklist
@@ -190,14 +196,36 @@ The approved main-screen direction is the visual and interaction baseline for th
 
 53. **FE-053 — Timeline seeking uses time semantics.** The scrubber presents selected elapsed time and total Flight duration without slow/fast transport symbols. Dragging or selecting it seeks to evidence time and remains available while playback is paused.
 
+### Historical replay camera and aircraft presentation
+
+54. **FE-054 — The aircraft marker follows trustworthy historical evidence.** When a trustworthy selected position is available, the map presents only a fixed-screen-size, high-contrast aircraft symbol at the selected evidence position rather than a generic place pin, enclosing circle, or accuracy halo. Between samples in one continuous track segment, the selected position may be interpolated. Interpolation never crosses a segment boundary or significant evidence gap. The symbol uses reliable recorded course over ground for orientation, retains the last reliable course while movement is insufficient, and becomes direction-neutral when no reliable course has yet been established. Accuracy and correlation remain textual disclosures and make clear that the marker represents the best available recorded evidence rather than perfect physical truth.
+
+55. **FE-055 — Follow Aircraft is the default replay camera.** Opening a debrief with trustworthy GPS selects the first trustworthy sample, starts paused in North-up Follow Aircraft mode, and applies a tactical initial zoom showing approximately 8–12 nautical miles across the map's shorter dimension within the available chart zoom range. During playback the camera keeps the selected aircraft visible and synchronized with replay time. North-up centers the aircraft. Playback speed may reduce transition smoothing but never allows the camera to lag behind the selected evidence time. Pause changes time advancement only. Reaching the end leaves the final aircraft position focused and inspectable.
+
+56. **FE-056 — North-up and Track-up are explicit replay orientations.** North-up is the default. A visible map control switches between North-up and Track-up without opening another menu, preserves the selected zoom, refocuses the aircraft, and exits Free Look. In Track-up, reliable course is oriented toward the top of the display and the aircraft occupies the lower portion of the map to expose more chart ahead. Course changes rotate by the shortest direction and ordinary changes are smoothed; evidence gaps are not disguised by continuous animation. When Track-up has no reliable course yet, the map temporarily behaves as North-up. Arbitrary manual map rotation is unavailable so orientation state remains unambiguous. Orientation persists only for the current debrief session and resets to North-up for another debrief.
+
+57. **FE-057 — Manual inspection has an explicit Free Look state.** Dragging or pinching suspends Follow Aircraft and enters visibly indicated Free Look while playback continues. The pilot's selected zoom is retained. A visible Recenter action returns to Follow Aircraft at that zoom. A separate **Fit full flight** action fits the planned route and all available recorded segments and remains in Free Look. Pausing does not change camera mode or position, and no timeout silently resumes following.
+
+58. **FE-058 — Seeking expresses refocus intent.** Scrubbing, a discrete forward or backward seek, or selecting a replay event exits Free Look and refocuses the map at the aircraft position for the selected evidence time. Continuous scrubbing updates aircraft and camera immediately without queued camera animations; a short settling transition may occur when scrubbing ends. Discrete jumps may animate briefly. With Reduce Motion enabled, refocusing and orientation changes occur without transitional animation.
+
+59. **FE-059 — Track progression remains temporally legible.** The actual recorded path through the selected time is emphasized. Later recorded path remains visible but subordinate, while the planned route remains independently distinguishable. Segment gaps remain explicit and neither the aircraft nor path animates through missing evidence.
+
+60. **FE-060 — Replay camera controls degrade honestly.** A debrief without trustworthy position evidence does not invent an aircraft location or offer unusable Follow Aircraft, orientation, Recenter, or Fit full flight controls. It presents an explicit no-recorded-position map state while retaining reviewable non-map evidence.
+
+61. **FE-061 — Replay camera state is accessible.** North-up, Track-up, Recenter, and Fit full flight have explicit VoiceOver labels, current-state values where applicable, and sufficiently large touch targets. The aircraft symbol and path progression retain equivalent textual evidence; their distinction does not depend on color alone. Reduced Motion changes transitions, not available replay behavior.
+
+62. **FE-062 — Planned navigation context reuses Cockpit leg geometry.** Debrief renders the immutable planned route using the same leg projection and visual semantics as Cockpit, including the exact leg, alternating minute marks and minute labels derived from planned leg timing. Drift-reference arms use the Cockpit geometry and treatment, remain historical planning context rather than live guidance, and have an explicit visible toggle whose state is accessible. Hiding drift references changes presentation only and never changes evidence, selection, playback, or recorded values.
+
+63. **FE-063 — Debrief has compact and full-analysis console modes.** The completed-Flight Debrief opens with the compact replay console so the map retains primary visual space. Compact mode keeps current altitude, ground speed, course, play/pause, selected and total time, scrubber, playback rate, Fit full flight, and a reduced action rail visible. **Show analysis** reveals synchronized altitude and ground-speed plots and full-height action cards while retaining current altitude, ground speed, and course as concise readouts. **Hide analysis** returns to compact mode. Changing modes preserves selected time, selected event, playback state and rate, camera mode, zoom, orientation, and drift-line visibility. Both modes use the same playback-control order and treatment. The map legend uses a blue line for **Leg**, a cyan line for **Track**, and an orange dot for **Action**; Fit full flight remains beside the playback bar rather than moving into a section header or the map toolbar.
+
 ## Planning status
 
 - Product discovery: completed through owner-approved grilling decisions on 2026-11-16 and 2026-11-17.
-- Product specification: revision 02 approved by John on 2026-11-17.
-- Experience design: Figma Directions 01–05 and the paired product/design baseline approved by John on 2026-11-17.
+- Product specification: revision 02 approved by John on 2026-11-17; FE-054–FE-062 replay-camera expansion approved by John on 2026-11-19; FE-063 compact/full-analysis behavior approved by John on 2026-11-20. The current documentation checkpoint still needs an immutable permalink.
+- Experience design: Figma Directions 01–05 were approved by John on 2026-11-17, Direction 06 Revision 02 and its replay-camera states on 2026-11-19, and Direction 07 compact/full-analysis nodes `73:321` and `73:487` as the canonical completed-Flight Debrief on 2026-11-20.
 - Technical design: [technical agreement](../technical/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_TECHNICAL.md) approved by John on 2026-11-17.
 - Delivery tickets: [six-slice vertical breakdown](FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_DELIVERY-PLAN.md) approved and published as GitHub issues [#175](https://github.com/johnbenz13/NavigationFlight/issues/175)–[#180](https://github.com/johnbenz13/NavigationFlight/issues/180).
-- Implementation: not authorized by this specification draft.
+- Implementation: authorized from the approved paired baseline; rendered implementation acceptance remains a separate evidence and human-approval checkpoint.
 
 ## Approved product decisions captured
 

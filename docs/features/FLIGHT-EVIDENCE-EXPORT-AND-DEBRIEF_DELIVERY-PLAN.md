@@ -121,7 +121,7 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 - Adapt by available width; add textual map equivalents, semantic reading order/traits, accessibility-size layout, and Reduce Motion behavior.
 - Preserve deletion boundaries and successful-closure device idling.
 
-**Design:** [incomplete](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-15), [active](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-136), [partial GPS](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-257), [action-only](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-380), [unsupported](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-503), [iPad landscape](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=24-15), [iPhone portrait](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=24-134), and [accessibility contract](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=24-200).
+**Design:** Direction 08 is the approved Slice 4 authority: [index](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-11), [incomplete](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-24), [active](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-148), [recoverable](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-272), [partial GPS](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-396), [action-only/no GPS](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-522), [unsupported](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-648), [unreadable](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-776), [shared full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-904), [iPad landscape](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1088), [iPhone collapsed](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1288), [iPhone expanded](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=99-55), and [accessibility contract](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1346). Direction 03 `19:*` and Direction 04 `24:*` nodes are historical behavioral context only and are not implementation authority for this slice.
 
 **Acceptance and verification:**
 
@@ -210,11 +210,11 @@ Slice 1 · Closed-flight export
 | FE-002–FE-005 | 2 | 1, 4, 5 | Directions 02–03 |
 | FE-006–FE-017 | 1 | 2 | Direction 02 |
 | FE-018–FE-026 | 5 | 6 | Direction 05 |
-| FE-027–FE-031 | 3 | 4 | Direction 03 event evidence |
-| FE-032–FE-040 | 3 | 4 | Direction 01 |
-| FE-041–FE-046 | 4 | 3 | Directions 03–04 |
+| FE-027–FE-031 | 3 | 4 | Direction 07, extended by Direction 08 |
+| FE-032–FE-040 | 3 | 4 | Directions 07–08 |
+| FE-041–FE-046 | 4 | 3 | Direction 08 |
 | FE-047–FE-050 | 1 | 2, 4, 5, 6 | Directions 02–05 as applicable |
-| FE-051–FE-053 | 3 | 4 | Directions 01 and 04 |
+| FE-051–FE-053 | 3 | 4 | Directions 07–08 |
 
 ## Published issues
 

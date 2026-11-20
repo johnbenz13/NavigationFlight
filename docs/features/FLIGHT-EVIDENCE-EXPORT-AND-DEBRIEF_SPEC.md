@@ -37,27 +37,29 @@ This specification deliberately supersedes Automatic Flight Recording and Recove
 ## Figma
 
 - Stable proposal: [NavigationFlight — Flight Evidence Export and Debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL).
-- Design status: `approved`. Direction 07 is the canonical completed-Flight Debrief presentation on iPad portrait; Direction 06 Revision 02 remains the authority for replay-camera states not redrawn in Direction 07. Directions 01–05 remain the approved baseline for unaffected export, retained-state, responsive, accessibility, and analyzer regions.
-- Current iteration: Direction 07 — canonical compact and full-analysis Debrief.
+- Design status: `approved`. Direction 08 is the authority for retained-state coverage, iPad landscape, iPhone portrait, and accessibility presentation. Direction 07 remains the canonical completed-Flight Debrief presentation on iPad portrait, and Direction 06 Revision 02 remains the authority for replay-camera states not redrawn in Direction 07 or Direction 08. Directions 01–05 remain approved only for unaffected export and analyzer regions or as historical behavioral context where explicitly cited.
+- Current iteration: Direction 08 — retained states and supported layouts.
 - Direction cover: [Direction 01 cover](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-671).
 - Canonical compact Debrief: [Direction 07 compact replay console](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321).
 - Canonical full analysis: [Direction 07 full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-487).
 - Historical main-screen context: [Direction 01 completed Flight debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-676). It is no longer the implementation target for the completed-Flight resting screen or replay console.
 - Diagnostic-export candidate flow: [Direction 02 export states](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=16-10).
-- Debrief-state candidate set: [Direction 03 state variants](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-10).
-- Responsive and accessibility candidate set: [Direction 04 adaptations](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=24-10).
+- Approved retained-state and layout index: [Direction 08 · Retained States & Layouts · Approved](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-11).
+- Approved retained states: [incomplete](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-24), [active](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-148), [recoverable](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-272), [partial GPS](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-396), [action-only/no GPS](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-522), [unsupported](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-648), and [unreadable](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-776).
+- Approved supported-layout and accessibility adaptations: [shared full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-904), [iPad landscape](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1088), [iPhone collapsed](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1288), [iPhone expanded](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=99-55), and [accessibility contract](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1346).
+- Historical retained-state and responsive context: Direction 03 `19:*` and Direction 04 `24:*` nodes are superseded presentation references. They may explain prior behavior decisions but are not implementation authority for Slice 4.
 - Comparative-analysis candidate: [Direction 05 detector analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=26-10).
 - Direction scope: real offline aviation-map context with Cockpit-equivalent planned-leg geometry versus actual track, selected action with correlation uncertainty, the approved four-control map toolbar, synchronized current altitude/ground speed/course, optional synchronized altitude and ground-speed plots, elapsed-time scrubber, separate play/pause transport, separate playback-rate selector, Fit full flight beside the playback bar, and an ordered action/phase timeline.
 - Revision 02 incorporates owner feedback from 2026-11-17: the schematic map was replaced by a real app-rendered aviation chart, and the turtle/rabbit slider was replaced by controls that distinguish seeking from playback rate.
-- Deferred until direction approval: diagnostic-export states, active/recoverable snapshots, partial or unavailable GPS, comparative engineering report, error states, accessibility variants, iPad landscape, and iPhone portrait.
+- Deferred beyond the approved Direction 08 scope: diagnostic-export states and the comparative engineering report. Direction 08 covers active/recoverable snapshots, limited and unavailable GPS states, unreadable and unsupported errors, accessibility variants, iPad landscape, and iPhone portrait for Slice 4.
 - Required primary design target: iPad Pro 11-inch in portrait.
 - Required adaptations: iPad Pro 11-inch landscape and iPhone 16 Pro portrait.
 - iPhone landscape remains outside the design baseline.
-- Human direction approvals: Directions 01–05 approved by John, 2026-11-17; Direction 06 Revision 02 approved by John, 2026-11-19; Direction 07 approved by John, 2026-11-20.
-- Paired baseline approval: this specification with Direction 07 nodes `73:321` and `73:487`, approved by John on 2026-11-20. The immutable specification permalink remains pending the documentation checkpoint.
-- Supersession: Direction 07 replaces earlier completed-debrief resting-screen and replay-console presentation. Direction 06 Revision 02 remains the replay-camera state authority and must inherit Direction 07's canonical component treatments.
+- Human direction approvals: Directions 01–05 approved by John, 2026-11-17; Direction 06 Revision 02 approved by John, 2026-11-19; Directions 07 and 08 approved by John, 2026-11-20.
+- Paired baseline approval: this specification with Direction 07 nodes `73:321` and `73:487` for the canonical completed iPad portrait Debrief and Direction 08 nodes indexed at `95:11` for retained states, supported layouts, and accessibility, approved by John on 2026-11-20. The immutable Direction 08 documentation permalink is recorded on issue #178 after this checkpoint merges.
+- Supersession: Direction 07 replaces earlier completed-debrief resting-screen and replay-console presentation. Direction 08 replaces Direction 03/04 retained-state, responsive-layout, and accessibility presentation for Slice 4. Direction 06 Revision 02 remains the replay-camera state authority and must inherit the later canonical component treatments.
 - Replay-camera state authority: [Direction 06 Revision 02 · North-up Follow Aircraft](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=57-271) and its approved FE-054–FE-062 state derivatives. Those states inherit Direction 07's canonical legend, toolbar, replay-console placement, and compact/full-analysis component treatment.
-- Approved specification revision: [commit `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md).
+- Previously approved specification revision: [commit `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md). Direction 08's immutable reconciled revision is linked from issue #178 after merge to avoid a self-referential commit link.
 
 ### Design coverage checklist
 
@@ -221,8 +223,8 @@ The approved main-screen direction is the visual and interaction baseline for th
 ## Planning status
 
 - Product discovery: completed through owner-approved grilling decisions on 2026-11-16 and 2026-11-17.
-- Product specification: revision 02 approved by John on 2026-11-17; FE-054–FE-062 replay-camera expansion approved by John on 2026-11-19; FE-063 compact/full-analysis behavior approved by John on 2026-11-20. The current documentation checkpoint still needs an immutable permalink.
-- Experience design: Figma Directions 01–05 were approved by John on 2026-11-17, Direction 06 Revision 02 and its replay-camera states on 2026-11-19, and Direction 07 compact/full-analysis nodes `73:321` and `73:487` as the canonical completed-Flight Debrief on 2026-11-20.
+- Product specification: revision 02 approved by John on 2026-11-17; FE-054–FE-062 replay-camera expansion approved by John on 2026-11-19; FE-063 compact/full-analysis behavior and the Direction 08 retained-state/layout reconciliation approved by John on 2026-11-20. The immutable Direction 08 documentation checkpoint is linked from issue #178 after merge.
+- Experience design: Figma Directions 01–05 were approved by John on 2026-11-17, Direction 06 Revision 02 and its replay-camera states on 2026-11-19, and Directions 07 and 08 on 2026-11-20. Direction 07 nodes `73:321` and `73:487` remain the canonical completed-Flight iPad portrait Debrief; Direction 08, indexed at `95:11`, is authoritative for retained states, supported layouts, and accessibility.
 - Technical design: [technical agreement](../technical/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_TECHNICAL.md) approved by John on 2026-11-17.
 - Delivery tickets: [six-slice vertical breakdown](FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_DELIVERY-PLAN.md) approved and published as GitHub issues [#175](https://github.com/johnbenz13/NavigationFlight/issues/175)–[#180](https://github.com/johnbenz13/NavigationFlight/issues/180).
 - Implementation: authorized from the approved paired baseline; rendered implementation acceptance remains a separate evidence and human-approval checkpoint.

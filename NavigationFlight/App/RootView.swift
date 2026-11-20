@@ -438,7 +438,15 @@ struct RootView: View {
             return ([], nil)
         }
         let baseDate = Date(timeIntervalSince1970: 1_794_000_000)
-        let completedFlightDuration = DebriefQAFlightTrack.duration(for: plan.title) ?? 3_960
+        let debriefHasNoPosition = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_DEBRIEF_NO_POSITION"
+        ] == "1"
+        let usesShortDebrief = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_SHORT_DEBRIEF"
+        ] == "1"
+        let completedFlightDuration = usesShortDebrief
+            ? 1
+            : DebriefQAFlightTrack.duration(for: plan.title) ?? 3_960
         let completedRecordingID = UUID(
             uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)
         )
@@ -569,7 +577,8 @@ struct RootView: View {
                 ]
             }
             let firstSegment = RecordedTrackSegment(id: UUID(), samples: samples)
-            let trackSegments = definition.coverage == .unavailable ? [] : [firstSegment]
+            let trackSegments = definition.coverage == .unavailable
+                || (isCompletedFixture && debriefHasNoPosition) ? [] : [firstSegment]
             return .available(FlightRecordingReadSnapshot(
                 recording: recording,
                 events: promotion.events,

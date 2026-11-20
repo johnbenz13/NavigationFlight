@@ -97,6 +97,7 @@ private struct FlightDebriefMapSection: View {
                 HistoricalFlightMapView(
                 debrief: debrief,
                 selectedSample: model.selection?.sample,
+                selectedEventID: model.selection?.event?.id,
                 selectedElapsed: model.selection?.elapsed ?? .zero,
                 orientation: model.mapOrientation,
                 cameraMode: model.cameraMode,
@@ -104,10 +105,10 @@ private struct FlightDebriefMapSection: View {
                 fitsFullFlight: model.fitsFullFlight,
                 showsDriftLines: model.areDriftLinesVisible,
                 reducesMotion: reducesMotion,
-                onMapInteraction: model.enterFreeLook
+                onMapInteraction: model.enterFreeLook,
+                onSelectEvent: model.select
                 )
                 .frame(height: height)
-                .accessibilityHidden(true)
             } else {
                 Color(.secondarySystemBackground).frame(height: height)
             }
@@ -137,6 +138,7 @@ private struct FlightDebriefMapSection: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(mapAccessibilityLabel)
+        .accessibilityIdentifier("flight-debrief.map-section")
     }
 
     private func positionDisclosure(_ position: FlightDebriefEvent.Position) -> String {
@@ -150,6 +152,7 @@ private struct FlightDebriefMapSection: View {
     private var mapAccessibilityLabel: String {
         "Historical map in \(model.mapOrientation == .northUp ? "North-up" : "Track-up"), \(model.cameraMode == .followAircraft ? "following aircraft" : "Free Look"). Planned leg and \(debrief.trackSegments.count) recorded track segments are shown. Track gaps are not connected."
     }
+
 }
 
 private struct FlightDebriefMapLegend: View {
@@ -218,6 +221,7 @@ private struct FlightDebriefSelectionCard: View {
         }
         .padding(12)
         .background(.regularMaterial, in: .rect(cornerRadius: 14))
+        .accessibilityIdentifier("flight-debrief.selection")
     }
 
     private func positionDisclosure(_ position: FlightDebriefEvent.Position) -> String {
@@ -414,6 +418,7 @@ private struct FlightDebriefTimelineSection: View {
                             .overlay { RoundedRectangle(cornerRadius: 12).stroke(Color(.separator), lineWidth: 0.5) }
                         }
                         .buttonStyle(.plain)
+                        .accessibilityValue(event.id == model.selection?.event?.id ? "Selected" : "Not selected")
                         .accessibilityIdentifier("flight-debrief.event.\(event.id.uuidString)")
                     }
                 }
@@ -470,6 +475,7 @@ private struct FlightDebriefTimelineSection: View {
 private struct HistoricalFlightMapView: UIViewRepresentable {
     let debrief: FlightDebrief
     let selectedSample: RecordedTrackSample?
+    let selectedEventID: UUID?
     let selectedElapsed: Duration
     let orientation: FlightDebriefModel.MapOrientation
     let cameraMode: FlightDebriefModel.CameraMode
@@ -478,8 +484,15 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
     let showsDriftLines: Bool
     let reducesMotion: Bool
     let onMapInteraction: () -> Void
+    let onSelectEvent: (UUID) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(debrief: debrief, onMapInteraction: onMapInteraction) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(
+            debrief: debrief,
+            onMapInteraction: onMapInteraction,
+            onSelectEvent: onSelectEvent
+        )
+    }
 
     func makeUIView(context: Context) -> MLNMapView {
         let resources = BundledAviationMapResourceProvider()
@@ -488,11 +501,20 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
         view.logoView.isHidden = true
         view.attributionButton.isHidden = true
         view.isRotateEnabled = false
+        view.isAccessibilityElement = false
+        let actionTap = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.selectAction(_:))
+        )
+        actionTap.cancelsTouchesInView = false
+        view.addGestureRecognizer(actionTap)
         return view
     }
 
     func updateUIView(_ view: MLNMapView, context: Context) {
         context.coordinator.onMapInteraction = onMapInteraction
+        context.coordinator.onSelectEvent = onSelectEvent
+        context.coordinator.selectedEventID = selectedEventID
         context.coordinator.update(
             selectedSample: selectedSample,
             selectedElapsed: selectedElapsed,
@@ -509,15 +531,39 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
     final class Coordinator: NSObject, MLNMapViewDelegate {
         let debrief: FlightDebrief
         var onMapInteraction: () -> Void
+        var onSelectEvent: (UUID) -> Void
+        var selectedEventID: UUID?
         private var aircraftAnnotation: HistoricalAircraftAnnotation?
         private var lastCameraRequest = -1
         private var hasAppliedInitialCamera = false
         private var pendingUpdate: (() -> Void)?
         private var contentInstalled = false
 
-        init(debrief: FlightDebrief, onMapInteraction: @escaping () -> Void) {
+        init(
+            debrief: FlightDebrief,
+            onMapInteraction: @escaping () -> Void,
+            onSelectEvent: @escaping (UUID) -> Void
+        ) {
             self.debrief = debrief
             self.onMapInteraction = onMapInteraction
+            self.onSelectEvent = onSelectEvent
+        }
+
+        @objc func selectAction(_ gesture: UITapGestureRecognizer) {
+            guard gesture.state == .ended,
+                  let mapView = gesture.view as? MLNMapView else { return }
+            let features = mapView.visibleFeatures(
+                at: gesture.location(in: mapView),
+                styleLayerIdentifiers: ["debrief-actions"]
+            )
+            let eventIDs = features.compactMap { feature -> UUID? in
+                guard let value = feature.attributes["eventID"] else { return nil }
+                return UUID(uuidString: String(describing: value))
+            }
+            guard !eventIDs.isEmpty else { return }
+            let selectedIndex = selectedEventID.flatMap { eventIDs.firstIndex(of: $0) }
+            let nextIndex = selectedIndex.map { ($0 + 1) % eventIDs.count } ?? 0
+            onSelectEvent(eventIDs[nextIndex])
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
@@ -560,6 +606,8 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
                 to: style
             )
             addDriftLines(to: style)
+            addMinuteMarks(to: style)
+            addActionDots(to: style)
             contentInstalled = true
         }
 
@@ -646,17 +694,19 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
                 }
                 let point = MLNPointFeature()
                 point.coordinate = CLLocationCoordinate2D(latitude: coordinate.latitudeDegrees, longitude: coordinate.longitudeDegrees)
+                point.attributes["eventID"] = event.id.uuidString
                 return point
             }
             let source = MLNShapeSource(identifier: "debrief-actions-source", features: points, options: nil)
             style.addSource(source)
             let layer = MLNCircleStyleLayer(identifier: "debrief-actions", source: source)
             layer.circleColor = NSExpression(forConstantValue: UIColor.systemOrange)
-            layer.circleRadius = NSExpression(forConstantValue: 4)
+            layer.circleRadius = NSExpression(forConstantValue: 5)
             layer.circleStrokeColor = NSExpression(forConstantValue: UIColor.white)
             layer.circleStrokeWidth = NSExpression(forConstantValue: 1.5)
             style.addLayer(layer)
         }
+
 
         private func addDriftLines(to style: MLNStyle) {
             guard let first = debrief.plannedRoute.first, let last = debrief.plannedRoute.last,
@@ -691,7 +741,7 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
             let from = AviationMapCoordinate(latitude: first.latitudeDegrees, longitude: first.longitudeDegrees)
             let to = AviationMapCoordinate(latitude: last.latitudeDegrees, longitude: last.longitudeDegrees)
             let markers = AviationMapSymbology.minuteMarkers(from: from, to: to, plannedDurationSeconds: duration)
-            let shapes = markers.map { marker -> MLNPolyline in
+            let shapes = markers.map { marker -> MLNPolylineFeature in
                 let fraction = AviationMapVisualStyle.default.minuteTickLengthFraction(for: marker.level)
                 let before = AviationMapGeometry.interpolate(from: from, to: to, fraction: max(0, marker.fraction - fraction))
                 let after = AviationMapGeometry.interpolate(from: from, to: to, fraction: min(1, marker.fraction + fraction))
@@ -703,8 +753,9 @@ private struct HistoricalFlightMapView: UIViewRepresentable {
                     CLLocationCoordinate2D(latitude: marker.coordinate.latitude - east / length * halfLength, longitude: marker.coordinate.longitude + north / length * halfLength),
                     CLLocationCoordinate2D(latitude: marker.coordinate.latitude + east / length * halfLength, longitude: marker.coordinate.longitude - north / length * halfLength),
                 ]
-                return MLNPolyline(coordinates: &coordinates, count: 2)
+                return MLNPolylineFeature(coordinates: &coordinates, count: 2)
             }
+            guard !shapes.isEmpty else { return }
             let source = MLNShapeSource(identifier: "debrief-minute-marks-source", shape: MLNShapeCollectionFeature(shapes: shapes))
             style.addSource(source)
             let casing = MLNLineStyleLayer(identifier: "debrief-minute-marks-casing", source: source)

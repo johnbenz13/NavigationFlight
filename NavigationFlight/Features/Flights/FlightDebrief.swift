@@ -64,11 +64,12 @@ nonisolated struct FlightDebriefTrackSegment: Equatable, Sendable, Identifiable 
             guard let lhs, let rhs else { return lhs ?? rhs }
             return lhs + (rhs - lhs) * fraction
         }
-        let reliableCourse = [earlier, later].reversed().first {
-            ($0.groundSpeedMetersPerSecond ?? 0) >= 2
+        let reliableCourseSample = samples[...laterIndex].last {
+            $0.observedAt <= date
+                && ($0.groundSpeedMetersPerSecond ?? 0) >= 2
                 && $0.courseDegrees != nil
                 && ($0.courseAccuracyDegrees ?? .infinity) <= 30
-        }?.courseDegrees
+        }
         return RecordedTrackSample(
             coordinate: .init(
                 latitudeDegrees: earlier.coordinate.latitudeDegrees + (later.coordinate.latitudeDegrees - earlier.coordinate.latitudeDegrees) * fraction,
@@ -80,8 +81,8 @@ nonisolated struct FlightDebriefTrackSegment: Equatable, Sendable, Identifiable 
             verticalAccuracyMeters: interpolate(earlier.verticalAccuracyMeters, later.verticalAccuracyMeters),
             groundSpeedMetersPerSecond: interpolate(earlier.groundSpeedMetersPerSecond, later.groundSpeedMetersPerSecond),
             speedAccuracyMetersPerSecond: interpolate(earlier.speedAccuracyMetersPerSecond, later.speedAccuracyMetersPerSecond),
-            courseDegrees: reliableCourse,
-            courseAccuracyDegrees: reliableCourse == nil ? nil : min(earlier.courseAccuracyDegrees ?? .infinity, later.courseAccuracyDegrees ?? .infinity),
+            courseDegrees: reliableCourseSample?.courseDegrees,
+            courseAccuracyDegrees: reliableCourseSample?.courseAccuracyDegrees,
             barometricAltitudeMeters: interpolate(earlier.barometricAltitudeMeters, later.barometricAltitudeMeters),
             deviceHeadingDegrees: nil,
             deviceHeadingAccuracyDegrees: nil
@@ -343,7 +344,12 @@ final class FlightDebriefModel {
 
     func select(eventID: UUID) {
         guard case .loaded(let debrief) = state, let event = debrief.events.first(where: { $0.id == eventID }) else { return }
-        selection = debrief.selection(at: event.elapsed)
+        let replaySelection = debrief.selection(at: event.elapsed)
+        selection = FlightDebriefSelection(
+            elapsed: replaySelection.elapsed,
+            sample: replaySelection.sample,
+            event: event
+        )
         refocusAircraft()
     }
 

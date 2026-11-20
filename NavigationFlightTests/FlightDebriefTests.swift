@@ -50,6 +50,41 @@ struct FlightDebriefTests {
         #expect(abs(gap.coordinate.longitudeDegrees - 34.81) < 0.000_001)
     }
 
+    @Test("Low-speed replay retains the last reliable course in its segment")
+    func lowSpeedReplayRetainsLastReliableCourse() throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let segment = FlightDebriefTrackSegment(
+            id: UUID(),
+            samples: [
+                trackSample(at: 0, startedAt: startedAt, speed: 40, course: 87, courseAccuracy: 3),
+                trackSample(at: 10, startedAt: startedAt, speed: 1, course: nil, courseAccuracy: nil),
+                trackSample(at: 20, startedAt: startedAt, speed: 0, course: 140, courseAccuracy: 80),
+            ]
+        )
+
+        let sample = try #require(segment.sample(at: startedAt.addingTimeInterval(15)))
+
+        #expect(sample.courseDegrees == 87)
+        #expect(sample.courseAccuracyDegrees == 3)
+    }
+
+    @Test("Reliable course never carries across a track gap")
+    func reliableCourseDoesNotCrossSegments() throws {
+        let startedAt = Date(timeIntervalSince1970: 1_000)
+        let laterSegment = FlightDebriefTrackSegment(
+            id: UUID(),
+            samples: [
+                trackSample(at: 40, startedAt: startedAt, speed: 1, course: nil, courseAccuracy: nil),
+                trackSample(at: 50, startedAt: startedAt, speed: 1, course: nil, courseAccuracy: nil),
+            ]
+        )
+
+        let sample = try #require(laterSegment.sample(at: startedAt.addingTimeInterval(45)))
+
+        #expect(sample.courseDegrees == nil)
+        #expect(sample.courseAccuracyDegrees == nil)
+    }
+
     @MainActor
     @Test("Replay camera transitions remain explicit and seeking refocuses")
     func replayCameraStateTransitions() async throws {
@@ -70,6 +105,19 @@ struct FlightDebriefTests {
         model.seek(to: .seconds(10))
         #expect(model.cameraMode == .followAircraft)
         #expect(!model.fitsFullFlight)
+    }
+
+    @MainActor
+    @Test("Explicit event selection preserves identity for co-timed events")
+    func coTimedEventSelectionPreservesIdentity() async throws {
+        let fixture = try makeEvidence(eventTime: 0, segmentTimes: [[0, 10, 20]])
+        let model = FlightDebriefModel(loadEvidence: { fixture.evidence })
+        await model.load()
+
+        model.select(eventID: fixture.eventID)
+
+        #expect(model.selection?.event?.id == fixture.eventID)
+        #expect(model.selection?.elapsed == .zero)
     }
 
     @MainActor
@@ -157,6 +205,28 @@ struct FlightDebriefTests {
             context: .init(appVersion: "1", appBuild: "1", platform: "iPadOS", osVersion: "27")
         )
         return Fixture(evidence: evidence, eventID: eventID, startedAt: startedAt)
+    }
+
+    private func trackSample(
+        at elapsed: TimeInterval,
+        startedAt: Date,
+        speed: Double?,
+        course: Double?,
+        courseAccuracy: Double?
+    ) -> RecordedTrackSample {
+        let latitude = 32.0 + elapsed / 1_000
+        let longitude = 34.8 + elapsed / 1_000
+        return RecordedTrackSample(
+            coordinate: .init(latitudeDegrees: latitude, longitudeDegrees: longitude),
+            observedAt: startedAt.addingTimeInterval(elapsed),
+            horizontalAccuracyMeters: 8,
+            altitudeMeters: nil,
+            verticalAccuracyMeters: nil,
+            groundSpeedMetersPerSecond: speed,
+            speedAccuracyMetersPerSecond: 1,
+            courseDegrees: course,
+            courseAccuracyDegrees: courseAccuracy
+        )
     }
 }
 

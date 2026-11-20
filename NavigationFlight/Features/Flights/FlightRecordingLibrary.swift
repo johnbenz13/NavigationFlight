@@ -137,6 +137,19 @@ actor FlightRecordingLibrary {
         )
     }
 
+    func debriefEvidence(id: UUID, capturedAt: Date = Date()) async throws -> FlightEvidenceSnapshot {
+        let snapshot = try await store.readSnapshot(id: id)
+        guard snapshot.recording.closure != nil else {
+            throw FlightDebriefProjectionError.recordingNotClosed
+        }
+        return FlightEvidenceSnapshot(
+            capturedAt: capturedAt,
+            sourceState: .closed,
+            recording: snapshot,
+            context: .current.replacingDetectorPolicy(snapshot.detectorPolicy)
+        )
+    }
+
     func exportDiagnosticBundle(
         _ evidence: FlightEvidenceSnapshot,
         using exporter: DiagnosticBundleExporter = DiagnosticBundleExporter(),

@@ -224,6 +224,146 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCompletedFlightDebriefSynchronizesHistoricalControlsAndExits() throws {
+        let app = launchFlights(state: "populated", planData: try debriefPlanData())
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+
+        let debriefButton = app.buttons["flight-detail.debrief"]
+        XCTAssertTrue(debriefButton.waitForExistence(timeout: 3))
+        debriefButton.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["flight-debrief.play-pause"].exists)
+        XCTAssertTrue(app.sliders["flight-debrief.timeline"].exists)
+        XCTAssertTrue(app.buttons["flight-debrief.rate"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["flight-debrief.compact-console"].exists)
+        var analysisMode = app.buttons["Show analysis"]
+        XCTAssertTrue(analysisMode.exists)
+        analysisMode.tap()
+        analysisMode = app.buttons["Hide analysis"]
+        XCTAssertEqual(analysisMode.value as? String, "Full analysis")
+        XCTAssertTrue(app.staticTexts["Flight parameters"].exists)
+        analysisMode.tap()
+        analysisMode = app.buttons["Show analysis"]
+        XCTAssertEqual(analysisMode.value as? String, "Compact replay console")
+        XCTAssertFalse(app.buttons["Start Leg"].exists)
+
+        let timeline = app.sliders["flight-debrief.timeline"]
+        timeline.adjust(toNormalizedSliderPosition: 0.5)
+        XCTAssertGreaterThan(timeline.normalizedSliderPosition, 0.4)
+
+        app.buttons["flight-debrief.rate"].tap()
+        app.buttons["×5"].tap()
+        XCTAssertTrue(app.buttons["flight-debrief.rate"].label.contains("×5"))
+
+        let event = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'flight-debrief.event.'")
+        ).firstMatch
+        XCTAssertTrue(event.exists)
+        event.tap()
+        XCTAssertEqual(event.value as? String, "Selected")
+
+        app.buttons["flight-debrief.fit-full-flight"].tap()
+        let mapEvent = app.descendants(matching: .any)[
+            "flight-debrief.map-event.07000000-0000-0000-0000-000000000007"
+        ]
+        XCTAssertTrue(mapEvent.waitForExistence(timeout: 5))
+        let map = app.descendants(matching: .any)["flight-debrief.map-section"]
+        let targetEvent = app.buttons["flight-debrief.event.07000000-0000-0000-0000-000000000007"]
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: 0.5)).tap()
+        XCTAssertEqual(targetEvent.value as? String, "Selected")
+        XCTAssertTrue(app.staticTexts["Position check ended"].exists)
+
+        let orientation = app.buttons["flight-debrief.orientation"]
+        orientation.tap()
+        XCTAssertEqual(orientation.value as? String, "Track-up")
+        map.swipeLeft()
+        XCTAssertEqual(app.buttons["flight-debrief.free-look"].value as? String, "On")
+        app.buttons["flight-debrief.recenter"].tap()
+        XCTAssertEqual(app.buttons["flight-debrief.recenter"].value as? String, "Following aircraft")
+        let driftLines = app.buttons["flight-debrief.drift-lines"]
+        driftLines.tap()
+        XCTAssertEqual(driftLines.value as? String, "Off")
+        app.buttons["flight-debrief.fit-full-flight"].tap()
+        XCTAssertEqual(app.buttons["flight-debrief.free-look"].value as? String, "On")
+
+        app.buttons["flight-debrief.play-pause"].tap()
+        XCTAssertTrue(app.buttons["flight-debrief.play-pause"].label.contains("Pause"))
+        app.buttons["flight-debrief.play-pause"].tap()
+        app.navigationBars.buttons.firstMatch.tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-detail.status"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testCompletedFlightDebriefHandlesPlaybackEndAndMissingPosition() throws {
+        let playbackApp = launchFlights(
+            state: "populated",
+            planData: try debriefPlanData(),
+            debriefHasShortDuration: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: playbackApp)
+        playbackApp.buttons["flight-detail.debrief"].tap()
+        XCTAssertTrue(playbackApp.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
+        playbackApp.buttons["flight-debrief.rate"].tap()
+        playbackApp.buttons["×5"].tap()
+        playbackApp.buttons["flight-debrief.play-pause"].tap()
+        let stoppedAtEnd = expectation(
+            for: NSPredicate(format: "label == 'Play'"),
+            evaluatedWith: playbackApp.buttons["flight-debrief.play-pause"]
+        )
+        wait(for: [stoppedAtEnd], timeout: 5)
+        playbackApp.terminate()
+
+        let noPositionApp = launchFlights(
+            state: "populated",
+            planData: try debriefPlanData(),
+            debriefHasNoPosition: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: noPositionApp)
+        noPositionApp.buttons["flight-detail.debrief"].tap()
+        XCTAssertTrue(noPositionApp.staticTexts["No recorded position"].waitForExistence(timeout: 5))
+        XCTAssertTrue(noPositionApp.staticTexts["Actions & phases"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.orientation"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.recenter"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.free-look"].exists)
+        XCTAssertFalse(noPositionApp.buttons["flight-debrief.fit-full-flight"].exists)
+        XCTAssertFalse(
+            noPositionApp.buttons.matching(
+                NSPredicate(format: "identifier BEGINSWITH 'flight-debrief.map-event.'")
+            ).firstMatch.exists
+        )
+        noPositionApp.terminate()
+
+        let unreliableCourseApp = launchFlights(
+            state: "populated",
+            planData: try debriefPlanData(),
+            debriefHasUnreliableCourse: true
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: unreliableCourseApp)
+        unreliableCourseApp.buttons["flight-detail.debrief"].tap()
+        XCTAssertTrue(unreliableCourseApp.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
+        unreliableCourseApp.sliders["flight-debrief.timeline"].adjust(toNormalizedSliderPosition: 0.9)
+        XCTAssertTrue(unreliableCourseApp.staticTexts["87"].exists)
+    }
+
+    @MainActor
+    func testLLMZCompletedFlightUsesMatchingRecordedTrack() throws {
+        let app = launchFlights(
+            state: "populated",
+            planData: try realFlightPlanData(named: "llhz-llmz")
+        )
+        openFlightDetail(id: "03000000-0000-0000-0000-000000000003", in: app)
+        app.buttons["flight-detail.debrief"].tap()
+
+        XCTAssertTrue(app.descendants(matching: .any)["flight-debrief"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["שפיים → עין גדי"].exists)
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS '1:26:26'")
+        ).firstMatch.exists)
+    }
+
+    @MainActor
     func testIncompleteFlightDetailOffersPartialExport() throws {
         let app = launchFlights(state: "populated", planData: try oneLegPlanData())
 
@@ -1823,7 +1963,10 @@ final class NavigationFlightUITests: XCTestCase {
         exportFailure: Bool = false,
         exportPreparationFailure: Bool = false,
         exportDelay: Bool = false,
-        deletionFailure: Bool = false
+        deletionFailure: Bool = false,
+        debriefHasNoPosition: Bool = false,
+        debriefHasShortDuration: Bool = false,
+        debriefHasUnreliableCourse: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1840,6 +1983,15 @@ final class NavigationFlightUITests: XCTestCase {
         }
         if deletionFailure {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DELETE_FAILURE"] = "1"
+        }
+        if debriefHasNoPosition {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DEBRIEF_NO_POSITION"] = "1"
+        }
+        if debriefHasShortDuration {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_SHORT_DEBRIEF"] = "1"
+        }
+        if debriefHasUnreliableCourse {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_UNRELIABLE_COURSE"] = "1"
         }
         if let planData {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
@@ -1946,6 +2098,18 @@ final class NavigationFlightUITests: XCTestCase {
         }
         object["execution"] = execution
         return try JSONSerialization.data(withJSONObject: object)
+    }
+
+    private func debriefPlanData() throws -> Data {
+        try realFlightPlanData(named: "llhz-llib-via-jerusalem")
+    }
+
+    private func realFlightPlanData(named name: String) throws -> Data {
+        let sourceFile = URL(fileURLWithPath: #filePath)
+        let repository = sourceFile.deletingLastPathComponent().deletingLastPathComponent()
+        return try Data(contentsOf: repository.appending(
+            path: "fixtures/FlightRecords/\(name)/flight-plan.fplnav"
+        ))
     }
 
     private func launchFlightPlans(

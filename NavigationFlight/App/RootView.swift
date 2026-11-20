@@ -438,6 +438,21 @@ struct RootView: View {
             return ([], nil)
         }
         let baseDate = Date(timeIntervalSince1970: 1_794_000_000)
+        let debriefHasNoPosition = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_DEBRIEF_NO_POSITION"
+        ] == "1"
+        let usesShortDebrief = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_SHORT_DEBRIEF"
+        ] == "1"
+        let usesUnreliableCourse = ProcessInfo.processInfo.environment[
+            "NAVIGATION_FLIGHT_UI_TEST_UNRELIABLE_COURSE"
+        ] == "1"
+        let completedFlightDuration = usesShortDebrief
+            ? 1
+            : DebriefQAFlightTrack.duration(for: plan.title) ?? 3_960
+        let completedRecordingID = UUID(
+            uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)
+        )
         let definitions: [(
             id: UUID,
             title: String,
@@ -463,14 +478,14 @@ struct RootView: View {
                 3_600_000
             ),
             (
-                UUID(uuid: (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3)),
-                "Jerusalem Corridor Practice",
+                completedRecordingID,
+                plan.title,
                 -86_400,
                 FlightRecordingClosure(
                     outcome: .complete,
                     cause: .automatic,
-                    closedAt: baseDate.addingTimeInterval(-82_440),
-                    elapsed: .seconds(3_960),
+                    closedAt: baseDate.addingTimeInterval(-86_400 + completedFlightDuration),
+                    elapsed: .seconds(completedFlightDuration),
                     landingEvidenceAvailable: true
                 ),
                 .available,
@@ -525,41 +540,91 @@ struct RootView: View {
                 recording = recording.restoring(closure: closure)
             }
             let evidenceEnd = definition.closure?.closedAt ?? startedAt.addingTimeInterval(3_600)
-            let firstSegmentID = UUID()
-            let firstSegment = RecordedTrackSegment(id: firstSegmentID, samples: [
-                RecordedTrackSample(
-                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
-                    observedAt: startedAt,
-                    horizontalAccuracyMeters: 5,
-                    altitudeMeters: 500,
-                    verticalAccuracyMeters: 5,
-                    groundSpeedMetersPerSecond: 42,
-                    speedAccuracyMetersPerSecond: 1,
-                    courseDegrees: 90,
-                    courseAccuracyDegrees: 2,
-                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 490 : nil,
-                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 88 : nil,
-                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
-                ),
-                RecordedTrackSample(
-                    coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
-                    observedAt: evidenceEnd,
-                    horizontalAccuracyMeters: 5,
-                    altitudeMeters: 1_280,
-                    verticalAccuracyMeters: 5,
-                    groundSpeedMetersPerSecond: 44,
-                    speedAccuracyMetersPerSecond: 1,
-                    courseDegrees: 90,
-                    courseAccuracyDegrees: 2,
-                    barometricAltitudeMeters: definition.title == "Jerusalem Corridor Practice" ? 1_270 : nil,
-                    deviceHeadingDegrees: definition.title == "Jerusalem Corridor Practice" ? 92 : nil,
-                    deviceHeadingAccuracyDegrees: definition.title == "Jerusalem Corridor Practice" ? 3 : nil
-                ),
-            ])
-            let trackSegments = definition.coverage == .unavailable ? [] : [firstSegment]
+            let isCompletedFixture = definition.id == completedRecordingID
+            let realDebriefSamples = DebriefQAFlightTrack.samples(
+                startedAt: startedAt,
+                planTitle: plan.title
+            )
+            let samples = if isCompletedFixture, let realDebriefSamples {
+                usesUnreliableCourse ? Self.withUnreliableCourse(realDebriefSamples) : realDebriefSamples
+            } else {
+                [
+                    RecordedTrackSample(
+                        coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.8),
+                        observedAt: startedAt,
+                        horizontalAccuracyMeters: 5,
+                        altitudeMeters: 500,
+                        verticalAccuracyMeters: 5,
+                        groundSpeedMetersPerSecond: 42,
+                        speedAccuracyMetersPerSecond: 1,
+                        courseDegrees: 90,
+                        courseAccuracyDegrees: 2,
+                        barometricAltitudeMeters: isCompletedFixture ? 490 : nil,
+                        deviceHeadingDegrees: isCompletedFixture ? 88 : nil,
+                        deviceHeadingAccuracyDegrees: isCompletedFixture ? 3 : nil
+                    ),
+                    RecordedTrackSample(
+                        coordinate: WGS84Coordinate(latitudeDegrees: 32.1, longitudeDegrees: 34.9),
+                        observedAt: evidenceEnd,
+                        horizontalAccuracyMeters: 5,
+                        altitudeMeters: 1_280,
+                        verticalAccuracyMeters: 5,
+                        groundSpeedMetersPerSecond: 44,
+                        speedAccuracyMetersPerSecond: 1,
+                        courseDegrees: 90,
+                        courseAccuracyDegrees: 2,
+                        barometricAltitudeMeters: isCompletedFixture ? 1_270 : nil,
+                        deviceHeadingDegrees: isCompletedFixture ? 92 : nil,
+                        deviceHeadingAccuracyDegrees: isCompletedFixture ? 3 : nil
+                    ),
+                ]
+            }
+            let firstSegment = RecordedTrackSegment(id: UUID(), samples: samples)
+            let trackSegments = definition.coverage == .unavailable
+                || (isCompletedFixture && debriefHasNoPosition) ? [] : [firstSegment]
+            let reviewBounds = samples.dropFirst().reduce(
+                into: (
+                    minimumLatitude: samples[0].coordinate.latitudeDegrees,
+                    maximumLatitude: samples[0].coordinate.latitudeDegrees,
+                    minimumLongitude: samples[0].coordinate.longitudeDegrees,
+                    maximumLongitude: samples[0].coordinate.longitudeDegrees
+                )
+            ) { bounds, sample in
+                bounds.minimumLatitude = min(bounds.minimumLatitude, sample.coordinate.latitudeDegrees)
+                bounds.maximumLatitude = max(bounds.maximumLatitude, sample.coordinate.latitudeDegrees)
+                bounds.minimumLongitude = min(bounds.minimumLongitude, sample.coordinate.longitudeDegrees)
+                bounds.maximumLongitude = max(bounds.maximumLongitude, sample.coordinate.longitudeDegrees)
+            }
+            let reviewEventCoordinate = WGS84Coordinate(
+                latitudeDegrees: (reviewBounds.minimumLatitude + reviewBounds.maximumLatitude) / 2,
+                longitudeDegrees: (reviewBounds.minimumLongitude + reviewBounds.maximumLongitude) / 2
+            )
+            let reviewEventDate = startedAt.addingTimeInterval(completedFlightDuration / 2)
+            let events = if isCompletedFixture {
+                promotion.events + [
+                    RecordedFlightEvent(
+                        id: UUID(uuid: (7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7)),
+                        sequence: 2,
+                        occurredAt: startedAt.addingTimeInterval(completedFlightDuration / 2),
+                        elapsed: .seconds(completedFlightDuration / 2),
+                        origin: .pilot,
+                        payload: .positionCheckEnded(
+                            outcome: .disclosed(
+                                sample: .init(
+                                    coordinate: reviewEventCoordinate,
+                                    observedAt: reviewEventDate,
+                                    horizontalAccuracyMeters: 5
+                                )
+                            )
+                        )
+                    ),
+                ]
+            } else {
+                promotion.events
+            }
             return .available(FlightRecordingReadSnapshot(
                 recording: recording,
-                events: promotion.events,
+                events: events,
                 trackSegments: trackSegments,
                 approximateSizeBytes: definition.size
             ))
@@ -567,6 +632,25 @@ struct RootView: View {
             .corrupt(id: UUID(uuid: (6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6))),
         ]
         return (packages, definitions.first?.id)
+    }
+
+    private static func withUnreliableCourse(_ samples: [RecordedTrackSample]) -> [RecordedTrackSample] {
+        samples.enumerated().map { index, sample in
+            RecordedTrackSample(
+                coordinate: sample.coordinate,
+                observedAt: sample.observedAt,
+                horizontalAccuracyMeters: sample.horizontalAccuracyMeters,
+                altitudeMeters: sample.altitudeMeters,
+                verticalAccuracyMeters: sample.verticalAccuracyMeters,
+                groundSpeedMetersPerSecond: index == 0 ? 40 : 0.5,
+                speedAccuracyMetersPerSecond: sample.speedAccuracyMetersPerSecond,
+                courseDegrees: index == 0 ? 87 : nil,
+                courseAccuracyDegrees: index == 0 ? 3 : nil,
+                barometricAltitudeMeters: sample.barometricAltitudeMeters,
+                deviceHeadingDegrees: sample.deviceHeadingDegrees,
+                deviceHeadingAccuracyDegrees: sample.deviceHeadingAccuracyDegrees
+            )
+        }
     }
 #endif
 

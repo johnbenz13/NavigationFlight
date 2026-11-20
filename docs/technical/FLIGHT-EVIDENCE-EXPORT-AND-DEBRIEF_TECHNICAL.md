@@ -6,7 +6,7 @@ Slice 1 detector-policy retention expansion approved by John on 2026-11-19.
 
 Product baseline: [approved specification revision `5b8ff5e`](https://github.com/johnbenz13/NavigationFlight/blob/5b8ff5e982450edde72ff9d18bdfd18215b24a36/docs/features/FLIGHT-EVIDENCE-EXPORT-AND-DEBRIEF_SPEC.md)
 
-Design baseline: [approved Figma Directions 01–05](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL)
+Design baseline: [Direction 07 compact replay console](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321) and [Direction 07 full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-487), approved by John on 2026-11-20, are canonical for the completed-Flight iPad portrait Debrief. [Direction 06 Revision 02](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=57-271) and its approved derivatives remain authoritative for replay-camera states not redrawn in Direction 07. Directions 01–05 remain approved for unaffected export, retained-state, responsive, accessibility, and analyzer surfaces.
 
 Source inspected at: `fb5e925` on `feature/flight-evidence-export-and-debrief`
 
@@ -185,6 +185,8 @@ Playback uses an injected continuous clock and one structured child task. Pause,
 
 Views use semantic text styles, stable event identifiers, `ViewThatFits` or available-width composition for adaptations, and scrollable vertical layouts at accessibility sizes. The map is hidden from VoiceOver after an equivalent textual relationship summary. The timeline exposes adjustable semantics; play/pause and rate remain standard controls.
 
+The iPad portrait Debrief owns one presentation-only console mode: compact or full analysis. Mode changes do not re-project evidence or mutate selection, transport, playback rate, camera state, zoom, orientation, or drift visibility. Compact mode keeps the current altitude, ground speed, course, playback row, Fit full flight, and reduced event rail visible while maximizing map height. Full analysis adds synchronized altitude and ground-speed plots and expands event cards vertically, but reuses the compact playback row unchanged. Current altitude and ground speed render as concise graph-axis readouts and current course remains in the analysis header. Fit full flight is the same neutral utility component in both modes and stays beside playback rate. The map legend uses line swatches for Leg and Track and a dot for Action, matching the path/mark geometry rather than relying on labels or color alone.
+
 ### 6. Explainable detector replay
 
 Do not create a second implementation of the detector algorithm.
@@ -322,7 +324,7 @@ New unit tests use Swift Testing and run independently in parallel. XCUITest rem
 
 - XCUITest covers export choice, cancellation, retry, system share presentation boundary, debrief limited states, playback controls, and iPhone/iPad layout entry points.
 - Accessibility identifiers describe semantics rather than geometry.
-- Simulator review compares the approved Figma nodes on iPad portrait, iPad landscape, and iPhone portrait.
+- Simulator review compares iPad portrait compact and full-analysis states with exact nodes `73:321` and `73:487`, then compares replay-camera branches with the approved Direction 06 Revision 02 derivatives. Slice 4 retains the approved iPad landscape and iPhone portrait targets.
 - Manual evidence records VoiceOver order, accessibility Dynamic Type, sufficient contrast, and Reduce Motion behavior.
 
 ### Analyzer

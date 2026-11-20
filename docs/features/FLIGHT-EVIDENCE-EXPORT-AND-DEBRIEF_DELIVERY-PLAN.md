@@ -77,16 +77,17 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 
 **Product result:** A complete closed Flight has an interactive iPad portrait debrief on the real offline aviation chart.
 
-**Requirements:** FE-027–FE-041, FE-044, FE-051–FE-053.
+**Requirements:** FE-027–FE-041, FE-044, FE-051–FE-063.
 
 **End-to-end scope:**
 
 - Add the pure projector, indexed segments, route metrics, altitude observations, and event-position correlation required by the screen.
 - Add a main-actor Observation model for loading, selection, and playback.
-- Present map, paths, telemetry, timeline/events, selected evidence, seeking, and playback-rate menu.
+- Present map, Cockpit-equivalent planned-leg geometry and minute marks, toggleable drift references, paths, telemetry, timeline/events, selected evidence, seeking, playback-rate menu, historical aircraft, Follow Aircraft and Free Look camera states, North-up and Track-up orientations, Recenter, and Fit full flight.
+- Provide the canonical compact replay console and full-analysis mode. Both retain current altitude, ground speed, course, playback controls, and selection; analysis expands plots and event cards vertically without changing the horizontal playback-control grammar.
 - Cancel loading/projection/playback when leaving.
 
-**Design:** [iPad portrait debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-676) and [event-position disclosure](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-628).
+**Design:** [Direction 07 compact replay console](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321) and [Direction 07 full analysis](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-487) are the canonical completed-Flight Debrief targets. [Direction 06 Revision 02](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=57-271) and its approved derivatives remain authoritative for replay-camera branches not redrawn in Direction 07; they inherit Direction 07's toolbar, legend, and replay-console treatment. The earlier [Direction 01 debrief](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=2-676) and [Direction 03 event disclosure](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=19-628) are historical context only for this slice.
 
 **Acceptance and verification:**
 
@@ -94,11 +95,14 @@ Every slice delivers a usable pilot or engineering outcome. Required schema, pro
 - Correlation never crosses gaps or replaces recorded event time.
 - Paths/gaps remain distinguishable without color alone; metrics are objective and deterministic.
 - Playback rate changes advancement only, never evidence.
+- Aircraft, camera, track progression, and telemetry remain synchronized with selected evidence time during playback and seeking.
+- Manual map inspection, refocusing, orientation changes, gaps, unreliable course, and unavailable-position states follow FE-054–FE-061.
+- Compact/full-analysis transitions preserve replay and camera state; current altitude, ground speed, and course remain visible in both modes; Leg/Track/Action legend swatches and Fit full flight placement match the canonical Direction 07 nodes.
 - Injected-clock Swift Testing covers projection and transport without sleeps.
 - XCUITest covers entry, selection, seeking, playback, rate, exit, and absence of operational commands.
-- Simulator comparison cites the approved iPad portrait frames.
+- Simulator comparison cites the renewed approved iPad portrait replay-camera frames.
 
-**Exclusions:** Limited states, secondary layouts, full accessibility coverage, and analyzer.
+**Exclusions:** Limited states beyond the no-trustworthy-position replay-camera state, secondary layouts, full-screen accessibility coverage beyond replay-camera controls and equivalent evidence, and analyzer.
 
 **Blockers:** Slice 1.
 

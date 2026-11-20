@@ -24,6 +24,7 @@ struct FlightDetailLoaderView: View {
     @State private var exportTask: Task<Void, Never>?
     @State private var exportingFormat: FlightExportFormat?
     @State private var exportProgress = 0.12
+    @State private var debriefPresented = false
 
     private var isExporting: Bool { exportTask != nil }
 
@@ -35,6 +36,7 @@ struct FlightDetailLoaderView: View {
                     onContinue: { onContinue(id) },
                     isExporting: isExporting,
                     onExport: { exportChoicePresented = true },
+                    onDebrief: { debriefPresented = true },
                     onDelete: onRequestDelete
                 )
             } else if loadFailed {
@@ -117,6 +119,9 @@ struct FlightDetailLoaderView: View {
             if let exportResult {
                 FlightExportResultView(result: exportResult)
             }
+        }
+        .navigationDestination(isPresented: $debriefPresented) {
+            FlightDebriefLoaderView(id: id, library: library)
         }
         .onChange(of: flightsState.rows.contains(where: { $0.id == id })) { wasPresent, isPresent in
             if wasPresent, !isPresent {
@@ -207,6 +212,7 @@ struct FlightDetailView: View {
     let onContinue: () -> Void
     let isExporting: Bool
     let onExport: () -> Void
+    let onDebrief: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
@@ -262,6 +268,17 @@ struct FlightDetailView: View {
                         .controlSize(.large)
                         .disabled(isExporting)
                         .accessibilityIdentifier("flight-detail.export")
+                }
+
+                if detail.status == .complete {
+                    Button(action: onDebrief) {
+                        Label("Open Debrief", systemImage: "chart.xyaxis.line")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.roundedRectangle(radius: 14))
+                    .controlSize(.large)
+                    .accessibilityIdentifier("flight-detail.debrief")
                 }
 
                 if detail.status == .unavailable, detail.canDelete {

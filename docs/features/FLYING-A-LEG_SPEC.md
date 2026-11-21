@@ -466,7 +466,7 @@ The imported V7 execution snapshot remains the source of planned course, distanc
 
 111. Track-up presentation aligns the imported planned leg for visual navigation. It does not claim a live aircraft heading, position, or ground track.
 
-112. The pilot selects a start-checklist template in Settings. The first release provides two or three bundled templates; template selection is not performed from the cockpit checklist.
+112. The pilot selects a start-checklist template in Settings. The original release contract provided two or three bundled templates; template selection is not performed from the cockpit checklist. The approved [Settings contract](SETTINGS_SPEC.md) SET-08 now defines exactly **צא כיוון**, **Establish Heading**, and **No checklist**, captured at explicit and automatic leg starts. Changing the device default preserves the active leg's captured definition and state; No checklist omits only its checklist presentation and chip. SET-14/16 govern undo and durable/legacy recovery.
 
 113. The expanded cockpit checklist displays the selected template's title and rendered ordered content. Its title, sections, and items are not hard-coded into the cockpit view.
 

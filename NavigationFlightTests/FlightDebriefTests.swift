@@ -6,6 +6,20 @@ import SwiftUI
 
 @Suite("Flight debrief")
 struct FlightDebriefTests {
+    @Test("Recovery presentation events do not become navigation timeline activity")
+    func checklistPresentationStaysOutOfTimeline() throws {
+        let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10]])
+        let original = fixture.evidence
+        let event = RecordedFlightEvent(id: UUID(), sequence: 100, occurredAt: original.capturedAt,
+                                        elapsed: .seconds(9), origin: .pilot, payload: .cockpitPresentationChanged)
+        let evidence = FlightEvidenceSnapshot(capturedAt: original.capturedAt, sourceState: original.sourceState,
+            recording: .init(recording: original.recording.recording, events: original.recording.events + [event],
+                             trackSegments: original.recording.trackSegments), context: original.context)
+        let debrief = try FlightDebriefProjector().project(evidence)
+        #expect(!debrief.events.contains { $0.id == event.id })
+        #expect(debrief.events.count == original.recording.events.count)
+    }
+
     @Test("Partial segmented evidence never claims complete GPS coverage")
     func partialCoverageRemainsExplicit() throws {
         let fixture = try makeEvidence(eventTime: 9, segmentTimes: [[0, 10], [30, 40]], coverage: .partial)

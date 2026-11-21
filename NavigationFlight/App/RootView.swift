@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
+    private let settingsController: SettingsController
     @State private var appState: AppFeatureState
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
@@ -18,7 +19,8 @@ struct RootView: View {
     private let debugRecordingStatus: RecordingStatus?
     private let debugFlightsActiveRecordingID: UUID?
 
-    init() {
+    init(settingsController: SettingsController) {
+        self.settingsController = settingsController
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -216,7 +218,12 @@ struct RootView: View {
             recordingStore = InMemoryFlightRecordingStore(failure: .create)
             debugFlightsActiveRecordingID = nil
         } else {
-            recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+            recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory, beforeAppend: { event in
+                if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PRESENTATION_FAILURE"] == "1",
+                   event.payload == .cockpitPresentationChanged {
+                    throw FlightRecordingStoreError.operationFailed(id: nil)
+                }
+            })
             debugFlightsActiveRecordingID = nil
         }
 #else
@@ -241,8 +248,10 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if flightRecoveryCoordinator.state == .none {
+            if settingsController.isReady, flightRecoveryCoordinator.state == .none {
                 appShell
+            } else if !settingsController.isReady {
+                ProgressView("Loading…")
             } else {
                 FlightRecoveryView(
                     state: flightRecoveryCoordinator.state,
@@ -253,7 +262,12 @@ struct RootView: View {
                 )
             }
         }
+        .onChange(of: appState.cockpit.recordingCockpitContext) { _, context in
+            guard let context else { return }
+            Task { await flightRecordingCoordinator.recordPresentation(context) }
+        }
         .task {
+            await settingsController.bootstrap()
             if flightRecoveryCoordinator.state == .loading {
                 await flightRecoveryCoordinator.bootstrap()
             }
@@ -272,6 +286,7 @@ struct RootView: View {
                     positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
+                    checklistSelection: { settingsController.preferences.startChecklist },
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
@@ -321,7 +336,7 @@ struct RootView: View {
             }
 
             Tab("Settings", systemImage: "gearshape", value: AppFeatureState.AppSection.settings) {
-                SettingsFeatureView()
+                SettingsFeatureView(controller: settingsController)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
@@ -345,7 +360,8 @@ struct RootView: View {
                     legIDs: flightPlan.legs.map(\.id),
                     sourceData: appState.cockpit.flightPlanSourceData
                 ),
-                locationHub: locationService
+                locationHub: locationService,
+                context: appState.cockpit.recordingCockpitContext
             )
 #if DEBUG
             if let debugRecordingStatus {
@@ -702,7 +718,7 @@ struct RootView: View {
     private var cockpitTabLabel: some View {
         let indicator = CockpitActivityIndicator(
             isNavigationActive: appState.cockpit.flight?.legState == .active,
-            recordingStatus: flightRecordingCoordinator.status
+            recordingStatus: flightRecordingCoordinator.effectiveStatus
         )
         return HStack(spacing: 5) {
             Label("Cockpit", systemImage: "airplane")

@@ -24,6 +24,64 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testChecklistSettingsSaveBackRelaunchAndFailureRetry() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = "settings-161-\(UUID().uuidString)"
+        app.launch()
+        tab(named: "Settings", in: app).tap()
+        let row = app.buttons["settings-start-checklist"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["checklist-choice-none"].tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+        XCTAssertEqual(row.value as? String, "No checklist")
+        row.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertEqual(row.value as? String, "No checklist")
+        app.terminate()
+        app.launch()
+        tab(named: "Settings", in: app).tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        XCTAssertEqual(row.value as? String, "No checklist")
+        app.terminate()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_SETTINGS_FAILURE_ONCE"] = "1"
+        app.launch()
+        tab(named: "Settings", in: app).tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+        app.buttons["checklist-choice-establish-heading-cruise-check"].tap()
+        XCTAssertTrue(app.staticTexts["settings-save-error"].waitForExistence(timeout: 3))
+        XCTAssertEqual(row.value as? String, "No checklist")
+        app.buttons["settings-retry"].tap()
+        XCTAssertTrue(app.staticTexts["settings-save-error"].waitForNonExistence(timeout: 3))
+        XCTAssertEqual(row.value as? String, "Establish Heading")
+    }
+
+    @MainActor
+    func testNoChecklistStartAndRecoveryStayAbsent() throws {
+        let app = launchCockpit(planData: try twoLegPlanData())
+        tab(named: "Settings", in: app).tap()
+        app.buttons["settings-start-checklist"].tap()
+        app.buttons["checklist-choice-none"].tap()
+        XCTAssertTrue(app.buttons["settings-start-checklist"].waitForExistence(timeout: 3))
+        tab(named: "Cockpit", in: app).tap()
+        app.buttons["start-leg"].tap()
+        XCTAssertTrue(app.buttons["waypoint-identified"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["leg-start-checklist-chip"].exists)
+        XCTAssertFalse(app.buttons["leg-start-checklist-noted"].exists)
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["Continue Flight"].waitForExistence(timeout: 5))
+        app.buttons["Continue Flight"].tap()
+        XCTAssertTrue(app.buttons["waypoint-identified"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["leg-start-checklist-chip"].exists)
+        XCTAssertFalse(app.buttons["leg-start-checklist-noted"].exists)
+        app.buttons["reached-now"].tap()
+        XCTAssertTrue(app.buttons["waypoint-identified"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["leg-start-checklist-chip"].exists)
+    }
+
+    @MainActor
     func testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit() throws {
         let app = recoveryApp(state: "single", planData: try oneLegPlanData())
 
@@ -105,7 +163,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(flightPlansTab.isSelected)
 
         settingsTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        XCTAssertTrue(app.staticTexts["Settings will be available here. No functional settings or inactive future app sections."].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.buttons["settings-start-checklist"].waitForExistence(timeout: 2))
     }
 
     @MainActor

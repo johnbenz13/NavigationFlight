@@ -64,7 +64,7 @@ nonisolated struct FlightRecordingClosure: Equatable, Sendable {
 
 nonisolated struct FlightRecordingPromotion: Equatable, Sendable {
     var recording: FlightRecording
-    let events: [RecordedFlightEvent]
+    var events: [RecordedFlightEvent]
 }
 
 nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
@@ -77,6 +77,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         case timestampPrecedesStart
     }
 
+    var recordedProgression: AppPreferences.Progression = .automatic
+    var sourceSchemaVersion = 2
+    var cockpitContextStartSequence: UInt64 = 0
     let id: UUID
     let flightID: UUID
     let flightPlanSnapshot: RecordedFlightPlanSnapshot
@@ -428,6 +431,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         nextEventSequence: UInt64? = nil
     ) -> FlightRecording {
         FlightRecording(
+            recordedProgression: recordedProgression,
+            sourceSchemaVersion: sourceSchemaVersion,
+            cockpitContextStartSequence: cockpitContextStartSequence,
             id: id,
             flightID: flightID,
             flightPlanSnapshot: flightPlanSnapshot,
@@ -447,6 +453,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         nextEventSequence: UInt64
     ) -> FlightRecording {
         FlightRecording(
+            recordedProgression: recordedProgression,
+            sourceSchemaVersion: sourceSchemaVersion,
+            cockpitContextStartSequence: cockpitContextStartSequence,
             id: id,
             flightID: flightID,
             flightPlanSnapshot: flightPlanSnapshot,
@@ -466,6 +475,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         nextEventSequence: UInt64
     ) -> FlightRecording {
         FlightRecording(
+            recordedProgression: recordedProgression,
+            sourceSchemaVersion: sourceSchemaVersion,
+            cockpitContextStartSequence: cockpitContextStartSequence,
             id: id,
             flightID: flightID,
             flightPlanSnapshot: flightPlanSnapshot,
@@ -482,6 +494,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
 
     func restoring(gpsCoverage: GPSCoverageState) -> FlightRecording {
         FlightRecording(
+            recordedProgression: recordedProgression,
+            sourceSchemaVersion: sourceSchemaVersion,
+            cockpitContextStartSequence: cockpitContextStartSequence,
             id: id,
             flightID: flightID,
             flightPlanSnapshot: flightPlanSnapshot,
@@ -498,6 +513,9 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
 
     func restoringRecoveryCheckpoint(at timestamp: Date) -> FlightRecording {
         FlightRecording(
+            recordedProgression: recordedProgression,
+            sourceSchemaVersion: sourceSchemaVersion,
+            cockpitContextStartSequence: cockpitContextStartSequence,
             id: id,
             flightID: flightID,
             flightPlanSnapshot: flightPlanSnapshot,

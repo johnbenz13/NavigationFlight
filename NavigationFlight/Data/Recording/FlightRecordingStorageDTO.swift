@@ -2,9 +2,9 @@ import CryptoKit
 import Foundation
 
 nonisolated struct FlightRecordingManifestDTO: Codable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
-    let schemaVersion: Int
+    var schemaVersion: Int
     let id: UUID
     let flightID: UUID
     let startedAt: Date
@@ -16,9 +16,11 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
     var recoveryWindowSeconds: TimeInterval?
     var lastRecoveryCheckpointAt: Date?
     let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
+    var progressionPolicy: AppPreferences.Progression? = nil
+    var cockpitContextStartSequence: UInt64? = nil
 
     init(recording: FlightRecording, detectorPolicy: PhysicalFlightDetectionPolicySnapshot) {
-        schemaVersion = Self.currentSchemaVersion
+        schemaVersion = recording.sourceSchemaVersion
         id = recording.id
         flightID = recording.flightID
         startedAt = recording.startedAt
@@ -30,6 +32,8 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
         recoveryWindowSeconds = recording.recoveryWindowSeconds
         lastRecoveryCheckpointAt = recording.lastRecoveryCheckpointAt
         self.detectorPolicy = detectorPolicy
+        progressionPolicy = recording.recordedProgression
+        cockpitContextStartSequence = recording.cockpitContextStartSequence
     }
 
     func domain(
@@ -39,7 +43,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
         gpsCoverage restoredGPSCoverage: GPSCoverageState? = nil,
         nextEventSequence: UInt64? = nil
     ) throws -> FlightRecording {
-        guard schemaVersion == 1 || schemaVersion == Self.currentSchemaVersion else {
+        guard (1...Self.currentSchemaVersion).contains(schemaVersion) else {
             throw FlightRecordingStoreError.unsupportedVersion(id: id, schemaVersion: schemaVersion)
         }
         guard let physicalState = PhysicalFlightState(storageValue: physicalState),
@@ -47,7 +51,13 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
               let gpsCoverage = GPSCoverageState(storageValue: gpsCoverage) else {
             throw FlightRecordingStoreError.corruptPackage(id: id)
         }
-        return FlightRecording(
+        if schemaVersion == 3 {
+            guard progressionPolicy != nil, let cockpitContextStartSequence,
+                  cockpitContextStartSequence <= (nextEventSequence ?? self.nextEventSequence) else {
+                throw FlightRecordingStoreError.corruptPackage(id: id)
+            }
+        }
+        var recording = FlightRecording(
             id: id,
             flightID: flightID,
             flightPlanSnapshot: snapshot,
@@ -60,6 +70,10 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
             recoveryWindowSeconds: recoveryWindowSeconds ?? 300,
             lastRecoveryCheckpointAt: lastRecoveryCheckpointAt
         )
+        recording.recordedProgression = progressionPolicy ?? .automatic
+        recording.sourceSchemaVersion = schemaVersion
+        recording.cockpitContextStartSequence = cockpitContextStartSequence ?? 0
+        return recording
     }
 }
 
@@ -265,6 +279,7 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     let startCause: String?
     let outcome: String?
     let closureCause: String?
+    var cockpitContext: RecordingCockpitContext? = nil
     var targetKind: String? = nil
     var priorValue: Int? = nil
     var committedValue: Int? = nil
@@ -286,7 +301,16 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         elapsedSeconds = components.seconds
         elapsedAttoseconds = components.attoseconds
         origin = event.origin
+        cockpitContext = event.cockpitContext
         switch event.payload {
+        case .cockpitPresentationChanged:
+            kind = "cockpitPresentationChanged"
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
         case .recordingStarted:
             kind = "recordingStarted"
             legID = nil
@@ -486,6 +510,9 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     func domain() throws -> RecordedFlightEvent {
         let payload: RecordedFlightEventPayload
         switch kind {
+        case "cockpitPresentationChanged":
+            guard cockpitContext != nil else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .cockpitPresentationChanged
         case "recordingStarted" where startCause == "startLegWithoutLocation":
             payload = .recordingStarted(cause: .startLegWithoutLocation)
         case "legStarted":
@@ -591,7 +618,8 @@ nonisolated struct RecordedFlightEventDTO: Codable {
                 attosecondsComponent: elapsedAttoseconds
             ),
             origin: origin,
-            payload: payload
+            payload: payload,
+            cockpitContext: cockpitContext
         )
     }
 }

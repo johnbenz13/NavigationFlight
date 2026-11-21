@@ -1,0 +1,35 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-21T05:28:01Z
+Total Results: 2
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testChecklistSettingsSaveBackRelaunchAndFailureRetry()
+TEST_DISPLAY_NAME: testChecklistSettingsSaveBackRelaunchAndFailureRetry()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 26
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testNoChecklistStartAndRecoveryStayAbsent()
+TEST_DISPLAY_NAME: testNoChecklistStartAndRecoveryStayAbsent()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 60
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

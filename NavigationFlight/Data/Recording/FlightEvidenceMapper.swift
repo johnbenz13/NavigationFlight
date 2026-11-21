@@ -154,6 +154,8 @@ nonisolated struct FlightEvidenceMapper: Sendable {
     private func payload(_ payload: RecordedFlightEventPayload) -> FlightEvidenceBundleV1.EventPayload {
         typealias Value = PortableValue
         switch payload {
+        case .cockpitPresentationChanged:
+            return .init(kind: "cockpitPresentationChanged", values: [:])
         case .recordingStarted(let cause):
             return .init(kind: "recordingStarted", values: ["cause": .string(recordingStartCause(cause))])
         case .legStarted(let legID):

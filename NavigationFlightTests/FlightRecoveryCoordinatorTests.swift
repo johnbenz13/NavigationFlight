@@ -474,6 +474,138 @@ struct FlightRecoveryCoordinatorTests {
         )
     }
 
+    @Test("Schema 3 captures checklist identity, review and explicit absence through disk recovery", arguments: StartChecklistSelection.allCases)
+    func checklistDiskRecovery(_ selection: StartChecklistSelection) async throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = DiskFlightRecordingStore(rootDirectory: directory)
+        let engine = FlightRecordingEngine(store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: plan.legs.map(\.id), sourceData: source))
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(),
+                                                         eventIDs: [UUID(), UUID()], checklistSelection: selection)
+        var context = try #require(started.cockpitContext)
+        let legID = flight.legIDs[0]
+        if selection != .none { context.checklists[legID]?.reviewState = .noted }
+        context.checklists[legID]?.presentationState = .collapsed
+        try await engine.recordPresentation(context, at: time.addingTimeInterval(1))
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        #expect(snapshot.recording.sourceSchemaVersion == 3)
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(2) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(id: started.recording.id, at: time.addingTimeInterval(2), elapsed: .seconds(2), eventID: UUID())
+        #expect(recovered.cockpitContext == context)
+        var cockpit = CockpitFeatureState()
+        cockpit.restore(flightPlan: plan, flight: recovered.flight, sourceData: source, cockpitContext: recovered.cockpitContext)
+        #expect(cockpit.legStartChecklists[legID]?.selection == selection)
+        #expect((cockpit.activeLegStartChecklist == nil) == (selection == .none))
+    }
+
+    @Test("Mismatched and missing required schema 3 context fail recovery", arguments: [false, true])
+    func corruptChecklistContext(_ missing: Bool) async throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 20_000)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: plan.legs.map(\.id), sourceData: source))
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let snapshot = try await store.readSnapshot(id: started.recording.id)
+        var events = snapshot.events
+        for index in events.indices {
+            events[index].cockpitContext = missing ? nil : RecordingCockpitContext(flightID: UUID(), checklists: [:], areDriftLinesVisible: true)
+        }
+        let corruptStore = InMemoryFlightRecordingStore(packageResults: [.available(.init(recording: snapshot.recording, events: events))])
+        let recovery = FlightRecoveryCoordinator(store: corruptStore, now: { time.addingTimeInterval(1) })
+        await recovery.bootstrap()
+        #expect(recovery.state == .failure(.corrupt(id: snapshot.recording.id)))
+    }
+
+    @Test("Captured choices survive rerenders and never fabricate acknowledgements", arguments: StartChecklistSelection.allCases)
+    func capturedStateAndAdapter(_ selection: StartChecklistSelection) throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        var cockpit = CockpitFeatureState()
+        try cockpit.accept(plan)
+        try cockpit.startLeg(at: Date(timeIntervalSince1970: 1000), checklistSelection: selection)
+        let flight = try #require(cockpit.flight)
+        let captured = try #require(cockpit.legStartChecklists[flight.legIDs[0]])
+        let rendered = try CockpitPresentationAdapter().makeLegStartChecklist(flightPlan: plan, flight: flight, captured: captured)
+        #expect(rendered?.template.id == (selection == .none ? nil : selection.rawValue))
+        cockpit.installCommittedFlight(flight)
+        #expect(cockpit.legStartChecklists[flight.legIDs[0]]?.selection == selection)
+        cockpit.noteLegStartChecklist()
+        if selection == .none {
+            #expect(cockpit.activeLegStartChecklist == nil)
+            #expect(!cockpit.hasChecklistAcknowledgements)
+            #expect(cockpit.legStartChecklists[flight.legIDs[0]]?.reviewState == .pending)
+        } else {
+            #expect(cockpit.activeLegStartChecklist?.reviewState == .noted)
+        }
+        var corrupt = captured
+        corrupt.definitionRevision = 2
+        #expect(throws: FlightRecoveryError.invalidJournal) {
+            try RecordingCockpitContext(flightID: flight.id, checklists: [captured.legID: corrupt], areDriftLinesVisible: true)
+                .validate(flightID: flight.id, legIDs: flight.legIDs)
+        }
+    }
+
+    @Test("A schema upgrade interrupted before its first context record preserves legacy recovery")
+    func interruptedLegacyContextUpgrade() async throws {
+        let time = Date(timeIntervalSince1970: 30_000)
+        let fixture = try recoveryFixture(recordingID: UUID(), startedAt: time)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = DiskFlightRecordingStore(rootDirectory: directory)
+        try await store.create(.init(recording: fixture.recording, events: fixture.events))
+        let manifestURL = directory.appending(path: fixture.recording.id.uuidString.lowercased()).appending(path: "manifest.json")
+        var manifest = try FlightRecordingCoding.decoder.decode(FlightRecordingManifestDTO.self, from: Data(contentsOf: manifestURL))
+        manifest.schemaVersion = 3
+        manifest.progressionPolicy = .automatic
+        manifest.cockpitContextStartSequence = UInt64(fixture.events.count)
+        try FlightRecordingCoding.encoder.encode(manifest).write(to: manifestURL, options: .atomic)
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(1) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(id: fixture.recording.id,
+            at: time.addingTimeInterval(1), elapsed: .seconds(1), eventID: UUID())
+        var cockpit = CockpitFeatureState()
+        cockpit.restore(flightPlan: recovered.flightPlan, flight: recovered.flight,
+                        sourceData: fixture.recording.flightPlanSnapshot.sourceData, cockpitContext: recovered.cockpitContext)
+        #expect(cockpit.activeLegStartChecklist?.selection == .tzeKivun)
+        #expect(cockpit.activeLegStartChecklist?.reviewState == .pending)
+        await recovery.bootstrap()
+        if case .single = recovery.state {} else { Issue.record("Legacy recovery must remain available after continuation") }
+    }
+
+    @Test("Schema 3 replays the captured Manual policy independently of defaults")
+    func capturedManualPolicyRecovery() async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        #expect(plan.legs.count > 1)
+        let time = Date(timeIntervalSince1970: 40_000)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0,
+                            executionMode: .noWind, progressionPolicy: .manualNextLeg)
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: plan.legs.map(\.id), sourceData: source))
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()], checklistSelection: .none)
+        _ = try await engine.commit(.reachCurrentWaypoint(orderedActiveLegPointKeys: [],
+            at: time.addingTimeInterval(1), elapsed: .seconds(1), eventIDs: [UUID()]))
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(2) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(id: started.recording.id,
+            at: time.addingTimeInterval(2), elapsed: .seconds(2), eventID: UUID())
+        #expect(recovered.flight.progressionPolicy == .manualNextLeg)
+        #expect(recovered.flight.legState == .ready)
+        #expect(recovered.flight.activeLegIndex == 1)
+        #expect(recovered.cockpitContext?.checklists[flight.legIDs[0]]?.selection == StartChecklistSelection.none)
+        #expect(recovered.cockpitContext?.checklists[flight.legIDs[1]] == nil)
+    }
+
     private func fixtureData() throws -> Data {
         let bundle = Bundle(for: FlightRecoveryFixtureLocator.self)
         let nested = bundle.url(
@@ -484,6 +616,41 @@ struct FlightRecoveryCoordinatorTests {
         return try Data(contentsOf: #require(
             nested ?? bundle.url(forResource: "representative-v7", withExtension: "fplnav")
         ))
+    }
+
+    private func twoLegFixtureData() throws -> Data {
+        var object = try #require(JSONSerialization.jsonObject(with: fixtureData()) as? [String: Any])
+        var navigation = try #require(object["navigation"] as? [String: Any])
+        var route = try #require(navigation["route"] as? [String: Any])
+        var waypoints = try #require(route["waypoints"] as? [[String: Any]])
+        var order = try #require(route["waypointOrder"] as? [String])
+        var legs = try #require(route["legs"] as? [[String: Any]])
+        var waypoint = try #require(waypoints.last)
+        let waypointID = UUID().uuidString
+        waypoint["id"] = waypointID
+        waypoint["position"] = ["latitude": 0.03, "longitude": 0.01]
+        waypoints.append(waypoint)
+        var leg = try #require(legs.last)
+        let legID = UUID().uuidString
+        leg["id"] = legID
+        let departureID = try #require(order.last)
+        leg["departureWaypointId"] = departureID
+        leg["arrivalWaypointId"] = waypointID
+        legs.append(leg)
+        order.append(waypointID)
+        route["waypoints"] = waypoints
+        route["waypointOrder"] = order
+        route["legs"] = legs
+        navigation["route"] = route
+        object["navigation"] = navigation
+        var execution = try #require(object["execution"] as? [String: Any])
+        var resolved = try #require(execution["legs"] as? [[String: Any]])
+        var resolvedLeg = try #require(resolved.last)
+        resolvedLeg["legId"] = legID
+        resolved.append(resolvedLeg)
+        execution["legs"] = resolved
+        object["execution"] = execution
+        return try JSONSerialization.data(withJSONObject: object)
     }
 }
 

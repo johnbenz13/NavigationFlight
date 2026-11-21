@@ -1,5 +1,12 @@
 # Settings — Product Specification
 
+Implementation update, 2026-11-21: John authorized #161 and approved the
+presentation-only persistence-warning copy in
+[#161's readiness decision](https://github.com/johnbenz13/NavigationFlight/issues/161#issuecomment-7052413098).
+The earlier unapproved-implementation and warning-blocker statements below are
+historical planning status, superseded by that decision. The other three settings
+remain separate slices; implementation acceptance remains pending.
+
 Status: product approved by John on 2026-11-21, including SET-16 legacy fallback.
 Design and technical design approved by John on 2026-11-21. Ticket breakdown and GitHub publication approved by John on 2026-11-21.
 Implementation remains unapproved; readiness gates are recorded in the delivery plan.

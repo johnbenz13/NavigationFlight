@@ -26,10 +26,19 @@ final class FlightRecordingCoordinator {
     private var recoveryCheckpointTask: Task<Void, Never>?
     private var supplementalConsumptionTask: Task<Void, Never>?
 
+    private(set) var presentationWriteFailed = false
     private(set) var status = RecordingStatus.ready
     private(set) var lastError: CoordinationError?
     private(set) var isCommitting = false
     private(set) var storageDegradations: Set<RecordingStorageDegradation> = []
+
+    var effectiveStatus: RecordingStatus {
+        guard publishedRecording?.closure == nil else { return status }
+        if storageDegradations.contains(.lowStorage) { return .recordingLowStorage }
+        if !storageDegradations.isEmpty { return .recordingDegraded }
+        if presentationWriteFailed { return .checklistPersistenceFailed }
+        return status
+    }
 
     var activeRecordingID: UUID? {
         guard publishedRecording?.closure == nil else { return nil }
@@ -69,19 +78,21 @@ final class FlightRecordingCoordinator {
         self.supplementalSensorSource = supplementalSensorSource
     }
 
-    func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot) async {
+    func arm(flight: Flight, flightPlanSnapshot: RecordedFlightPlanSnapshot, context: RecordingCockpitContext? = nil) async {
         guard publishedFlight?.id != flight.id || engine == nil else { return }
         let candidate = FlightRecordingEngine(
             store: store,
             flight: flight,
             flightPlanSnapshot: flightPlanSnapshot,
-            detectorPolicy: detectorPolicy
+            detectorPolicy: detectorPolicy,
+            initialCockpitContext: context
         )
         await candidate.arm()
         engine = candidate
         publishedFlight = flight
         publishedRecording = nil
         status = .prepared
+        presentationWriteFailed = false
         lastError = nil
         startSupplementalCapture()
     }
@@ -89,9 +100,10 @@ final class FlightRecordingCoordinator {
     func arm(
         flight: Flight,
         flightPlanSnapshot: RecordedFlightPlanSnapshot,
-        locationHub: AircraftLocationService
+        locationHub: AircraftLocationService,
+        context: RecordingCockpitContext? = nil
     ) async {
-        await arm(flight: flight, flightPlanSnapshot: flightPlanSnapshot)
+        await arm(flight: flight, flightPlanSnapshot: flightPlanSnapshot, context: context)
         locationConsumptionTask?.cancel()
         let updates = await locationHub.recordingUpdates()
         await locationHub.startMonitoring(scope: .recording)
@@ -119,7 +131,8 @@ final class FlightRecordingCoordinator {
             recoveredRecording: recovered.recording,
             detectorPolicy: detectorPolicy,
             detectorPolicySnapshot: stored?.detectorPolicy,
-            storageDegradations: degradations
+            storageDegradations: degradations,
+            recoveredCockpitContext: recovered.cockpitContext
         )
         await candidate.arm()
         engine = candidate
@@ -127,6 +140,7 @@ final class FlightRecordingCoordinator {
         publishedRecording = recovered.recording
         startRecoveryCheckpointing()
         storageDegradations = degradations
+        presentationWriteFailed = false
         status = Self.status(for: recovered.recording, degradations: degradations)
         lastError = nil
     }
@@ -144,6 +158,7 @@ final class FlightRecordingCoordinator {
         publishedFlight = nil
         publishedRecording = nil
         status = .ready
+        presentationWriteFailed = false
     }
 
     private func startSupplementalCapture() {
@@ -232,17 +247,20 @@ final class FlightRecordingCoordinator {
         flightPlanSnapshot: RecordedFlightPlanSnapshot,
         at timestamp: Date,
         recordingID: UUID,
-        eventIDs: [UUID]
+        eventIDs: [UUID],
+        context: RecordingCockpitContext? = nil,
+        checklistSelection: StartChecklistSelection = .tzeKivun
     ) async throws -> CommittedNavigationTransition {
         guard !isCommitting else { throw CoordinationError.commandInFlight }
         let priorPublishedRecording = publishedRecording
+        let priorPublishedFlightID = publishedFlight?.id
         publishedFlight = flight
         lastError = nil
         isCommitting = true
         defer { isCommitting = false }
 
         let candidateEngine: FlightRecordingEngine
-        if let engine, publishedFlight?.id == flight.id {
+        if let engine, priorPublishedFlightID == flight.id {
             candidateEngine = engine
         } else {
             candidateEngine = FlightRecordingEngine(
@@ -259,7 +277,7 @@ final class FlightRecordingCoordinator {
             let transition = try await candidateEngine.promoteForStartLeg(
                 at: timestamp,
                 recordingID: recordingID,
-                eventIDs: startEventIDs
+                eventIDs: startEventIDs, context: context, checklistSelection: checklistSelection
             )
             engine = candidateEngine
             publishedFlight = transition.flight
@@ -347,7 +365,9 @@ final class FlightRecordingCoordinator {
     }
 
     func commitNavigation(
-        _ command: RecordedNavigationCommand
+        _ command: RecordedNavigationCommand,
+        context: RecordingCockpitContext? = nil,
+        checklistSelection: StartChecklistSelection = .tzeKivun
     ) async throws -> CommittedNavigationTransition {
         guard !isCommitting else { throw CoordinationError.commandInFlight }
         guard let engine else { throw CoordinationError.noActiveRecording }
@@ -355,10 +375,21 @@ final class FlightRecordingCoordinator {
         isCommitting = true
         defer { isCommitting = false }
 
-        let committed = try await engine.commit(command)
+        let committed = try await engine.commit(command, context: context, checklistSelection: checklistSelection)
         publishedFlight = committed.flight
         publishedRecording = committed.recording
+        if committed.cockpitContext != nil { presentationWriteFailed = false }
         return committed
+    }
+
+    func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date = .now) async {
+        guard let engine, publishedFlight?.id == context.flightID else { return }
+        do {
+            try await engine.recordPresentation(context, at: timestamp)
+            presentationWriteFailed = false
+        } catch {
+            presentationWriteFailed = true
+        }
     }
 
     func recordStorageDegradation(

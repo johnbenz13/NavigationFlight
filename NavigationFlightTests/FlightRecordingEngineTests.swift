@@ -650,6 +650,40 @@ struct FlightRecordingEngineTests {
         ])
     }
 
+    @Test("Explicit and automatic starts capture each choice and keep active identity", arguments: StartChecklistSelection.allCases)
+    @MainActor
+    func capturedChecklistStarts(_ selection: StartChecklistSelection) async throws {
+        let fixture = makeFixture(legCount: 2)
+        let store = InMemoryFlightRecordingStore()
+        let engine = FlightRecordingEngine(store: store, flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        let started = try await engine.promoteForStartLeg(at: fixture.startedAt, recordingID: UUID(),
+                                                        eventIDs: [UUID(), UUID()], checklistSelection: selection)
+        let firstID = fixture.flight.legIDs[0]
+        let secondID = fixture.flight.legIDs[1]
+        #expect(started.cockpitContext?.checklists[firstID]?.selection == selection)
+        var noted = try #require(started.cockpitContext)
+        if selection != .none { noted.checklists[firstID]?.reviewState = .noted }
+        noted.checklists[firstID]?.presentationState = .collapsed
+        try await engine.recordPresentation(noted, at: fixture.startedAt.addingTimeInterval(1))
+        let successorSelection: StartChecklistSelection = switch selection {
+        case .tzeKivun: .establishHeading
+        case .establishHeading: .none
+        case .none: .tzeKivun
+        }
+        let arrived = try await engine.commit(.reachCurrentWaypoint(orderedActiveLegPointKeys: [],
+            at: fixture.startedAt.addingTimeInterval(60), elapsed: .seconds(60), eventIDs: [UUID(), UUID()]),
+            context: noted, checklistSelection: successorSelection)
+        #expect(arrived.cockpitContext?.checklists[firstID]?.selection == selection)
+        #expect(arrived.cockpitContext?.checklists[firstID]?.phaseState == .hiddenForPhase)
+        #expect(arrived.cockpitContext?.checklists[secondID]?.selection == successorSelection)
+        let undo = try await engine.commit(.undoReach(originalEventID: arrived.eventIDs[0], restoredFlight: started.flight,
+            at: fixture.startedAt.addingTimeInterval(61), elapsed: .seconds(61), eventID: UUID()), context: noted)
+        #expect(undo.cockpitContext == noted)
+        let stored = try await store.readSnapshot(id: started.recording.id)
+        #expect(stored.events.last?.cockpitContext == noted)
+        #expect(stored.events.first(where: { $0.payload == .legStarted(legID: firstID) })?.cockpitContext?.checklists[firstID]?.selection == selection)
+    }
+
     private func makeFixture(legCount: Int = 1) -> (flight: Flight, snapshot: RecordedFlightPlanSnapshot, startedAt: Date) {
         let planID = UUID()
         let legIDs = (0..<legCount).map { _ in UUID() }

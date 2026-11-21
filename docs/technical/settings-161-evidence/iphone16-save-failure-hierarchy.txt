@@ -1,0 +1,87 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 13697, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+             NavigationBar, {{0.0, 62.0}, {402.0, 106.0}}, identifier: 'Settings', hitPoint: {201.0, 115.0}
+              Button, {{15.8, 61.8}, {44.3, 44.3}}, identifier: 'BackButton', hitPoint: {38.0, 84.0}
+              StaticText, {{16.0, 119.7}, {133.0, 40.7}}, label: 'Settings', hitPoint: {82.5, 140.0}
+             Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+               Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                 ScrollView, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                   Other, {{0.0, 0.0}, {402.0, 102.0}}, hitPoint: {201.0, 51.0}
+                   Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+                  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                  Other, {{0.0, 168.0}, {402.0, 549.3}}, hitPoint: {201.0, 442.7}
+                   StaticText, {{20.0, 192.0}, {255.0, 20.3}}, label: 'Preferences saved on this device.', hitPoint: {147.5, 202.2}
+                   Other, {{20.0, 236.3}, {362.0, 273.7}}, hitPoint: {201.0, 373.2}
+                    StaticText, {{20.0, 236.3}, {188.3, 15.7}}, label: 'Couldn’t save preference', hitPoint: {114.2, 244.2}
+                    StaticText, {{20.0, 262.0}, {353.0, 42.3}}, identifier: 'settings-save-error', label: 'Your start checklist is still ⁨צא כיוון⁩. ⁨No checklist⁩ wasn’t saved.', hitPoint: {196.5, 283.2}
+                    Button, {{20.0, 314.3}, {362.0, 76.0}}, identifier: 'settings-retry', label: 'Retry, Try saving No checklist again', hitPoint: {201.0, 352.3}
+                     StaticText, {{36.0, 331.7}, {40.7, 20.3}}, label: 'Retry', hitPoint: {56.3, 341.8}
+                     StaticText, {{36.0, 355.0}, {199.3, 18.0}}, label: 'Try saving No checklist again', hitPoint: {135.7, 364.0}
+                    Button, {{20.0, 390.3}, {362.0, 76.0}}, identifier: 'settings-dismiss-error', label: 'Dismiss, Keep the previous saved choice', hitPoint: {201.0, 428.3}
+                     StaticText, {{36.0, 407.7}, {59.3, 20.3}}, label: 'Dismiss', hitPoint: {65.7, 417.8}
+                     StaticText, {{36.0, 431.0}, {217.0, 18.0}}, label: 'Keep the previous saved choice', hitPoint: {144.5, 440.0}
+                    StaticText, {{20.0, 476.3}, {323.7, 33.7}}, label: 'Retry saves the attempted choice. Dismiss keeps the previous preference.', hitPoint: {181.8, 493.2}
+                   StaticText, {{20.0, 534.0}, {56.7, 15.7}}, label: 'Cockpit', hitPoint: {48.3, 541.8}
+                   Button, {{20.0, 559.7}, {362.0, 76.0}}, identifier: 'settings-start-checklist', label: 'Start checklist', value: צא כיוון, hitPoint: {201.0, 597.7}
+                    StaticText, {{36.0, 577.0}, {109.0, 20.3}}, label: 'Start checklist', hitPoint: {90.5, 587.2}
+                    Image, {{352.7, 590.3}, {8.3, 14.7}}, identifier: 'chevron.right', label: 'Forward', hitPoint: {356.8, 597.7}
+                    StaticText, {{36.0, 600.3}, {149.0, 18.0}}, label: 'צא כיוון · Next leg start', hitPoint: {110.5, 609.3}
+                   StaticText, {{20.0, 659.7}, {291.0, 33.7}}, label: 'Changes save automatically. Your current Flight continues unchanged.', hitPoint: {165.5, 676.5}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 490.3}, {3.0, 297.7}}, hitPoint: {397.5, 639.2}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 1 page', value: 0%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 490.3}, {3.0, 297.7}}, hitPoint: {397.5, 639.2}
+             Toolbar, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {97.7, 54.0}}, hitPoint: {69.8, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {97.7, 54.0}}, label: 'Cockpit', hitPoint: {73.8, 822.0}
+              Image, {{59.3, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {73.8, 814.8}
+             Button, {{109.8, 795.0}, {97.7, 54.0}}, label: 'Flight Plans', hitPoint: {158.6, 822.0}
+              Image, {{142.4, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {158.4, 814.8}
+             Button, {{194.6, 795.0}, {97.7, 54.0}}, label: 'Flights', hitPoint: {243.4, 822.0}
+              Image, {{229.2, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {243.1, 815.0}
+             Button, {{279.3, 795.0}, {97.7, 54.0}}, label: 'Settings', Selected, hitPoint: {328.2, 822.0}
+              Image, {{314.0, 801.0}, {28.0, 28.0}}, identifier: 'gearshape.fill', label: 'Gear shape, filled', hitPoint: {328.0, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+             Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+              Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+              Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+               Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                 Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+               Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

@@ -1,2 +1,5 @@
 node_modules/
 .DS_Store
+
+# Verified private AIP release resources, staged before building.
+/.generated/

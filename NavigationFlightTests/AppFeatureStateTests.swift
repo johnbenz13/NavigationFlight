@@ -12,8 +12,35 @@ struct AppFeatureStateTests {
             .cockpit,
             .flightPlans,
             .flights,
+            .charts,
             .settings,
         ])
+    }
+
+    @Test("Chart history survives section changes and exposes the originating row on dismissal")
+    func chartsNavigationSurvivesTabChanges() {
+        var state = AppFeatureState()
+        #expect(state.selectedAppSection == .flightPlans)
+        state.selectAppSection(.charts)
+        state.chartLibrary.aerodromePath = ["llhz"]
+        state.chartLibrary.showChart("aip-llhz-chart-11")
+        state.chartLibrary.presentedChartID = nil
+        state.chartLibrary.didDismissChart()
+        state.selectAppSection(.flights)
+        state.selectAppSection(.charts)
+        #expect(state.chartLibrary.aerodromePath == ["llhz"])
+        #expect(state.chartLibrary.returnFocusChartID == "aip-llhz-chart-11")
+        #expect(state.chartLibrary.presentedChartID == nil)
+        #expect(state.cockpit.flight == nil)
+    }
+
+    @Test("Settings overflows only when the available tab width is constrained")
+    func chartShellOverflow() {
+        #expect(AppFeatureState.usesMoreTab(availableWidth: 376, compact: true))
+        #expect(!AppFeatureState.usesMoreTab(availableWidth: 402, compact: true))
+        #expect(!AppFeatureState.usesMoreTab(availableWidth: 834, compact: false))
+        #expect(AppFeatureState.usesMoreTab(availableWidth: 834, compact: false, topBar: true))
+        #expect(!AppFeatureState.usesMoreTab(availableWidth: 1210, compact: false, topBar: true))
     }
 
     @Test("Selecting another section preserves Flights state")
@@ -272,6 +299,9 @@ struct AppFeatureStateTests {
         #expect(state.selectedAppSection == .settings)
 
         let staleCancellation = state.cancelPendingFlightChange(id: UUID())
+        state.selectAppSection(.charts)
+        #expect(state.selectedAppSection == selection)
+
         let cancelled = state.cancelPendingFlightChange(id: pendingID)
         #expect(staleCancellation == false)
         #expect(cancelled)

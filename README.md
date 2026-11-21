@@ -85,3 +85,45 @@ an exact released `fplnav-spec` version, add a v6 case only to `FPLNavDecoder`'s
 dispatch, and stage official version-pinned v6 test vectors. Callers and Domain
 must remain free of wire-version switches. If v6 adds semantics, model them in
 Domain independently of their JSON layout.
+
+### Prepare the offline AIP library
+
+Each build uses the chart snapshot pinned in [Config/aip-charts-pin.json](Config/aip-charts-pin.json).
+The [immutable AIP release](https://github.com/johnbenz13/fplnav-spec/releases/tag/aviation-maps/domestic-aip-01-2026)
+contains 65 original PDFs for domestic AIP amendment 01-2026. The
+[upstream verification](https://github.com/johnbenz13/fplnav-spec/issues/23#issuecomment-7058845066)
+records the release, checksums, and live Flight install receipt.
+
+Prepare once on each fresh developer checkout or CI worker. Clone
+`johnbenz13/fplnav-spec` with a private-repository read credential, check out
+`147f8754cc25a51508ca7d4a23254f78c0136968`, then run these commands from that
+checkout to build the reviewed installer.
+
+```sh
+mise exec node@24.18.1 -- corepack yarn install --immutable
+mise exec node@24.18.1 -- corepack yarn build
+```
+
+Run the following from Navigation Flight. Developers can use a signed-in
+GitHub CLI. CI supplies a masked `GH_TOKEN` scoped to read contents in
+`johnbenz13/fplnav-spec`.
+
+```sh
+AVIATION_MAPS_CHECKOUT=/absolute/path/to/fplnav-spec sh scripts/prepare-aip-charts.sh
+```
+
+The installer prepares `.generated/AIPCharts` independently of the PMTiles.
+Xcode verifies the pin, exact filenames, sizes, and SHA-256 digests before
+bundling the folder. A build from a prepared checkout can run offline with
+its Xcode dependencies cached. Verify a built app with the same command used
+by Xcode and the installed resource path.
+
+```sh
+/usr/bin/python3 scripts/verify-aip-charts.py Config/aip-charts-pin.json \
+  /absolute/path/to/NavigationFlight.app/AIPCharts
+```
+
+To update, commit the next reviewed chart pin and run preparation again. To
+roll back, restore the prior reviewed pin and rerun preparation before
+building. The build rejects any mismatch between the committed pin and
+the staged snapshot.

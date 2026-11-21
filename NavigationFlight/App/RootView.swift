@@ -3,6 +3,12 @@ import SwiftUI
 struct RootView: View {
     private let settingsController: SettingsController
     @State private var appState: AppFeatureState
+    @State private var shellWidth: CGFloat = 0
+    @State private var tabBarPlacement: TabBarPlacement?
+    @State private var showsSettingsFromMore = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    private let chartResources: ChartResources
+    private let chartCatalog: ChartCatalog?
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
@@ -21,6 +27,15 @@ struct RootView: View {
 
     init(settingsController: SettingsController) {
         self.settingsController = settingsController
+#if DEBUG
+        chartResources = ChartResources(
+            bundleRoot: Bundle.main.bundleURL,
+            unreadableChartID: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_UNREADABLE_CHART"]
+        )
+#else
+        chartResources = .bundled
+#endif
+        chartCatalog = try? chartResources.loadCatalog()
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -290,6 +305,7 @@ struct RootView: View {
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
+                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
             } label: {
                 cockpitTabLabel
             }
@@ -307,6 +323,7 @@ struct RootView: View {
                     debugImportData: debugImportData,
                     onIntent: handleFlightPlansIntent
                 )
+                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
             }
 
             Tab("Flights", systemImage: "clock.arrow.circlepath", value: AppFeatureState.AppSection.flights) {
@@ -333,13 +350,50 @@ struct RootView: View {
                                 : .zero
                         )
                 )
+                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
             }
 
-            Tab("Settings", systemImage: "gearshape", value: AppFeatureState.AppSection.settings) {
-                SettingsFeatureView(controller: settingsController)
+            Tab("Charts", systemImage: "document", value: AppFeatureState.AppSection.charts) {
+                ChartLibraryView(catalog: chartCatalog, state: $appState.chartLibrary)
+                    .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+            }
+
+            Tab(
+                usesMoreTab ? "More" : "Settings",
+                systemImage: usesMoreTab ? "ellipsis" : "gearshape",
+                value: AppFeatureState.AppSection.settings
+            ) {
+                Group {
+                    if usesMoreTab && !showsSettingsFromMore {
+                        MoreSectionsView {
+                            showsSettingsFromMore = true
+                        }
+                    } else {
+                        SettingsFeatureView(
+                            controller: settingsController,
+                            onBackToMore: usesMoreTab ? { showsSettingsFromMore = false } : nil
+                        )
+                    }
+                }
+                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { shellWidth = $0 }
+        .onChange(of: usesMoreTab) { _, usesMore in
+            if usesMore && appState.selectedAppSection == .settings {
+                showsSettingsFromMore = true
+            }
+        }
+        .fullScreenCover(item: chartSelection, onDismiss: {
+            appState.chartLibrary.didDismissChart()
+        }) { selection in
+            if let chartCatalog {
+                ChartViewer(selection: selection, catalog: chartCatalog, resources: chartResources) {
+                    appState.chartLibrary.presentedChartID = nil
+                }
+            }
+        }
         .onAppear {
             synchronizeIdleTimer()
         }
@@ -708,10 +762,30 @@ struct RootView: View {
         }
     }
 
+    private var usesMoreTab: Bool {
+        AppFeatureState.usesMoreTab(
+            availableWidth: shellWidth,
+            compact: horizontalSizeClass == .compact,
+            topBar: tabBarPlacement == .topBar
+        )
+    }
+
+    private var chartSelection: Binding<ChartSelection?> {
+        Binding(
+            get: { appState.chartLibrary.presentedChartID.flatMap { chartCatalog?.selection(for: $0) } },
+            set: { appState.chartLibrary.presentedChartID = $0?.id }
+        )
+    }
+
     private var appSectionSelection: Binding<AppFeatureState.AppSection> {
         Binding(
             get: { appState.selectedAppSection },
-            set: { appState.selectAppSection($0) }
+            set: { selection in
+                appState.selectAppSection(selection)
+                if appState.selectedAppSection == .settings && !usesMoreTab {
+                    showsSettingsFromMore = true
+                }
+            }
         )
     }
 

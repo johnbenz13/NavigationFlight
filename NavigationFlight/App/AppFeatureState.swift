@@ -5,10 +5,19 @@ struct AppFeatureState: Equatable, Sendable {
         case cockpit
         case flightPlans
         case flights
+        case charts
         case settings
     }
 
+    static func usesMoreTab(availableWidth: Double, compact: Bool, topBar: Bool = false) -> Bool {
+        guard availableWidth > 0 else { return false }
+        if compact { return availableWidth < 390 }
+        // The floating iPad tab bar has less space than the window itself.
+        return topBar && availableWidth < 900
+    }
+
     private(set) var selectedAppSection: AppSection
+    var chartLibrary = ChartLibraryState()
     private(set) var cockpit: CockpitFeatureState
     private(set) var flightPlans: FlightPlansFeatureState
     private(set) var flights: FlightsFeatureState

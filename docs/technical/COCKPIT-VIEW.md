@@ -141,7 +141,7 @@ All local state is `private`, making `CockpitView` its sole owner. SwiftUI prese
 
 | `@State` property | Purpose and reset behavior |
 | --- | --- |
-| `showsChartsUnavailable` | Drives the Charts Unavailable alert. The alert binding resets it when dismissed. |
+| `cockpitPresentationState` | Owns the transient Charts disclosure and the compact sheet-to-viewer handoff. The viewer returns to its originating Charts list or closes directly to the map. |
 | `mapFocusRequest` | Carries the latest programmatic map-focus request. It starts focused on the current leg and is replaced for leg, waypoint, overview, or a selected timing target. |
 | `preservedMapCamera` | Stores the map camera across SwiftUI updates and layout/orientation changes. The map writes through its binding. |
 | `isMapCameraUserControlled` | Records whether user manipulation currently owns camera positioning. A focus-button action clears it before issuing a new focus request. |

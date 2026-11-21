@@ -44,7 +44,7 @@ struct MapQuickFocusControls: View {
 struct CockpitMapToolsPanel: View {
     let areDriftLinesVisible: Bool
     let onToggleDriftLines: () -> Void
-    let onShowChartLayers: () -> Void
+    let onShowCharts: () -> Void
     let onInspectFlightPlan: () -> Void
     let onClose: () -> Void
 
@@ -63,7 +63,7 @@ struct CockpitMapToolsPanel: View {
                 action: onToggleDriftLines
             )
             .padding(.top, 8)
-            toolButton("Chart layers", identifier: "map-tools-chart-layers", action: onShowChartLayers)
+            toolButton("Charts", identifier: "map-tools-charts", action: onShowCharts)
                 .padding(.top, 8)
             toolButton("Inspect flight plan", identifier: "map-tools-inspect-flight-plan", action: onInspectFlightPlan)
                 .padding(.top, 8)

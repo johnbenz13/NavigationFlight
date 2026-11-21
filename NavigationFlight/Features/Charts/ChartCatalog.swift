@@ -40,6 +40,10 @@ struct ChartCatalog: Decodable {
     }
 
     struct Chart: Decodable, Identifiable {
+        enum Role: String, Decodable {
+            case departure, arrival, circuit
+        }
+
         struct Edition: Decodable {
             let amendment: String?
             let printedDate: String?
@@ -56,6 +60,7 @@ struct ChartCatalog: Decodable {
 
         let id: String
         let title: String
+        let roles: [Role]
         let sourceUrl: URL
         let edition: Edition
         let pages: [Page]

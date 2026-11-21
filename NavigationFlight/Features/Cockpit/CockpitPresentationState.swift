@@ -83,12 +83,13 @@ enum CockpitProgressionNotice: Equatable, Sendable {
 enum CockpitMapTool: CaseIterable, Equatable, Sendable {
     case showFullRoute
     case toggleDriftLines
-    case chartLayers
+    case charts
     case inspectFlightPlan
 }
 
 enum CockpitDisclosure: Equatable, Sendable {
     case mapTools
+    case charts
     case frequencyPlan
     case checklist
     case previousLeg
@@ -101,11 +102,26 @@ struct CockpitPresentationState: Equatable, Sendable {
     private(set) var areQuickFocusControlsVisible = false
     private(set) var quickFocusHideDeadline: Date?
     private(set) var activeDisclosure: CockpitDisclosure?
+    enum ChartTransition: Equatable, Sendable {
+        case dismissingMapSheet(String)
+        case viewing(String)
+        case dismissingViewer(returnFocus: String?)
+    }
+
+    private(set) var chartTransition: ChartTransition?
+    private(set) var chartReturnFocus: String?
     private(set) var isNextLegMapPreviewPresented = false
     private(set) var mapFocusRequest: AviationMapFocusRequest?
 
     var isMapToolsPresented: Bool {
         activeDisclosure == .mapTools
+    }
+
+    var isChartsPresented: Bool { activeDisclosure == .charts }
+
+    var viewerChartID: String? {
+        guard case .viewing(let id) = chartTransition else { return nil }
+        return id
     }
 
     var isFrequencyPlanPresented: Bool {
@@ -128,7 +144,46 @@ struct CockpitPresentationState: Equatable, Sendable {
     }
 
     mutating func setMapToolsPresented(_ isPresented: Bool) {
+        guard !isPresented || chartTransition == nil else { return }
         setDisclosure(.mapTools, isPresented: isPresented)
+    }
+
+    mutating func showCharts() {
+        guard isMapToolsPresented, chartTransition == nil else { return }
+        chartReturnFocus = nil
+        activeDisclosure = .charts
+    }
+
+    mutating func openChart(_ id: String, fromCompactSheet: Bool) {
+        guard isChartsPresented, chartTransition == nil else { return }
+        chartReturnFocus = nil
+        activeDisclosure = nil
+        chartTransition = fromCompactSheet ? .dismissingMapSheet(id) : .viewing(id)
+    }
+
+    mutating func mapSheetDidDismiss() {
+        guard case .dismissingMapSheet(let id) = chartTransition else { return }
+        chartTransition = .viewing(id)
+    }
+
+    mutating func dismissChartViewer(returnToCharts: Bool) {
+        guard let id = viewerChartID else { return }
+        chartTransition = .dismissingViewer(returnFocus: returnToCharts ? id : nil)
+    }
+
+    mutating func chartViewerDidDismiss() {
+        guard case .dismissingViewer(let focus) = chartTransition else { return }
+        chartTransition = nil
+        if let focus {
+            chartReturnFocus = focus
+            activeDisclosure = .charts
+        }
+    }
+
+    mutating func closeCharts() {
+        setDisclosure(.charts, isPresented: false)
+        chartTransition = nil
+        chartReturnFocus = nil
     }
 
     mutating func setFrequencyPlanPresented(_ isPresented: Bool) {

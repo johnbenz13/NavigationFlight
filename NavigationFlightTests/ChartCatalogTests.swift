@@ -153,7 +153,7 @@ struct ChartCatalogTests {
         }
         func chart(_ id: String, _ pages: [[String: Any]]) -> [String: Any] {
             [
-                "id": id, "title": id, "sourceUrl": "https://www.gov.il/he/pages/aip",
+                "id": id, "title": id, "roles": [String](), "sourceUrl": "https://www.gov.il/he/pages/aip",
                 "edition": [:], "pages": pages,
             ]
         }

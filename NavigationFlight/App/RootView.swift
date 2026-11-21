@@ -303,6 +303,8 @@ struct RootView: View {
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
                     checklistSelection: { settingsController.preferences.startChecklist },
+                    chartCatalog: chartCatalog,
+                    chartResources: chartResources,
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )

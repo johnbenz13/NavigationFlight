@@ -1,0 +1,1331 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-21T06:11:08Z
+Total Results: 110
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .showDriftLines(false)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .progression(NavigationFlight.AppPreferences.Progression.manual)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.oneMinute)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.twoMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 5/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.fiveMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 6/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.tenMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 7/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .tzeKivun
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 8/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .establishHeading
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 9/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .none
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 10/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 11/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "invalid"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 12/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{"version":1,"value":"unknown"}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 13/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{"version":99,"value":"none"}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 14/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/failedWriteRetainsValue(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 56
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 15/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/failedWriteRetainsValue(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 56
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 16/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/dismissFailure()
+TEST_DISPLAY_NAME: Dismiss never retries or changes effective value
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 75
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 17/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/queuedChoices()
+TEST_DISPLAY_NAME: Queued choices commit in order and preserve unrelated changes
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 88
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 18/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/accurateWarning()
+TEST_DISPLAY_NAME: Presentation-only warning does not claim track loss
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 103
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 19/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/presentationFailureDoesNotBlockNavigation()
+TEST_DISPLAY_NAME: A presentation write failure retains durable state and leaves navigation available
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 111
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 20/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/suspendedSaveOrdering()
+TEST_DISPLAY_NAME: A suspended older save cannot publish an optimistic value or override a newer attempt
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 152
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 21/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/rollingBufferPromotion()
+TEST_DISPLAY_NAME: Start Leg promotes the ordered two-minute rolling track buffer
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 6
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 22/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/exactDuplicateOnly()
+TEST_DISPLAY_NAME: Only exact duplicate track deliveries are rejected
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 29
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 23/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/lowStorageStopsTrackButKeepsOperationalEvents()
+TEST_DISPLAY_NAME: Low storage preserves committed track, stops new track evidence, and keeps operational events
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 47
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 24/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/freshSupplementalEvidenceIsAssociated()
+TEST_DISPLAY_NAME: Fresh supplemental evidence is associated with the next track sample
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 94
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 25/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/staleOrInvalidSupplementalEvidenceIsOmitted()
+TEST_DISPLAY_NAME: Stale or invalid supplemental evidence is omitted without dropping GPS track
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 119
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 26/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/gapCreatesDistinctSegments()
+TEST_DISPLAY_NAME: A known GPS gap closes the segment and fresh delivery reopens another
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 27/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/gapAndResumptionAreJournaledOnce()
+TEST_DISPLAY_NAME: A GPS gap and fresh-sample resumption are journaled once without bridging segments
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 163
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 28/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/cancelledETADraftAppendsNothing()
+TEST_DISPLAY_NAME: Cancelled ETA drafts remain outside the recording journal
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 210
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 29/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/publicationWaitsForDurability()
+TEST_DISPLAY_NAME: Start Leg is not published until the durable package is synchronized
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 240
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 30/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/persistenceFailurePreservesPublishedState()
+TEST_DISPLAY_NAME: Persistence failure leaves the published Flight and recording unchanged
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 270
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 31/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/navigationCompletionIsDurable()
+TEST_DISPLAY_NAME: Navigation Complete is synchronized before the completed recording state is published
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 292
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 32/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/destinationIdentificationIsDurable()
+TEST_DISPLAY_NAME: Destination identification is durably committed with the active leg ID
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 326
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 33/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/identificationPointReachIsDurableAndDuplicateIsNoOp()
+TEST_DISPLAY_NAME: Identification-point reach records the canonical target and rejected duplicate writes nothing
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 350
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 34/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/waypointReachOrdersAutomaticTransition()
+TEST_DISPLAY_NAME: Intermediate waypoint reach orders pilot reach before automatic successor start
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 385
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 35/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/finalWaypointWaitsForExplicitCompletion()
+TEST_DISPLAY_NAME: Final waypoint reach is durable but waits for explicit Navigation Complete
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 409
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 36/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/reachPersistenceFailurePreservesPublishedFlight()
+TEST_DISPLAY_NAME: Reach persistence failure preserves the published active Flight
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 433
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 37/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/automaticLegRecoveryHasRecoveryOrigin()
+TEST_DISPLAY_NAME: Automatic leg recovery is distinguished from pilot actions
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 460
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 38/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/etaRevisionRecordsBeforeAndAfterValues()
+TEST_DISPLAY_NAME: Committed ETA revision records its canonical target and before/after values
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 479
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 39/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/headingRevisionRecordsBeforeAndAfterValues()
+TEST_DISPLAY_NAME: Committed heading revision records its leg and before/after values
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 517
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 40/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/undoLinksWithoutRewritingOriginal()
+TEST_DISPLAY_NAME: Undo appends a linked event and preserves the original reach event
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 537
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 41/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/undoArrivalAllowsIdentificationPointAndDestinationRetry()
+TEST_DISPLAY_NAME: Undoing arrival restores the leg so its identification point and destination can be reported
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 565
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 42/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/positionCheckRequestAndOutcomesAreDurable()
+TEST_DISPLAY_NAME: Position Check request survives acquisition failure and successful end stores only the qualified sample
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 617
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 43/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/capturedChecklistStarts(_:)
+TEST_DISPLAY_NAME: .tzeKivun
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 652
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 44/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/capturedChecklistStarts(_:)
+TEST_DISPLAY_NAME: .establishHeading
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 652
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 45/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingEngineTests/capturedChecklistStarts(_:)
+TEST_DISPLAY_NAME: .none
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingEngineTests.swift
+TEST_LINE_NUMBER: 652
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 46/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/bootstrapExpiresStaleRecording()
+TEST_DISPLAY_NAME: Bootstrap expires a recording whose captured recovery window elapsed
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 47/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/exactCutoffIsExpired()
+TEST_DISPLAY_NAME: The exact recovery cutoff is expired and cannot be continued
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 30
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 48/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/futureEvidenceFailsClosed()
+TEST_DISPLAY_NAME: A future durable timestamp fails closed
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 46
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 49/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/continueRevalidatesFreshness()
+TEST_DISPLAY_NAME: Continue revalidates freshness at command time
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 62
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 50/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/checkpointDefinesFreshness()
+TEST_DISPLAY_NAME: A durable checkpoint extends eligibility without relaunch refreshing it
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 90
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 51/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/capturedRecoveryWindowControlsEligibility()
+TEST_DISPLAY_NAME: Each Flight keeps the recovery window captured when recording began
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 114
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 52/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/bootstrapPresentsRecoverablePackagesWithoutSelection()
+TEST_DISPLAY_NAME: Bootstrap presents every recoverable package without selecting one
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 147
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 53/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/bootstrapRejectsPackageWithoutImmutableFlightPlan()
+TEST_DISPLAY_NAME: Bootstrap does not offer Continue for a package without an immutable Flight Plan
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 203
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 54/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/endAsIncompleteIsDurable()
+TEST_DISPLAY_NAME: Ending a recovery appends its incomplete closure before removing the launch gate
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 222
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 55/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/elapsedTimeUsesPersistedMonotonicBasis()
+TEST_DISPLAY_NAME: Recovery elapsed time rebases from persisted monotonic time, not wall clock
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 254
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 56/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/continueRestoresCapturedPlanAndActiveLeg()
+TEST_DISPLAY_NAME: Continue restores the captured Flight Plan and active leg before opening Cockpit
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 274
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 57/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/replayRestoresCommittedNavigationFacts()
+TEST_DISPLAY_NAME: Replay restores committed navigation facts and excludes transient editors and undo
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 337
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 58/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/checklistDiskRecovery(_:)
+TEST_DISPLAY_NAME: .tzeKivun
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 476
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 59/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/checklistDiskRecovery(_:)
+TEST_DISPLAY_NAME: .establishHeading
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 476
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 60/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/checklistDiskRecovery(_:)
+TEST_DISPLAY_NAME: .none
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 476
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 61/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .tzeKivun, false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 62/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .tzeKivun, true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 63/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .establishHeading, false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 64/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .establishHeading, true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 65/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .none, false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 66/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/queuedPresentationRecovery(_:undo:)
+TEST_DISPLAY_NAME: .none, true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 506
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 67/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/headingAfterFailedChecklistSave(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 585
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 68/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/headingAfterFailedChecklistSave(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 585
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 69/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/corruptChecklistContext(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 626
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 70/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/corruptChecklistContext(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 626
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 71/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/capturedStateAndAdapter(_:)
+TEST_DISPLAY_NAME: .tzeKivun
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 647
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 72/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/capturedStateAndAdapter(_:)
+TEST_DISPLAY_NAME: .establishHeading
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 647
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 73/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/capturedStateAndAdapter(_:)
+TEST_DISPLAY_NAME: .none
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 647
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 74/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/interruptedLegacyContextUpgrade()
+TEST_DISPLAY_NAME: A schema upgrade interrupted before its first context record preserves legacy recovery
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 676
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 75/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecoveryCoordinatorTests/capturedManualPolicyRecovery()
+TEST_DISPLAY_NAME: Schema 3 replays the captured Manual policy independently of defaults
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecoveryCoordinatorTests.swift
+TEST_LINE_NUMBER: 703
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 76/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/loadedFlightArmsCapture()
+TEST_DISPLAY_NAME: Loaded Flight arms capture and publishes prepared without creating a package
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 77/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/supplementalFailureDoesNotBlockGPSRecording()
+TEST_DISPLAY_NAME: Supplemental source failure does not block GPS recording
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 19
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 78/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/provisionalMovementRemainsHidden()
+TEST_DISPLAY_NAME: Ground movement remains hidden and timeout leaves no incomplete package
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 54
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 79/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/takeoffPromotesBufferedRecording()
+TEST_DISPLAY_NAME: Credible takeoff promotes the complete buffer without changing navigation
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 76
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 80/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/automaticPhysicalClosure()
+TEST_DISPLAY_NAME: Sustained landing and stop close a durable recording incomplete when navigation is not complete
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 109
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 81/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/airborneLaunchPublishesPartialStatus()
+TEST_DISPLAY_NAME: Already-airborne launch publishes an explicit partial recording
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 141
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 82/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/startLegAfterAutomaticPromotion()
+TEST_DISPLAY_NAME: Start Leg after automatic promotion uses the existing recording
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 158
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 83/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/manualSuccessorLegReusesRecording()
+TEST_DISPLAY_NAME: Manual successor leg reuses the recording with one durable start event
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 187
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 84/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/automaticPromotionFailureRemainsPrepared()
+TEST_DISPLAY_NAME: Failed automatic promotion never publishes a non-durable recording
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 234
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 85/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/gpsLifecyclePresentation()
+TEST_DISPLAY_NAME: Buffered GPS, gap, and resumed delivery publish distinct recording states
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 255
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 86/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/navigationCompletionSurvivesGPSUpdates()
+TEST_DISPLAY_NAME: GPS samples do not re-enable Navigation Complete after it commits
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 277
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 87/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/successfulStartLegCommit()
+TEST_DISPLAY_NAME: Successful Start Leg commit publishes the committed transition and recording status
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 320
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 88/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/failedStartLegCommit()
+TEST_DISPLAY_NAME: Failed Start Leg commit preserves the ready Flight and exposes a restrained error
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 339
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 89/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/endedFlightCanRestartRecording()
+TEST_DISPLAY_NAME: Replacing an ended Flight resets recording state and allows a fresh recording
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 362
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 90/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/storageDegradationWarnsWithoutBlockingNavigation()
+TEST_DISPLAY_NAME: Storage degradation projects a warning without disabling navigation commits
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 403
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 91/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: FlightRecordingCoordinatorTests/lowStorageHasExplicitStatusSemantics()
+TEST_DISPLAY_NAME: Low storage has explicit symbol-and-text status semantics
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/FlightRecordingCoordinatorTests.swift
+TEST_LINE_NUMBER: 434
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 92/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/trackBatchChecksumAndTornTail()
+TEST_DISPLAY_NAME: Checksummed track batches round-trip and a torn tail preserves prior samples
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 93/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/supplementalTrackPayloadRoundTrip()
+TEST_DISPLAY_NAME: Track payload version two round-trips optional supplemental evidence
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 36
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 94/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/legacyTrackSampleMigration()
+TEST_DISPLAY_NAME: Legacy track samples decode with supplemental evidence unavailable
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 56
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 95/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/configuredSynchronizationInterval()
+TEST_DISPLAY_NAME: Track synchronization is triggered at the configured five-second boundary
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 74
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 96/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/atomicCreation()
+TEST_DISPLAY_NAME: Package creation is atomic and persists versioned immutable inputs
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 104
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 97/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/detectorPolicyPersistence()
+TEST_DISPLAY_NAME: Manifest version two preserves the detector policy through checkpoint and closure
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 126
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 98/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/legacyManifestHasUnavailableDetectorPolicy()
+TEST_DISPLAY_NAME: Legacy manifest remains readable with detector policy unavailable
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 166
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 99/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/corruptSummaryCacheFallsBackToEvidence()
+TEST_DISPLAY_NAME: Missing or corrupt summary cache is recalculated without corrupting the package
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 187
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 100/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/activeRecordingDeletionGuard()
+TEST_DISPLAY_NAME: An active recording cannot be deleted, while a closed recording can
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 211
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 101/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/applicationSupportCreation()
+TEST_DISPLAY_NAME: Package creation succeeds in the application support hierarchy
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 233
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 102/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/failedCreationLeavesNoPackage()
+TEST_DISPLAY_NAME: Failed atomic installation exposes no partial package
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 255
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 103/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/synchronizedAppend()
+TEST_DISPLAY_NAME: Synchronized append preserves sequence order
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 271
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 104/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/unsupportedVersion()
+TEST_DISPLAY_NAME: Unsupported package versions are preserved and reported
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 293
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 105/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/failedClosePreservesPackage()
+TEST_DISPLAY_NAME: Failed close preserves the open manifest and complete journal
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 312
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 106/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/successfulClose()
+TEST_DISPLAY_NAME: Successful close publishes the closure and next journal sequence together
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 337
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 107/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/activePackageRemovalIsRejected()
+TEST_DISPLAY_NAME: Removal rejects a package whose durable manifest is still active
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 364
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 108/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/closedPackageRemovalIsDurable()
+TEST_DISPLAY_NAME: Removal deletes the complete closed package and reports success only after durable absence
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 378
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 109/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/corruptPackageRemoval()
+TEST_DISPLAY_NAME: Corrupt packages remain removable when their identity is known
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 400
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 110/110
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: DiskFlightRecordingStoreTests/failedRemovalPreservesPackage()
+TEST_DISPLAY_NAME: Failed removal preserves every package file
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/DiskFlightRecordingStoreTests.swift
+TEST_LINE_NUMBER: 414
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

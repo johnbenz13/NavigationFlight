@@ -49,6 +49,11 @@ newer captures. Discarding a stale snapshot does not clear a real save-failure
 warning. The generation is excluded from Codable and durable-value equality:
 recovery begins a new runtime session, with no schema or checksum-format change.
 Presentation failures leave memory intact and return without failing navigation.
+Cockpit supplies its current captured presentation to identification, waypoint,
+ETA and heading commits so a successful action also saves outstanding checklist
+edits. A coordinator commit clears the presentation warning only if the command
+supplied context and returned a committed context; merely carrying forward the
+engine's last durable context cannot clear an unsaved-checklist warning.
 The separate presentation warning uses John's approved copy; a simultaneous track
 degradation retains its accurate track warning. Recovery installs only durable
 context. No undo offer or Noted acknowledgement is fabricated on legacy restore.

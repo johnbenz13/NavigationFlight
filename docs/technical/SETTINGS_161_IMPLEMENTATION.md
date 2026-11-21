@@ -143,6 +143,9 @@ functional observations, not a Figma comparison or human presentation acceptance
 The exact suspended-write interleaving is proven by deterministic tests, not by
 simulator timing. Device and OS details are limited to those reported by the
 device-interaction session; no independent OS-build measurement was retained.
+Arrival/collapse/undo captures are landscape 1210×834; the recovery-prompt capture
+is portrait 834×1210. The earlier PR response's blanket landscape caption was
+incorrect and is superseded by these per-capture dimensions.
 
 - [Arrival expanded screenshot](settings-161-evidence/r1-arrival-expanded-screenshot.png)
   and [hierarchy](settings-161-evidence/r1-arrival-expanded-hierarchy.txt).
@@ -173,3 +176,48 @@ compact 393pt, freeform resizing, Reduced Motion or post-recovery rendered check
 or approve their deferral. Visual acceptance itself is separate from publication;
 John subsequently authorized committing and pushing R1 and publishing the review
 response. Merge and issue closure remain separate decisions.
+
+## PR #194 follow-up remediation — R2
+
+Origin: [R2 — heading revision clears a real unsaved-checklist warning](https://github.com/johnbenz13/NavigationFlight/pull/194#issuecomment-7058409667),
+reviewed head `dccf1856c07a473a5f8ef28b76a2bf17f27e40bd`. The reviewer verified R1
+fixed; this change preserves that disposition and John's human visual acceptance.
+
+Cockpit now supplies its current context to destination identification,
+identification-point reach, ETA revision and heading revision. The coordinator
+clears the warning only when the command supplied a snapshot and received a
+committed context. A context returned from engine carry-forward alone cannot
+clear the warning. This keeps navigation available while ensuring the real
+heading UI path saves the in-memory checklist alongside the heading.
+
+`FlightRecoveryCoordinatorTests/headingAfterFailedPresentation(suppliesCurrentContext:)`
+fault-injects presentation-event writes to a disposable disk store and attempts
+Noted/collapsed before revising heading 100° → 105°. Both parameter cases pass:
+without current context the warning stays and durable/recovered state is
+Pending/expanded; with current context the warning clears and durable/recovered
+state is Noted/collapsed. Both reopen a fresh disk store and recover heading 105°.
+Existing successful arrival-save clearing, stale rejection, undo ordering, legacy
+fallback and corruption coverage also pass.
+
+Xcode build passed (`BuildProject-Log-20261121-081101.txt`); five focused suites
+passed 110/110, zero failures/skips/not-run. [Retained summary](settings-161-evidence/r2-tests.txt).
+No durable schema or layout changes. Outstanding runtime checks remain separate
+from the recorded human visual acceptance; #161 is not declared complete.
+
+Simulator R2 flow passed on iPad Pro 11-inch (M5), iOS 27.0, landscape 1210×834,
+isolated two-leg synthetic fixture and library `review-r2-device-20261121a`, with
+`NAVIGATION_FLIGHT_UI_TEST_PRESENTATION_FAILURE=1`. Failed Noted displayed
+Checklist Changes Not Saved; revising heading 355° → 356° cleared that warning
+and retained the Noted chip; relaunch and Continue Flight restored both 356° and
+Noted. The implementing agent directly inspected all three screenshots. Session
+ended. This adds a post-recovery functional render; no new Figma-match claim is
+made. Identify, identification-point and ETA flows were not separately exercised
+on simulator. The recovered map's VOR reference label is partially clipped at the
+left viewport boundary; its cause is unverified and outside this warning fix.
+
+- [Failed Noted warning](settings-161-evidence/r2-failed-noted-warning-screenshot.png)
+  and [hierarchy](settings-161-evidence/r2-failed-noted-warning-hierarchy.txt).
+- [Heading saves current context](settings-161-evidence/r2-heading-saved-current-context-screenshot.png)
+  and [hierarchy](settings-161-evidence/r2-heading-saved-current-context-hierarchy.txt).
+- [Recovered heading and Noted](settings-161-evidence/r2-recovered-noted-screenshot.png)
+  and [hierarchy](settings-161-evidence/r2-recovered-noted-hierarchy.txt).

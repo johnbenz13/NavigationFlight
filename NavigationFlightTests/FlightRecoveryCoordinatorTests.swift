@@ -583,6 +583,47 @@ struct FlightRecoveryCoordinatorTests {
         #expect(recovered.cockpitContext?.checklists == expected.checklists)
     }
 
+    @Test("Heading revision clears a failed Noted warning only when it saves the current checklist",
+          arguments: [false, true])
+    func headingAfterFailedChecklistSave(_ suppliesCurrentContext: Bool) async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = DiskFlightRecordingStore(rootDirectory: directory, beforeAppend: { event in
+            if event.payload == .cockpitPresentationChanged { throw CocoaError(.fileWriteNoPermission) }
+        })
+        let coordinator = FlightRecordingCoordinator(store: store)
+        let started = try await coordinator.startLeg(flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: plan.legs.map(\.id), sourceData: source),
+            at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let legID = flight.legIDs[0]
+        var memory = try #require(started.cockpitContext)
+        memory.checklists[legID]?.reviewState = .noted
+        memory.checklists[legID]?.presentationState = .collapsed
+        await coordinator.recordPresentation(memory, at: time.addingTimeInterval(1))
+        #expect(coordinator.presentationWriteFailed)
+        let revised = try await coordinator.commitNavigation(.reviseHeading(legID: legID,
+            baselineDegrees: 100, committedDegrees: 105, at: time.addingTimeInterval(2),
+            elapsed: .seconds(2), eventID: UUID()), context: suppliesCurrentContext ? memory : nil)
+        #expect(coordinator.presentationWriteFailed == !suppliesCurrentContext)
+        #expect(revised.flight.pilotHeadingState(for: legID)?.operationalDegrees == 105)
+        let expectedReview: LegStartChecklistCapture.ReviewState = suppliesCurrentContext ? .noted : .pending
+        let disk = try await store.readSnapshot(id: started.recording.id)
+        #expect(disk.events.last?.cockpitContext?.checklists[legID]?.reviewState == expectedReview)
+        let recovery = FlightRecoveryCoordinator(store: DiskFlightRecordingStore(rootDirectory: directory),
+            now: { time.addingTimeInterval(3) })
+        await recovery.bootstrap()
+        let restored = try await recovery.continueFlight(id: started.recording.id,
+            at: time.addingTimeInterval(3), elapsed: .seconds(3), eventID: UUID())
+        #expect(restored.cockpitContext?.checklists[legID]?.reviewState == expectedReview)
+        #expect(restored.cockpitContext?.checklists[legID]?.presentationState ==
+            (suppliesCurrentContext ? .collapsed : .expanded))
+        #expect(restored.flight.pilotHeadingState(for: legID)?.operationalDegrees == 105)
+    }
+
     @Test("Mismatched and missing required schema 3 context fail recovery", arguments: [false, true])
     func corruptChecklistContext(_ missing: Bool) async throws {
         let source = try fixtureData()

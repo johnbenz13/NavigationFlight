@@ -310,13 +310,14 @@ struct CockpitFeatureView: View {
 
     private func identifyDestination() {
         guard let timing = recordingTiming() else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.identifyDestination(
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedDestinationIdentification(transition.flight)
                 state.installNavigationGeneration(transition.cockpitContext)
             } catch {
@@ -381,6 +382,7 @@ struct CockpitFeatureView: View {
                 targetID: point.id.identificationPointID
             ), point.plannedElapsedSeconds)
         } ?? (mapPresentation.destinationTarget.id, mapPresentation.destinationTarget.plannedElapsedSeconds)
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reachIdentificationPoint(
@@ -391,7 +393,7 @@ struct CockpitFeatureView: View {
                     eventID: UUID(),
                     nextETATarget: nextTarget.0,
                     nextETAPlannedElapsedSeconds: nextTarget.1
-                ))
+                ), context: context)
                 try state.installCommittedIdentificationPointReach(
                     transition.flight,
                     originalEventID: transition.eventIDs[0],
@@ -410,6 +412,7 @@ struct CockpitFeatureView: View {
     private func commitPilotETA(_ target: NavigationTimingTargetKey) {
         guard let timing = recordingTiming(),
               let draft = state.flight?.pilotETAState(targetKey: target)?.draftSeconds else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reviseETA(
@@ -419,7 +422,7 @@ struct CockpitFeatureView: View {
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedFlight(transition.flight)
                 state.installNavigationGeneration(transition.cockpitContext)
             } catch {
@@ -433,6 +436,7 @@ struct CockpitFeatureView: View {
               let flight = state.flight else { return }
         let legID = flight.legIDs[flight.activeLegIndex]
         guard let heading = flight.pilotHeadingState(for: legID) else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reviseHeading(
@@ -442,7 +446,7 @@ struct CockpitFeatureView: View {
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedFlight(transition.flight)
                 state.installNavigationGeneration(transition.cockpitContext)
             } catch {

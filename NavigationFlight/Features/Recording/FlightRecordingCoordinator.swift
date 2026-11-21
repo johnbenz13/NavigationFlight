@@ -378,7 +378,9 @@ final class FlightRecordingCoordinator {
         let committed = try await engine.commit(command, context: context, checklistSelection: checklistSelection)
         publishedFlight = committed.flight
         publishedRecording = committed.recording
-        if committed.cockpitContext != nil { presentationWriteFailed = false }
+        // A carried-forward durable context does not include unsaved Cockpit edits.
+        // Clear the warning only when this command supplied presentation to save.
+        if context != nil, committed.cockpitContext != nil { presentationWriteFailed = false }
         return committed
     }
 

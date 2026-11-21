@@ -151,6 +151,13 @@ final class ChartLibraryUITests: XCTestCase {
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityM"]
         initialize(app)
         app.launch()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let sidebar = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "sidebar")).firstMatch
+            if sidebar.exists && sidebar.isHittable {
+                sidebar.tap()
+            }
+        }
+        capture("large-text-shell", app)
         let chartsTab = section("Charts", in: app)
         XCTAssertTrue(chartsTab.waitForExistence(timeout: 10))
         XCTAssertTrue(chartsTab.isHittable)

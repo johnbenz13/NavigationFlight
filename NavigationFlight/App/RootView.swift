@@ -306,7 +306,7 @@ struct RootView: View {
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
-                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             } label: {
                 cockpitTabLabel
             }
@@ -324,7 +324,7 @@ struct RootView: View {
                     debugImportData: debugImportData,
                     onIntent: handleFlightPlansIntent
                 )
-                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
             Tab("Flights", systemImage: "clock.arrow.circlepath", value: AppFeatureState.AppSection.flights) {
@@ -351,12 +351,12 @@ struct RootView: View {
                                 : .zero
                         )
                 )
-                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
             Tab("Charts", systemImage: "document", value: AppFeatureState.AppSection.charts) {
                 ChartLibraryView(catalog: chartCatalog, state: $appState.chartLibrary)
-                    .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+                    .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
             Tab(
@@ -376,11 +376,12 @@ struct RootView: View {
                         )
                     }
                 }
-                .modifier(ObserveTabBarPlacement(placement: $tabBarPlacement))
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
         }
         .tabViewStyle(.sidebarAdaptable)
         .defaultAdaptableTabBarPlacement(dynamicTypeSize.isAccessibilitySize ? .sidebar : .automatic)
+        .dynamicTypeSize(tabBarTextSize)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { shellWidth = $0 }
         .onChange(of: usesMoreTab) { _, usesMore in
             if usesMore && appState.selectedAppSection == .settings {
@@ -764,6 +765,15 @@ struct RootView: View {
         }
     }
 
+    private var tabBarTextSize: DynamicTypeSize {
+        // When the iPad sidebar is collapsed, keep all primary tabs visible.
+        // The content of each tab still uses the device's full text size.
+        if tabBarPlacement == .topBar && dynamicTypeSize.isAccessibilitySize {
+            return .large
+        }
+        return dynamicTypeSize
+    }
+
     private var usesMoreTab: Bool {
         AppFeatureState.usesMoreTab(
             availableWidth: shellWidth,
@@ -783,6 +793,7 @@ struct RootView: View {
         Binding(
             get: { appState.selectedAppSection },
             set: { selection in
+                guard selection != appState.selectedAppSection, appState.canSwitchAppSection else { return }
                 appState.selectAppSection(selection)
                 if appState.selectedAppSection == .settings && !usesMoreTab {
                     showsSettingsFromMore = true

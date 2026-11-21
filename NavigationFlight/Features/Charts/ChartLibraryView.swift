@@ -102,15 +102,17 @@ struct ChartLibraryView: View {
         }
     }
 
-    private func chartListLabel(_ title: String, detail: String, icon: String) -> some View {
+    private func chartListLabel(_ title: String, detail: String?, icon: String) -> some View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.body.weight(.medium))
                     .foregroundStyle(.primary)
-                Text(detail)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                if let detail {
+                    Text(detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         } icon: {
             Image(systemName: icon)

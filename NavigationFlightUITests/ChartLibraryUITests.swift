@@ -52,6 +52,22 @@ final class ChartLibraryUITests: XCTestCase {
         reveal(app.buttons[circuit], in: app)
     }
 
+    func testBrowseAirfieldAndOpenOriginalChart() {
+        let app = launch()
+        section("Charts", in: app).tap()
+        let megiddo = app.buttons["charts-aerodrome-llmg"]
+        reveal(megiddo, in: app)
+        megiddo.tap()
+        XCTAssertTrue(app.navigationBars["מגידו"].waitForExistence(timeout: 5))
+        capture("airfield", app)
+        let chart = app.buttons["charts-document-aip-llmg-chart-01"]
+        XCTAssertTrue(chart.isHittable)
+        chart.tap()
+        XCTAssertTrue(app.buttons["charts-fit-page"].waitForExistence(timeout: 5))
+        app.buttons["charts-viewer-back"].tap()
+        XCTAssertTrue(app.navigationBars["מגידו"].waitForExistence(timeout: 5))
+    }
+
     func testUnreadableChartReturnsToAerodromeAndCanOpenAnother() {
         let app = launch(unreadable: true)
         section("Charts", in: app).tap()
@@ -111,6 +127,12 @@ final class ChartLibraryUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         XCTAssertTrue(app.navigationBars["הרצליה"].waitForExistence(timeout: 5))
         capture("ipad-landscape-aerodrome", app)
+        let toggle = app.buttons["ToggleSideBar"].firstMatch
+        if toggle.isHittable {
+            toggle.tap()
+            XCTAssertTrue(app.navigationBars["הרצליה"].waitForExistence(timeout: 5))
+            capture("ipad-landscape-sidebar-aerodrome", app)
+        }
         let chart = app.buttons[circuit]
         reveal(chart, in: app)
         chart.tap()
@@ -129,7 +151,11 @@ final class ChartLibraryUITests: XCTestCase {
         app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityM"]
         initialize(app)
         app.launch()
-        section("Charts", in: app).tap()
+        let chartsTab = section("Charts", in: app)
+        XCTAssertTrue(chartsTab.waitForExistence(timeout: 10))
+        XCTAssertTrue(chartsTab.isHittable)
+        chartsTab.tap()
+        XCTAssertTrue(app.buttons[herzliya].waitForExistence(timeout: 5))
         app.buttons[herzliya].tap()
         let chart = app.buttons["charts-document-aip-llhz-chart-01"]
         reveal(chart, in: app)

@@ -57,6 +57,7 @@ struct ChartCatalogTests {
         let original = try #require(PDFDocument(data: fixture.bytes))
 
         #expect(document.pageCount == 2)
+        #expect(chart.pageLabel == nil)
         #expect(document.outlineRoot == nil)
         #expect(document.page(at: 2) == nil)
         #expect(document.string?.contains("UNRELATED") == false)
@@ -76,6 +77,24 @@ struct ChartCatalogTests {
         view.goToLastPage(nil)
         #expect(view.currentPage === actual)
         #expect(!view.canGoToNextPage)
+    }
+
+    @Test("Fit page accounts for the rotated original in a wide viewport")
+    func fitRotatedChart() throws {
+        let resources = ChartResources.bundled
+        let catalog = try resources.loadCatalog()
+        let chart = try #require(catalog.selection(for: "aip-llrs-chart-03")?.chart)
+        let document = try ChartPDFDocument.open(chart, in: catalog, resources: resources)
+        let page = try #require(document.page(at: 0))
+        #expect(page.rotation == 270)
+        let crop = page.bounds(for: .cropBox)
+        let view = ChartPDFView.DocumentView(frame: CGRect(x: 0, y: 0, width: 780, height: 340))
+        view.displayBox = .cropBox
+        view.pageBreakMargins = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+        view.document = document
+        view.fitPage()
+        #expect(abs((view.scaleFactor * crop.width) - 316) < 1)
+        #expect(view.scaleFactor * crop.height < 756)
     }
 
     @Test("A missing index, invalid page, and unreadable asset fail without replacing unrelated charts")
@@ -126,7 +145,7 @@ struct ChartCatalogTests {
             let page = stored.page(at: index)
             func coordinates(_ rect: CGRect) -> [CGFloat] { [rect.minX, rect.minY, rect.maxX, rect.maxY] }
             return [
-                "index": index, "assetSha256": hash, "publishedLabel": "Fixture page",
+                "index": index, "assetSha256": hash, "publishedLabel": NSNull(),
                 "mediaBox": coordinates(page?.bounds(for: .mediaBox) ?? size),
                 "cropBox": coordinates(page?.bounds(for: .cropBox) ?? size),
                 "rotation": page?.rotation ?? 0,
@@ -141,13 +160,13 @@ struct ChartCatalogTests {
         let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         let folder = root.appending(path: "AIPCharts/pdf")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try bytes.write(to: folder.appending(path: "fixture.pdf"))
+        try bytes.write(to: folder.appending(path: "fixture_source.pdf"))
         try invalidBytes.write(to: folder.appending(path: "corrupt.pdf"))
         let manifest: [String: Any] = [
             "schemaVersion": 2, "releaseId": "fixture",
             "snapshot": ["amendment": "fixture", "effectiveDate": "2026-01-01"],
             "artifacts": [
-                ["destination": "AIPCharts/pdf/fixture.pdf", "sha256": hash, "bytes": bytes.count, "pageCount": 3],
+                ["destination": "AIPCharts/pdf/fixture_source.pdf", "sha256": hash, "bytes": bytes.count, "pageCount": 3],
                 ["destination": "AIPCharts/pdf/corrupt.pdf", "sha256": corruptHash, "bytes": invalidBytes.count, "pageCount": 1],
             ],
             "aerodromes": [[

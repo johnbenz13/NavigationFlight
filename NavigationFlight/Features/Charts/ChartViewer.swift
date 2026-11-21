@@ -42,12 +42,12 @@ struct ChartViewer: View {
             }
         }
         .background(Color(.systemBackground))
+        .accessibilityDefaultFocus($titleFocused, true)
         .task(id: selection.id) {
             document = nil
             didFail = false
             pageNumber = 1
             zoomRequest = nil
-            titleFocused = true
             await Task.yield()
             guard !Task.isCancelled else { return }
             let result = try? ChartPDFDocument.open(selection.chart, in: catalog, resources: resources)
@@ -87,11 +87,17 @@ struct ChartViewer: View {
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("charts-viewer-title")
                 .accessibilityFocused($titleFocused)
-            Text("\(selection.aerodrome.name) (\(selection.aerodrome.code)) · \(selection.chart.pageLabel)")
+            Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)
+    }
+
+    private var subtitle: String {
+        let aerodrome = "\(selection.aerodrome.name) (\(selection.aerodrome.code))"
+        guard let pageLabel = selection.chart.pageLabel else { return aerodrome }
+        return "\(aerodrome) · \(pageLabel)"
     }
 
     private var backButton: some View {

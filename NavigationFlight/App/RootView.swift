@@ -7,6 +7,7 @@ struct RootView: View {
     @State private var tabBarPlacement: TabBarPlacement?
     @State private var showsSettingsFromMore = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let chartResources: ChartResources
     private let chartCatalog: ChartCatalog?
     @State private var idleTimerCoordinator: IdleTimerCoordinator
@@ -379,6 +380,7 @@ struct RootView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .defaultAdaptableTabBarPlacement(dynamicTypeSize.isAccessibilitySize ? .sidebar : .automatic)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { shellWidth = $0 }
         .onChange(of: usesMoreTab) { _, usesMore in
             if usesMore && appState.selectedAppSection == .settings {

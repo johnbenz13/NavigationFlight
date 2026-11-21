@@ -43,15 +43,16 @@ struct ChartPDFView: UIViewRepresentable {
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            if bounds.size != lastViewport, bounds.width > 24, bounds.height > 24 {
+            if bounds.size != lastViewport, !bounds.isEmpty {
                 lastViewport = bounds.size
                 updateScaleLimits(refit: fitScale == 0 || abs(scaleFactor - fitScale) < 0.01)
             }
         }
 
         func fitPage() {
+            let page = currentPage
             updateScaleLimits(refit: true)
-            if let currentPage { go(to: currentPage) }
+            if let page { go(to: page) }
         }
 
         func zoom(_ command: Zoom) {
@@ -64,9 +65,15 @@ struct ChartPDFView: UIViewRepresentable {
 
         private func updateScaleLimits(refit: Bool) {
             guard let page = currentPage ?? document?.page(at: 0) else { return }
-            let size = page.bounds(for: displayBox).size
-            guard size.width > 0, size.height > 0, bounds.width > 24, bounds.height > 24 else { return }
-            fitScale = min((bounds.width - 24) / size.width, (bounds.height - 24) / size.height)
+            let crop = page.bounds(for: displayBox)
+            let quarterTurn = page.rotation % 180 != 0
+            let width = quarterTurn ? crop.height : crop.width
+            let height = quarterTurn ? crop.width : crop.height
+            let margins = pageBreakMargins
+            let availableWidth = bounds.width - margins.left - margins.right
+            let availableHeight = bounds.height - margins.top - margins.bottom
+            guard width > 0, height > 0, availableWidth > 0, availableHeight > 0 else { return }
+            fitScale = min(availableWidth / width, availableHeight / height)
             maxScaleFactor = max(fitScale * 8, 4)
             minScaleFactor = fitScale
             if refit { scaleFactor = fitScale }

@@ -48,7 +48,7 @@ struct ChartCatalog: Decodable {
         struct Page: Decodable, Equatable {
             let assetSha256: String
             let index: Int
-            let publishedLabel: String
+            let publishedLabel: String?
             let mediaBox: [Double]
             let cropBox: [Double]
             let rotation: Int
@@ -60,8 +60,9 @@ struct ChartCatalog: Decodable {
         let edition: Edition
         let pages: [Page]
 
-        var pageLabel: String {
-            pages.map(\.publishedLabel).joined(separator: " · ")
+        var pageLabel: String? {
+            let labels = pages.compactMap(\.publishedLabel)
+            return labels.isEmpty ? nil : labels.joined(separator: " · ")
         }
     }
 
@@ -139,7 +140,7 @@ struct ChartResources {
     private func assetURL(for asset: ChartCatalog.Asset) throws -> URL {
         let parts = asset.destination.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 3, parts[0] == "AIPCharts", parts[1] == "pdf",
-              parts[2].wholeMatch(of: /[a-z0-9][a-z0-9-]*\.pdf/) != nil else {
+              parts[2].wholeMatch(of: /[a-z0-9_-]+\.pdf/) != nil else {
             throw ChartResourceError.invalidAsset
         }
         return bundleRoot.appending(path: asset.destination)

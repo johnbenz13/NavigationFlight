@@ -31,7 +31,7 @@ def verify(pin_path, root):
 
     expected = {}
     for asset in manifest["artifacts"]:
-        match = re.fullmatch(r"AIPCharts/pdf/([a-z0-9][a-z0-9-]*\.pdf)", asset["destination"])
+        match = re.fullmatch(r"AIPCharts/pdf/([a-z0-9_-]+\.pdf)", asset["destination"])
         if asset["representation"] != "pdf" or not match or match[1] in expected:
             raise ValueError(f"invalid or duplicate chart path {asset['destination']}")
         expected[match[1]] = asset

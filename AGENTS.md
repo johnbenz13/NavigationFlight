@@ -166,6 +166,12 @@ review evidence.
 - Name feature branches `feature/<kebab-case-feature-name>` using the agreed product feature name (for example, `feature/in-flight-eta-and-heading-revision`).
 - Commit completed checkpoints when explicitly requested.
 - Do not push changes unless explicitly requested.
+- Standing owner authorization (2026-11-21): an `address-review` request in this
+  repository includes scoped fixes, verification, committing and pushing the
+  completed fixes to the existing PR branch, and publishing a mapped response on
+  that PR. Carry these steps through without requesting the same authorization
+  again. Record explicit human visual acceptance separately from unverified
+  runtime checks. Merge and issue closure remain separate decisions.
 - Create a pull request only when explicitly requested. Include the acceptance
   evidence and identify any criterion still awaiting human approval.
 

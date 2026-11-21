@@ -8,6 +8,7 @@ nonisolated enum RecordingStatus: Equatable, Sendable {
     case gpsGap
     case gpsResumed
     case recordingGPSUnavailable
+    case checklistPersistenceFailed
     case recordingDegraded
     case recordingLowStorage
     case navigationCompleteRecordingContinues
@@ -25,7 +26,7 @@ nonisolated enum CockpitActivityIndicator: Equatable, Sendable {
     init(isNavigationActive: Bool, recordingStatus: RecordingStatus) {
         switch recordingStatus {
         case .partialRecording, .gpsGap, .recordingGPSUnavailable,
-             .recordingDegraded, .recordingLowStorage, .physicalPhaseCorrected:
+             .checklistPersistenceFailed, .recordingDegraded, .recordingLowStorage, .physicalPhaseCorrected:
             self = .warning
         case .navigationCompleteRecordingContinues, .landedAwaitingStop:
             self = .active
@@ -111,6 +112,13 @@ nonisolated struct RecordingStatusPresentation: Equatable, Sendable {
             compactTitle = "REC · NO GPS"
             detail = "Navigation actions are recorded without coordinates or a GPS track."
             systemImage = "location.slash.fill"
+            tone = .caution
+            showsEndRecordingAction = true
+        case .checklistPersistenceFailed:
+            title = "Checklist Changes Not Saved"
+            compactTitle = "REC · WARNING"
+            detail = "Checklist changes could not be saved. Navigation remains available. After restarting, the checklist may return to its last saved state."
+            systemImage = "exclamationmark.triangle.fill"
             tone = .caution
             showsEndRecordingAction = true
         case .recordingDegraded:

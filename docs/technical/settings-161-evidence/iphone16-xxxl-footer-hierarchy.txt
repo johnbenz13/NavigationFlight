@@ -1,0 +1,77 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 91811, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+             NavigationBar, {{0.0, 62.0}, {402.0, 54.0}}, identifier: 'Start checklist', hitPoint: {201.0, 89.0}
+              Button, {{16.0, 62.0}, {44.0, 44.0}}, identifier: 'BackButton', label: 'Settings', hitPoint: {38.0, 84.0}
+              StaticText, {{131.7, 71.3}, {138.7, 25.3}}, label: 'Start checklist', hitPoint: {201.0, 84.0}
+             Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+               Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                 ScrollView, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'start-checklist-selector', hitPoint: {201.0, 437.0}
+                  Other, {{0.0, -326.3}, {402.0, 1117.3}}, hitPoint: {201.0, 395.5}
+                   Button, {{24.0, -144.3}, {354.0, 157.3}}, identifier: 'checklist-choice-establish-heading-cruise-check', label: 'Establish Heading', hitPoint: {201.0, 6.5}
+                   Button, {{24.0, 13.0}, {354.0, 157.3}}, identifier: 'checklist-choice-none', label: 'No checklist', Selected, hitPoint: {201.0, 91.7}
+                    StaticText, {{24.0, 13.0}, {354.0, 157.3}}, label: 'No checklist', hitPoint: {201.0, 91.7}
+                    Image, {{310.7, 69.7}, {44.7, 44.3}}, identifier: 'checkmark', label: 'Selected', Selected, hitPoint: {333.0, 91.8}
+                   StaticText, {{24.0, 194.3}, {354.0, 572.7}}, label: 'No automatic checklist or checklist chip for subsequent starts. Leg timing is unchanged. Selecting saves immediately and returns to Settings. Back cancels without a change.', hitPoint: {201.0, 480.7}
+                  Other, {{0.0, -0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                   Other, {{0.0, 0.0}, {402.0, 156.0}}, hitPoint: {201.0, 78.0}
+                   Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+                  Other, {{0.0, -0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+                   Other, {{0.0, 0.0}, {402.0, 156.0}}, hitPoint: {201.0, 78.0}
+                   Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 343.7}, {3.0, 444.3}}, hitPoint: {397.5, 565.8}
+                  Other, {{369.0, 116.0}, {30.0, 675.0}}, label: 'Vertical scroll bar, 2 pages', value: 100%, hitPoint: {384.0, 453.5}
+                   Other, {{396.0, 343.7}, {3.0, 444.3}}, hitPoint: {397.5, 565.8}
+             Toolbar, {{0.0, 0.0}, {402.0, 874.0}}, identifier: 'Toolbar', label: 'Toolbar', hitPoint: {201.0, 437.0}
+              Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {97.7, 54.0}}, hitPoint: {69.8, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {97.7, 54.0}}, label: 'Cockpit', hitPoint: {73.8, 822.0}
+              Image, {{59.3, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {73.8, 814.8}
+             Button, {{109.8, 795.0}, {97.7, 54.0}}, label: 'Flight Plans', hitPoint: {158.6, 822.0}
+              Image, {{142.4, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {158.4, 814.8}
+             Button, {{194.6, 795.0}, {97.7, 54.0}}, label: 'Flights', hitPoint: {243.4, 822.0}
+              Image, {{229.2, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {243.1, 815.0}
+             Button, {{279.3, 795.0}, {97.7, 54.0}}, label: 'Settings', Selected, hitPoint: {328.2, 822.0}
+              Image, {{314.0, 801.0}, {28.0, 28.0}}, identifier: 'gearshape.fill', label: 'Gear shape, filled', hitPoint: {328.0, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+             Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+              Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+              Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+               Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                 Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+                Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+               Other, {{279.3, 795.0}, {97.7, 54.0}}, hitPoint: {328.2, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

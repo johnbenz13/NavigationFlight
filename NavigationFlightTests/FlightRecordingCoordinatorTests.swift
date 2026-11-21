@@ -80,7 +80,8 @@ struct FlightRecordingCoordinatorTests {
         let store = InMemoryFlightRecordingStore()
         let clock = ManualMonotonicClock()
         let coordinator = FlightRecordingCoordinator(store: store, detectorPolicy: .fixture, monotonicNow: clock.now)
-        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot)
+        await coordinator.arm(flight: fixture.flight, flightPlanSnapshot: fixture.snapshot,
+            context: .init(flightID: fixture.flight.id, checklists: [:], areDriftLinesVisible: false))
 
         await coordinator.handleLocationEvent(.sample(sample(speed: 4, altitude: 30, at: fixture.startedAt), receivedAt: fixture.startedAt))
         clock.advance(by: .seconds(5))
@@ -100,6 +101,10 @@ struct FlightRecordingCoordinatorTests {
         #expect(snapshot.recording.physicalState == .airborne)
         #expect(coordinator.snapshot.flight == fixture.flight)
         #expect(coordinator.status == .recording)
+        let captured = try await store.readSnapshot(id: #require(coordinator.activeRecordingID))
+        #expect(captured.events.first?.cockpitContext?.areDriftLinesVisible == false)
+        #expect(captured.events.first?.cockpitContext?.checklists.isEmpty == true)
+
     }
 
     @Test("Sustained landing and stop close a durable recording incomplete when navigation is not complete")

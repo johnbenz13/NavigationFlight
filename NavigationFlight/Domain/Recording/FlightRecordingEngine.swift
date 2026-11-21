@@ -52,6 +52,7 @@ nonisolated struct CommittedNavigationTransition: Equatable, Sendable {
     let flight: Flight
     let recording: FlightRecording
     let eventIDs: [UUID]
+    var cockpitContext: RecordingCockpitContext? = nil
 }
 
 nonisolated struct FlightRecordingEngineSnapshot: Equatable, Sendable {
@@ -81,6 +82,10 @@ actor FlightRecordingEngine {
     private let detectorPolicySnapshot: PhysicalFlightDetectionPolicySnapshot
     private var detector: PhysicalFlightDetector
     private var flight: Flight
+    private var mutationInProgress = false
+    private var mutationWaiters: [CheckedContinuation<Void, Never>] = []
+    var queuedMutationCount: Int { mutationWaiters.count }
+    private var cockpitContext: RecordingCockpitContext?
     private var recording: FlightRecording?
     private var storageDegradations: Set<RecordingStorageDegradation> = []
     private var isArmed = false
@@ -98,9 +103,11 @@ actor FlightRecordingEngine {
         store: any FlightRecordingStore,
         flight: Flight,
         flightPlanSnapshot: RecordedFlightPlanSnapshot,
-        detectorPolicy: PhysicalFlightDetectionPolicy = .production
+        detectorPolicy: PhysicalFlightDetectionPolicy = .production,
+        initialCockpitContext: RecordingCockpitContext? = nil
     ) {
         self.store = store
+        cockpitContext = initialCockpitContext
         self.flight = flight
         self.flightPlanSnapshot = flightPlanSnapshot
         detectorPolicySnapshot = PhysicalFlightDetectionPolicySnapshot(policy: detectorPolicy)
@@ -113,12 +120,14 @@ actor FlightRecordingEngine {
         recoveredRecording: FlightRecording,
         detectorPolicy: PhysicalFlightDetectionPolicy = .production,
         detectorPolicySnapshot: PhysicalFlightDetectionPolicySnapshot? = nil,
-        storageDegradations: Set<RecordingStorageDegradation> = []
+        storageDegradations: Set<RecordingStorageDegradation> = [],
+        recoveredCockpitContext: RecordingCockpitContext? = nil
     ) {
         self.store = store
         flight = recoveredFlight
         flightPlanSnapshot = recoveredRecording.flightPlanSnapshot
         recording = recoveredRecording
+        cockpitContext = recoveredCockpitContext
         self.storageDegradations = storageDegradations
         let restoredPolicy = detectorPolicySnapshot
             ?? PhysicalFlightDetectionPolicySnapshot(policy: detectorPolicy)
@@ -156,6 +165,8 @@ actor FlightRecordingEngine {
     }
 
     func ingest(_ event: LocationSourceEvent, monotonicTime: Duration) async -> FlightRecordingLocationOutcome {
+        await acquireMutation()
+        defer { releaseMutation() }
         guard isArmed else { return .none }
         switch event {
         case .sample(let sourceSample, _):
@@ -174,7 +185,7 @@ actor FlightRecordingEngine {
                 }
                 if events.contains(.takeoffDetected) || events.contains(.partialStartDetected) {
                     let partial = events.contains(.partialStartDetected)
-                    let promotion = FlightRecording.promoteAutomatically(
+                    var promotion = FlightRecording.promoteAutomatically(
                         id: UUID(),
                         flightID: flight.id,
                         flightPlanSnapshot: flightPlanSnapshot,
@@ -183,6 +194,13 @@ actor FlightRecordingEngine {
                         partial: partial,
                         eventID: UUID()
                     )
+                    let currentFlight = flight
+                    promotion.recording.sourceSchemaVersion = 3
+                    promotion.recording.recordedProgression = await MainActor.run {
+                        currentFlight.progressionPolicy == .automaticNextLeg ? .automatic : .manual
+                    }
+                    let initialContext = cockpitContext ?? RecordingCockpitContext(flightID: flight.id, checklists: [:], areDriftLinesVisible: true)
+                    promotion.events[0].cockpitContext = initialContext
                     let segmentID = UUID()
                     activeSegmentID = segmentID
                     do {
@@ -393,16 +411,23 @@ actor FlightRecordingEngine {
     func promoteForStartLeg(
         at timestamp: Date,
         recordingID: UUID,
-        eventIDs: [UUID]
+        eventIDs: [UUID],
+        context: RecordingCockpitContext? = nil,
+        checklistSelection: StartChecklistSelection = .tzeKivun
     ) async throws -> CommittedNavigationTransition {
         try await commit(
-            .startLeg(at: timestamp, recordingID: recordingID, eventIDs: eventIDs)
+            .startLeg(at: timestamp, recordingID: recordingID, eventIDs: eventIDs),
+            context: context, checklistSelection: checklistSelection
         )
     }
 
     func commit(
-        _ command: RecordedNavigationCommand
+        _ command: RecordedNavigationCommand,
+        context: RecordingCockpitContext? = nil,
+        checklistSelection: StartChecklistSelection = .tzeKivun
     ) async throws -> CommittedNavigationTransition {
+        await acquireMutation()
+        defer { releaseMutation() }
         switch command {
         case .startLeg(let timestamp, let recordingID, let eventIDs):
             let currentFlight = flight
@@ -417,19 +442,21 @@ actor FlightRecordingEngine {
                     throw FlightRecording.TransitionError.invalidEventIdentifierCount
                 }
                 let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(candidateRecording.startedAt)))
-                let event = try candidateRecording.startLeg(
+                var event = try candidateRecording.startLeg(
                     legID: legID,
                     at: timestamp,
                     elapsed: elapsed,
                     eventID: eventIDs[0]
                 )
+                event.cockpitContext = await transitionContext(context, flight: candidateFlight, payload: event.payload, selection: checklistSelection)
                 try await store.appendEvent(event, recordingID: candidateRecording.id, synchronize: true)
+                cockpitContext = event.cockpitContext
                 flight = candidateFlight
                 recording = candidateRecording
                 return CommittedNavigationTransition(
                     flight: candidateFlight,
                     recording: candidateRecording,
-                    eventIDs: [event.id]
+                    eventIDs: [event.id], cockpitContext: event.cockpitContext
                 )
             }
             var promotion = try FlightRecording.promoteForStartLeg(
@@ -441,6 +468,15 @@ actor FlightRecordingEngine {
                 eventIDs: eventIDs
             )
 
+            promotion.recording.sourceSchemaVersion = 3
+            promotion.recording.recordedProgression = await MainActor.run {
+                candidateFlight.progressionPolicy == .automaticNextLeg ? .automatic : .manual
+            }
+            let startedContext = await transitionContext(context, flight: candidateFlight,
+                                                         payload: .legStarted(legID: legID), selection: checklistSelection)
+            for index in promotion.events.indices {
+                promotion.events[index].cockpitContext = startedContext
+            }
             let bufferedSegment: [RecordedTrackSegment]
             if rollingBuffer.isEmpty {
                 bufferedSegment = []
@@ -458,15 +494,16 @@ actor FlightRecordingEngine {
                 trackSegments: bufferedSegment,
                 detectorPolicy: detectorPolicySnapshot
             ))
+            cockpitContext = startedContext
             flight = candidateFlight
             recording = promotion.recording
             return CommittedNavigationTransition(
                 flight: candidateFlight,
                 recording: promotion.recording,
-                eventIDs: promotion.events.map(\.id)
+                eventIDs: promotion.events.map(\.id), cockpitContext: startedContext
             )
         case .identifyDestination(let timestamp, let elapsed, let eventID):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 let legID = candidate.legIDs[candidate.activeLegIndex]
                 try candidate.identifyDestination(at: timestamp)
                 return ([(.pilot, .destinationIdentified(legID: legID))], nil)
@@ -480,7 +517,7 @@ actor FlightRecordingEngine {
             let nextETATarget,
             let nextETAPlannedElapsedSeconds
         ):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 try candidate.reachIdentificationPoint(
                     key: key,
                     orderedActiveLegPointKeys: orderedKeys,
@@ -495,7 +532,7 @@ actor FlightRecordingEngine {
                 return ([(.pilot, .identificationPointReached(key: key))], nil)
             }
         case .reachCurrentWaypoint(let orderedKeys, let timestamp, let elapsed, let eventIDs):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: eventIDs) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: eventIDs, context: context, selection: checklistSelection) { candidate in
                 let departingLegID = candidate.legIDs[candidate.activeLegIndex]
                 try candidate.reachCurrentWaypoint(orderedActiveLegPointKeys: orderedKeys, at: timestamp)
                 if candidate.legState == .completed {
@@ -552,7 +589,7 @@ actor FlightRecordingEngine {
                 eventIDs: committedEventIDs
             )
         case .automaticLegRecovery(let legID, let timestamp, let elapsed, let eventID):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 guard candidate.legState == .active,
                       candidate.legIDs[candidate.activeLegIndex] == legID else {
                     throw Flight.TransitionError.legNotActive
@@ -567,7 +604,7 @@ actor FlightRecordingEngine {
             let elapsed,
             let eventID
         ):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 let prior = candidate.committedPilotETA(targetKey: target)
                 candidate.initializePilotETA(
                     targetKey: target,
@@ -599,7 +636,7 @@ actor FlightRecordingEngine {
             let elapsed,
             let eventID
         ):
-            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID]) { candidate in
+            return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 guard candidate.legIDs[candidate.activeLegIndex] == legID else {
                     throw Flight.TransitionError.legNotActive
                 }
@@ -623,18 +660,20 @@ actor FlightRecordingEngine {
                   restoredFlight.legIDs == flight.legIDs else {
                 throw Flight.TransitionError.legNotActive
             }
+            var restoredContext = context
+            restoredContext?.navigationGeneration = UUID()
             let transition = try await appendOperationalEvent(
                 .reachUndone(originalEventID: originalEventID),
                 origin: .pilot,
                 at: timestamp,
                 elapsed: elapsed,
-                eventID: eventID
+                eventID: eventID, context: restoredContext
             )
             flight = restoredFlight
             return CommittedNavigationTransition(
                 flight: restoredFlight,
                 recording: transition.recording,
-                eventIDs: transition.eventIDs
+                eventIDs: transition.eventIDs, cockpitContext: restoredContext
             )
         case .requestPositionCheck(let timestamp, let elapsed, let eventID):
             return try await appendOperationalEvent(
@@ -669,6 +708,8 @@ actor FlightRecordingEngine {
         at timestamp: Date,
         elapsed: Duration,
         eventIDs: [UUID],
+        context: RecordingCockpitContext?,
+        selection: StartChecklistSelection,
         transition: @MainActor (inout Flight) throws -> (
             entries: [(RecordedFlightEvent.Origin, RecordedFlightEventPayload)],
             navigationState: RecordedNavigationState?
@@ -683,13 +724,16 @@ actor FlightRecordingEngine {
             let output = try transition(&candidateFlight)
             return (candidateFlight, output)
         }
-        let events = try candidateRecording.recordNavigationEvents(
+        var events = try candidateRecording.recordNavigationEvents(
             at: timestamp,
             elapsed: elapsed,
             entries: result.1.entries,
             eventIDs: eventIDs,
             navigationState: result.1.navigationState
         )
+        let capturedContext = await transitionContext(context, flight: result.0,
+                                                       payload: events[0].payload, selection: selection)
+        for index in events.indices { events[index].cockpitContext = capturedContext }
         for (index, event) in events.enumerated() {
             try await store.appendEvent(
                 event,
@@ -697,13 +741,68 @@ actor FlightRecordingEngine {
                 synchronize: index == events.indices.last
             )
         }
+        cockpitContext = capturedContext
         flight = result.0
         recording = candidateRecording
         return CommittedNavigationTransition(
             flight: result.0,
             recording: candidateRecording,
-            eventIDs: events.map(\.id)
+            eventIDs: events.map(\.id), cockpitContext: capturedContext
         )
+    }
+
+    private func acquireMutation() async {
+        if mutationInProgress {
+            await withCheckedContinuation { mutationWaiters.append($0) }
+        } else { mutationInProgress = true }
+    }
+
+    private func releaseMutation() {
+        if mutationWaiters.isEmpty { mutationInProgress = false }
+        else { mutationWaiters.removeFirst().resume() }
+    }
+
+    private func transitionContext(
+        _ supplied: RecordingCockpitContext?, flight: Flight,
+        payload: RecordedFlightEventPayload, selection: StartChecklistSelection
+    ) async -> RecordingCockpitContext {
+        let prior = supplied ?? cockpitContext
+        return await MainActor.run {
+            var result = prior ?? RecordingCockpitContext(flightID: flight.id, checklists: [:], areDriftLinesVisible: true)
+            switch payload {
+            case .destinationIdentified(let legID), .waypointReached(let legID):
+                result.checklists[legID]?.phaseState = .hiddenForPhase
+            default: break
+            }
+            if flight.legState == .active {
+                result = result.starting(legID: flight.legIDs[flight.activeLegIndex], selection: selection)
+            }
+            result.navigationGeneration = UUID()
+            return result
+        }
+    }
+
+    @discardableResult
+    func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date) async throws -> Bool {
+        await acquireMutation()
+        defer { releaseMutation() }
+        try context.validate(flightID: flight.id, legIDs: flightPlanSnapshot.legIDs)
+        // Check after acquiring the gate: navigation may have committed while this
+        // snapshot was queued, including an undo back to otherwise identical values.
+        guard context.navigationGeneration == cockpitContext?.navigationGeneration else { return false }
+        guard var candidate = recording else {
+            cockpitContext = context
+            return true
+        }
+        guard context != cockpitContext else { return true }
+        let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(candidate.startedAt)))
+        var events = try candidate.recordNavigationEvents(at: timestamp, elapsed: elapsed,
+                                                          entries: [(.pilot, .cockpitPresentationChanged)], eventIDs: [UUID()])
+        events[0].cockpitContext = context
+        try await store.appendEvent(events[0], recordingID: candidate.id, synchronize: true)
+        recording = candidate
+        cockpitContext = context
+        return true
     }
 
     private func appendOperationalEvent(
@@ -711,18 +810,21 @@ actor FlightRecordingEngine {
         origin: RecordedFlightEvent.Origin,
         at timestamp: Date,
         elapsed: Duration,
-        eventID: UUID
+        eventID: UUID,
+        context: RecordingCockpitContext? = nil
     ) async throws -> CommittedNavigationTransition {
         guard var candidateRecording = recording else {
             throw FlightRecording.TransitionError.recordingAlreadyClosed
         }
-        let events = try candidateRecording.recordNavigationEvents(
+        var events = try candidateRecording.recordNavigationEvents(
             at: timestamp,
             elapsed: elapsed,
             entries: [(origin, payload)],
             eventIDs: [eventID]
         )
+        events[0].cockpitContext = context
         try await store.appendEvent(events[0], recordingID: candidateRecording.id, synchronize: true)
+        if let context { cockpitContext = context }
         recording = candidateRecording
         return CommittedNavigationTransition(
             flight: flight,
@@ -737,6 +839,8 @@ actor FlightRecordingEngine {
         eventIDs: [UUID],
         forcedOutcome: FlightRecordingClosure.Outcome? = nil
     ) async throws -> FlightRecordingEngineSnapshot {
+        await acquireMutation()
+        defer { releaseMutation() }
         guard var candidate = recording else {
             throw FlightRecording.TransitionError.recordingAlreadyClosed
         }
@@ -767,6 +871,8 @@ actor FlightRecordingEngine {
         elapsed: Duration,
         eventID: UUID
     ) async throws -> FlightRecordingEngineSnapshot {
+        await acquireMutation()
+        defer { releaseMutation() }
         let currentFlightID = flight.id
         let isReadyForCompletion = await MainActor.run {
             completedFlight.id == currentFlightID && completedFlight.legState == .completed

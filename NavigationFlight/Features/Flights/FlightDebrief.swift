@@ -176,7 +176,8 @@ nonisolated struct FlightDebriefProjector: Sendable {
         let segments = snapshot.trackSegments.map {
             FlightDebriefTrackSegment(id: $0.id, samples: $0.samples.sorted { $0.observedAt < $1.observedAt })
         }
-        let events = snapshot.events.sorted { $0.sequence < $1.sequence }.map {
+        let events = snapshot.events.filter { $0.payload != .cockpitPresentationChanged }
+            .sorted { $0.sequence < $1.sequence }.map {
             FlightDebriefEvent(
                 id: $0.id,
                 sequence: $0.sequence,
@@ -265,6 +266,7 @@ nonisolated struct FlightDebriefProjector: Sendable {
 
     private func title(for payload: RecordedFlightEventPayload, plan: FlightPlan?) -> String {
         switch payload {
+        case .cockpitPresentationChanged: "Checklist presentation changed"
         case .recordingStarted: "Recording began"
         case .legStarted: "Leg started"
         case .destinationIdentified: "Destination identified"

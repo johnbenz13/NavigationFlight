@@ -1,5 +1,13 @@
 # Settings — Delivery Agreement
 
+Readiness update, 2026-11-21: John approved the existing Cockpit warning geometry
+with “Checklist changes could not be saved. Navigation remains available. After
+restarting, the checklist may return to its last saved state.” He authorized #161
+implementation and marking it `ready-for-agent`; see
+[the recorded decision](https://github.com/johnbenz13/NavigationFlight/issues/161#issuecomment-7052413098).
+This supersedes the earlier S1 warning-treatment and implementation-approval gates
+preserved below. It does not approve implementation acceptance or other slices.
+
 Status: breakdown and GitHub publication approved by John, 2026-11-21 (“I approve”).
 All four implementation contracts are published and read back. Product, Iteration 01
 direction, Iteration 02 design, and technical design are approved. Implementation

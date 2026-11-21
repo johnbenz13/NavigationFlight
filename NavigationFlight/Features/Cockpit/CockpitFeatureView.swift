@@ -12,6 +12,7 @@ struct CockpitFeatureView: View {
     @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
     @State private var progressionNotice: CockpitProgressionNotice?
+    private let checklistSelection: () -> StartChecklistSelection
     private let adapter = CockpitPresentationAdapter()
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
@@ -25,9 +26,11 @@ struct CockpitFeatureView: View {
         positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
         recordingCoordinator: FlightRecordingCoordinator,
+        checklistSelection: @escaping () -> StartChecklistSelection = { .tzeKivun },
         shouldSimulateRecordingDegradation: Bool = false,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
+        self.checklistSelection = checklistSelection
         _state = state
         self.locationService = locationService
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
@@ -132,10 +135,11 @@ struct CockpitFeatureView: View {
                         flightPlan: flightPlan,
                         flight: flight
                     )
-                    let legStartChecklist = try? adapter.makeLegStartChecklist(
-                        flightPlan: flightPlan,
-                        flight: flight
-                    )
+                    let legStartChecklist = state.activeLegStartChecklist.flatMap { captured in
+                        try? adapter.makeLegStartChecklist(
+                            flightPlan: flightPlan, flight: flight, captured: captured
+                        )
+                    }
                     let positionCheck = adapter.makePositionCheckPresentation(
                         for: locationAvailability,
                         state: positionCheckCoordinator.state,
@@ -172,7 +176,7 @@ struct CockpitFeatureView: View {
                         pendingReachUndo: state.pendingReachUndo,
                         progressionNotice: progressionNotice,
                         positionCheck: positionCheck,
-                        recordingStatus: RecordingStatusPresentation(status: recordingCoordinator.status),
+                        recordingStatus: RecordingStatusPresentation(status: recordingCoordinator.effectiveStatus),
                         isRecordingCommitInFlight: recordingCoordinator.isCommitting,
                         isNavigationCompletionCommitted: recordingCoordinator.isNavigationCompletionCommitted,
                         positionCheckMapRestoration: positionCheckCoordinator.pendingMapRestoration,
@@ -248,6 +252,9 @@ struct CockpitFeatureView: View {
 
     private func startLeg() {
         guard let flight = state.flight, let flightPlan = state.flightPlan else { return }
+        let selection = checklistSelection()
+        let context = state.recordingCockpitContext
+        let sourceData = state.flightPlanSourceData
         Task {
             do {
                 let transition = try await recordingCoordinator.startLeg(
@@ -255,13 +262,15 @@ struct CockpitFeatureView: View {
                     flightPlanSnapshot: RecordedFlightPlanSnapshot(
                         id: flightPlan.id,
                         title: flightPlan.title,
-                        legIDs: flightPlan.legs.map(\.id)
+                        legIDs: flightPlan.legs.map(\.id),
+                        sourceData: sourceData
                     ),
                     at: .now,
                     recordingID: UUID(),
-                    eventIDs: [UUID(), UUID()]
+                    eventIDs: [UUID(), UUID()], context: context, checklistSelection: selection
                 )
                 state.installCommittedFlight(transition.flight)
+                state.installCockpitContext(transition.cockpitContext)
                 if shouldSimulateRecordingDegradation {
                     try? await recordingCoordinator.recordStorageDegradation(
                         .trackWriteFailed,
@@ -301,14 +310,16 @@ struct CockpitFeatureView: View {
 
     private func identifyDestination() {
         guard let timing = recordingTiming() else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.identifyDestination(
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedDestinationIdentification(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Identify Waypoint")
             }
@@ -323,6 +334,8 @@ struct CockpitFeatureView: View {
         let eventIDs = state.flight?.progressionPolicy == .manualNextLeg
             ? [UUID()]
             : [UUID(), UUID()]
+        let selection = checklistSelection()
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reachCurrentWaypoint(
@@ -330,13 +343,14 @@ struct CockpitFeatureView: View {
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventIDs: eventIDs
-                ))
+                ), context: context, checklistSelection: selection)
                 state.installCommittedWaypointReach(
                     transition.flight,
                     originalEventID: transition.eventIDs[0],
                     cockpitRestoration: restoration,
                     at: timing.now
                 )
+                state.installCockpitContext(transition.cockpitContext)
                 progressionNotice = .arrivalReached(
                     waypoint: mapPresentation.destinationTarget.name,
                     progressionPolicy: transition.flight.progressionPolicy,
@@ -368,6 +382,7 @@ struct CockpitFeatureView: View {
                 targetID: point.id.identificationPointID
             ), point.plannedElapsedSeconds)
         } ?? (mapPresentation.destinationTarget.id, mapPresentation.destinationTarget.plannedElapsedSeconds)
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reachIdentificationPoint(
@@ -378,7 +393,7 @@ struct CockpitFeatureView: View {
                     eventID: UUID(),
                     nextETATarget: nextTarget.0,
                     nextETAPlannedElapsedSeconds: nextTarget.1
-                ))
+                ), context: context)
                 try state.installCommittedIdentificationPointReach(
                     transition.flight,
                     originalEventID: transition.eventIDs[0],
@@ -387,6 +402,7 @@ struct CockpitFeatureView: View {
                     cockpitRestoration: restoration,
                     at: timing.now
                 )
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Reach Identification Point")
             }
@@ -396,6 +412,7 @@ struct CockpitFeatureView: View {
     private func commitPilotETA(_ target: NavigationTimingTargetKey) {
         guard let timing = recordingTiming(),
               let draft = state.flight?.pilotETAState(targetKey: target)?.draftSeconds else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reviseETA(
@@ -405,8 +422,9 @@ struct CockpitFeatureView: View {
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedFlight(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Revise ETA")
             }
@@ -418,6 +436,7 @@ struct CockpitFeatureView: View {
               let flight = state.flight else { return }
         let legID = flight.legIDs[flight.activeLegIndex]
         guard let heading = flight.pilotHeadingState(for: legID) else { return }
+        let context = state.recordingCockpitContext
         Task {
             do {
                 let transition = try await recordingCoordinator.commitNavigation(.reviseHeading(
@@ -427,8 +446,9 @@ struct CockpitFeatureView: View {
                     at: timing.now,
                     elapsed: timing.elapsed,
                     eventID: UUID()
-                ))
+                ), context: context)
                 state.installCommittedFlight(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Revise Heading")
             }
@@ -443,14 +463,15 @@ struct CockpitFeatureView: View {
             return nil
         }
         do {
-            _ = try await recordingCoordinator.commitNavigation(.undoReach(
+            let transition = try await recordingCoordinator.commitNavigation(.undoReach(
                 originalEventID: originalEventID,
                 restoredFlight: undo.flight,
                 at: timing.now,
                 elapsed: timing.elapsed,
                 eventID: UUID()
-            ))
+            ), context: RecordingCockpitContext(flightID: undo.flight.id, checklists: undo.legStartChecklists, areDriftLinesVisible: state.areDriftLinesVisible))
             let restoration = state.undoMostRecentReach(at: timestamp)
+            state.installNavigationGeneration(transition.cockpitContext)
             progressionNotice = nil
             return restoration
         } catch {

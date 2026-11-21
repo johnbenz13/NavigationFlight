@@ -66,7 +66,7 @@ The first release does not provide graphical replay, debrief analysis, cloud upl
 
 7. The app records committed operational actions and automatic navigation transitions, not incidental interface activity. Map pan, zoom, span, app-section changes, opening or cancelling editors, focus changes, and viewing menus or history are not recording events.
 
-8. Checklist interactions are outside the recording history unless a checklist action directly commits a navigation-state transition owned by another recorded event.
+8. Checklist interactions are outside the navigation history unless a checklist action directly commits a navigation-state transition owned by another recorded event. The approved [Settings contract](SETTINGS_SPEC.md) SET-08/14/16 supersedes the original lack of durable checklist presentation state: schema-3 presentation events retain it for recovery, separately from navigation timeline activity. Device-default edits remain outside Flight activity.
 
 9. Every user-facing recording state and action remains understandable with VoiceOver and supported Dynamic Type sizes. Recording, GPS availability, completion, and destructive states never rely on color alone.
 

@@ -14,6 +14,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
     private let beforeRemove: BeforeRemove
     private let synchronizationInterval: TimeInterval
     private let now: @Sendable () -> Date
+    private let beforeAppend: @Sendable (RecordedFlightEvent) throws -> Void
     private let beforeTrackSynchronization: BeforeTrackSynchronization
     private var lastTrackSynchronization: [UUID: Date] = [:]
 
@@ -25,8 +26,10 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         beforeRemove: @escaping BeforeRemove = { _ in },
         synchronizationInterval: TimeInterval = 5,
         now: @escaping @Sendable () -> Date = Date.init,
-        beforeTrackSynchronization: @escaping BeforeTrackSynchronization = { _ in }
+        beforeTrackSynchronization: @escaping BeforeTrackSynchronization = { _ in },
+        beforeAppend: @escaping @Sendable (RecordedFlightEvent) throws -> Void = { _ in }
     ) {
+        self.beforeAppend = beforeAppend
         self.rootDirectory = rootDirectory
         self.fileManager = fileManager
         self.beforeInstall = beforeInstall
@@ -180,10 +183,21 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         recordingID: UUID,
         synchronize: Bool
     ) throws {
+        try beforeAppend(event)
         let snapshot = try readSnapshot(id: recordingID)
         let expectedSequence = snapshot.events.last.map { $0.sequence + 1 } ?? 0
         guard event.sequence == expectedSequence else {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        }
+        // Upgrade a continued legacy package before writing any new event semantics.
+        // Earlier records remain valid legacy history; required context starts here.
+        if event.cockpitContext != nil, snapshot.recording.sourceSchemaVersion < 3 {
+            let manifestURL = packageDirectory(id: recordingID).appending(path: "manifest.json")
+            var manifest = try FlightRecordingCoding.decoder.decode(FlightRecordingManifestDTO.self, from: Data(contentsOf: manifestURL))
+            manifest.schemaVersion = 3
+            manifest.progressionPolicy = snapshot.recording.recordedProgression
+            manifest.cockpitContextStartSequence = event.sequence
+            try FlightRecordingCoding.encoder.encode(manifest).write(to: manifestURL, options: .atomic)
         }
         do {
             let handle = try FileHandle(

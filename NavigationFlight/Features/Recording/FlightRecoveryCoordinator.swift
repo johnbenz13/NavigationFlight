@@ -44,6 +44,7 @@ nonisolated struct RecoveredFlight: Equatable, Sendable {
     let flightPlan: FlightPlan
     let flight: Flight
     let recording: FlightRecording
+    var cockpitContext: RecordingCockpitContext? = nil
 }
 
 nonisolated enum FlightRecoveryError: Error, Equatable, Sendable {
@@ -301,7 +302,8 @@ final class FlightRecoveryCoordinator {
         return RecoveredFlight(
             flightPlan: flightPlan,
             flight: flight,
-            recording: recording
+            recording: recording,
+            cockpitContext: try replayCockpitContext(snapshot: snapshot, flight: flight)
         )
     }
 
@@ -344,7 +346,8 @@ final class FlightRecoveryCoordinator {
             flightPlanID: flightPlan.id,
             legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: initialIndex,
-            executionMode: .noWind
+            executionMode: .noWind,
+            progressionPolicy: snapshot.recording.recordedProgression == .manual ? .manualNextLeg : .automaticNextLeg
         )
         do {
             for event in snapshot.events where !undoneEventIDs.contains(event.id) {
@@ -395,7 +398,7 @@ final class FlightRecoveryCoordinator {
                     let draft = flight.pilotHeadingState(for: legID)?.draftDegrees ?? committedDegrees
                     flight.adjustPilotHeading(by: committedDegrees - draft)
                     flight.commitPilotHeading()
-                case .recordingStarted, .automaticNextLegTransition, .finalWaypointReached,
+                case .cockpitPresentationChanged, .recordingStarted, .automaticNextLegTransition, .finalWaypointReached,
                      .automaticLegRecovery, .reachUndone, .positionCheckRequested,
                      .positionCheckEnded, .storageDegraded, .locationAvailabilityChanged,
                      .physicalStateChanged, .physicalStateCorrected, .navigationCompleted,
@@ -408,7 +411,38 @@ final class FlightRecoveryCoordinator {
         } catch {
             throw FlightRecoveryError.invalidJournal
         }
+        _ = try replayCockpitContext(snapshot: snapshot, flight: flight)
         return flight
+    }
+
+    private func replayCockpitContext(snapshot: FlightRecordingReadSnapshot, flight: Flight) throws -> RecordingCockpitContext? {
+        var result: RecordingCockpitContext?
+        for event in snapshot.events {
+            if let context = event.cockpitContext {
+                try context.validate(flightID: flight.id, legIDs: flight.legIDs)
+                switch event.payload {
+                case .legStarted(let legID):
+                    guard context.checklists[legID] != nil else { throw FlightRecoveryError.invalidJournal }
+                case .automaticNextLegTransition(_, let successorID):
+                    guard context.checklists[successorID] != nil else { throw FlightRecoveryError.invalidJournal }
+                default: break
+                }
+                result = context
+            } else if snapshot.recording.sourceSchemaVersion >= 3,
+                      event.sequence >= snapshot.recording.cockpitContextStartSequence {
+                switch event.payload {
+                case .legStarted, .waypointReached, .reachUndone, .destinationIdentified, .cockpitPresentationChanged:
+                    throw FlightRecoveryError.invalidJournal
+                default: break
+                }
+            }
+        }
+        if let result, flight.legState == .active {
+            guard result.checklists[flight.legIDs[flight.activeLegIndex]] != nil else {
+                throw FlightRecoveryError.invalidJournal
+            }
+        }
+        return result
     }
 
     private func orderedPointKeys(for legID: UUID, in flightPlan: FlightPlan) -> [IdentificationPointKey] {

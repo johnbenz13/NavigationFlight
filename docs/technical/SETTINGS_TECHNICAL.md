@@ -1,5 +1,70 @@
 # Settings — Technical Design
 
+Readiness update, 2026-11-21: John's [#161 decision](https://github.com/johnbenz13/NavigationFlight/issues/161#issuecomment-7052413098)
+authorizes implementation and resolves the presentation-only warning-copy gate
+with the existing warning geometry. Earlier pending-readiness notes below retain
+the planning history. Implementation evidence is tracked in
+[SETTINGS_161_IMPLEMENTATION.md](SETTINGS_161_IMPLEMENTATION.md).
+
+## S1 implementation structure and format
+
+`NavigationFlightApp` owns one `SettingsController` across scenes. Scene-local
+Settings paths remain local. Ordered controller tasks live through accepted writes;
+only successfully committed values reach `AppPreferences`. Independent version-1
+files use throwing atomic replacement. Loading never repairs invalid files or
+changes unrelated preferences. Only the checklist row is exposed in S1.
+
+`LegStartChecklistCapture` is a framework-independent Codable value. A started
+leg always has a capture, including explicit `none`; the renderer returns no
+checklist for that choice. Capture includes template ID via the selection and
+definition revision 1, review, presentation and phase state. The adapter resolves
+dynamic values from the leg. Future bundled text changes must retain revision-1
+definitions and add a new catalog revision; unknown required revisions fail closed.
+
+New engine-created packages use manifest schema 3. Its typed progression metadata
+is captured from the Flight; existing recovery-window metadata remains immutable.
+Version-1 `RecordingCockpitContext` carries Flight identity, per-leg captures and
+visibility. Navigation entries carry this context in the same checksummed journal
+record as their governing action, including automatic starts and undo. Separate
+`cockpitPresentationChanged` entries retain later presentation changes. Track
+geometry, physical detector rules and preference edits generate no such actions.
+
+Schemas 1 and 2 remain readable. When a continued legacy package first receives
+new context semantics, the store atomically promotes its manifest to 3 before
+appending the event. `cockpitContextStartSequence` marks where required new context
+begins, preserving older records as legacy history. If that append fails, the
+boundary can equal the current event count; recovery then retains the legacy
+fallback rather than inventing a successful presentation write. Unknown policies,
+invalid boundaries, Flight/leg mismatches, missing required captures or unknown
+definitions take the corrupt recovery route. An incompatible future context/event
+extension requires a new manifest schema; do not reuse schema 3 silently.
+
+The engine serializes journal mutations across actor suspension points so
+presentation, GPS-derived events and navigation cannot race event sequences.
+Presentation snapshots also carry a runtime-only navigation generation. Each
+committed context transition, including undo, replaces that identity; Cockpit
+retains it when projecting later presentation edits. After acquiring the mutation
+gate, the engine discards snapshots from an older generation rather than replacing
+newer captures. Discarding a stale snapshot does not clear a real save-failure
+warning. The generation is excluded from Codable and durable-value equality:
+recovery begins a new runtime session, with no schema or checksum-format change.
+Presentation failures leave memory intact and return without failing navigation.
+Cockpit supplies its current captured presentation to identification, waypoint,
+ETA and heading commits so a successful action also saves outstanding checklist
+edits. A coordinator commit clears the presentation warning only if the command
+supplied context and returned a committed context; merely carrying forward the
+engine's last durable context cannot clear an unsaved-checklist warning.
+The separate presentation warning uses John's approved copy; a simultaneous track
+degradation retains its accurate track warning. Recovery installs only durable
+context. No undo offer or Noted acknowledgement is fabricated on legacy restore.
+
+The native List styles in the installed SDK imposed different row padding,
+header/footer treatment and corner geometry from the approved content. Settings
+therefore uses native `NavigationStack`, `NavigationLink`, `Button` and scrolling
+with small grouped content containers, semantic backgrounds, 14-point corners and
+the measured 82/76-point minimum heights. The app's system TabView/navigation shell
+retains its approved platform geometry. This introduces no custom control framework.
+
 Status: technically approved by John on 2026-11-21 (“approved”). Product and
 Iteration 02 presentation are approved. That technical approval did not authorize implementation or publication. John
 subsequently approved issue publication, then separately authorized commit, push,

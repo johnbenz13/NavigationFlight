@@ -75,7 +75,7 @@ struct AppFeatureState: Equatable, Sendable {
         cockpit.restore(
             flightPlan: recovered.flightPlan,
             flight: recovered.flight,
-            sourceData: sourceData
+            sourceData: sourceData, cockpitContext: recovered.cockpitContext
         )
         selectedAppSection = .cockpit
         pendingFlightChange = nil

@@ -14,6 +14,7 @@ nonisolated struct RecordedFlightEvent: Equatable, Sendable, Identifiable {
     let elapsed: Duration
     let origin: Origin
     let payload: RecordedFlightEventPayload
+    var cockpitContext: RecordingCockpitContext? = nil
 }
 
 nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
@@ -38,6 +39,7 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     )
     case headingRevised(legID: UUID, priorDegrees: Int, committedDegrees: Int)
     case reachUndone(originalEventID: UUID)
+    case cockpitPresentationChanged
     case positionCheckRequested
     case positionCheckEnded(outcome: PositionCheckRecordedOutcome)
     case storageDegraded(reason: RecordingStorageDegradation)

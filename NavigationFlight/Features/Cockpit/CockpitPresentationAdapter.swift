@@ -201,7 +201,7 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
     let layoutDirection: LayoutDirection
     let sections: [Section]
 
-    static let tzeKivun = LegStartChecklistTemplate(
+    static let tzeKivunRevision1 = LegStartChecklistTemplate(
         id: "tze-kivun-gamad",
         featureTitle: "LEG START CHECKLIST",
         displayName: "צא כיוון",
@@ -247,7 +247,7 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
         ]
     )
 
-    static let establishHeading = LegStartChecklistTemplate(
+    static let establishHeadingRevision1 = LegStartChecklistTemplate(
         id: "establish-heading-cruise-check",
         featureTitle: "SELECTED TEMPLATE",
         displayName: "Establish Heading",
@@ -292,6 +292,9 @@ struct LegStartChecklistTemplate: Equatable, Sendable {
             )
         ]
     )
+
+    static let tzeKivun = tzeKivunRevision1
+    static let establishHeading = establishHeadingRevision1
 
     static let bundled: [LegStartChecklistTemplate] = [.tzeKivun, .establishHeading]
 
@@ -621,6 +624,23 @@ struct CockpitPresentationAdapter: Sendable {
         case .denied: "Location permission was denied."
         case .restricted: "Location permission is restricted on this device."
         }
+    }
+
+    func makeLegStartChecklist(
+        flightPlan: FlightPlan,
+        flight: Flight,
+        captured: LegStartChecklistCapture
+    ) throws -> LegStartChecklistPresentation? {
+        guard captured.selection != .none else { return nil }
+        guard captured.definitionRevision == 1,
+              flight.legIDs.indices.contains(flight.activeLegIndex),
+              captured.legID == flight.legIDs[flight.activeLegIndex] else {
+            throw LegStartChecklistTemplateError.invalidStructure
+        }
+        // Revision 1 is the bundled definition published before Settings. Future
+        // revisions must retain this catalog rather than reinterpret recovered legs.
+        return try makeLegStartChecklist(flightPlan: flightPlan, flight: flight,
+            template: captured.selection == .establishHeading ? .establishHeadingRevision1 : .tzeKivunRevision1)
     }
 
     func makeLegStartChecklist(

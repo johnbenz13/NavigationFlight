@@ -28,9 +28,35 @@ final class NavigationFlightAppDelegate: NSObject, UIApplicationDelegate {
 struct NavigationFlightApp: App {
     @UIApplicationDelegateAdaptor(NavigationFlightAppDelegate.self) private var appDelegate
 
+    @State private var settingsController = SettingsController(store: Self.settingsStore())
+
+    private static func settingsStore() -> any SettingsStore {
+        let directory: URL
+#if DEBUG
+        if let id = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] {
+            directory = URL.temporaryDirectory.appending(path: "\(id)-settings", directoryHint: .isDirectory)
+        } else {
+            directory = settingsDirectory
+        }
+        return DiskSettingsStore(directory: directory, failNextSaves: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_SETTINGS_FAILURE_ONCE"] == "1" ? 1 : 0, beforeWrite: { _ in
+            if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_SETTINGS_FAILURE"] == "1" {
+                throw CocoaError(.fileWriteNoPermission)
+            }
+        })
+#else
+        directory = settingsDirectory
+        return DiskSettingsStore(directory: directory)
+#endif
+    }
+
+    private static var settingsDirectory: URL {
+        (FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL.temporaryDirectory).appending(path: "Settings", directoryHint: .isDirectory)
+    }
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(settingsController: settingsController)
         }
     }
 }

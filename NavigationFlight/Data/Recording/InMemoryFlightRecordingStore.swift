@@ -97,7 +97,7 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
         let events = current.events + [event]
-        let recording: FlightRecording
+        var recording: FlightRecording
         switch event.payload {
         case .navigationCompleted:
             recording = current.recording.restoring(
@@ -110,7 +110,14 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
                 nextEventSequence: UInt64(events.count)
             )
         default:
-            recording = current.recording
+            recording = current.recording.restoring(
+                navigationState: current.recording.navigationState,
+                nextEventSequence: UInt64(events.count)
+            )
+        }
+        if event.cockpitContext != nil, recording.sourceSchemaVersion < 3 {
+            recording.sourceSchemaVersion = 3
+            recording.cockpitContextStartSequence = event.sequence
         }
         snapshotsByID[recordingID] = FlightRecordingReadSnapshot(
             recording: recording,

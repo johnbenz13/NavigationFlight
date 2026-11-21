@@ -47,27 +47,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         var originalEventID: UUID? = nil
     }
 
-    struct LegStartChecklistState: Equatable, Sendable {
-        enum ReviewState: Equatable, Sendable {
-            case pending
-            case noted
-        }
-
-        enum PresentationState: Equatable, Sendable {
-            case expanded
-            case collapsed
-        }
-
-        enum PhaseState: Equatable, Sendable {
-            case available
-            case hiddenForPhase
-        }
-
-        let legID: UUID
-        var reviewState: ReviewState
-        var presentationState: PresentationState
-        var phaseState: PhaseState
-    }
+    typealias LegStartChecklistState = LegStartChecklistCapture
 
     let progressionPolicy: Flight.ProgressionPolicy
     private(set) var flightPlan: FlightPlan?
@@ -77,6 +57,7 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var flightPlanSourceData: Data?
     private(set) var legStartChecklists: [UUID: LegStartChecklistState] = [:]
     private(set) var areDriftLinesVisible = true
+    private var navigationGeneration: UUID?
     private(set) var pendingReachUndo: PendingReachUndo?
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
@@ -108,7 +89,8 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     var activeLegStartChecklist: LegStartChecklistState? {
         guard let flight, flight.legState == .active else { return nil }
-        return legStartChecklists[flight.legIDs[flight.activeLegIndex]]
+        let captured = legStartChecklists[flight.legIDs[flight.activeLegIndex]]
+        return captured?.selection == StartChecklistSelection.none ? nil : captured
     }
 
     mutating func accept(
@@ -136,6 +118,7 @@ struct CockpitFeatureState: Equatable, Sendable {
                 progressionPolicy: progressionPolicy
             )
             legStartChecklists = [:]
+            navigationGeneration = nil
             areDriftLinesVisible = true
             pendingReachUndo = nil
         }
@@ -144,7 +127,8 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func restore(
         flightPlan: FlightPlan,
         flight: Flight,
-        sourceData: Data?
+        sourceData: Data?,
+        cockpitContext: RecordingCockpitContext? = nil
     ) {
         precondition(flight.flightPlanID == flightPlan.id)
         precondition(flight.legIDs == flightPlan.legs.map(\.id))
@@ -153,8 +137,10 @@ struct CockpitFeatureState: Equatable, Sendable {
         selectedLegIndex = flight.activeLegIndex
         mode = .noWind
         self.flight = flight
-        legStartChecklists = [:]
-        areDriftLinesVisible = true
+        legStartChecklists = cockpitContext?.checklists ?? [:]
+        navigationGeneration = cockpitContext?.navigationGeneration
+        areDriftLinesVisible = cockpitContext?.areDriftLinesVisible ?? true
+        createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
     }
 
@@ -176,13 +162,13 @@ struct CockpitFeatureState: Equatable, Sendable {
         selectedLegIndex = candidate
     }
 
-    mutating func startLeg(at timestamp: Date = .now) throws {
+    mutating func startLeg(at timestamp: Date = .now, checklistSelection: StartChecklistSelection = .tzeKivun) throws {
         guard var nextFlight = flight else {
             throw Flight.TransitionError.legNotReady
         }
         try nextFlight.startLeg(at: timestamp)
         flight = nextFlight
-        createPendingLegStartChecklistForActiveLeg()
+        createPendingLegStartChecklistForActiveLeg(selection: checklistSelection)
         pendingReachUndo = nil
     }
 
@@ -504,16 +490,36 @@ struct CockpitFeatureState: Equatable, Sendable {
         legStartChecklists[legID] = checklist
     }
 
-    private mutating func createPendingLegStartChecklistForActiveLeg() {
+    private mutating func createPendingLegStartChecklistForActiveLeg(selection: StartChecklistSelection = .tzeKivun) {
         guard let flight, flight.legState == .active else { return }
         let legID = flight.legIDs[flight.activeLegIndex]
         guard legStartChecklists[legID] == nil else { return }
         legStartChecklists[legID] = LegStartChecklistState(
             legID: legID,
+            selection: selection,
             reviewState: .pending,
             presentationState: .expanded,
             phaseState: .available
         )
+    }
+
+    var recordingCockpitContext: RecordingCockpitContext? {
+        guard let flight else { return nil }
+        return RecordingCockpitContext(flightID: flight.id, checklists: legStartChecklists,
+                                       areDriftLinesVisible: areDriftLinesVisible,
+                                       navigationGeneration: navigationGeneration)
+    }
+
+    mutating func installCockpitContext(_ context: RecordingCockpitContext?) {
+        guard let context, context.flightID == flight?.id else { return }
+        legStartChecklists = context.checklists
+        navigationGeneration = context.navigationGeneration
+        areDriftLinesVisible = context.areDriftLinesVisible
+    }
+
+    mutating func installNavigationGeneration(_ context: RecordingCockpitContext?) {
+        guard let context, context.flightID == flight?.id else { return }
+        navigationGeneration = context.navigationGeneration
     }
 
     private mutating func updateActiveChecklist(
@@ -521,7 +527,7 @@ struct CockpitFeatureState: Equatable, Sendable {
     ) {
         guard let flight, flight.legState == .active else { return }
         let legID = flight.legIDs[flight.activeLegIndex]
-        guard var checklist = legStartChecklists[legID] else { return }
+        guard var checklist = legStartChecklists[legID], checklist.selection != .none else { return }
         update(&checklist)
         legStartChecklists[legID] = checklist
     }

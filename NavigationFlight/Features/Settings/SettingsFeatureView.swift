@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsFeatureView: View {
     let controller: SettingsController
+    var onBackToMore: (() -> Void)? = nil
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var path: [String] = []
     @State private var requestID: UUID?
@@ -64,6 +65,13 @@ struct SettingsFeatureView: View {
             .onGeometryChange(for: CGSize.self) { $0.size } action: { availableSize = $0 }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                if let onBackToMore {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("More", systemImage: "chevron.backward", action: onBackToMore)
+                    }
+                }
+            }
             .navigationDestination(for: String.self) { _ in
                 StartChecklistSelectionView(selection: controller.preferences.startChecklist) { selection in
                     requestID = controller.change(.startChecklist(selection))

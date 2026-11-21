@@ -3,6 +3,13 @@ import SwiftUI
 struct RootView: View {
     private let settingsController: SettingsController
     @State private var appState: AppFeatureState
+    @State private var shellWidth: CGFloat = 0
+    @State private var tabBarPlacement: TabBarPlacement?
+    @State private var showsSettingsFromMore = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    private let chartResources: ChartResources
+    private let chartCatalog: ChartCatalog?
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
@@ -21,6 +28,15 @@ struct RootView: View {
 
     init(settingsController: SettingsController) {
         self.settingsController = settingsController
+#if DEBUG
+        chartResources = ChartResources(
+            bundleRoot: Bundle.main.bundleURL,
+            unreadableChartID: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_UNREADABLE_CHART"]
+        )
+#else
+        chartResources = .bundled
+#endif
+        chartCatalog = try? chartResources.loadCatalog()
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -290,6 +306,7 @@ struct RootView: View {
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             } label: {
                 cockpitTabLabel
             }
@@ -307,6 +324,7 @@ struct RootView: View {
                     debugImportData: debugImportData,
                     onIntent: handleFlightPlansIntent
                 )
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
             Tab("Flights", systemImage: "clock.arrow.circlepath", value: AppFeatureState.AppSection.flights) {
@@ -333,13 +351,52 @@ struct RootView: View {
                                 : .zero
                         )
                 )
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
-            Tab("Settings", systemImage: "gearshape", value: AppFeatureState.AppSection.settings) {
-                SettingsFeatureView(controller: settingsController)
+            Tab("Charts", systemImage: "document", value: AppFeatureState.AppSection.charts) {
+                ChartLibraryView(catalog: chartCatalog, state: $appState.chartLibrary)
+                    .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
+            }
+
+            Tab(
+                usesMoreTab ? "More" : "Settings",
+                systemImage: usesMoreTab ? "ellipsis" : "gearshape",
+                value: AppFeatureState.AppSection.settings
+            ) {
+                Group {
+                    if usesMoreTab && !showsSettingsFromMore {
+                        MoreSectionsView {
+                            showsSettingsFromMore = true
+                        }
+                    } else {
+                        SettingsFeatureView(
+                            controller: settingsController,
+                            onBackToMore: usesMoreTab ? { showsSettingsFromMore = false } : nil
+                        )
+                    }
+                }
+                .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .defaultAdaptableTabBarPlacement(dynamicTypeSize.isAccessibilitySize ? .sidebar : .automatic)
+        .dynamicTypeSize(tabBarTextSize)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { shellWidth = $0 }
+        .onChange(of: usesMoreTab) { _, usesMore in
+            if usesMore && appState.selectedAppSection == .settings {
+                showsSettingsFromMore = true
+            }
+        }
+        .fullScreenCover(item: chartSelection, onDismiss: {
+            appState.chartLibrary.didDismissChart()
+        }) { selection in
+            if let chartCatalog {
+                ChartViewer(selection: selection, catalog: chartCatalog, resources: chartResources) {
+                    appState.chartLibrary.presentedChartID = nil
+                }
+            }
+        }
         .onAppear {
             synchronizeIdleTimer()
         }
@@ -708,10 +765,40 @@ struct RootView: View {
         }
     }
 
+    private var tabBarTextSize: DynamicTypeSize {
+        // When the iPad sidebar is collapsed, keep all primary tabs visible.
+        // The content of each tab still uses the device's full text size.
+        if tabBarPlacement == .topBar && dynamicTypeSize.isAccessibilitySize {
+            return .large
+        }
+        return dynamicTypeSize
+    }
+
+    private var usesMoreTab: Bool {
+        AppFeatureState.usesMoreTab(
+            availableWidth: shellWidth,
+            compact: horizontalSizeClass == .compact,
+            topBar: tabBarPlacement == .topBar
+        )
+    }
+
+    private var chartSelection: Binding<ChartSelection?> {
+        Binding(
+            get: { appState.chartLibrary.presentedChartID.flatMap { chartCatalog?.selection(for: $0) } },
+            set: { appState.chartLibrary.presentedChartID = $0?.id }
+        )
+    }
+
     private var appSectionSelection: Binding<AppFeatureState.AppSection> {
         Binding(
             get: { appState.selectedAppSection },
-            set: { appState.selectAppSection($0) }
+            set: { selection in
+                guard selection != appState.selectedAppSection, appState.canSwitchAppSection else { return }
+                appState.selectAppSection(selection)
+                if appState.selectedAppSection == .settings && !usesMoreTab {
+                    showsSettingsFromMore = true
+                }
+            }
         )
     }
 

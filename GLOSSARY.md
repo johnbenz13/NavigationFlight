@@ -46,6 +46,17 @@ _Avoid_: Execution data
 The application's operational destination for executing the currently loaded
 Flight.
 
+## Charts
+
+**AIP Chart**:
+A visual airport or airfield document published in the Israel AIP. It can
+occupy an original PDF or specific pages within that PDF.
+
+**AIP Snapshot**:
+A reviewed set of original AIP files and their chart index. An app adopts a
+specific snapshot for offline viewing. Each chart can carry a printed
+amendment date distinct from the snapshot's publication baseline.
+
 ## Manual navigation
 
 **Manual-navigation primacy**:

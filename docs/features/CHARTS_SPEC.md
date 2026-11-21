@@ -95,8 +95,8 @@ the aerodrome and Flight Plan role (CH-05). The
 and [other charts](https://www.figma.com/design/WfBJGtbq2I37ODQZj44Yz1?node-id=3-787)
 appear in that order (CH-06). Close returns to the map, with the Flight instruments
 still in view (CH-08). The underlying map is schematic and the sample chart
-labels are illustrative. The file's spec backlink is pending repository
-publication.
+labels are illustrative. The Figma covers link to the
+[approved product revision](https://github.com/johnbenz13/NavigationFlight/blob/bea6dba1c0ce69955ec416bf46e70a078b662ee9/docs/features/CHARTS_SPEC.md).
 
 At the owner's request, the direction review also shows the selected **Traffic
 circuit** for **Departure · Herzliya (LLHZ)**. The viewer fits the complete
@@ -135,8 +135,7 @@ behavior require implementation verification. iPhone landscape follows the
 project-wide exclusion.
 
 John approved Iteration 02 and its paired product specification on 2026-11-21.
-The exact V1 AIP inventory and the shareable repository backlink still require
-verification and publication respectively. John approved the technical
+The complete V1 AIP snapshot remains release work. John approved the technical
 design and confirmed direct redistribution authorization from רת״א on
 2026-11-21. He subsequently selected the shared `aviation-maps` package to
 own the AIP snapshot. The

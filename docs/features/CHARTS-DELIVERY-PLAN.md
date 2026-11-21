@@ -1,7 +1,7 @@
 # Charts V1 delivery plan
 
-**Status.** John approved the revised packaging and four-ticket breakdown
-and authorized publication on 2026-11-21. John approved the
+**Status.** Approved and published on 2026-11-21. John approved the revised
+packaging and four-ticket breakdown and authorized publication. John approved the
 [product spec](CHARTS_SPEC.md), [Figma Iteration 02](https://www.figma.com/design/WfBJGtbq2I37ODQZj44Yz1?node-id=13-825)
 and [technical design](../technical/CHARTS-TECHNICAL-DESIGN.md). This plan
 records the revised shared-package handoff, draft issue bodies, coverage,
@@ -11,10 +11,10 @@ and the remaining approval gates.
 
 | Ticket | Outcome | Blocked by |
 | --- | --- | --- |
-| **1. Verified AIP snapshot** | Publish a pinned private `aviation-maps` release with the complete original PDFs and shared chart index. Proposed child of [fplnav-spec #14](https://github.com/johnbenz13/fplnav-spec/issues/14). | [Shared transport #10](https://github.com/johnbenz13/fplnav-spec/issues/10) and [inventory #13](https://github.com/johnbenz13/fplnav-spec/issues/13). Reconcile actual PDF payloads and checklist in this slice. |
-| **2. App Charts library** | Pin and stage the shared release, then browse and open the complete library offline in the shared viewer. | External released-artifact prerequisite from ticket 1. |
-| **3. Cockpit charts** | From Map tools, find the loaded plan's charts in priority order and return to the map. | Ticket 2 supplies shared document loading, rendering and recovery. |
-| **4. Cockpit recall** | Resume the last chart in the running Flight and reset correctly on replacement, relaunch or recovery. | Ticket 3 supplies the cockpit viewer route and document-open result. |
+| [1. Verified AIP snapshot](https://github.com/johnbenz13/fplnav-spec/issues/23) | Publish a pinned private `aviation-maps` release with the complete original PDFs and shared chart index. Child of [fplnav-spec #14](https://github.com/johnbenz13/fplnav-spec/issues/14). | [Shared transport #10](https://github.com/johnbenz13/fplnav-spec/issues/10) and [inventory #13](https://github.com/johnbenz13/fplnav-spec/issues/13). Reconcile actual PDF payloads and checklist in this slice. |
+| [2. App Charts library](https://github.com/johnbenz13/NavigationFlight/issues/195) | Pin and stage the shared release, then browse and open the complete library offline in the shared viewer. | External released-artifact prerequisite from [fplnav-spec #23](https://github.com/johnbenz13/fplnav-spec/issues/23). |
+| [3. Cockpit charts](https://github.com/johnbenz13/NavigationFlight/issues/196) | From Map tools, find the loaded plan's charts in priority order and return to the map. | [Navigation Flight #195](https://github.com/johnbenz13/NavigationFlight/issues/195) supplies shared document loading, rendering and recovery. |
+| [4. Cockpit recall](https://github.com/johnbenz13/NavigationFlight/issues/197) | Resume the last chart in the running Flight and reset correctly on replacement, relaunch or recovery. | [Navigation Flight #196](https://github.com/johnbenz13/NavigationFlight/issues/196) supplies the cockpit viewer route and document-open result. |
 
 Each ticket carries its own acceptance and test contract. Ticket 1 delivers
 an independently verifiable shared release. Ticket 2 is the first
@@ -41,8 +41,8 @@ Reuse the existing `johnbenz13/fplnav-spec` upstream tracks for private release
 transport and chart inventory. They remain open with
 [PR #16](https://github.com/johnbenz13/fplnav-spec/pull/16) and
 [PR #17](https://github.com/johnbenz13/fplnav-spec/pull/17).
-Propose the shared release slice as a child of #14. Keep its existing
-both-app acceptance on the umbrella. Later Editor adoption falls under that
+The shared release slice is a child of #14. The umbrella retains its
+both-app acceptance. Later Editor adoption falls under that
 umbrella. Tickets 2–4 belong to `johnbenz13/NavigationFlight`. No source
 parent was found there. [NavigationFlight #157](https://github.com/johnbenz13/NavigationFlight/issues/157)
 records the older temporary unavailable action. Approved CH-05 supersedes
@@ -56,9 +56,13 @@ repository, and the immutable release/pin and verified staging receipt in the
 consumer ticket. The Navigation Flight ticket does not wait on the Editor
 viewer or on either consumer's base-map migration.
 
-Publish in dependency order using each repository's triage and readiness
-rules. The approved plan covers one shared issue and three Navigation Flight
-issues. Record the issue links and verified dependencies here after creation.
+Published the shared issue first, then the three Navigation Flight issues.
+The shared ticket tracks #10 and #13 as native blockers. The two dependent
+Navigation Flight issues use native blockers. The library documents the
+external shared release prerequisite explicitly.
+
+The [approved product revision](https://github.com/johnbenz13/NavigationFlight/blob/bea6dba1c0ce69955ec416bf46e70a078b662ee9/docs/features/CHARTS_SPEC.md)
+is linked from the approved Figma cover and each published issue.
 
 John confirmed direct authorization from רת״א on 2026-11-21. Record its
 scope as part of the shared release review. The release work still includes

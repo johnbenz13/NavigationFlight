@@ -6,9 +6,8 @@ John approved the technical design on 2026-11-21. He also approved the
 [Charts product specification](../features/CHARTS_SPEC.md) and
 [Figma Iteration 02](https://www.figma.com/design/WfBJGtbq2I37ODQZj44Yz1?node-id=13-825)
 on 2026-11-21. The inspection baseline is NavigationFlight main at
-`0723ec76b7018a956b6b6ccb771666528bd84447`. The specification and this proposal
-are in the planning worktree. The shared repository permalink is pending
-publication. John subsequently selected the shared `aviation-maps` package
+`0723ec76b7018a956b6b6ccb771666528bd84447`. The specification and technical design are published on the planning
+branch. The Figma cover links to the approved specification revision. John subsequently selected the shared `aviation-maps` package
 as the snapshot owner. John approved the revised release handoff on 2026-11-21. The approved
 product and Figma contracts govern the app.
 

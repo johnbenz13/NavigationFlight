@@ -94,23 +94,20 @@ contains 65 original PDFs for domestic AIP amendment 01-2026. The
 [upstream verification](https://github.com/johnbenz13/fplnav-spec/issues/23#issuecomment-7058845066)
 records the release, checksums, and live Flight install receipt.
 
-Prepare once on each fresh developer checkout or CI worker. Clone
-`johnbenz13/fplnav-spec` with a private-repository read credential, check out
-`147f8754cc25a51508ca7d4a23254f78c0136968`, then run these commands from that
-checkout to build the reviewed installer.
+Prepare once on each fresh developer checkout or CI worker. Install GitHub CLI
+(`gh`) and sign in with `gh auth login` using an account with read access to
+`johnbenz13/fplnav-spec`. Check access with `gh auth status`. CI can supply a
+masked `GH_TOKEN` scoped to read repository contents.
+
+Run from Navigation Flight:
 
 ```sh
-mise exec node@24.18.1 -- corepack yarn install --immutable
-mise exec node@24.18.1 -- corepack yarn build
+sh scripts/prepare-aip-charts.sh
 ```
 
-Run the following from Navigation Flight. Developers can use a signed-in
-GitHub CLI. CI supplies a masked `GH_TOKEN` scoped to read contents in
-`johnbenz13/fplnav-spec`.
-
-```sh
-AVIATION_MAPS_CHECKOUT=/absolute/path/to/fplnav-spec sh scripts/prepare-aip-charts.sh
-```
+The script downloads the immutable GitHub release directly using `gh`, checks
+the manifest against the committed pin, and verifies every PDF before installing
+it. No separate fplnav-spec checkout, Node, or Yarn build is required.
 
 The installer prepares `.generated/AIPCharts` independently of the PMTiles.
 Xcode verifies the pin, exact filenames, sizes, and SHA-256 digests before

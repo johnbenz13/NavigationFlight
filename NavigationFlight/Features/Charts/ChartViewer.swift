@@ -5,6 +5,8 @@ struct ChartViewer: View {
     let selection: ChartSelection
     let catalog: ChartCatalog
     let resources: ChartResources
+    var cockpitContext: String? = nil
+    var onClose: (() -> Void)? = nil
     let onBack: () -> Void
 
     @State private var document: PDFDocument?
@@ -66,13 +68,22 @@ struct ChartViewer: View {
                 chartHeading
                     .fixedSize(horizontal: true, vertical: false)
                 Spacer(minLength: 0)
-                backButton
-                    .fixedSize(horizontal: true, vertical: false)
-                    .hidden()
-                    .accessibilityHidden(true)
+                if let onClose {
+                    closeButton(onClose)
+                        .fixedSize(horizontal: true, vertical: false)
+                } else {
+                    backButton
+                        .fixedSize(horizontal: true, vertical: false)
+                        .hidden()
+                        .accessibilityHidden(true)
+                }
             }
             VStack(alignment: .leading, spacing: 8) {
-                backButton
+                HStack {
+                    backButton
+                    Spacer()
+                    if let onClose { closeButton(onClose) }
+                }
                 chartHeading.frame(maxWidth: .infinity)
             }
         }
@@ -95,6 +106,7 @@ struct ChartViewer: View {
     }
 
     private var subtitle: String {
+        if let cockpitContext { return cockpitContext }
         let aerodrome = "\(selection.aerodrome.name) (\(selection.aerodrome.code))"
         guard let pageLabel = selection.chart.pageLabel else { return aerodrome }
         return "\(aerodrome) · \(pageLabel)"
@@ -102,13 +114,24 @@ struct ChartViewer: View {
 
     private var backButton: some View {
         Button(action: onBack) {
-            Label(selection.aerodrome.name, systemImage: "chevron.backward")
+            Label(cockpitContext == nil ? selection.aerodrome.name : "Charts", systemImage: "chevron.backward")
                 .font(.subheadline.weight(.medium))
                 .frame(minHeight: 30)
         }
         .buttonStyle(.bordered)
         .buttonBorderShape(.capsule)
         .accessibilityIdentifier("charts-viewer-back")
+    }
+
+    private func closeButton(_ onClose: @escaping () -> Void) -> some View {
+        Button(action: onClose) {
+            Text("Close")
+                .font(.subheadline.weight(.medium))
+                .frame(minHeight: 30)
+        }
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .accessibilityIdentifier("charts-viewer-close")
     }
 
     private var unavailable: some View {

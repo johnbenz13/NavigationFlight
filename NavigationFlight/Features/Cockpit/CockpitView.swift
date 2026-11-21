@@ -182,6 +182,9 @@ struct CockpitView: View {
     let flight: Flight
     let areDriftLinesVisible: Bool
     var isSectionSelected = true
+    var chartCatalog: ChartCatalog?
+    var chartResources: ChartResources = .bundled
+    var operationalContext: OperationalContext?
     var operationalCues: CockpitOperationalCueState? = nil
     var emphasizedCueEvents: Set<CockpitOperationalCueState.DueEvent> = []
     var pendingReachUndo: CockpitFeatureState.PendingReachUndo? = nil
@@ -216,7 +219,6 @@ struct CockpitView: View {
     let onNoteChecklist: () -> Void
     let onToggleDriftLines: () -> Void
     let onShowPlanInspection: () -> Void
-    @State private var showsChartsUnavailable = false
     @State private var mapFocusRequest = AviationMapFocusRequest(mode: .leg)
     @State private var preservedMapCamera: AviationMapCameraState?
     @State private var isMapCameraUserControlled = false
@@ -235,6 +237,7 @@ struct CockpitView: View {
     @State private var compactMapChromeVisibilityID = 0
     @State private var positionCheckRestoration: CockpitRestoration?
     @State private var cockpitPresentationState = CockpitPresentationState()
+    @State private var compactMapDetent: PresentationDetent = .large
 
     var body: some View {
         GeometryReader { geometry in
@@ -335,14 +338,34 @@ struct CockpitView: View {
                 }
             }
         }
-        .alert("Charts Unavailable", isPresented: $showsChartsUnavailable) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Chart presentation is a later delivery. The imported plan remains unchanged.")
+        .sheet(isPresented: compactMapToolsBinding, onDismiss: {
+            cockpitPresentationState.mapSheetDidDismiss()
+        }) {
+            mapDisclosurePanel
+                .presentationDetents([.fraction(0.84), .large], selection: $compactMapDetent)
+                .presentationDragIndicator(.visible)
         }
-        .sheet(isPresented: compactMapToolsBinding) {
-            mapToolsPanel
-                .presentationDetents([.large])
+        .onChange(of: isCompactChartsPresented) { _, presented in
+            if presented {
+                compactMapDetent = dynamicTypeSize.isAccessibilitySize ? .large : .fraction(0.84)
+            }
+        }
+        .fullScreenCover(item: chartViewerBinding, onDismiss: {
+            cockpitPresentationState.chartViewerDidDismiss()
+        }) { row in
+            if let chartCatalog {
+                ChartViewer(
+                    selection: row.selection,
+                    catalog: chartCatalog,
+                    resources: chartResources,
+                    cockpitContext: row.context,
+                    onClose: { cockpitPresentationState.dismissChartViewer(returnToCharts: false) },
+                    onBack: { cockpitPresentationState.dismissChartViewer(returnToCharts: true) }
+                )
+            }
+        }
+        .onChange(of: flight.id) { _, _ in
+            cockpitPresentationState.closeCharts()
         }
         .sheet(isPresented: compactChecklistBinding) {
             if let legStartChecklist,
@@ -384,8 +407,7 @@ struct CockpitView: View {
                 isRestoringReach = false
                 return
             }
-            cockpitPresentationState.setNextLegPresented(false)
-            cockpitPresentationState.setPreviousLegPresented(false)
+            cockpitPresentationState.activeLegDidChange()
             selectedMapCallout = nil
             showsHeadingCommitConfirmation = false
             showsCompactFrequencies = false
@@ -457,7 +479,7 @@ struct CockpitView: View {
     }
 
     private func dismissTransientPresentations() {
-        showsChartsUnavailable = false
+        cockpitPresentationState.closeCharts()
         showsHeadingCommitConfirmation = false
         showsCompactFrequencies = false
         isRecordingStatusPresented = false
@@ -581,17 +603,6 @@ struct CockpitView: View {
                 .padding(.trailing, horizontalSizeClass == .compact ? 12 : 20)
                 .accessibilitySortPriority(80)
             }
-            if horizontalSizeClass != .compact, cockpitPresentationState.isMapToolsPresented {
-                mapToolsPanel
-                    .frame(width: min(380, mapWidth - 40))
-                    .frame(maxHeight: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
-                    .padding(.vertical, 18)
-                    .padding(.trailing, 18)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .accessibilitySortPriority(95)
-            }
             if let recovery = positionCheck?.recovery {
                 PositionCheckRecoveryGuidanceView(recovery: recovery)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -653,12 +664,24 @@ struct CockpitView: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             }
+            if horizontalSizeClass != .compact, isMapDisclosurePresented {
+                mapDisclosurePanel
+                    .frame(width: max(0, min(cockpitPresentationState.isChartsPresented ? 394 : 380, mapWidth - 40)))
+                    .frame(maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.18), radius: 12, y: 8)
+                    .padding(.vertical, 18)
+                    .padding(.trailing, 18)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .accessibilitySortPriority(95)
+            }
         }
         .clipped()
     }
 
     private var shouldShowMapChrome: Bool {
-        horizontalSizeClass != .compact || flight.legState != .active || isCompactMapChromeVisible
+        horizontalSizeClass != .compact || flight.legState != .active
+            || isCompactMapChromeVisible || isMapDisclosurePresented
     }
 
     private var isPilotETAEditing: Bool {
@@ -720,11 +743,54 @@ struct CockpitView: View {
         mapFocusRequest = AviationMapFocusRequest(mode: mode)
     }
 
+    private func showMapTools() {
+        cockpitPresentationState.setMapToolsPresented(true)
+        if cockpitPresentationState.isMapToolsPresented {
+            compactMapDetent = .large
+        }
+    }
+
+    private var isMapDisclosurePresented: Bool {
+        cockpitPresentationState.isMapToolsPresented || cockpitPresentationState.isChartsPresented
+    }
+
+    private var isCompactChartsPresented: Bool {
+        horizontalSizeClass == .compact && cockpitPresentationState.isChartsPresented
+    }
+
     private var compactMapToolsBinding: Binding<Bool> {
         Binding(
-            get: { horizontalSizeClass == .compact && cockpitPresentationState.isMapToolsPresented },
-            set: { cockpitPresentationState.setMapToolsPresented($0) }
+            get: { horizontalSizeClass == .compact && isMapDisclosurePresented },
+            set: { presented in
+                guard !presented, horizontalSizeClass == .compact else { return }
+                cockpitPresentationState.setMapToolsPresented(false)
+                if cockpitPresentationState.isChartsPresented {
+                    cockpitPresentationState.closeCharts()
+                }
+            }
         )
+    }
+
+    private var chartViewerBinding: Binding<CockpitChartList.Row?> {
+        Binding(
+            get: {
+                guard let id = cockpitPresentationState.viewerChartID else { return nil }
+                return chartList?.row(for: id)
+            },
+            set: { row in
+                if row == nil { cockpitPresentationState.dismissChartViewer(returnToCharts: false) }
+            }
+        )
+    }
+
+    private var chartList: CockpitChartList? {
+        chartCatalog.map { catalog in
+            CockpitChartList(
+                catalog: catalog,
+                departure: operationalContext?.departureAerodrome,
+                arrival: operationalContext?.arrivalAerodrome
+            )
+        }
     }
 
     private var compactChecklistBinding: Binding<Bool> {
@@ -768,11 +834,27 @@ struct CockpitView: View {
         }
     }
 
+    @ViewBuilder
+    private var mapDisclosurePanel: some View {
+        if cockpitPresentationState.isChartsPresented {
+            CockpitChartsPanel(
+                list: chartList,
+                returnFocus: cockpitPresentationState.chartReturnFocus,
+                onOpen: { id in
+                    cockpitPresentationState.openChart(id, fromCompactSheet: horizontalSizeClass == .compact)
+                },
+                onClose: { cockpitPresentationState.closeCharts() }
+            )
+        } else {
+            mapToolsPanel
+        }
+    }
+
     private var mapToolsPanel: some View {
         CockpitMapToolsPanel(
             areDriftLinesVisible: areDriftLinesVisible,
             onToggleDriftLines: onToggleDriftLines,
-            onShowChartLayers: { showsChartsUnavailable = true },
+            onShowCharts: { cockpitPresentationState.showCharts() },
             onInspectFlightPlan: {
                 cockpitPresentationState.setMapToolsPresented(false)
                 onShowPlanInspection()
@@ -802,13 +884,23 @@ struct CockpitView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
                 .padding(12)
         } else {
-            ViewThatFits(in: .horizontal) {
-                regularLegHeader
-                accessibilityLegHeader
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    accessibilityLegHeader
+                } else {
+                    ViewThatFits(in: .horizontal) {
+                        regularLegHeader
+                        accessibilityLegHeader
+                    }
+                }
             }
             .padding(.horizontal, 16).padding(.vertical, 6)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(.primary.opacity(0.08))
+                    .allowsHitTesting(false)
+            }
             .frame(maxHeight: .infinity, alignment: .top).padding(20)
         }
     }
@@ -837,7 +929,7 @@ struct CockpitView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("From \(data.origin) to \(data.destination)")
             Spacer(minLength: 4)
-            Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
+            Button(action: showMapTools) {
                 Image(systemName: "map")
                     .font(.headline)
             }
@@ -872,8 +964,12 @@ struct CockpitView: View {
                 }
             }
             Spacer(minLength: 8)
-            Button { cockpitPresentationState.setMapToolsPresented(true) } label: {
-                Label("Map tools", systemImage: "map").font(.headline).frame(minHeight: 44).padding(.horizontal, 12)
+            Button(action: showMapTools) {
+                Label("Map tools", systemImage: "map")
+                    .font(.headline)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain).foregroundStyle(.primary)
         }
@@ -886,9 +982,12 @@ struct CockpitView: View {
                     .font(.subheadline.weight(.bold))
                     .accessibilityIdentifier("leg-status")
                 Spacer()
-                Button("Map tools", systemImage: "map") { cockpitPresentationState.setMapToolsPresented(true) }
-                    .frame(minHeight: 44)
-                    .buttonStyle(.plain)
+                Button(action: showMapTools) {
+                    Label("Map tools", systemImage: "map")
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
             Text(data.legPosition.uppercased())
                 .font(.subheadline.weight(.semibold))

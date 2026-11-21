@@ -17,6 +17,8 @@ struct CockpitFeatureView: View {
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
     private let recordingCoordinator: FlightRecordingCoordinator
+    private let chartCatalog: ChartCatalog?
+    private let chartResources: ChartResources
     private let shouldSimulateRecordingDegradation: Bool
     private let onIntent: (CockpitFeatureIntent) -> Void
 
@@ -27,6 +29,8 @@ struct CockpitFeatureView: View {
         isSectionSelected: Bool,
         recordingCoordinator: FlightRecordingCoordinator,
         checklistSelection: @escaping () -> StartChecklistSelection = { .tzeKivun },
+        chartCatalog: ChartCatalog? = nil,
+        chartResources: ChartResources = .bundled,
         shouldSimulateRecordingDegradation: Bool = false,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
@@ -36,6 +40,8 @@ struct CockpitFeatureView: View {
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
         self.recordingCoordinator = recordingCoordinator
+        self.chartCatalog = chartCatalog
+        self.chartResources = chartResources
         self.shouldSimulateRecordingDegradation = shouldSimulateRecordingDegradation
         self.onIntent = onIntent
     }
@@ -171,6 +177,9 @@ struct CockpitFeatureView: View {
                         flight: flight,
                         areDriftLinesVisible: state.areDriftLinesVisible,
                         isSectionSelected: isSectionSelected,
+                        chartCatalog: chartCatalog,
+                        chartResources: chartResources,
+                        operationalContext: flightPlan.operationalContext,
                         operationalCues: operationalCues,
                         emphasizedCueEvents: emphasizedCueEvents,
                         pendingReachUndo: state.pendingReachUndo,

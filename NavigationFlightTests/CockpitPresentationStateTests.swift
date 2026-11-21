@@ -48,7 +48,7 @@ struct CockpitPresentationStateTests {
         #expect(CockpitMapTool.allCases == [
             .showFullRoute,
             .toggleDriftLines,
-            .chartLayers,
+            .charts,
             .inspectFlightPlan
         ])
     }
@@ -62,6 +62,70 @@ struct CockpitPresentationStateTests {
 
         state.setMapToolsPresented(false)
         #expect(!state.isMapToolsPresented)
+    }
+
+    @Test("Compact Charts serializes the two modals and restores focus only after dismissal")
+    func compactChartsTransition() {
+        var state = CockpitPresentationState()
+        state.setMapToolsPresented(true)
+        state.showCharts()
+        #expect(state.activeDisclosure == .charts)
+
+        state.openChart("main-chart", fromCompactSheet: true)
+        #expect(state.activeDisclosure == nil)
+        #expect(state.viewerChartID == nil)
+        state.openChart("superseding", fromCompactSheet: true)
+        state.mapSheetDidDismiss()
+        #expect(state.viewerChartID == "main-chart")
+
+        state.dismissChartViewer(returnToCharts: true)
+        #expect(!state.isChartsPresented)
+        #expect(state.viewerChartID == nil)
+        state.chartViewerDidDismiss()
+        #expect(state.isChartsPresented)
+        #expect(state.chartReturnFocus == "main-chart")
+
+        state.openChart("second-chart", fromCompactSheet: false)
+        #expect(state.viewerChartID == "second-chart")
+        state.dismissChartViewer(returnToCharts: false)
+        state.chartViewerDidDismiss()
+        #expect(state.activeDisclosure == nil)
+        #expect(state.chartReturnFocus == nil)
+    }
+
+    @Test("A leg change clears leg disclosures and keeps the chart viewer open")
+    func legChangeKeepsChartViewer() {
+        var state = CockpitPresentationState()
+        state.setMapToolsPresented(true)
+        state.showCharts()
+        state.openChart("chart", fromCompactSheet: false)
+
+        state.activeLegDidChange()
+
+        #expect(state.viewerChartID == "chart")
+        #expect(state.mapFocusRequest == nil)
+        #expect(!state.isPreviousLegPresented)
+        #expect(!state.isNextLegPresented)
+    }
+
+    @Test("Leaving the Flight drops a pending open and a pending list return")
+    func cancelledChartTransition() {
+        var state = CockpitPresentationState()
+        state.setMapToolsPresented(true)
+        state.showCharts()
+        state.openChart("chart", fromCompactSheet: true)
+        state.closeCharts()
+        state.mapSheetDidDismiss()
+        #expect(state.viewerChartID == nil)
+
+        state.setMapToolsPresented(true)
+        state.showCharts()
+        state.openChart("chart", fromCompactSheet: false)
+        state.dismissChartViewer(returnToCharts: true)
+        state.closeCharts()
+        state.chartViewerDidDismiss()
+        #expect(state.activeDisclosure == nil)
+        #expect(state.chartTransition == nil)
     }
 
     @Test("Frequency Plan opens exclusively and closes without mutating Flight")

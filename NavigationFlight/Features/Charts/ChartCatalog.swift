@@ -40,6 +40,10 @@ struct ChartCatalog: Decodable {
     }
 
     struct Chart: Decodable, Identifiable {
+        enum Role: String, Decodable {
+            case departure, arrival, circuit
+        }
+
         struct Edition: Decodable {
             let amendment: String?
             let printedDate: String?
@@ -56,6 +60,7 @@ struct ChartCatalog: Decodable {
 
         let id: String
         let title: String
+        let roles: [Role]
         let sourceUrl: URL
         let edition: Edition
         let pages: [Page]
@@ -89,6 +94,21 @@ struct ChartCatalog: Decodable {
     func aerodromes(in group: Group) -> [Aerodrome] {
         aerodromes.filter { $0.group == group }
     }
+
+#if DEBUG
+    func fixtureWithoutCharts(for id: String) -> ChartCatalog {
+        let entries = aerodromes.map { entry in
+            guard entry.id == id else { return entry }
+            return Aerodrome(
+                id: entry.id, name: entry.name, group: entry.group, identifiers: entry.identifiers, charts: []
+            )
+        }
+        return ChartCatalog(
+            schemaVersion: schemaVersion, releaseId: releaseId, snapshot: snapshot,
+            aerodromes: entries, artifacts: artifacts
+        )
+    }
+#endif
 
     func selection(for id: String) -> ChartSelection? {
         for aerodrome in aerodromes {

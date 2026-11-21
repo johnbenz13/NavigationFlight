@@ -36,7 +36,16 @@ struct RootView: View {
 #else
         chartResources = .bundled
 #endif
-        chartCatalog = try? chartResources.loadCatalog()
+        let bundledCatalog = try? chartResources.loadCatalog()
+#if DEBUG
+        if let emptyAerodrome = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EMPTY_CHART_AERODROME"] {
+            chartCatalog = bundledCatalog?.fixtureWithoutCharts(for: emptyAerodrome)
+        } else {
+            chartCatalog = bundledCatalog
+        }
+#else
+        chartCatalog = bundledCatalog
+#endif
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -303,6 +312,8 @@ struct RootView: View {
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
                     checklistSelection: { settingsController.preferences.startChecklist },
+                    chartCatalog: chartCatalog,
+                    chartResources: chartResources,
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,
                     onIntent: handleCockpitIntent
                 )

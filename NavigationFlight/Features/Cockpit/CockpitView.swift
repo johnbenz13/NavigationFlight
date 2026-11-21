@@ -345,8 +345,8 @@ struct CockpitView: View {
                 .presentationDetents([.fraction(0.84), .large], selection: $compactMapDetent)
                 .presentationDragIndicator(.visible)
         }
-        .onChange(of: cockpitPresentationState.isChartsPresented) { _, presented in
-            if presented, horizontalSizeClass == .compact {
+        .onChange(of: isCompactChartsPresented) { _, presented in
+            if presented {
                 compactMapDetent = dynamicTypeSize.isAccessibilitySize ? .large : .fraction(0.84)
             }
         }
@@ -752,6 +752,10 @@ struct CockpitView: View {
 
     private var isMapDisclosurePresented: Bool {
         cockpitPresentationState.isMapToolsPresented || cockpitPresentationState.isChartsPresented
+    }
+
+    private var isCompactChartsPresented: Bool {
+        horizontalSizeClass == .compact && cockpitPresentationState.isChartsPresented
     }
 
     private var compactMapToolsBinding: Binding<Bool> {

@@ -225,10 +225,18 @@ final class CockpitChartsUITests: XCTestCase {
 
     private func reveal(_ row: XCUIElement, app: XCUIApplication, upwards: Bool = true) {
         let list = app.scrollViews["cockpit-charts-scroll"]
-        for _ in 0..<12 where !row.isHittable {
-            if upwards { list.swipeUp() } else { list.swipeDown() }
+        for _ in 0..<12 {
+            let viewport = list.frame
+            let target = row.frame
+            let center = CGPoint(x: target.midX, y: target.midY)
+            if viewport.contains(center), row.isHittable { return }
+
+            let movesUp = target.isEmpty ? upwards : target.midY > viewport.midY
+            let origin = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+            let destination = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: movesUp ? 0.33 : 0.77))
+            origin.press(forDuration: 0.05, thenDragTo: destination)
         }
-        XCTAssertTrue(row.isHittable)
+        XCTFail("Chart row is outside the visible Charts list or cannot be tapped: \(row.identifier)")
     }
 
     private func capture(_ name: String) {

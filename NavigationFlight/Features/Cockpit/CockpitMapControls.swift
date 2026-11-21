@@ -42,6 +42,7 @@ struct MapQuickFocusControls: View {
 }
 
 struct CockpitMapToolsPanel: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let areDriftLinesVisible: Bool
     let onToggleDriftLines: () -> Void
     let onShowCharts: () -> Void
@@ -53,6 +54,19 @@ struct CockpitMapToolsPanel: View {
             CockpitMapToolsHeader(onClose: onClose)
             Divider()
                 .padding(.top, 10)
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView { options }
+            } else {
+                options
+            }
+            Spacer(minLength: 24)
+        }
+        .padding(22)
+        .background(Color(.systemBackground))
+    }
+
+    private var options: some View {
+        VStack(alignment: .leading, spacing: 0) {
             Text("FRAMING")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -68,15 +82,12 @@ struct CockpitMapToolsPanel: View {
             toolButton("Inspect flight plan", identifier: "map-tools-inspect-flight-plan", action: onInspectFlightPlan)
                 .padding(.top, 8)
             Divider()
-                .padding(.top, 108)
+                .padding(.top, dynamicTypeSize.isAccessibilitySize ? 20 : 108)
             Text("Framing and aids never report a target or change timing.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .padding(.top, 72)
-            Spacer(minLength: 24)
+                .padding(.top, dynamicTypeSize.isAccessibilitySize ? 12 : 72)
         }
-        .padding(22)
-        .background(Color(.systemBackground))
     }
 
     private func toolButton(

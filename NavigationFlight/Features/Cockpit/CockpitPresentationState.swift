@@ -205,6 +205,11 @@ struct CockpitPresentationState: Equatable, Sendable {
         }
     }
 
+    mutating func activeLegDidChange() {
+        setNextLegPresented(false)
+        setPreviousLegPresented(false)
+    }
+
     mutating func setNextLegMapPreviewPresented(_ isPresented: Bool) {
         isNextLegMapPreviewPresented = isPresented
         mapFocusRequest = AviationMapFocusRequest(mode: isPresented ? .nextLeg : .leg)

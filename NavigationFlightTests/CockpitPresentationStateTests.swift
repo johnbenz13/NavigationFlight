@@ -93,6 +93,21 @@ struct CockpitPresentationStateTests {
         #expect(state.chartReturnFocus == nil)
     }
 
+    @Test("A leg change clears leg disclosures and keeps the chart viewer open")
+    func legChangeKeepsChartViewer() {
+        var state = CockpitPresentationState()
+        state.setMapToolsPresented(true)
+        state.showCharts()
+        state.openChart("chart", fromCompactSheet: false)
+
+        state.activeLegDidChange()
+
+        #expect(state.viewerChartID == "chart")
+        #expect(state.mapFocusRequest == nil)
+        #expect(!state.isPreviousLegPresented)
+        #expect(!state.isNextLegPresented)
+    }
+
     @Test("Leaving the Flight drops a pending open and a pending list return")
     func cancelledChartTransition() {
         var state = CockpitPresentationState()

@@ -32,6 +32,10 @@ final class CockpitChartsUITests: XCTestCase {
         capture("map-tools")
         mapTools.tap()
         waitForCharts(app)
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            let header = app.buttons["close-cockpit-charts"].frame
+            XCTAssertGreaterThan(header.minY, app.frame.minY + app.frame.height * 0.13)
+        }
         capture("charts-panel")
         XCTAssertFalse(app.buttons["cockpit-chart-aip-llha-chart-01"].exists)
         let selected = app.buttons[circuit]
@@ -113,6 +117,21 @@ final class CockpitChartsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["cockpit-chart-aip-llib-chart-05"].exists)
     }
 
+    func testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable() throws {
+        let app = try launch(emptyAerodrome: "llib", largeText: true)
+        openCharts(app)
+        let notice = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "no published charts")).firstMatch
+        XCTAssertTrue(notice.exists)
+        capture("known-empty-arrival-large-text")
+        let departure = app.buttons["cockpit-chart-aip-llhz-chart-02"]
+        reveal(departure, app: app)
+        XCTAssertTrue(departure.label.contains("Departure"))
+        departure.tap()
+        XCTAssertTrue(app.buttons["charts-fit-page"].waitForExistence(timeout: 5))
+        app.buttons["charts-viewer-close"].tap()
+        XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 5))
+    }
+
     func testIPadRotationAndTabRoundTripKeepTheMapUsable() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
         XCUIDevice.shared.orientation = .portrait
@@ -142,6 +161,8 @@ final class CockpitChartsUITests: XCTestCase {
 
     private func launch(
         broken: Bool = false,
+        emptyAerodrome: String? = nil,
+        largeText: Bool = false,
         change: ((inout [String: Any]) -> Void)? = nil
     ) throws -> XCUIApplication {
         let file = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -162,6 +183,12 @@ final class CockpitChartsUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = bytes.base64EncodedString()
         if broken {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_UNREADABLE_CHART"] = "aip-llhz-chart-11"
+        }
+        if let emptyAerodrome {
+            app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_EMPTY_CHART_AERODROME"] = emptyAerodrome
+        }
+        if largeText {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityM"]
         }
         app.launch()
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 10))
@@ -187,7 +214,13 @@ final class CockpitChartsUITests: XCTestCase {
     }
 
     private func waitForCharts(_ app: XCUIApplication) {
-        XCTAssertTrue(app.buttons["close-cockpit-charts"].waitForExistence(timeout: 5))
+        let close = app.buttons["close-cockpit-charts"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        let usableTarget = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            let frame = close.frame
+            return frame.width >= 43.99 && frame.height >= 43.99
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [usableTarget], timeout: 5), .completed)
     }
 
     private func reveal(_ row: XCUIElement, app: XCUIApplication, upwards: Bool = true) {

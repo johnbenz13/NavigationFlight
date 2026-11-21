@@ -15,10 +15,13 @@ struct CockpitChartsPanel: View {
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("cockpit-charts-title")
                 Spacer(minLength: 12)
-                Button("Close", action: onClose)
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.vertical, 8)
-                    .accessibilityIdentifier("close-cockpit-charts")
+                Button(action: onClose) {
+                    Text("Close")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minWidth: 48, minHeight: 48)
+                        .contentShape(.rect)
+                }
+                .accessibilityIdentifier("close-cockpit-charts")
             }
             ScrollViewReader { scroll in
                 ScrollView {

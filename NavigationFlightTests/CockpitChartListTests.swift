@@ -67,6 +67,19 @@ struct CockpitChartListTests {
         #expect(rows.allSatisfy { $0.endpoints == [.departure, .arrival] })
     }
 
+    @Test("A V5 legacy identifier without a reviewed typed alias leaves the other endpoint usable")
+    func legacyTypedIdentifiers() throws {
+        let catalog = try ChartResources.bundled.loadCatalog()
+        let context = try plan("V5/representative").operationalContext
+        let list = CockpitChartList(
+            catalog: catalog, departure: context.departureAerodrome, arrival: context.arrivalAerodrome
+        )
+        #expect(context.arrivalAerodrome?.localCode == "LLMG")
+        #expect(list.notices.map(\.endpoint) == [.arrival])
+        #expect(list.notices.map(\.reason) == [.unresolved])
+        #expect(Set(list.groups.flatMap(\.rows).map { $0.selection.aerodrome.id }) == ["llhz"])
+    }
+
     @Test(arguments: ["V8/representative-v8", "V9/representative-v9"])
     func existingFormats(_ filename: String) throws {
         let catalog = try ChartResources.bundled.loadCatalog()

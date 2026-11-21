@@ -318,6 +318,7 @@ struct CockpitFeatureView: View {
                     eventID: UUID()
                 ))
                 state.installCommittedDestinationIdentification(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Identify Waypoint")
             }
@@ -399,6 +400,7 @@ struct CockpitFeatureView: View {
                     cockpitRestoration: restoration,
                     at: timing.now
                 )
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Reach Identification Point")
             }
@@ -419,6 +421,7 @@ struct CockpitFeatureView: View {
                     eventID: UUID()
                 ))
                 state.installCommittedFlight(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Revise ETA")
             }
@@ -441,6 +444,7 @@ struct CockpitFeatureView: View {
                     eventID: UUID()
                 ))
                 state.installCommittedFlight(transition.flight)
+                state.installNavigationGeneration(transition.cockpitContext)
             } catch {
                 presentNavigationCommitFailure("Revise Heading")
             }
@@ -455,7 +459,7 @@ struct CockpitFeatureView: View {
             return nil
         }
         do {
-            _ = try await recordingCoordinator.commitNavigation(.undoReach(
+            let transition = try await recordingCoordinator.commitNavigation(.undoReach(
                 originalEventID: originalEventID,
                 restoredFlight: undo.flight,
                 at: timing.now,
@@ -463,6 +467,7 @@ struct CockpitFeatureView: View {
                 eventID: UUID()
             ), context: RecordingCockpitContext(flightID: undo.flight.id, checklists: undo.legStartChecklists, areDriftLinesVisible: state.areDriftLinesVisible))
             let restoration = state.undoMostRecentReach(at: timestamp)
+            state.installNavigationGeneration(transition.cockpitContext)
             progressionNotice = nil
             return restoration
         } catch {

@@ -41,6 +41,13 @@ extension requires a new manifest schema; do not reuse schema 3 silently.
 
 The engine serializes journal mutations across actor suspension points so
 presentation, GPS-derived events and navigation cannot race event sequences.
+Presentation snapshots also carry a runtime-only navigation generation. Each
+committed context transition, including undo, replaces that identity; Cockpit
+retains it when projecting later presentation edits. After acquiring the mutation
+gate, the engine discards snapshots from an older generation rather than replacing
+newer captures. Discarding a stale snapshot does not clear a real save-failure
+warning. The generation is excluded from Codable and durable-value equality:
+recovery begins a new runtime session, with no schema or checksum-format change.
 Presentation failures leave memory intact and return without failing navigation.
 The separate presentation warning uses John's approved copy; a simultaneous track
 degradation retains its accurate track warning. Recovery installs only durable

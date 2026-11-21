@@ -385,8 +385,9 @@ final class FlightRecordingCoordinator {
     func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date = .now) async {
         guard let engine, publishedFlight?.id == context.flightID else { return }
         do {
-            try await engine.recordPresentation(context, at: timestamp)
-            presentationWriteFailed = false
+            if try await engine.recordPresentation(context, at: timestamp) {
+                presentationWriteFailed = false
+            }
         } catch {
             presentationWriteFailed = true
         }

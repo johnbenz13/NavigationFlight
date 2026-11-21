@@ -504,6 +504,85 @@ struct FlightRecoveryCoordinatorTests {
         #expect((cockpit.activeLegStartChecklist == nil) == (selection == .none))
     }
 
+    @Test("Queued presentation snapshots cannot replace arrival or undo context on disk",
+          .timeLimit(.minutes(1)), arguments: StartChecklistSelection.allCases, [false, true])
+    func queuedPresentationRecovery(_ selection: StartChecklistSelection, undo: Bool) async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let disk = DiskFlightRecordingStore(rootDirectory: directory)
+        let store = SuspendedPresentationRecordingStore(base: disk)
+        let engine = FlightRecordingEngine(store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: plan.legs.map(\.id), sourceData: source))
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(),
+            eventIDs: [UUID(), UUID()], checklistSelection: selection)
+        var original = try #require(started.cockpitContext)
+        let firstID = flight.legIDs[0]
+        if selection != .none { original.checklists[firstID]?.reviewState = .noted }
+        original.checklists[firstID]?.presentationState = .collapsed
+        try await engine.recordPresentation(original, at: time.addingTimeInterval(1))
+        var stale = try #require(started.cockpitContext)
+        stale.areDriftLinesVisible = false
+        let arrival = RecordedNavigationCommand.reachCurrentWaypoint(orderedActiveLegPointKeys: [],
+            at: time.addingTimeInterval(2), elapsed: .seconds(2), eventIDs: [UUID(), UUID()])
+        let successor: StartChecklistSelection = selection == .none ? .establishHeading : .none
+        let command: RecordedNavigationCommand
+        if undo {
+            let arrived = try await engine.commit(arrival, context: original, checklistSelection: successor)
+            // Both the successor snapshot and a pre-arrival snapshot are stale after undo.
+            stale = try #require(arrived.cockpitContext)
+            stale.areDriftLinesVisible = false
+            command = .undoReach(originalEventID: arrived.eventIDs[0], restoredFlight: started.flight,
+                at: time.addingTimeInterval(3), elapsed: .seconds(3), eventID: UUID())
+        } else {
+            command = arrival
+        }
+        await store.suspendNextAppend()
+        let navigation = Task { try await engine.commit(command, context: original, checklistSelection: successor) }
+        await store.waitUntilSuspended()
+        let retained = stale
+        let presentation = Task { try await engine.recordPresentation(retained, at: time.addingTimeInterval(4)) }
+        // Observe the actual gate waiter rather than relying on scheduling or a delay.
+        while await engine.queuedMutationCount == 0 { await Task.yield() }
+        await store.release()
+        let committed = try await navigation.value
+        #expect(try await presentation.value == false)
+        let expected = try #require(committed.cockpitContext)
+        #expect(expected.navigationGeneration != original.navigationGeneration)
+        // Even matching pre-arrival values must not regain authority after undo (ABA).
+        if undo {
+            #expect(try await engine.recordPresentation(try #require(started.cockpitContext),
+                at: time.addingTimeInterval(5)) == false)
+        }
+        let stored = try await disk.readSnapshot(id: started.recording.id)
+        #expect(stored.events.last?.cockpitContext == expected)
+        #expect(stored.events.last?.payload != .cockpitPresentationChanged)
+        if undo {
+            #expect(expected == original)
+            #expect(expected.checklists[flight.legIDs[1]] == nil)
+        } else {
+            #expect(expected.checklists[flight.legIDs[1]]?.selection == successor)
+        }
+        // A current-generation UI edit still persists through the projection.
+        var cockpit = CockpitFeatureState()
+        cockpit.restore(flightPlan: plan, flight: committed.flight, sourceData: source, cockpitContext: expected)
+        cockpit.toggleDriftLines()
+        let current = try #require(cockpit.recordingCockpitContext)
+        #expect(current.navigationGeneration == expected.navigationGeneration)
+        #expect(try await engine.recordPresentation(current, at: time.addingTimeInterval(6)))
+        let recovery = FlightRecoveryCoordinator(store: DiskFlightRecordingStore(rootDirectory: directory),
+            now: { time.addingTimeInterval(7) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(id: started.recording.id,
+            at: time.addingTimeInterval(7), elapsed: .seconds(7), eventID: UUID())
+        #expect(recovered.flight.activeLegIndex == committed.flight.activeLegIndex)
+        #expect(recovered.cockpitContext == current)
+        #expect(recovered.cockpitContext?.checklists == expected.checklists)
+    }
+
     @Test("Mismatched and missing required schema 3 context fail recovery", arguments: [false, true])
     func corruptChecklistContext(_ missing: Bool) async throws {
         let source = try fixtureData()
@@ -672,4 +751,48 @@ private final class MutableDate {
     init(value: Date) {
         self.value = value
     }
+}
+
+private actor SuspendedPresentationRecordingStore: FlightRecordingStore {
+    let base: DiskFlightRecordingStore
+    private var shouldSuspend = false
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    init(base: DiskFlightRecordingStore) { self.base = base }
+
+    func suspendNextAppend() { shouldSuspend = true }
+
+    func waitUntilSuspended() async {
+        guard releaseContinuation == nil else { return }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func release() {
+        releaseContinuation?.resume()
+        releaseContinuation = nil
+    }
+
+    func appendEvent(_ event: RecordedFlightEvent, recordingID: UUID, synchronize: Bool) async throws {
+        if shouldSuspend {
+            shouldSuspend = false
+            await withCheckedContinuation { continuation in
+                releaseContinuation = continuation
+                waiters.forEach { $0.resume() }
+                waiters.removeAll()
+            }
+        }
+        try await base.appendEvent(event, recordingID: recordingID, synchronize: synchronize)
+    }
+
+    func create(_ seed: FlightRecordingSeed) async throws { try await base.create(seed) }
+    func appendTrackBatch(_ batch: RecordedTrackBatch) async throws { try await base.appendTrackBatch(batch) }
+    func synchronizeTrack(recordingID: UUID) async throws { try await base.synchronizeTrack(recordingID: recordingID) }
+    func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) async throws {
+        try await base.updateRecoveryCheckpoint(recordingID: recordingID, at: timestamp)
+    }
+    func packages() async -> [FlightRecordingPackageResult] { await base.packages() }
+    func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot { try await base.readSnapshot(id: id) }
+    func close(id: UUID, closure: FlightRecordingClosure) async throws { try await base.close(id: id, closure: closure) }
+    func remove(id: UUID) async throws { try await base.remove(id: id) }
 }

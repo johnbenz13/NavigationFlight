@@ -57,6 +57,7 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var flightPlanSourceData: Data?
     private(set) var legStartChecklists: [UUID: LegStartChecklistState] = [:]
     private(set) var areDriftLinesVisible = true
+    private var navigationGeneration: UUID?
     private(set) var pendingReachUndo: PendingReachUndo?
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
@@ -117,6 +118,7 @@ struct CockpitFeatureState: Equatable, Sendable {
                 progressionPolicy: progressionPolicy
             )
             legStartChecklists = [:]
+            navigationGeneration = nil
             areDriftLinesVisible = true
             pendingReachUndo = nil
         }
@@ -136,6 +138,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         mode = .noWind
         self.flight = flight
         legStartChecklists = cockpitContext?.checklists ?? [:]
+        navigationGeneration = cockpitContext?.navigationGeneration
         areDriftLinesVisible = cockpitContext?.areDriftLinesVisible ?? true
         createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
@@ -503,13 +506,20 @@ struct CockpitFeatureState: Equatable, Sendable {
     var recordingCockpitContext: RecordingCockpitContext? {
         guard let flight else { return nil }
         return RecordingCockpitContext(flightID: flight.id, checklists: legStartChecklists,
-                                       areDriftLinesVisible: areDriftLinesVisible)
+                                       areDriftLinesVisible: areDriftLinesVisible,
+                                       navigationGeneration: navigationGeneration)
     }
 
     mutating func installCockpitContext(_ context: RecordingCockpitContext?) {
         guard let context, context.flightID == flight?.id else { return }
         legStartChecklists = context.checklists
+        navigationGeneration = context.navigationGeneration
         areDriftLinesVisible = context.areDriftLinesVisible
+    }
+
+    mutating func installNavigationGeneration(_ context: RecordingCockpitContext?) {
+        guard let context, context.flightID == flight?.id else { return }
+        navigationGeneration = context.navigationGeneration
     }
 
     private mutating func updateActiveChecklist(

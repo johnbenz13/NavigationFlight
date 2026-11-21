@@ -7,6 +7,15 @@ nonisolated struct RecordingCockpitContext: Equatable, Sendable {
     let flightID: UUID
     var checklists: [UUID: LegStartChecklistCapture]
     var areDriftLinesVisible: Bool
+    // Runtime ordering identity, deliberately excluded from the durable schema and
+    // value equality. A recovered engine starts a new presentation-writing session.
+    var navigationGeneration: UUID? = nil
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.version == rhs.version && lhs.flightID == rhs.flightID
+            && lhs.checklists == rhs.checklists
+            && lhs.areDriftLinesVisible == rhs.areDriftLinesVisible
+    }
 
     func validate(flightID: UUID, legIDs: [UUID]) throws {
         guard version == 1, self.flightID == flightID,

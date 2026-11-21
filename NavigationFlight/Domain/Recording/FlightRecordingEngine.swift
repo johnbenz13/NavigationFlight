@@ -84,6 +84,7 @@ actor FlightRecordingEngine {
     private var flight: Flight
     private var mutationInProgress = false
     private var mutationWaiters: [CheckedContinuation<Void, Never>] = []
+    var queuedMutationCount: Int { mutationWaiters.count }
     private var cockpitContext: RecordingCockpitContext?
     private var recording: FlightRecording?
     private var storageDegradations: Set<RecordingStorageDegradation> = []
@@ -659,18 +660,20 @@ actor FlightRecordingEngine {
                   restoredFlight.legIDs == flight.legIDs else {
                 throw Flight.TransitionError.legNotActive
             }
+            var restoredContext = context
+            restoredContext?.navigationGeneration = UUID()
             let transition = try await appendOperationalEvent(
                 .reachUndone(originalEventID: originalEventID),
                 origin: .pilot,
                 at: timestamp,
                 elapsed: elapsed,
-                eventID: eventID, context: context
+                eventID: eventID, context: restoredContext
             )
             flight = restoredFlight
             return CommittedNavigationTransition(
                 flight: restoredFlight,
                 recording: transition.recording,
-                eventIDs: transition.eventIDs, cockpitContext: context
+                eventIDs: transition.eventIDs, cockpitContext: restoredContext
             )
         case .requestPositionCheck(let timestamp, let elapsed, let eventID):
             return try await appendOperationalEvent(
@@ -774,19 +777,24 @@ actor FlightRecordingEngine {
             if flight.legState == .active {
                 result = result.starting(legID: flight.legIDs[flight.activeLegIndex], selection: selection)
             }
+            result.navigationGeneration = UUID()
             return result
         }
     }
 
-    func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date) async throws {
+    @discardableResult
+    func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date) async throws -> Bool {
         await acquireMutation()
         defer { releaseMutation() }
         try context.validate(flightID: flight.id, legIDs: flightPlanSnapshot.legIDs)
+        // Check after acquiring the gate: navigation may have committed while this
+        // snapshot was queued, including an undo back to otherwise identical values.
+        guard context.navigationGeneration == cockpitContext?.navigationGeneration else { return false }
         guard var candidate = recording else {
             cockpitContext = context
-            return
+            return true
         }
-        guard context != cockpitContext else { return }
+        guard context != cockpitContext else { return true }
         let elapsed = Duration.seconds(max(0, timestamp.timeIntervalSince(candidate.startedAt)))
         var events = try candidate.recordNavigationEvents(at: timestamp, elapsed: elapsed,
                                                           entries: [(.pilot, .cockpitPresentationChanged)], eventIDs: [UUID()])
@@ -794,6 +802,7 @@ actor FlightRecordingEngine {
         try await store.appendEvent(events[0], recordingID: candidate.id, synchronize: true)
         recording = candidate
         cockpitContext = context
+        return true
     }
 
     private func appendOperationalEvent(

@@ -69,11 +69,13 @@ under [issue #10](https://github.com/johnbenz13/fplnav-spec/issues/10).
 The link inventory and change reporting are proposed in
 [PR #17](https://github.com/johnbenz13/fplnav-spec/pull/17) under
 [issue #13](https://github.com/johnbenz13/fplnav-spec/issues/13).
-Both PRs were open when checked. The chart release uses those tracks and is
-proposed as a separate shared slice under
-[issue #14](https://github.com/johnbenz13/fplnav-spec/issues/14).
-GitHub transport acceptance and the exact PDF inventory remain upstream
-release work. Owner-confirmed רת״א authorization is recorded. The shared release
+Both PRs were open when checked. [Chart release issue #23](https://github.com/johnbenz13/fplnav-spec/issues/23)
+is a separate shared slice under [issue #14](https://github.com/johnbenz13/fplnav-spec/issues/14).
+It depends on the #13 inventory and the reusable transport code in PR #16 or
+its equivalent. The code derives the release tag from the pin and accepts PDF
+artifacts. Verify live private publication and retrieval with the chart release.
+The legacy base-map release and its acceptance under #10 can ship separately.
+Owner-confirmed רת״א authorization is recorded. The shared release
 review records its scope and reconciles the published notice referenced in #14
 for the package and intended consumers. The historical Herzliya design sample
 remains design evidence.

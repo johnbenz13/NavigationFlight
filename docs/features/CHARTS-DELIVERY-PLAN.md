@@ -11,7 +11,7 @@ and the remaining approval gates.
 
 | Ticket | Outcome | Blocked by |
 | --- | --- | --- |
-| [1. Verified AIP snapshot](https://github.com/johnbenz13/fplnav-spec/issues/23) | Publish a pinned private `aviation-maps` release with the complete original PDFs and shared chart index. Child of [fplnav-spec #14](https://github.com/johnbenz13/fplnav-spec/issues/14). | [Shared transport #10](https://github.com/johnbenz13/fplnav-spec/issues/10) and [inventory #13](https://github.com/johnbenz13/fplnav-spec/issues/13). Reconcile actual PDF payloads and checklist in this slice. |
+| [1. Verified AIP snapshot](https://github.com/johnbenz13/fplnav-spec/issues/23) | Publish a pinned private `aviation-maps` release with the complete original PDFs and shared chart index. Child of [fplnav-spec #14](https://github.com/johnbenz13/fplnav-spec/issues/14). | [Inventory #13](https://github.com/johnbenz13/fplnav-spec/issues/13) and availability of the reusable release tooling in [PR #16](https://github.com/johnbenz13/fplnav-spec/pull/16). Reconcile PDF payloads and validate the chart release in this slice. |
 | [2. App Charts library](https://github.com/johnbenz13/NavigationFlight/issues/195) | Pin and stage the shared release, then browse and open the complete library offline in the shared viewer. | External released-artifact prerequisite from [fplnav-spec #23](https://github.com/johnbenz13/fplnav-spec/issues/23). |
 | [3. Cockpit charts](https://github.com/johnbenz13/NavigationFlight/issues/196) | From Map tools, find the loaded plan's charts in priority order and return to the map. | [Navigation Flight #195](https://github.com/johnbenz13/NavigationFlight/issues/195) supplies shared document loading, rendering and recovery. |
 | [4. Cockpit recall](https://github.com/johnbenz13/NavigationFlight/issues/197) | Resume the last chart in the running Flight and reset correctly on replacement, relaunch or recovery. | [Navigation Flight #196](https://github.com/johnbenz13/NavigationFlight/issues/196) supplies the cockpit viewer route and document-open result. |
@@ -57,9 +57,11 @@ consumer ticket. The Navigation Flight ticket does not wait on the Editor
 viewer or on either consumer's base-map migration.
 
 Published the shared issue first, then the three Navigation Flight issues.
-The shared ticket tracks #10 and #13 as native blockers. The two dependent
-Navigation Flight issues use native blockers. The library documents the
-external shared release prerequisite explicitly.
+The shared ticket tracks #13 as its native blocker. Shared release tooling
+is a prerequisite. The chart ticket verifies its own private publication and
+retrieval. Legacy base-map rollout and acceptance under #10 can be scheduled
+separately. The two dependent Navigation Flight issues use native blockers. The
+library documents the external shared release prerequisite explicitly.
 
 The [approved product revision](https://github.com/johnbenz13/NavigationFlight/blob/bea6dba1c0ce69955ec416bf46e70a078b662ee9/docs/features/CHARTS_SPEC.md)
 is linked from the approved Figma cover and each published issue.

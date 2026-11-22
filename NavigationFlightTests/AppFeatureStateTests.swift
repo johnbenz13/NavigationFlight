@@ -34,15 +34,6 @@ struct AppFeatureStateTests {
         #expect(state.cockpit.flight == nil)
     }
 
-    @Test("Settings overflows only when the available tab width is constrained")
-    func chartShellOverflow() {
-        #expect(AppFeatureState.usesMoreTab(availableWidth: 376, compact: true))
-        #expect(!AppFeatureState.usesMoreTab(availableWidth: 402, compact: true))
-        #expect(!AppFeatureState.usesMoreTab(availableWidth: 834, compact: false))
-        #expect(AppFeatureState.usesMoreTab(availableWidth: 834, compact: false, topBar: true))
-        #expect(!AppFeatureState.usesMoreTab(availableWidth: 1210, compact: false, topBar: true))
-    }
-
     @Test("Selecting another section preserves Flights state")
     func sectionSelectionPreservesFlightsState() throws {
         let row = FlightRecordingSummary(

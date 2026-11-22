@@ -43,6 +43,15 @@ actor ChartSnapshotStore {
         return newestSnapshot(downloaded: bestDownload(receipt)?.snapshot)
     }
 
+    func makeDownloadStagingDirectory() throws -> URL {
+        try Task.checkCancellation()
+        cleanOnStartup(retaining: loadReceipt())
+        try createStorage()
+        let staging = directory.appending(path: "staging-\(UUID())", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: false)
+        return staging
+    }
+
     /// The expected pin comes from an already trusted release offer or a controlled fixture.
     @discardableResult
     func install(from staged: ChartResources, pin: ChartSnapshotPin) throws -> ChartSnapshot {

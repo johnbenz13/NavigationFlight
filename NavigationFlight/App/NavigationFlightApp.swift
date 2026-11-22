@@ -34,7 +34,50 @@ struct NavigationFlightApp: App {
     @UIApplicationDelegateAdaptor(NavigationFlightAppDelegate.self) private var appDelegate
 
     @State private var settingsController = SettingsController(store: Self.settingsStore())
-    @State private var chartSnapshotStore = ChartSnapshotStore(directory: Self.chartSnapshotDirectory)
+    @State private var chartSnapshotStore: ChartSnapshotStore
+    @State private var chartUpdates: AIPChartUpdates
+
+    init() {
+        let directory = Self.chartSnapshotDirectory
+        let holdVerification = Self.holdsChartVerificationForReview
+        let store = ChartSnapshotStore(directory: directory, bundledResources: Self.bundledCharts(in: directory)) {
+            if holdVerification { Thread.sleep(forTimeInterval: 7) }
+        }
+        _chartSnapshotStore = State(initialValue: store)
+        _chartUpdates = State(initialValue: AIPChartUpdates(
+            store: store,
+            service: Self.chartDownloadService(),
+            cache: directory.appending(path: "update-index.json")
+        ))
+    }
+
+    private static var holdsChartVerificationForReview: Bool {
+#if DEBUG && targetEnvironment(simulator)
+        let environment = ProcessInfo.processInfo.environment
+        return environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil
+            && environment["NAVIGATION_FLIGHT_UI_TEST_DOWNLOADS"] == "held"
+#else
+        return false
+#endif
+    }
+
+    private static func bundledCharts(in directory: URL) -> ChartResources {
+#if DEBUG && targetEnvironment(simulator)
+        let environment = ProcessInfo.processInfo.environment
+        if environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil,
+           environment["NAVIGATION_FLIGHT_UI_TEST_NO_BUNDLED_CHARTS"] == "1" {
+            return ChartResources(bundleRoot: directory.appending(path: "missing-chart-bundle"))
+        }
+#endif
+        return .bundled
+    }
+
+    private static func chartDownloadService() -> AIPChartDownloadService {
+#if DEBUG && targetEnvironment(simulator)
+        if let service = AIPChartDownloadFixture.service() { return service }
+#endif
+        return AIPChartDownloadService()
+    }
 
     private static var chartSnapshotDirectory: URL {
 #if DEBUG
@@ -72,7 +115,7 @@ struct NavigationFlightApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(settingsController: settingsController, chartSnapshotStore: chartSnapshotStore)
+            RootView(settingsController: settingsController, chartSnapshotStore: chartSnapshotStore, chartUpdates: chartUpdates)
         }
     }
 }

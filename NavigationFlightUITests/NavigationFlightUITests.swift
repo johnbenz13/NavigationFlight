@@ -24,11 +24,19 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    private func openSettings(in app: XCUIApplication) {
+        tab(named: "More", in: app).tap()
+        let settings = app.buttons["more-settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        settings.tap()
+    }
+
+    @MainActor
     func testChecklistSettingsSaveBackRelaunchAndFailureRetry() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = "settings-161-\(UUID().uuidString)"
         app.launch()
-        tab(named: "Settings", in: app).tap()
+        openSettings(in: app)
         let row = app.buttons["settings-start-checklist"]
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()
@@ -40,13 +48,13 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertEqual(row.value as? String, "No checklist")
         app.terminate()
         app.launch()
-        tab(named: "Settings", in: app).tap()
+        openSettings(in: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         XCTAssertEqual(row.value as? String, "No checklist")
         app.terminate()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_SETTINGS_FAILURE_ONCE"] = "1"
         app.launch()
-        tab(named: "Settings", in: app).tap()
+        openSettings(in: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()
         app.buttons["checklist-choice-establish-heading-cruise-check"].tap()
@@ -60,7 +68,7 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     func testNoChecklistStartAndRecoveryStayAbsent() throws {
         let app = launchCockpit(planData: try twoLegPlanData())
-        tab(named: "Settings", in: app).tap()
+        openSettings(in: app)
         app.buttons["settings-start-checklist"].tap()
         app.buttons["checklist-choice-none"].tap()
         XCTAssertTrue(app.buttons["settings-start-checklist"].waitForExistence(timeout: 3))
@@ -143,14 +151,14 @@ final class NavigationFlightUITests: XCTestCase {
         let cockpitTab = tab(named: "Cockpit", in: app)
         let flightPlansTab = tab(named: "Flight Plans", in: app)
         let flightsTab = tab(named: "Flights", in: app)
-        let settingsTab = tab(named: "Settings", in: app)
+        let moreTab = tab(named: "More", in: app)
         XCTAssertTrue(cockpitTab.waitForExistence(timeout: 5))
         XCTAssertTrue(flightPlansTab.exists)
         XCTAssertTrue(flightsTab.exists)
-        XCTAssertTrue(settingsTab.exists)
+        XCTAssertTrue(moreTab.exists)
         XCTAssertLessThan(cockpitTab.frame.minX, flightPlansTab.frame.minX)
         XCTAssertLessThan(flightPlansTab.frame.minX, flightsTab.frame.minX)
-        XCTAssertLessThan(flightsTab.frame.minX, settingsTab.frame.minX)
+        XCTAssertLessThan(flightsTab.frame.minX, moreTab.frame.minX)
         XCTAssertTrue(flightPlansTab.isSelected)
         XCTAssertTrue(app.staticTexts["No flight plans yet"].exists)
         XCTAssertTrue(app.buttons["add-flight-plan"].exists)
@@ -162,7 +170,7 @@ final class NavigationFlightUITests: XCTestCase {
         chooseFlightPlan.tap()
         XCTAssertTrue(flightPlansTab.isSelected)
 
-        settingsTab.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        openSettings(in: app)
         XCTAssertTrue(app.buttons["settings-start-checklist"].waitForExistence(timeout: 2))
     }
 

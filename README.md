@@ -44,6 +44,20 @@ Verify a built bundle or run the preparation fixtures with:
 /usr/bin/python3 scripts/test-aip-build.py
 ```
 
+## Update AIP charts in the app
+
+Open **More → Downloads** to check the installed edition. When a newer
+edition is available, **More** and **Downloads** show an indicator, and
+**Charts → Update available** opens the same download. Select **Download
+update** and confirm the edition and size.
+
+Keep the app in the foreground until verification finishes. You can use
+other tabs or cancel the transfer. After an interruption or failure, return
+to Downloads and retry. The installed edition is available offline while
+the download runs and after a failed or canceled transfer. When an update
+installs, choose **Open Charts**. A PDF already open keeps its original
+edition until you close it. [Approved Downloads design](https://www.figma.com/design/WfBJGtbq2I37ODQZj44Yz1?node-id=28-2840)
+
 ## Architecture boundaries
 
 Production code is organized by responsibility:

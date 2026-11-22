@@ -3,6 +3,7 @@ import SwiftUI
 struct ChartLibraryView: View {
     let catalog: ChartCatalog?
     @Binding var state: ChartLibraryState
+    var onUpdate: (() -> Void)? = nil
     @AccessibilityFocusState private var focusedChart: String?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -11,6 +12,23 @@ struct ChartLibraryView: View {
             Group {
                 if let catalog {
                     List {
+                        if let onUpdate {
+                            Section {
+                                Button(action: onUpdate) {
+                                    HStack {
+                                        Label("Update available", systemImage: "arrow.down.circle")
+                                        Spacer()
+                                        Image(systemName: "chevron.forward")
+                                            .font(.footnote.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                            .accessibilityHidden(true)
+                                    }
+                                    .contentShape(.rect)
+                                }
+                                .accessibilityIdentifier("charts-aip-update")
+                                .listRowBackground(Color(.secondarySystemBackground))
+                            }
+                        }
                         ForEach(ChartCatalog.Group.allCases, id: \.self) { group in
                             Section(group.title) {
                                 ForEach(catalog.aerodromes(in: group)) { aerodrome in
@@ -30,11 +48,17 @@ struct ChartLibraryView: View {
                     .scrollContentBackground(.hidden)
                     .contentMargins(.horizontal, listSideMargin, for: .scrollContent)
                 } else {
-                    ContentUnavailableView(
-                        "Charts unavailable",
-                        systemImage: "doc",
-                        description: Text("The bundled Israel AIP catalog could not be opened.")
-                    )
+                    ContentUnavailableView {
+                        Label("Charts unavailable", systemImage: "doc")
+                    } description: {
+                        Text("No verified Israel AIP charts are available on this device.")
+                    } actions: {
+                        if let onUpdate {
+                            Button("Update available", action: onUpdate)
+                                .buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("charts-aip-update")
+                        }
+                    }
                 }
             }
             .navigationTitle("Charts")

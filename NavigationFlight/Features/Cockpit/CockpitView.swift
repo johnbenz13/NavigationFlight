@@ -1624,12 +1624,16 @@ struct CockpitView: View {
         }
     }
 
+    @ViewBuilder
     private var reachDestinationSecondaryLabel: some View {
-        let isPartway = flight.activePartwayDeparture != nil
-        return Text(reachDestinationTitle)
-            .font(isPartway ? .subheadline.weight(.semibold) : .caption.weight(.semibold))
-            .frame(maxWidth: .infinity, minHeight: isPartway ? 44 : 22)
-            .background(isPartway ? Color.accentColor.opacity(0.08) : Color.clear, in: .rect(cornerRadius: 13))
+        if flight.activePartwayDeparture != nil {
+            Text(reachDestinationTitle)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color.accentColor.opacity(0.08), in: .rect(cornerRadius: 13))
+        } else {
+            destinationReportLabel(reachDestinationTitle, systemImage: "checkmark.circle", spacing: 6)
+        }
     }
 
     private var departureIdentifiedLabel: some View {
@@ -1656,7 +1660,7 @@ struct CockpitView: View {
                 .disabled(isRecordingCommitInFlight)
         case .active where flight.destinationIdentifiedAt == nil:
             VStack(spacing: 2) {
-                compactPrimaryAction(identifyDestinationTitle) {
+                destinationReportButton(identifyDestinationTitle, isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
@@ -1678,7 +1682,7 @@ struct CockpitView: View {
             }
         case .active:
             if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
-            compactPrimaryAction(reachDestinationTitle) {
+            destinationReportButton(reachDestinationTitle) {
                 onWaypointReached(cockpitRestoration)
             }
             .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2767,7 +2771,7 @@ struct CockpitView: View {
                     .accessibilityHint("Opens the flight plan to choose a starting leg")
                     .accessibilityIdentifier("choose-starting-leg")
             case .active where flight.destinationIdentifiedAt == nil:
-                portraitPrimaryAction(identifyDestinationTitle) {
+                destinationReportButton(identifyDestinationTitle, isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
@@ -2786,7 +2790,7 @@ struct CockpitView: View {
                 .accessibilityIdentifier("reached-now")
             case .active:
                 if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
-                portraitPrimaryAction(reachDestinationTitle) {
+                destinationReportButton(reachDestinationTitle) {
                     onWaypointReached(cockpitRestoration)
                 }
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2815,6 +2819,50 @@ struct CockpitView: View {
                     Color(uiColor: visualStyle.primaryActionColor),
                     in: RoundedRectangle(cornerRadius: 14)
                 )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private static let destinationIdentificationFill = Color(red: 184 / 255, green: 223 / 255, blue: 1)
+    private static let destinationIdentificationForeground = Color(red: 18 / 255, green: 58 / 255, blue: 90 / 255)
+
+    private func destinationReportLabel(
+        _ title: LocalizedStringKey,
+        systemImage: String,
+        spacing: CGFloat = 8
+    ) -> some View {
+        HStack(spacing: spacing) {
+            Image(systemName: systemImage)
+                .accessibilityHidden(true)
+            Text(title)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func destinationReportButton(
+        _ title: LocalizedStringKey,
+        isIdentification: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        let isPartwayDeparture = flight.activePartwayDeparture != nil
+        let usesIdentificationStyle = isIdentification && !isPartwayDeparture
+        return Button(action: action) {
+            Group {
+                if isPartwayDeparture {
+                    Text(title)
+                } else {
+                    destinationReportLabel(title, systemImage: isIdentification ? "eye" : "checkmark.circle")
+                        .padding(.horizontal, 8)
+                }
+            }
+            .font(.headline)
+            .foregroundStyle(usesIdentificationStyle ? Self.destinationIdentificationForeground : .white)
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(
+                usesIdentificationStyle ? Self.destinationIdentificationFill : Color(uiColor: visualStyle.primaryActionColor),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -2851,54 +2899,79 @@ struct CockpitView: View {
                     .accessibilityIdentifier("choose-starting-leg")
             }
         case .active:
+            let isPartwayDeparture = flight.activePartwayDeparture != nil
+            let identifyTitle: LocalizedStringKey = isPartwayDeparture ? identifyDestinationTitle : "Report Destination Identified"
+            let reachTitle: LocalizedStringKey = isPartwayDeparture ? reachDestinationTitle : "Report Destination Reached"
             if flight.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {
                     Button {
                         selectedMapCallout = nil
                         onIdentifyDestination()
                     } label: {
-                        HStack(spacing: 8) {
-                            Text("◉")
-                            Text(identifyDestinationTitle)
+                        Group {
+                            if isPartwayDeparture {
+                                HStack(spacing: 8) {
+                                    Text("◉")
+                                    Text(identifyTitle)
+                                }
+                            } else {
+                                destinationReportLabel(identifyTitle, systemImage: "eye")
+                                    .foregroundStyle(Self.destinationIdentificationForeground)
+                            }
                         }
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(horizontalSizeClass == .compact ? .small : .regular)
-                    .tint(Color(uiColor: visualStyle.primaryActionColor))
-                    .accessibilityLabel(identifyDestinationTitle)
+                    .tint(isPartwayDeparture ? Color(uiColor: visualStyle.primaryActionColor) : Self.destinationIdentificationFill)
+                    .accessibilityLabel(identifyTitle)
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
                     Button {
                         cockpitPresentationState.setNextLegPresented(false)
                         onWaypointReached(cockpitRestoration)
                     } label: {
-                        Text(reachDestinationTitle)
-                            .frame(maxWidth: .infinity, minHeight: 44)
+                        Group {
+                            if isPartwayDeparture {
+                                Text(reachTitle)
+                            } else {
+                                destinationReportLabel(reachTitle, systemImage: "checkmark.circle", spacing: 6)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isPartwayDeparture ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tint))
                     .contentShape(Rectangle())
-                    .accessibilityLabel(reachDestinationTitle)
+                    .accessibilityLabel(reachTitle)
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")
                     .accessibilityIdentifier("reached-now")
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
+                    if isPartwayDeparture { departureIdentifiedLabel }
                     Button {
                         onWaypointReached(cockpitRestoration)
                     } label: {
-                        Label(reachDestinationTitle, systemImage: "checkmark.circle.fill")
-                            .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+                        Group {
+                            if isPartwayDeparture {
+                                Label(reachTitle, systemImage: "checkmark.circle.fill")
+                            } else {
+                                destinationReportLabel(reachTitle, systemImage: "checkmark.circle")
+                            }
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color(uiColor: visualStyle.primaryActionColor))
                     .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
-                    .accessibilityLabel(reachDestinationTitle)
-                    .accessibilityHint("Records reaching the current destination")
+                    .accessibilityLabel(reachTitle)
+                    .accessibilityHint(isPartwayDeparture
+                        ? "Records reaching the current destination"
+                        : "Records reaching this waypoint and advances the navigation plan")
                     .accessibilityIdentifier("waypoint-reached")
                 }
             }

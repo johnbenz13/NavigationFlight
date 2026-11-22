@@ -5,6 +5,7 @@ nonisolated struct AppPreferences: Equatable, Sendable {
     var showDriftLines = true
     var progression: Progression = .automatic
     var recoveryWindow: RecoveryWindow = .fiveMinutes
+    var routeAmendmentMode: RouteAmendmentMode = .manual
 
     enum Progression: String, Codable, Sendable {
         case automatic
@@ -24,6 +25,7 @@ nonisolated struct AppPreferences: Equatable, Sendable {
         case .showDriftLines(let value): showDriftLines = value
         case .progression(let value): progression = value
         case .recoveryWindow(let value): recoveryWindow = value
+        case .routeAmendmentMode(let value): routeAmendmentMode = value
         }
     }
 }

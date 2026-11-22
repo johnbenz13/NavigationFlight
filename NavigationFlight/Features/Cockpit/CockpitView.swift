@@ -197,6 +197,9 @@ struct CockpitView: View {
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
     var routeForAmendment: RouteAmendmentRoute?
     var routeAmendmentDraft: RouteAmendmentDraft?
+    @FocusState private var amendmentField: RouteAmendmentLegEntry.Field?
+    private var isEditingAmendmentField: Bool { amendmentField != nil }
+    @State private var restingLayoutSize: CGSize?
     var onRouteAmendment: (RouteAmendmentDraft.Intent) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) async -> Void = { _, _ in }
     var onEndRecording: () -> Void = {}
@@ -257,18 +260,7 @@ struct CockpitView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                restingCockpitLayout(in: geometry.size)
-                    .accessibilityHidden(
-                        activeHeadingState?.isEditing == true
-                            || cockpitPresentationState.isFrequencyPlanPresented
-                    )
-                if isPilotETAEditing {
-                    etaConsoleDismissBackdrop(in: geometry.size)
-                }
-            }
-        }
+        cockpitContent
         .background(Color(.systemBackground))
         .alert("Discard this draft?", isPresented: $amendmentDiscardConfirmation) {
             Button("Keep editing", role: .cancel) {}
@@ -517,6 +509,30 @@ struct CockpitView: View {
         }
     }
 
+    private var cockpitContent: some View {
+        GeometryReader { geometry in
+            ZStack {
+                restingCockpitLayout(in: geometry.size)
+                    .onChange(of: geometry.size, initial: true) { _, size in
+                        if !isEditingAmendmentField { restingLayoutSize = size }
+                    }
+                    .accessibilityHidden(
+                        activeHeadingState?.isEditing == true
+                            || cockpitPresentationState.isFrequencyPlanPresented
+                    )
+                if isPilotETAEditing {
+                    etaConsoleDismissBackdrop(in: geometry.size)
+                }
+            }
+        }
+        .onChange(of: routeAmendmentDraft?.legPanel) { _, panel in
+            if panel != .editor { amendmentField = nil }
+        }
+        .onChange(of: routeAmendmentDraft?.isPaused) { _, paused in
+            if paused == true { amendmentField = nil }
+        }
+    }
+
     private func dismissTransientPresentations() {
         cockpitPresentationState.closeCharts()
         showsHeadingCommitConfirmation = false
@@ -534,10 +550,11 @@ struct CockpitView: View {
 
     @ViewBuilder
     private func restingCockpitLayout(in size: CGSize) -> some View {
+        let layoutSize = isEditingAmendmentField ? restingLayoutSize ?? size : size
         let layout = CockpitRestingLayoutPolicy.layout(
             for: .init(
-                width: size.width,
-                height: size.height,
+                width: layoutSize.width,
+                height: layoutSize.height,
                 horizontalSizeClass: horizontalSizeClass == .compact ? .compact : .regular
             )
         )
@@ -545,7 +562,7 @@ struct CockpitView: View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(spacing: 0) {
                 mapSurface(isLandscape: false, mapWidth: size.width)
-                    .frame(height: size.height * 0.47)
+                    .frame(height: size.height * (isEditingAmendmentField ? 0.62 : 0.47))
                 if let amendmentMapPresentation {
                     amendmentConsole(amendmentMapPresentation, compact: true)
                         .frame(maxHeight: .infinity)
@@ -573,11 +590,12 @@ struct CockpitView: View {
             }
         } else {
             VStack(spacing: 0) {
+                let mapHeight = isEditingAmendmentField ? min(layout.mapExtent, size.height * 0.72) : layout.mapExtent
                 mapSurface(isLandscape: false, mapWidth: size.width)
-                    .frame(height: layout.mapExtent)
+                    .frame(height: mapHeight)
                 if let amendmentMapPresentation {
                     amendmentConsole(amendmentMapPresentation, compact: horizontalSizeClass == .compact)
-                        .frame(height: layout.consoleExtent)
+                        .frame(height: size.height - mapHeight)
                 } else if horizontalSizeClass == .compact {
                     compactControlPanel
                         .frame(height: layout.consoleExtent, alignment: .top)
@@ -686,12 +704,24 @@ struct CockpitView: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
-            if let amendmentMapPresentation, amendmentMapPresentation.draft.hasContent {
+            if amendmentMapPresentation != nil {
                 RouteAmendmentLegend()
                     .padding(.top, dynamicTypeSize.isAccessibilitySize ? 8 : (horizontalSizeClass == .compact ? 76 : 84))
                     .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                            alignment: dynamicTypeSize.isAccessibilitySize ? .bottomLeading : .topLeading)
+            }
+            if let amendmentMapPresentation, amendmentMapPresentation.draft.legPanel != nil {
+                RouteAmendmentChartPanel(
+                    draft: amendmentMapPresentation.draft,
+                    route: amendmentMapPresentation.route,
+                    compact: horizontalSizeClass == .compact,
+                    landscape: isLandscape,
+                    camera: preservedMapCamera,
+                    onIntent: onRouteAmendment,
+                    focus: $amendmentField
+                )
+                .accessibilitySortPriority(110)
             }
             if !isEditingRouteAmendment, cockpitPresentationState.areQuickFocusControlsVisible {
                 MapQuickFocusControls(

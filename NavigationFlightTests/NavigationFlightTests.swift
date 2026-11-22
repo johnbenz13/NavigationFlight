@@ -1110,6 +1110,129 @@ struct NavigationFlightTests {
         #expect(state.activeLegStartChecklist == nil)
     }
 
+    @Test func amendmentOriginalReferenceUsesFullPlannedValuesInTheFlightMode() throws {
+        let base = try twoLegFlight()
+        let leg = base.legs[0]
+        let planned = PlannedLegNavigation(
+            legID: leg.id,
+            trueCourse: .init(value: 40),
+            magneticCourse: .init(value: 35),
+            groundDistance: .init(value: 12),
+            initialAltitudeMsl: .init(value: 2500),
+            noWind: .init(durationSeconds: 520, groundSpeed: .init(value: 83)),
+            withWind: .init(timing: .init(durationSeconds: 610, groundSpeed: .init(value: 71)),
+                            effectiveWind: .init(directionFromTrue: .init(value: 90), speed: .init(value: 10)),
+                            trueHeading: .init(value: 45), magneticHeading: .init(value: 40),
+                            windCorrection: .init(value: 5))
+        )
+        let partialDeparture = RouteAmendmentAnchor(legIndex: 0, legID: leg.id, fraction: 0.5)
+        let noWind = RouteAmendmentRoute(legs: base.legs, firstAvailable: partialDeparture, planning: [planned])
+        let wind = RouteAmendmentRoute(legs: base.legs, firstAvailable: partialDeparture,
+                                      planning: [planned], navigationMode: .wind)
+        #expect(noWind.originalLeg(leg.id)?.mode == .noWind)
+        #expect(noWind.originalLeg(leg.id)?.direction == 35)
+        #expect(noWind.originalLeg(leg.id)?.durationSeconds == 520)
+        #expect(wind.originalLeg(leg.id)?.mode == .wind)
+        #expect(wind.originalLeg(leg.id)?.direction == 40)
+        #expect(wind.originalLeg(leg.id)?.durationSeconds == 610)
+    }
+
+    @MainActor
+    @Test func manualAmendmentKeepsCapturedModeAndPilotEntriesThroughCheckAndPause() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        let end = route.anchor(at: 1, fraction: 1)
+        let via = WGS84Coordinate(latitudeDegrees: 32.5, longitudeDegrees: 35)
+        state.updateRouteAmendment(.open, mode: .manual)
+        state.updateRouteAmendment(.chooseAnchor(route.firstAvailable))
+        state.updateRouteAmendment(.plot(.init(position: via)))
+        state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: end), anchors: [end])))
+        state.updateRouteAmendment(.finishHere)
+
+        let draft = try #require(state.routeAmendmentDraft)
+        let legs = draft.reviewLegs(on: route)
+        try #require(legs.count == 2)
+        let leg = legs[0]
+        state.updateRouteAmendment(.editLeg(leg.id))
+        state.updateRouteAmendment(.saveLegValues)
+        guard state.routeAmendmentDraft?.editor?.showValidation == true else {
+            Issue.record("Incomplete leg should show validation and stay in its editor")
+            return
+        }
+        state.updateRouteAmendment(.editLegField(.heading, "87"))
+        state.updateRouteAmendment(.editLegField(.duration, "03:20"))
+        state.updateRouteAmendment(.editLegField(.visualReference, "Road junction"))
+        state.updateRouteAmendment(.saveLegValues)
+        let firstSave = try #require(state.routeAmendmentDraft?.reviewLegs(on: route))
+        #expect(firstSave[0].values?.headingMagnetic == 87)
+        #expect(firstSave[0].values?.durationSeconds == 200)
+        #expect(firstSave[0].values?.visualReference == "Road junction")
+        #expect(firstSave[1].values == nil)
+
+        state.updateRouteAmendment(.editLeg(legs[1].id))
+        state.updateRouteAmendment(.editLegField(.heading, "024"))
+        state.updateRouteAmendment(.editLegField(.duration, "0540"))
+        state.updateRouteAmendment(.saveLegValues)
+        let saved = try #require(state.routeAmendmentDraft?.reviewLegs(on: route))
+        #expect(saved[0] == firstSave[0])
+        #expect(saved[1].values?.headingMagnetic == 24)
+        #expect(saved[1].values?.durationSeconds == 340)
+
+        state.updateRouteAmendment(.checkLeg(leg.id))
+        guard case .available(_, _, .noWind)? = state.routeAmendmentDraft?.editor?.estimate else {
+            Issue.record("Expected a no-wind estimate for the first leg")
+            return
+        }
+        #expect(state.routeAmendmentDraft?.editor?.entry.heading == "087")
+        state.updateRouteAmendment(.editLegField(.heading, "150"))
+        state.updateRouteAmendment(.editLegField(.minutes, "05"))
+        state.updateRouteAmendment(.editLegField(.seconds, "13"))
+        state.updateRouteAmendment(.adjustFlightTime(5))
+        state.updateRouteAmendment(.adjustHeading(-1))
+        state.updateRouteAmendment(.toggleCheck)
+        state.updateRouteAmendment(.toggleCheck)
+        state.updateRouteAmendment(.inspectOriginal)
+        let original = RouteAmendmentDraft.LegChoice.original(plan.legs[0].id)
+        let another = RouteAmendmentDraft.LegChoice.original(plan.legs[1].id)
+        state.updateRouteAmendment(.plot(.init(position: via, legHits: [.proposed(leg.id)])))
+        #expect(state.routeAmendmentDraft?.isInspecting == true)
+        state.updateRouteAmendment(.plot(.init(position: via, legHits: [original, .proposed(leg.id), another])))
+        #expect(state.routeAmendmentDraft?.legPanel == .chooser([original, another], inspecting: true, overlap: true))
+        state.updateRouteAmendment(.selectLeg(another))
+        #expect(state.routeAmendmentDraft?.legPanel == .original(plan.legs[1].id, inspecting: true))
+        state.updateRouteAmendment(.closeLegPanel)
+        #expect(state.routeAmendmentDraft?.legPanel == .editor)
+        state.updateRouteAmendment(.inspectOriginal)
+        state.updateRouteAmendment(.closeLegPanel)
+        let comparison = try #require(state.routeAmendmentDraft?.editor)
+        #expect(comparison.entry.heading == "149")
+        #expect(comparison.entry.durationSeconds == 318)
+        #expect(comparison.entry.visualReference == "Road junction")
+        #expect(comparison.referenceID == plan.legs[1].id)
+        state.updateRouteAmendment(.pause)
+        state.updateRouteAmendment(.resume, mode: .assisted)
+        #expect(state.routeAmendmentDraft?.mode == .manual)
+        #expect(state.routeAmendmentDraft?.editor == comparison)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == saved)
+        #expect(state.flight == flight)
+
+        state.updateRouteAmendment(.backToLegReview)
+        state.updateRouteAmendment(.plot(.init(position: via, legHits: [original, .proposed(leg.id)])))
+        #expect(state.routeAmendmentDraft?.legPanel == .chooser([original, .proposed(leg.id)],
+                                                                inspecting: false, overlap: true))
+        state.updateRouteAmendment(.closeLegPanel)
+        #expect(state.routeAmendmentDraft?.step == .review)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == saved)
+
+        state.updateRouteAmendment(.discard)
+        state.updateRouteAmendment(.open, mode: .assisted)
+        #expect(state.routeAmendmentDraft?.mode == .assisted)
+    }
+
     @Test func amendmentTimingUsesTheLegStartAndFlagsOnlyAnExceededETA() {
         let start = Date(timeIntervalSince1970: 100)
         let timing = RouteAmendmentLegTiming(startedAt: start, destination: "Ramat", etaSeconds: 330, isRevised: true)

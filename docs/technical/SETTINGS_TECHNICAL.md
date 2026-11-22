@@ -331,3 +331,7 @@ Before #161 becomes ready, obtain approval of accurate presentation-failure copy
 using the existing warning-control geometry, or approve a separately designed
 warning variant. The approved Settings save-error frame does not govern the Cockpit
 warning. This is a scoped design blocker, not permission to rewrite that control.
+
+## Route amendment mode
+
+The `cockpit.routeAmendmentMode` key stores a version 1 `manual` or `assisted` value. A missing, invalid, or unsupported version defaults to Manual independently of other keys. The Settings controller applies the choice after a successful save. It offers retry and dismissal when a save fails. A new amendment draft captures the effective value when it opens. Assisted prefill and map aids are delivered separately.

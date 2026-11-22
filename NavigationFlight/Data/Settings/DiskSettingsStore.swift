@@ -22,6 +22,8 @@ actor DiskSettingsStore: SettingsStore {
         preferences.showDriftLines = read("cockpit.showDriftLines") ?? preferences.showDriftLines
         preferences.progression = read("cockpit.progression") ?? preferences.progression
         preferences.recoveryWindow = read("recording.recoveryWindowSeconds") ?? preferences.recoveryWindow
+        preferences.routeAmendmentMode = read(PreferenceChange.routeAmendmentMode(.manual).key)
+            ?? preferences.routeAmendmentMode
         return SettingsLoadResult(preferences: preferences)
     }
 
@@ -39,6 +41,7 @@ actor DiskSettingsStore: SettingsStore {
         case .showDriftLines(let value): data = try encode(value)
         case .progression(let value): data = try encode(value)
         case .recoveryWindow(let value): data = try encode(value)
+        case .routeAmendmentMode(let value): data = try encode(value)
         }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         if remainingFailures > 0 {

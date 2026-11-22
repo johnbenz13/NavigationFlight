@@ -345,6 +345,7 @@ struct RootView: View {
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
                     checklistSelection: { settingsController.preferences.startChecklist },
+                    amendmentMode: { settingsController.preferences.routeAmendmentMode },
                     chartCatalog: chartCatalog,
                     chartResources: chartResources,
                     shouldSimulateRecordingDegradation: shouldSimulateRecordingDegradation,

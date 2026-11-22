@@ -53,6 +53,19 @@ struct SettingsFeatureView: View {
                         .accessibilityValue(controller.preferences.startChecklist.title)
                         .accessibilityHint("Applies to subsequent leg starts, including automatic starts")
                         .accessibilityIdentifier("settings-start-checklist")
+                        NavigationLink(value: "amendRoute") {
+                            HStack(spacing: 12) {
+                                SettingsActionLabel(title: "Amend Route", subtitle: controller.preferences.routeAmendmentMode.title)
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.right").accessibilityHidden(true)
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: widePortrait ? 82 : 76)
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+                        .accessibilityIdentifier("settings-amend-route")
                     }
                     Text("Changes save automatically. Your current Flight continues unchanged.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -72,9 +85,13 @@ struct SettingsFeatureView: View {
                     }
                 }
             }
-            .navigationDestination(for: String.self) { _ in
-                StartChecklistSelectionView(selection: controller.preferences.startChecklist) { selection in
-                    requestID = controller.change(.startChecklist(selection))
+            .navigationDestination(for: String.self) { destination in
+                if destination == "amendRoute" {
+                    RouteAmendmentModeSelectionView(controller: controller)
+                } else {
+                    StartChecklistSelectionView(selection: controller.preferences.startChecklist) { selection in
+                        requestID = controller.change(.startChecklist(selection))
+                    }
                 }
             }
             .onChange(of: path) { _, _ in requestID = nil }

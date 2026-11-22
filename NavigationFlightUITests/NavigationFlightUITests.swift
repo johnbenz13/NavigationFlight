@@ -1669,6 +1669,343 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualAmendmentRejectsOutOfRangeExactEntryWhileTyping() throws {
+        let app = try launchManualAmendmentReview()
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").firstMatch, in: console)
+        let heading = app.textFields["amendment-field-heading"]
+        let seconds = app.textFields["amendment-field-seconds"]
+        let done = app.buttons["amendment-keyboard-done"]
+
+        tapChartPanelControl(heading, in: panel)
+        heading.typeText("435")
+        XCTAssertEqual(heading.value as? String, "43")
+        done.tap()
+        XCTAssertEqual(heading.value as? String, "043")
+
+        tapChartPanelControl(seconds, in: panel)
+        seconds.typeText("78")
+        XCTAssertEqual(seconds.value as? String, "7")
+        done.tap()
+        XCTAssertEqual(seconds.value as? String, "07")
+    }
+
+    @MainActor
+    func testManualAmendmentEntersCuesAndChecksWithoutChangingPilotValues() throws {
+        let app = try launchManualAmendmentReview()
+        let iPad = app.frame.width > 700
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let edit = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+        let check = app.buttons.matching(identifier: "check-amendment-leg").firstMatch
+        let save = app.buttons["save-amendment-leg-values"]
+        let cancel = app.buttons["back-to-amendment-review"]
+        let eta = app.staticTexts["amendment-leg-eta"].label
+        captureAmendmentState("manual-review-portrait", in: app)
+
+        tapAmendmentControl(check, in: console)
+        let estimate = app.descendants(matching: .any)["amendment-reference-estimate"]
+        XCTAssertTrue(estimate.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Not entered"].firstMatch.exists)
+        captureAmendmentState("manual-blank-check", in: app)
+        tapChartPanelControl(cancel, in: panel)
+
+        tapAmendmentControl(edit, in: console)
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        captureAmendmentState("manual-cue-editor-top", in: app)
+        tapChartPanelControl(save, in: panel)
+        XCTAssertTrue(app.staticTexts["amendment-error-heading"].waitForExistence(timeout: 4))
+        captureAmendmentState("manual-required-values", in: app)
+
+        let done = app.buttons["amendment-keyboard-done"]
+        func type(_ text: String, in fieldName: String) {
+            let field = app.textFields["amendment-field-\(fieldName)"]
+            tapChartPanelControl(field, in: panel)
+            XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+            field.typeText(text)
+            XCTAssertEqual(field.value as? String, text)
+            XCTAssertTrue(done.isHittable)
+            if fieldName == "seconds" { captureAmendmentState("manual-keyboard", in: app) }
+            done.tap()
+            XCTAssertTrue(done.waitForNonExistence(timeout: 4))
+        }
+        type("150", in: "heading")
+        type("05", in: "minutes")
+        type("13", in: "seconds")
+
+        if iPad {
+            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+            type("2500", in: "altitude")
+            type("123.50", in: "frequency")
+            type("Road junction", in: "visualReference")
+
+            tapChartPanelControl(app.buttons["inspect-amendment-original"], in: panel)
+            XCTAssertTrue(app.staticTexts["Inspect original leg is active"].waitForExistence(timeout: 4))
+            captureAmendmentState("manual-inspection", in: app)
+            tapChartPanelControl(app.buttons["choose-original-amendment-leg"], in: panel)
+            let original = app.buttons.matching(identifier: "choose-amendment-original-row").firstMatch
+            XCTAssertFalse(app.buttons.matching(identifier: "choose-amendment-proposed-row").firstMatch.exists)
+            tapChartPanelControl(original, in: panel)
+            XCTAssertTrue(app.staticTexts["Full planned flight time"].exists)
+            captureAmendmentState("manual-original-reference", in: app)
+            tapChartPanelControl(app.buttons["close-amendment-original"], in: panel)
+            XCTAssertTrue(app.descendants(matching: .any)["amendment-original-summary"].exists)
+            XCTAssertEqual(app.textFields["amendment-field-visualReference"].value as? String, "Road junction")
+            captureAmendmentState("manual-restored-editor", in: app)
+            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        }
+
+        tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
+        XCTAssertTrue(estimate.waitForExistence(timeout: 4))
+        XCTAssertTrue(estimate.label.contains("Magnetic course"))
+        XCTAssertTrue(estimate.label.contains("No wind"))
+        XCTAssertTrue(app.staticTexts["05:13"].firstMatch.exists)
+        XCTAssertEqual(app.staticTexts["amendment-leg-eta"].label, eta)
+        captureAmendmentState("manual-check-portrait", in: app)
+
+        app.buttons["pause-route-amendment"].tap()
+        XCTAssertFalse(estimate.exists)
+        app.buttons["resume-route-amendment"].tap()
+        XCTAssertTrue(estimate.waitForExistence(timeout: 4))
+        XCTAssertEqual(app.textFields["amendment-field-heading"].value as? String, "150")
+        if iPad {
+            XCTAssertTrue(app.descendants(matching: .any)["amendment-original-summary"].exists)
+        }
+
+        tapChartPanelControl(save, in: panel)
+        XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
+        XCTAssertTrue(edit.value.debugDescription.contains("05:13"))
+        captureAmendmentState("manual-saved-review", in: app)
+        tapAmendmentControl(check, in: console)
+        XCTAssertTrue(estimate.waitForExistence(timeout: 4))
+        captureAmendmentState("manual-saved-check", in: app)
+        tapChartPanelControl(cancel, in: panel)
+        if iPad {
+            defer {
+                app.terminate()
+                XCUIDevice.shared.orientation = .portrait
+            }
+            XCUIDevice.shared.orientation = .landscapeLeft
+            XCTAssertTrue(app.staticTexts["Review legs"].waitForExistence(timeout: 4))
+            captureAmendmentState("manual-review-landscape", in: app)
+            tapAmendmentControl(edit, in: console)
+            XCTAssertTrue(panel.waitForExistence(timeout: 4))
+            captureAmendmentState("manual-editor-landscape", in: app)
+        }
+    }
+
+    @MainActor
+    private func tapChartPanelControl(
+        _ element: XCUIElement, in panel: XCUIElement, beforeTap: () -> Void = {}
+    ) {
+        let nestedViewport = panel.scrollViews.firstMatch
+        let viewport = nestedViewport.exists ? nestedViewport : panel
+        for _ in 0..<10 {
+            let frame = element.frame
+            let visible = viewport.frame.insetBy(dx: 0, dy: 3).contains(CGPoint(x: frame.midX, y: frame.midY))
+            let inFooter = frame.minY >= viewport.frame.maxY && frame.maxY <= panel.frame.maxY
+            if element.isHittable, visible || inFooter {
+                beforeTap()
+                element.tap()
+                return
+            }
+            if element.exists && element.frame.midY < viewport.frame.midY {
+                viewport.swipeDown(velocity: .slow)
+            } else {
+                viewport.swipeUp(velocity: .slow)
+            }
+        }
+        XCTFail("Could not reveal chart panel control: \(element), panel: \(viewport.frame)")
+    }
+
+    @MainActor
+    func testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles() throws {
+        let app = try launchManualAmendmentReview()
+        guard app.frame.width > 700 else { throw XCTSkip("These chart coordinates use the canonical iPad fixture.") }
+        let map = app.descendants(matching: .any)["aviation-map"]
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        func tapMap(x: CGFloat, y: CGFloat) {
+            map.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y)).tap()
+        }
+
+        tapMap(x: 0.51, y: 0.815)
+        let heading = app.textFields["amendment-field-heading"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 4))
+        XCTAssertEqual(panel.frame.width, 338, accuracy: 1)
+        XCTAssertEqual(panel.frame.minX, 446, accuracy: 1)
+        XCTAssertEqual(panel.frame.minY, 232, accuracy: 2)
+        captureAmendmentState("manual-editor-chart", in: app)
+        app.buttons["Increase by 1 degree"].press(forDuration: 0.8)
+        let adjusted = Int(heading.value as? String ?? "")
+        XCTAssertGreaterThanOrEqual(adjusted ?? 0, 2)
+        tapMap(x: 0.18, y: 0.75)
+        XCTAssertTrue(heading.exists)
+        tapChartPanelControl(app.buttons["back-to-amendment-review"], in: panel)
+
+        tapMap(x: 0.426, y: 0.953)
+        let originals = app.buttons.matching(identifier: "choose-amendment-original-row")
+        let proposed = app.buttons.matching(identifier: "choose-amendment-proposed-row")
+        XCTAssertTrue(originals.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertTrue(proposed.firstMatch.exists)
+        captureAmendmentState("manual-review-overlap", in: app)
+        tapChartPanelControl(app.buttons["cancel-amendment-leg-choice"], in: panel)
+
+        tapMap(x: 0.426, y: 0.78)
+        XCTAssertTrue(app.staticTexts["Full planned flight time"].waitForExistence(timeout: 4))
+        captureAmendmentState("manual-review-original", in: app)
+        tapChartPanelControl(app.buttons["close-amendment-original"], in: panel)
+
+        app.buttons["choose-amendment-leg"].tap()
+        XCTAssertTrue(proposed.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertTrue(originals.firstMatch.exists)
+        captureAmendmentState("manual-named-chooser", in: app)
+        tapChartPanelControl(app.buttons["cancel-amendment-leg-choice"], in: panel)
+        app.buttons["back-to-amendment-drawing"].tap()
+        let selected = app.staticTexts["selected-amendment-point"]
+        let selectionBefore = selected.exists ? selected.label : nil
+        app.buttons["inspect-amendment-leg"].tap()
+        XCTAssertTrue(app.staticTexts["Inspect original leg is active"].waitForExistence(timeout: 4))
+        tapMap(x: 0.18, y: 0.75)
+        XCTAssertTrue(app.staticTexts["No original leg here. Try another chart location."].exists)
+        tapMap(x: 0.426, y: 0.574)
+        XCTAssertTrue(originals.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertGreaterThanOrEqual(originals.count, 2)
+        XCTAssertFalse(proposed.firstMatch.exists)
+        captureAmendmentState("manual-inspection-overlap", in: app)
+        tapChartPanelControl(app.buttons["cancel-amendment-leg-choice"], in: panel)
+        tapChartPanelControl(app.buttons["cancel-amendment-inspection"], in: panel)
+        XCTAssertEqual(selected.exists ? selected.label : nil, selectionBefore)
+    }
+
+    @MainActor
+    func testManualAmendmentShowsUnavailableEstimate() throws {
+        let app = try launchManualAmendmentReview(unavailable: true)
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        tapAmendmentControl(app.buttons.matching(identifier: "check-amendment-leg").firstMatch, in: console)
+        XCTAssertTrue(app.staticTexts["amendment-estimate-unavailable"].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.descendants(matching: .any)["amendment-reference-estimate"].exists)
+        captureAmendmentState("manual-check-unavailable", in: app)
+    }
+
+    @MainActor
+    func testManualAmendmentReviewSupportsLargerText() throws {
+        let app = try launchManualAmendmentReview(contentSize: "UICTContentSizeCategoryAccessibilityM")
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let check = app.buttons.matching(identifier: "check-amendment-leg").firstMatch
+        XCTAssertGreaterThanOrEqual(check.frame.height, 44)
+        tapAmendmentControl(check, in: console) {
+            captureAmendmentState("manual-review-larger-text", in: app)
+        }
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        tapChartPanelControl(app.buttons["back-to-amendment-review"], in: panel) {
+            captureAmendmentState("manual-editor-larger-text", in: app)
+        }
+    }
+
+    @MainActor
+    func testAmendmentModeSettingsShowsSelectedPreference() {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = "settings-205-\(UUID().uuidString)"
+        app.launch()
+        openSettings(in: app)
+        app.buttons["settings-amend-route"].tap()
+        let manual = app.buttons["amendment-mode-manual"]
+        let assisted = app.buttons["amendment-mode-assisted"]
+        XCTAssertTrue(manual.isSelected)
+        captureAmendmentState("manual-mode-settings", in: app)
+        assisted.tap()
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: assisted)
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
+    }
+
+    @MainActor
+    private func launchManualAmendmentReview(unavailable: Bool = false, contentSize: String? = nil) throws -> XCUIApplication {
+        var plan = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
+        if unavailable {
+            // A positive but very large plan-wide speed rounds both plotted estimates to zero.
+            var document = try XCTUnwrap(JSONSerialization.jsonObject(with: plan) as? [String: Any])
+            var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+            var parameters = try XCTUnwrap(navigation["parameters"] as? [String: Any])
+            let speed = 1_000_000.0
+            parameters["planningAirspeedKnots"] = speed
+            navigation["parameters"] = parameters
+            document["navigation"] = navigation
+            var execution = try XCTUnwrap(document["execution"] as? [String: Any])
+            var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+            for index in legs.indices {
+                var timing = try XCTUnwrap(legs[index]["noWind"] as? [String: Any])
+                timing["plannedGroundSpeedKnots"] = speed
+                legs[index]["noWind"] = timing
+            }
+            execution["legs"] = legs
+            document["execution"] = execution
+            plan = try JSONSerialization.data(withJSONObject: document)
+        }
+        let app = launchCockpit(planData: plan, preferredContentSizeCategory: contentSize)
+        app.buttons["start-leg"].tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        chooseAmendmentWaypoint("שפיים", in: app)
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        if contentSize == nil {
+            app.descendants(matching: .any)["aviation-map"]
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.74, dy: 0.43)).tap()
+        } else {
+            tapAmendmentControl(app.buttons["pick-amendment-point"], in: console)
+            app.buttons["Use map center"].tap()
+        }
+        XCTAssertTrue(app.buttons["amendment-draft-point"].firstMatch.waitForExistence(timeout: 4))
+        chooseAmendmentWaypoint("תל יונה", in: app)
+        let finish = app.buttons["finish-amendment-here"]
+        if contentSize == nil {
+            XCTAssertTrue(finish.isHittable)
+            finish.tap()
+        } else {
+            tapAmendmentControl(finish, in: console)
+        }
+        XCTAssertTrue(app.staticTexts["Review legs"].waitForExistence(timeout: 4))
+        return app
+    }
+
+    @MainActor
+    private func tapAmendmentControl(
+        _ element: XCUIElement, in console: XCUIElement, scrollDown: Bool = true, beforeTap: () -> Void = {}
+    ) {
+        let compact = console.frame.width < 430
+        for attempt in 0..<14 {
+            if element.exists {
+                let frame = element.frame
+                let viewport = console.frame
+                let isReviewRow = ["edit-amendment-leg", "check-amendment-leg"].contains(element.identifier)
+                let bottomClearance = compact && !isReviewRow ? 65.0 : 0.0
+                let bottom = viewport.maxY - bottomClearance
+                if element.isHittable, frame.midY >= viewport.minY, frame.midY < bottom {
+                    beforeTap()
+                    element.tap()
+                    return
+                }
+                scrollAmendmentConsole(console, down: frame.midY >= bottom)
+            } else {
+                scrollAmendmentConsole(console, down: attempt < 7 ? scrollDown : !scrollDown)
+            }
+        }
+        XCTFail("Could not reveal amendment control: \(element), console: \(console.frame)")
+    }
+
+    @MainActor
+    private func scrollAmendmentConsole(_ console: XCUIElement, down: Bool) {
+        let upperY = 0.10
+        let lowerY = console.frame.height < 150 ? 0.85 : min(0.65, 1 - 55 / console.frame.height)
+        let upper = console.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: upperY))
+        let lower = console.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: lowerY))
+        let start = down ? lower : upper
+        let end = down ? upper : lower
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.15)
+    }
+
+    @MainActor
     func testRouteAmendmentDraftCanPlotPauseResumeAndRecoverDeparture() throws {
         let app = launchCockpit(
             planData: try realFlightPlanData(named: "llhz-llib-via-jerusalem"),
@@ -1817,11 +2154,9 @@ final class NavigationFlightUITests: XCTestCase {
         app.buttons["finish-amendment-here"].tap()
 
         XCTAssertTrue(app.staticTexts["Review legs"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Route sketch complete"].exists)
-        let route = app.descendants(matching: .any)["amendment-return-point"]
-        XCTAssertTrue(route.exists)
-        XCTAssertTrue(route.label.contains("תל יונה"))
-        XCTAssertTrue(route.label.contains("Return"))
+        let legs = app.buttons.matching(identifier: "edit-amendment-leg")
+        XCTAssertEqual(legs.count, 3)
+        XCTAssertTrue(legs.element(boundBy: 2).label.contains("תל יונה"))
         XCTAssertTrue(app.staticTexts["amendment-leg-elapsed"].isHittable)
         captureAmendmentState("finish-review", in: app)
 
@@ -1883,7 +2218,8 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(finish.waitForExistence(timeout: 3))
         finish.tap()
         XCTAssertTrue(app.staticTexts["Review legs"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.descendants(matching: .any)["amendment-return-point"].label.contains("רידינג"))
+        XCTAssertTrue(app.buttons.matching(identifier: "edit-amendment-leg").allElementsBoundByIndex
+            .contains { $0.label.contains("רידינג") })
     }
 
     @MainActor
@@ -2055,7 +2391,8 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func captureAmendmentState(_ name: String, in app: XCUIApplication) {
-        let screenshot = name == "landscape-selected" ? XCUIScreen.main.screenshot() : app.screenshot()
+        let needsFullScreen = name.contains("landscape") || name.contains("keyboard")
+        let screenshot = needsFullScreen ? XCUIScreen.main.screenshot() : app.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot)
         attachment.name = "Route amendment - \(name)"
         attachment.lifetime = .keepAlways

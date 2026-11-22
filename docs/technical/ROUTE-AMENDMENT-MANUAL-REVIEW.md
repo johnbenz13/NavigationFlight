@@ -1,0 +1,11 @@
+# Manual amendment leg review
+
+[#205](https://github.com/johnbenz13/NavigationFlight/issues/205) implements the Manual review slice of the [approved technical design](https://github.com/johnbenz13/NavigationFlight/blob/047ff3d0b57f035926829009a1cfba17aaf4fc73/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md#draft-map-and-estimates).
+
+The Cockpit draft captures the saved amendment mode when it opens. The ordered pairs of plotted endpoints identify the legs. Saved inputs remain attached to the matching endpoints through drawing undo, review and pause. Moving an endpoint creates a different leg and requires its own values. Notes are untimed and have no map or progression representation.
+
+`RouteAmendmentEstimator.estimate(from:to:inputs:)` accepts WGS84 endpoints, Flight execution mode, east-positive magnetic variation, plan-wide planning airspeed, and optional plan-wide default wind. It uses the projected course and spherical distance. A positive result includes whole-second duration and typed direction provenance. The no-wind path provides magnetic course. The planned-wind path provides magnetic heading and retains the wind used. Inputs or geometry that cannot support an estimate return unavailable. Check changes the draft's presentation while preserving saved pilot entries. The Cockpit still runs in no-wind mode.
+
+The chart editor keeps working text, validation, cue visibility, Check and the most recent original reference in the draft. A review-row Check opens a fresh editor with the saved inputs and its comparison visible. An editor Check compares current working inputs. Inspection temporarily routes chart taps to original legs. Named choices expose the same original and proposed leg identities used for chart hits. Pause hides the draft and its panels, and Resume restores them.
+
+Original references read full-leg direction and duration from imported planned navigation in the Flight's execution mode. The chart spaces each leg's original minute marks from its original departure using its full planned duration. An anchor divides the rendered route and changes the treatment of marks on the bypassed portion. Check and the original reference do not create proposed-leg marks or operational timing targets.

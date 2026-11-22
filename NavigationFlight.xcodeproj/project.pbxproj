@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8BA95CA5A000000000000002 /* AIPCharts in Resources */ = {isa = PBXBuildFile; fileRef = 8BA95CA5A000000000000001 /* AIPCharts */; };
+		8BA95CA5A000000000000005 /* aip-charts-pin.json in Resources */ = {isa = PBXBuildFile; fileRef = 8BA95CA5A000000000000004 /* aip-charts-pin.json */; };
 		520EF92E30AE4E5500CEE740 /* FlightEvidenceCore in Frameworks */ = {isa = PBXBuildFile; productRef = 520EF92D30AE4E5500CEE740 /* FlightEvidenceCore */; };
 		52D6EA70307D6F4200C34E8E /* MapLibre in Frameworks */ = {isa = PBXBuildFile; productRef = 52D6EA6F307D6F4200C34E8E /* MapLibre */; };
 /* End PBXBuildFile section */
@@ -31,6 +32,7 @@
 
 /* Begin PBXFileReference section */
 		8BA95CA5A000000000000001 /* AIPCharts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AIPCharts; path = .generated/AIPCharts; sourceTree = SOURCE_ROOT; };
+		8BA95CA5A000000000000004 /* aip-charts-pin.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "aip-charts-pin.json"; path = "Config/aip-charts-pin.json"; sourceTree = SOURCE_ROOT; };
 		5269A1DF307A4CC2009CD5A1 /* NavigationFlight.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NavigationFlight.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5269A1EC307A4CC3009CD5A1 /* NavigationFlightTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavigationFlightTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5269A1F6307A4CC3009CD5A1 /* NavigationFlightUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NavigationFlightUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -108,6 +110,7 @@
 				52B0615030874A4700B840D6 /* README.md */,
 				5269A1E1307A4CC2009CD5A1 /* NavigationFlight */,
 				8BA95CA5A000000000000001 /* AIPCharts */,
+				8BA95CA5A000000000000004 /* aip-charts-pin.json */,
 				5269A1EF307A4CC3009CD5A1 /* NavigationFlightTests */,
 				5269A1F9307A4CC3009CD5A1 /* NavigationFlightUITests */,
 				52D6EA6E307D6F4200C34E8E /* Frameworks */,
@@ -254,6 +257,7 @@
 			isa = PBXResourcesBuildPhase;
 			files = (
 				8BA95CA5A000000000000002 /* AIPCharts in Resources */,
+				8BA95CA5A000000000000005 /* aip-charts-pin.json in Resources */,
 			);
 		};
 		5269A1EA307A4CC3009CD5A1 /* Resources */ = {

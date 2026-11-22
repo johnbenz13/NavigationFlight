@@ -14,6 +14,11 @@ final class NavigationFlightAppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+#if DEBUG && targetEnvironment(simulator)
+        if ChartSnapshotUITestFixture.blocksNetwork {
+            precondition(URLProtocol.registerClass(ChartUITestOfflineProtocol.self))
+        }
+#endif
 #if DEBUG
         guard ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] == nil else {
             return true
@@ -29,6 +34,17 @@ struct NavigationFlightApp: App {
     @UIApplicationDelegateAdaptor(NavigationFlightAppDelegate.self) private var appDelegate
 
     @State private var settingsController = SettingsController(store: Self.settingsStore())
+    @State private var chartSnapshotStore = ChartSnapshotStore(directory: Self.chartSnapshotDirectory)
+
+    private static var chartSnapshotDirectory: URL {
+#if DEBUG
+        if let id = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] {
+            return URL.temporaryDirectory.appending(path: "\(id)-charts", directoryHint: .isDirectory)
+        }
+#endif
+        return (FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL.temporaryDirectory).appending(path: "AIPChartSnapshots", directoryHint: .isDirectory)
+    }
 
     private static func settingsStore() -> any SettingsStore {
         let directory: URL
@@ -56,7 +72,7 @@ struct NavigationFlightApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(settingsController: settingsController)
+            RootView(settingsController: settingsController, chartSnapshotStore: chartSnapshotStore)
         }
     }
 }

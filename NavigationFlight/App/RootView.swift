@@ -8,8 +8,16 @@ struct RootView: View {
     @State private var showsSettingsFromMore = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    private let chartResources: ChartResources
-    private let chartCatalog: ChartCatalog?
+    private let chartSnapshotStore: ChartSnapshotStore
+    @State private var chartSnapshot: ChartSnapshot?
+    @State private var hasLoadedChartSnapshot = false
+#if DEBUG && targetEnvironment(simulator)
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var installedChartFixtureEdition: String?
+#endif
+
+    private var chartCatalog: ChartCatalog? { chartSnapshot?.catalog }
+    private var chartResources: ChartResources { chartSnapshot?.resources ?? .bundled }
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
@@ -26,26 +34,9 @@ struct RootView: View {
     private let debugRecordingStatus: RecordingStatus?
     private let debugFlightsActiveRecordingID: UUID?
 
-    init(settingsController: SettingsController) {
+    init(settingsController: SettingsController, chartSnapshotStore: ChartSnapshotStore) {
         self.settingsController = settingsController
-#if DEBUG
-        chartResources = ChartResources(
-            bundleRoot: Bundle.main.bundleURL,
-            unreadableChartID: ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_UNREADABLE_CHART"]
-        )
-#else
-        chartResources = .bundled
-#endif
-        let bundledCatalog = try? chartResources.loadCatalog()
-#if DEBUG
-        if let emptyAerodrome = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_EMPTY_CHART_AERODROME"] {
-            chartCatalog = bundledCatalog?.fixtureWithoutCharts(for: emptyAerodrome)
-        } else {
-            chartCatalog = bundledCatalog
-        }
-#else
-        chartCatalog = bundledCatalog
-#endif
+        self.chartSnapshotStore = chartSnapshotStore
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -273,10 +264,10 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if settingsController.isReady, flightRecoveryCoordinator.state == .none {
-                appShell
-            } else if !settingsController.isReady {
+            if !settingsController.isReady || !hasLoadedChartSnapshot {
                 ProgressView("Loading…")
+            } else if flightRecoveryCoordinator.state == .none {
+                appShell
             } else {
                 FlightRecoveryView(
                     state: flightRecoveryCoordinator.state,
@@ -291,6 +282,32 @@ struct RootView: View {
             guard let context else { return }
             Task { await flightRecordingCoordinator.recordPresentation(context) }
         }
+        .task {
+#if DEBUG && targetEnvironment(simulator)
+            if ChartSnapshotUITestFixture.blocksNetwork {
+                do {
+                    try await ChartSnapshotUITestFixture.verifyNetworkIsBlocked()
+                } catch {
+                    preconditionFailure("Chart test HTTP isolation failed: \(error)")
+                }
+            }
+            if ChartSnapshotUITestFixture.isEnabled, installedChartFixtureEdition == nil {
+                await installChartFixture("A")
+            }
+#endif
+            let snapshot = await chartSnapshotStore.currentSnapshot()
+            guard !Task.isCancelled else { return }
+            updateChartSnapshot(snapshot)
+            hasLoadedChartSnapshot = true
+        }
+#if DEBUG && targetEnvironment(simulator)
+        .task(id: scenePhase) {
+            if scenePhase == .active, installedChartFixtureEdition == "A",
+               appState.chartLibrary.presentedChartID != nil {
+                await installChartFixture("B")
+            }
+        }
+#endif
         .task {
             await settingsController.bootstrap()
             if flightRecoveryCoordinator.state == .loading {
@@ -401,12 +418,24 @@ struct RootView: View {
         }
         .fullScreenCover(item: chartSelection, onDismiss: {
             appState.chartLibrary.didDismissChart()
-        }) { selection in
-            if let chartCatalog {
-                ChartViewer(selection: selection, catalog: chartCatalog, resources: chartResources) {
-                    appState.chartLibrary.presentedChartID = nil
-                }
+        }) { presentation in
+            ChartViewer(
+                selection: presentation.selection,
+                catalog: presentation.snapshot.catalog,
+                resources: presentation.snapshot.resources
+            ) {
+                appState.chartLibrary.presentedChartID = nil
             }
+#if DEBUG && targetEnvironment(simulator)
+            .environment(\.installedChartFixtureEdition, installedChartFixtureEdition)
+#endif
+        }
+        .task(id: appState.selectedAppSection) {
+            guard appState.selectedAppSection == .charts else { return }
+            let snapshot = await chartSnapshotStore.currentSnapshot()
+            guard !Task.isCancelled, appState.selectedAppSection == .charts,
+                  appState.chartLibrary.presentedChartID == nil else { return }
+            updateChartSnapshot(snapshot)
         }
         .onAppear {
             synchronizeIdleTimer()
@@ -793,11 +822,56 @@ struct RootView: View {
         )
     }
 
-    private var chartSelection: Binding<ChartSelection?> {
+    private struct PresentedChart: Identifiable {
+        let selection: ChartSelection
+        let snapshot: ChartSnapshot
+
+        var id: String { selection.id }
+    }
+
+#if DEBUG && targetEnvironment(simulator)
+    private func installChartFixture(_ edition: String) async {
+        do {
+            try await ChartSnapshotUITestFixture.install(edition, in: chartSnapshotStore)
+            installedChartFixtureEdition = edition
+        } catch {
+            assertionFailure("Chart edition fixture \(edition) failed to install: \(error)")
+        }
+    }
+#endif
+
+    private var chartSelection: Binding<PresentedChart?> {
         Binding(
-            get: { appState.chartLibrary.presentedChartID.flatMap { chartCatalog?.selection(for: $0) } },
+            get: {
+                guard let id = appState.chartLibrary.presentedChartID, let chartSnapshot,
+                      let selection = chartSnapshot.catalog.selection(for: id) else { return nil }
+                return PresentedChart(selection: selection, snapshot: chartSnapshot)
+            },
             set: { appState.chartLibrary.presentedChartID = $0?.id }
         )
+    }
+
+    private func updateChartSnapshot(_ snapshot: ChartSnapshot?) {
+        guard snapshot?.pin != chartSnapshot?.pin
+                || snapshot?.resources.bundleRoot != chartSnapshot?.resources.bundleRoot else { return }
+        guard let snapshot else {
+            chartSnapshot = nil
+            return
+        }
+#if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        let chartCatalog = environment["NAVIGATION_FLIGHT_UI_TEST_EMPTY_CHART_AERODROME"]
+            .map { snapshot.catalog.fixtureWithoutCharts(for: $0) } ?? snapshot.catalog
+        let resources = ChartResources(
+            bundleRoot: snapshot.resources.bundleRoot,
+            unreadableChartID: environment["NAVIGATION_FLIGHT_UI_TEST_UNREADABLE_CHART"]
+        )
+        let visibleSnapshot = ChartSnapshot(pin: snapshot.pin, catalog: chartCatalog, resources: resources)
+#else
+        let visibleSnapshot = snapshot
+#endif
+        chartSnapshot = visibleSnapshot
+        appState.chartLibrary.reconcile(with: visibleSnapshot.catalog)
     }
 
     private var appSectionSelection: Binding<AppFeatureState.AppSection> {

@@ -14,4 +14,18 @@ struct ChartLibraryState: Equatable, Sendable {
         returnFocusChartID = selectedChartID
         selectedChartID = nil
     }
+
+    mutating func reconcile(with catalog: ChartCatalog) {
+        let aerodromes = Set(catalog.aerodromes.map(\.id))
+        aerodromePath = Array(aerodromePath.prefix { aerodromes.contains($0) })
+        if let id = returnFocusChartID, catalog.selection(for: id) == nil {
+            returnFocusChartID = nil
+        }
+        if let id = selectedChartID, catalog.selection(for: id) == nil {
+            selectedChartID = nil
+        }
+        if let id = presentedChartID, catalog.selection(for: id) == nil {
+            presentedChartID = nil
+        }
+    }
 }

@@ -1,6 +1,12 @@
 import PDFKit
 import SwiftUI
 
+#if DEBUG && targetEnvironment(simulator)
+extension EnvironmentValues {
+    @Entry var installedChartFixtureEdition: String?
+}
+#endif
+
 struct ChartViewer: View {
     let selection: ChartSelection
     let catalog: ChartCatalog
@@ -15,6 +21,9 @@ struct ChartViewer: View {
     @State private var zoomRequest: ChartPDFView.ZoomRequest?
     @AccessibilityFocusState private var titleFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#if DEBUG && targetEnvironment(simulator)
+    @Environment(\.installedChartFixtureEdition) private var installedChartFixtureEdition
+#endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -98,6 +107,9 @@ struct ChartViewer: View {
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier("charts-viewer-title")
                 .accessibilityFocused($titleFocused)
+#if DEBUG && targetEnvironment(simulator)
+                .accessibilityValue(installedChartFixtureEdition ?? "")
+#endif
             Text(subtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

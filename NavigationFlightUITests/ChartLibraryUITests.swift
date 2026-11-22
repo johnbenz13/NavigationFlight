@@ -88,6 +88,81 @@ final class ChartLibraryUITests: XCTestCase {
         XCTAssertTrue(app.buttons["charts-fit-page"].waitForExistence(timeout: 5))
     }
 
+    func testOfflineChartEditionsInPortrait() {
+        verifyOfflineChartEditions(in: .portrait)
+    }
+
+    func testOfflineChartEditionsInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
+        verifyOfflineChartEditions(in: .landscapeLeft)
+    }
+
+    private func verifyOfflineChartEditions(in orientation: UIDeviceOrientation) {
+        XCUIDevice.shared.orientation = orientation
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = XCUIApplication()
+        initialize(app)
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_CHART_EDITIONS"] = "1"
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_CHART_OFFLINE"] = "1"
+        app.launch()
+        waitForOrientation(landscape: orientation.isLandscape, in: app)
+        section("Charts", in: app).tap()
+
+        let field = app.buttons["charts-aerodrome-fixture-field"]
+        let retired = app.buttons["charts-aerodrome-retired-field"]
+        let chart = app.buttons["charts-document-fixture-field-chart"]
+        let title = app.staticTexts["charts-viewer-title"].firstMatch
+        let fit = app.buttons["charts-fit-page"]
+        let source = app.descendants(matching: .any)["charts-source"].firstMatch
+
+        XCTAssertTrue(retired.waitForExistence(timeout: 5))
+        capture("fixture-a-library")
+        field.tap()
+        XCTAssertTrue(chart.waitForExistence(timeout: 5))
+        capture("fixture-a-aerodrome")
+        chart.tap()
+        XCTAssertTrue(fit.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.label, "Edition A · Test circuit")
+        XCTAssertTrue(source.label.contains("Fixture A"))
+
+        // Foregrounding commits B through the actual store while this viewer holds A.
+        XCUIDevice.shared.press(.home)
+        app.activate()
+        let committed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "B"), object: title)
+        XCTAssertEqual(XCTWaiter.wait(for: [committed], timeout: 8), .completed)
+        XCTAssertEqual(title.label, "Edition A · Test circuit")
+        XCTAssertTrue(source.label.contains("Fixture A"))
+        app.buttons["Zoom in"].tap()
+        capture("fixture-a-viewer-after-b-commit")
+        app.buttons["charts-viewer-back"].tap()
+
+        section("Flights", in: app).tap()
+        section("Charts", in: app).tap()
+        XCTAssertTrue(app.navigationBars["Fixture Field"].waitForExistence(timeout: 5))
+        let updatedChart = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label CONTAINS %@", "Edition B"), object: chart
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [updatedChart], timeout: 8), .completed)
+        chart.tap()
+        XCTAssertTrue(fit.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.label, "Edition B · Test circuit")
+        XCTAssertTrue(source.label.contains("Fixture B"))
+        capture("fixture-b-viewer")
+
+        app.terminate()
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_CHART_EDITIONS")
+        app.launch()
+        section("Charts", in: app).tap()
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        XCTAssertFalse(retired.exists)
+        field.tap()
+        chart.tap()
+        XCTAssertTrue(fit.waitForExistence(timeout: 5))
+        XCTAssertEqual(title.label, "Edition B · Test circuit")
+        XCTAssertTrue(source.label.contains("Fixture B"))
+        capture("fixture-b-after-offline-relaunch")
+    }
+
     func testWideSettingsOrNarrowMoreAndRetainedSection() {
         let app = launch()
         section("Charts", in: app).tap()

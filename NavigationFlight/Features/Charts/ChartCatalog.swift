@@ -1,7 +1,7 @@
 import Foundation
 
-struct ChartCatalog: Decodable {
-    enum Group: String, CaseIterable, Decodable {
+nonisolated struct ChartCatalog: Decodable, Sendable {
+    enum Group: String, CaseIterable, Decodable, Sendable {
         case airports
         case airfields
 
@@ -20,8 +20,8 @@ struct ChartCatalog: Decodable {
         }
     }
 
-    struct Aerodrome: Decodable, Identifiable {
-        struct Identifier: Decodable {
+    struct Aerodrome: Decodable, Identifiable, Sendable {
+        struct Identifier: Decodable, Sendable {
             let namespace: String
             let value: String
         }
@@ -39,17 +39,17 @@ struct ChartCatalog: Decodable {
         }
     }
 
-    struct Chart: Decodable, Identifiable {
-        enum Role: String, Decodable {
+    struct Chart: Decodable, Identifiable, Sendable {
+        enum Role: String, Decodable, Sendable {
             case departure, arrival, circuit
         }
 
-        struct Edition: Decodable {
+        struct Edition: Decodable, Sendable {
             let amendment: String?
             let printedDate: String?
         }
 
-        struct Page: Decodable, Equatable {
+        struct Page: Decodable, Equatable, Sendable {
             let assetSha256: String
             let index: Int
             let publishedLabel: String?
@@ -71,14 +71,18 @@ struct ChartCatalog: Decodable {
         }
     }
 
-    struct Asset: Decodable {
+    struct Asset: Decodable, Sendable {
+        let id: String?
+        let file: String?
+        let representation: String?
+        let consumer: String?
         let destination: String
         let bytes: Int
         let sha256: String
         let pageCount: Int
     }
 
-    struct Snapshot: Decodable {
+    struct Snapshot: Decodable, Sendable {
         let amendment: String
         let effectiveDate: String
     }
@@ -120,14 +124,14 @@ struct ChartCatalog: Decodable {
     }
 }
 
-struct ChartSelection: Identifiable {
+nonisolated struct ChartSelection: Identifiable, Sendable {
     let aerodrome: ChartCatalog.Aerodrome
     let chart: ChartCatalog.Chart
 
     var id: String { chart.id }
 }
 
-struct ChartResources {
+nonisolated struct ChartResources: Sendable {
     let bundleRoot: URL
     var unreadableChartID: String? = nil
 
@@ -135,7 +139,11 @@ struct ChartResources {
 
     func loadCatalog() throws -> ChartCatalog {
         let index = bundleRoot.appending(path: "AIPCharts/index.json")
-        let catalog = try JSONDecoder().decode(ChartCatalog.self, from: Data(contentsOf: index))
+        return try Self.decodeCatalog(Data(contentsOf: index))
+    }
+
+    static func decodeCatalog(_ data: Data) throws -> ChartCatalog {
+        let catalog = try JSONDecoder().decode(ChartCatalog.self, from: data)
         guard catalog.schemaVersion == 2, !catalog.releaseId.isEmpty,
               !catalog.aerodromes.isEmpty, !catalog.artifacts.isEmpty,
               Set(catalog.aerodromes.map(\.id)).count == catalog.aerodromes.count else {
@@ -157,7 +165,7 @@ struct ChartResources {
         return try Data(contentsOf: assetURL(for: asset), options: .mappedIfSafe)
     }
 
-    private func assetURL(for asset: ChartCatalog.Asset) throws -> URL {
+    func assetURL(for asset: ChartCatalog.Asset) throws -> URL {
         let parts = asset.destination.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count == 3, parts[0] == "AIPCharts", parts[1] == "pdf",
               parts[2].wholeMatch(of: /[a-z0-9_-]+\.pdf/) != nil else {

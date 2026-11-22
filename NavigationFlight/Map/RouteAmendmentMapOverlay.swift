@@ -46,6 +46,12 @@ final class RouteAmendmentMapOverlay: UIView {
             return CGSize(width: ceil(size.width) + 12, height: ceil(size.height) + 6)
         }
 
+        func badgeRect(at point: CGPoint) -> CGRect {
+            CGRect(x: point.x - badgeSize.width / 2,
+                   y: point.y - Self.diameter / 2 - Self.labelGap - badgeSize.height,
+                   width: badgeSize.width, height: badgeSize.height)
+        }
+
         func draw(at point: CGPoint, color: UIColor, showsLabel: Bool, in context: CGContext) {
             let ring = CGRect(x: point.x - Self.diameter / 2, y: point.y - Self.diameter / 2,
                               width: Self.diameter, height: Self.diameter)
@@ -56,9 +62,7 @@ final class RouteAmendmentMapOverlay: UIView {
             context.setLineWidth(2)
             context.strokeEllipse(in: ring.insetBy(dx: 1, dy: 1))
             guard showsLabel else { return }
-            let badge = CGRect(x: point.x - badgeSize.width / 2,
-                               y: ring.minY - Self.labelGap - badgeSize.height,
-                               width: badgeSize.width, height: badgeSize.height)
+            let badge = badgeRect(at: point)
             UIColor.white.setFill()
             UIBezierPath(roundedRect: badge, cornerRadius: 6).fill()
             label.draw(at: CGPoint(x: badge.minX + 6, y: badge.minY + 3))
@@ -231,19 +235,39 @@ final class RouteAmendmentMapOverlay: UIView {
             RouteAmendmentDraft.Segment(from: $0.from.position, to: $0.to.position, role: .proposed)
         }
         drawSegments(original + proposal, proposedDashed: true, on: map, in: context)
-        for stop in route.stops where route.precedes(amendment.departure, stop.id) && route.precedes(stop.id, amendment.rejoin) {
-            marker(project(stop.position, on: map), label: "\(stop.name) · bypassed", color: Self.bypassedColor, in: context)
+
+        let departure = pending.activePartwayDeparture.map {
+            (marker: DepartureMarker(name: $0.name, traits: traitCollection), point: project($0.position, on: map))
         }
-        for leg in amendment.replacementLegs.dropLast() {
-            marker(project(leg.to.position, on: map), label: leg.to.name, color: Self.proposedColor, in: context)
-        }
+        let departureBadge = showsPartwayDepartureLabel ? departure.map { $0.marker.badgeRect(at: $0.point) } : nil
+        var proposedMarkers = amendment.replacementLegs.dropLast().map { (project($0.to.position, on: map), $0.to.name) }
         if let rejoin = amendment.replacementLegs.last?.to {
-            marker(project(rejoin.position, on: map), label: "Rejoin · \(rejoin.name)", color: Self.proposedColor, in: context)
+            proposedMarkers.append((project(rejoin.position, on: map), "Rejoin · \(rejoin.name)"))
         }
-        if let departure = pending.activePartwayDeparture {
-            let marker = DepartureMarker(name: departure.name, traits: traitCollection)
-            marker.draw(at: project(departure.position, on: map), color: Self.retainedColor,
-                        showsLabel: showsPartwayDepartureLabel, in: context)
+        let labelViewport = bounds.inset(
+            by: UIEdgeInsets(top: pending.departureHeaderInset + 4, left: 4, bottom: 4, right: 4)
+        )
+        var reservedBadges = proposedMarkers.map { markerLabel(at: $0.0, title: $0.1, radius: 5).frame }
+        if let departureBadge {
+            reservedBadges.append(departureBadge)
+        }
+
+        for stop in route.stops where route.precedes(amendment.departure, stop.id) && route.precedes(stop.id, amendment.rejoin) {
+            let point = project(stop.position, on: map)
+            guard bounds.insetBy(dx: -20, dy: -20).contains(point) else { continue }
+            var label = markerLabel(at: point, title: "\(stop.name) · bypassed", radius: 5)
+            if let departureBadge, label.frame.intersects(departureBadge) {
+                label.frame = clearLabelFrame(near: label.frame, in: labelViewport, avoiding: reservedBadges)
+            }
+            drawMarker(at: point, label: label, color: Self.bypassedColor, selected: false, in: context)
+            reservedBadges.append(label.frame)
+        }
+        for (point, title) in proposedMarkers {
+            marker(point, label: title, color: Self.proposedColor, in: context)
+        }
+        if let departure {
+            departure.marker.draw(at: departure.point, color: Self.retainedColor,
+                                  showsLabel: showsPartwayDepartureLabel, in: context)
         }
     }
 
@@ -351,8 +375,50 @@ final class RouteAmendmentMapOverlay: UIView {
         context.strokePath()
     }
 
+    private struct MarkerLabel {
+        let text: NSAttributedString
+        var frame: CGRect
+    }
+
+    private func markerLabel(at point: CGPoint, title: String, radius: CGFloat) -> MarkerLabel {
+        let text = NSAttributedString(string: title, attributes: [
+            .font: UIFont.preferredFont(forTextStyle: .caption1),
+            .foregroundColor: UIColor.label
+        ])
+        let size = text.size()
+        let x = max(4, min(point.x + radius + 7, bounds.width - size.width - 9))
+        let origin = CGPoint(x: x, y: point.y - size.height / 2)
+        return MarkerLabel(text: text, frame: CGRect(origin: origin, size: size).insetBy(dx: -4, dy: -2))
+    }
+
+    private func clearLabelFrame(near frame: CGRect, in viewport: CGRect, avoiding obstacles: [CGRect]) -> CGRect {
+        // Test the closest clear edges in both axes while keeping the plotted marker fixed.
+        let gap: CGFloat = 0.5
+        let xs = [frame.minX] + obstacles.flatMap { [$0.minX - frame.width - gap, $0.maxX + gap] }
+        let ys = [frame.minY] + obstacles.flatMap { [$0.minY - frame.height - gap, $0.maxY + gap] }
+        var closest = frame
+        var closestDistance = CGFloat.infinity
+        for x in xs {
+            for y in ys {
+                let distance = hypot(x - frame.minX, y - frame.minY)
+                guard distance < closestDistance else { continue }
+                let candidate = CGRect(origin: CGPoint(x: x, y: y), size: frame.size)
+                guard viewport.contains(candidate),
+                      !obstacles.contains(where: { $0.intersects(candidate) }) else { continue }
+                closest = candidate
+                closestDistance = distance
+            }
+        }
+        return closest
+    }
+
     private func marker(_ point: CGPoint, label: String, color: UIColor, selected: Bool = false, in context: CGContext) {
         guard bounds.insetBy(dx: -20, dy: -20).contains(point) else { return }
+        let layout = markerLabel(at: point, title: label, radius: selected ? 9 : 5)
+        drawMarker(at: point, label: layout, color: color, selected: selected, in: context)
+    }
+
+    private func drawMarker(at point: CGPoint, label: MarkerLabel, color: UIColor, selected: Bool, in context: CGContext) {
         let radius: CGFloat = selected ? 9 : 5
         let circle = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
         context.setFillColor(color.cgColor)
@@ -364,18 +430,8 @@ final class RouteAmendmentMapOverlay: UIView {
             context.fillEllipse(in: circle.insetBy(dx: 3, dy: 3))
         }
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.preferredFont(forTextStyle: .caption1),
-            .foregroundColor: UIColor.label
-        ]
-        let text = NSAttributedString(string: label, attributes: attributes)
-        let size = text.size()
-        let x = max(4, min(point.x + radius + 7, bounds.width - size.width - 9))
-        let origin = CGPoint(x: x, y: point.y - size.height / 2)
         UIColor.systemBackground.withAlphaComponent(0.92).setFill()
-        UIBezierPath(
-            roundedRect: CGRect(origin: origin, size: size).insetBy(dx: -4, dy: -2), cornerRadius: 5
-        ).fill()
-        text.draw(at: origin)
+        UIBezierPath(roundedRect: label.frame, cornerRadius: 5).fill()
+        label.text.draw(at: CGPoint(x: label.frame.minX + 4, y: label.frame.minY + 2))
     }
 }

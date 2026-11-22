@@ -1669,6 +1669,46 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder() throws {
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        let wasEnabled = voiceOver.isEnabled
+        if wasEnabled { try voiceOver.disable() }
+        defer {
+            if wasEnabled && !voiceOver.isEnabled { try? voiceOver.enable() }
+            if !wasEnabled && voiceOver.isEnabled { try? voiceOver.disable() }
+        }
+
+        let app = try launchManualAmendmentReview()
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        tapAmendmentControl(app.buttons.matching(identifier: "check-amendment-leg").firstMatch, in: console)
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+
+        try voiceOver.enable()
+        var speech: [String] = []
+        defer {
+            let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+            attachment.name = "Manual amendment VoiceOver speech"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        if let current = try? voiceOver.currentSpeech().utterance { speech.append(current) }
+        for _ in 0..<38 {
+            let utterance = try voiceOver.moveForward().utterance
+            speech.append(utterance)
+            if utterance.localizedCaseInsensitiveContains("Flight time seconds") { break }
+        }
+
+        let minutes = try XCTUnwrap(speech.firstIndex {
+            $0.localizedCaseInsensitiveContains("Flight time minutes")
+        })
+        let seconds = try XCTUnwrap(speech.firstIndex {
+            $0.localizedCaseInsensitiveContains("Flight time seconds")
+        })
+        XCTAssertLessThan(minutes, seconds)
+    }
+
+    @MainActor
     func testManualAmendmentRejectsOutOfRangeExactEntryWhileTyping() throws {
         let app = try launchManualAmendmentReview()
         let console = app.descendants(matching: .any)["route-amendment-console"]

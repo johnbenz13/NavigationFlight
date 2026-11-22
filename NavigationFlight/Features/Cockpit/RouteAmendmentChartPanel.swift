@@ -315,6 +315,7 @@ struct RouteAmendmentChartPanel: View {
             .focused($swiftUIFocus, equals: field)
             .font(large ? .title2.weight(.bold).monospacedDigit() : .subheadline)
             .multilineTextAlignment(large ? .center : .leading)
+            .accessibilityLabel(fieldTitle(field))
             .accessibilityIdentifier("amendment-field-\(field.rawValue)")
     }
 

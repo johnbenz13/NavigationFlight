@@ -1747,8 +1747,7 @@ final class NavigationFlightUITests: XCTestCase {
         retry.tap()
         let pending = app.descendants(matching: .any)["pending-amendment-pencil"].firstMatch
         XCTAssertTrue(pending.waitForExistence(timeout: 10))
-        XCTAssertGreaterThanOrEqual(pending.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(pending.frame.height, 44)
+        assertPendingTapTarget(pending)
         assertCompactPendingDepartureHeader(in: app)
         let identify = app.buttons["waypoint-identified"]
         XCTAssertTrue(identify.exists)
@@ -1787,12 +1786,21 @@ final class NavigationFlightUITests: XCTestCase {
         let position = app.staticTexts["pending-departure-leg-position"]
         let route = app.descendants(matching: .any)["pending-departure-leg-route"].firstMatch
         XCTAssertEqual(position.label, "LEG 1 OF 25")
-        XCTAssertEqual(route.label, "From שפיים to Departure point")
+        let routeLabel = route.label.replacingOccurrences(of: "\u{2068}", with: "")
+            .replacingOccurrences(of: "\u{2069}", with: "")
+        XCTAssertEqual(routeLabel, "From שפיים to Departure point")
         XCTAssertTrue(position.isHittable)
         XCTAssertTrue(route.isHittable)
         let mapTools = app.buttons["Map tools"].firstMatch
-        XCTAssertGreaterThanOrEqual(mapTools.frame.width, 44)
-        XCTAssertGreaterThanOrEqual(mapTools.frame.height, 44)
+        assertPendingTapTarget(mapTools)
+    }
+
+    @MainActor
+    private func assertPendingTapTarget(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let frame = element.frame
+        // XCUI frame conversion can represent an exact 44-point extent just below 44.
+        XCTAssertGreaterThanOrEqual(frame.width, 43.99, file: file, line: line)
+        XCTAssertGreaterThanOrEqual(frame.height, 43.99, file: file, line: line)
     }
 
     @MainActor

@@ -23,14 +23,18 @@ enum ChartSnapshotUITestFixture {
     }
 
     static func install(_ edition: String, in store: ChartSnapshotStore) async throws {
+        let fixture = try stage(edition)
+        defer { try? FileManager.default.removeItem(at: fixture.resources.bundleRoot) }
+        try await store.install(from: fixture.resources, pin: fixture.pin)
+    }
+
+    static func stage(_ edition: String, amendment: String? = nil) throws -> (resources: ChartResources, pin: ChartSnapshotPin) {
         let isFirst = edition == "A"
         let releaseID = "ui-fixture-\(edition.lowercased())"
         let root = URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let charts = root.appending(path: "AIPCharts", directoryHint: .isDirectory)
         let pdfs = charts.appending(path: "pdf", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: pdfs, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
-
         let entries = isFirst ? ["fixture-field", "retired-field"] : ["fixture-field"]
         var aerodromes: [[String: Any]] = []
         var assets: [[String: Any]] = []
@@ -68,7 +72,7 @@ enum ChartSnapshotUITestFixture {
         }
         let data = try JSONSerialization.data(withJSONObject: [
             "schemaVersion": 2, "releaseId": releaseID,
-            "snapshot": ["amendment": edition, "effectiveDate": "2026-11-22"],
+            "snapshot": ["amendment": amendment ?? edition, "effectiveDate": "2026-11-22"],
             "aerodromes": aerodromes, "artifacts": assets,
         ], options: .sortedKeys)
         try data.write(to: charts.appending(path: "index.json"))
@@ -79,7 +83,7 @@ enum ChartSnapshotUITestFixture {
             sequence: seed.sequence + (isFirst ? 1 : 2),
             manifestSha256: ChartSnapshotVerification.digest(data)
         )
-        try await store.install(from: ChartResources(bundleRoot: root), pin: pin)
+        return (ChartResources(bundleRoot: root), pin)
     }
 }
 

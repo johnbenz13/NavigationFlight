@@ -163,28 +163,15 @@ final class ChartLibraryUITests: XCTestCase {
         capture("fixture-b-after-offline-relaunch")
     }
 
-    func testWideSettingsOrNarrowMoreAndRetainedSection() {
+    func testSettingsInsideMoreAndRetainedChartsSection() {
         let app = launch()
         section("Charts", in: app).tap()
         XCTAssertTrue(app.staticTexts["Airports"].waitForExistence(timeout: 5))
-        capture("shell-charts")
-
-        let more = app.buttons["More"].firstMatch
-        if app.frame.width < 390 || more.isHittable {
-            XCTAssertTrue(more.isHittable)
-            more.tap()
-            XCTAssertTrue(app.buttons["more-settings"].waitForExistence(timeout: 5))
-            capture("more")
-            app.buttons["more-settings"].tap()
-            XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
-            capture("more-settings")
-            app.navigationBars.buttons["More"].firstMatch.tap()
-            XCTAssertTrue(app.buttons["more-settings"].waitForExistence(timeout: 5))
-        } else {
-            XCTAssertFalse(more.exists)
-            section("Settings", in: app).tap()
-            XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
-        }
+        section("More", in: app).tap()
+        app.buttons["more-settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons["More"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["more-settings"].waitForExistence(timeout: 5))
         section("Charts", in: app).tap()
         XCTAssertTrue(app.staticTexts["Airports"].waitForExistence(timeout: 5))
     }

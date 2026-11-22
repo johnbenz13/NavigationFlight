@@ -34,7 +34,26 @@ struct NavigationFlightApp: App {
     @UIApplicationDelegateAdaptor(NavigationFlightAppDelegate.self) private var appDelegate
 
     @State private var settingsController = SettingsController(store: Self.settingsStore())
-    @State private var chartSnapshotStore = ChartSnapshotStore(directory: Self.chartSnapshotDirectory)
+    @State private var chartSnapshotStore: ChartSnapshotStore
+    @State private var chartUpdates: AIPChartUpdates
+
+    init() {
+        let directory = Self.chartSnapshotDirectory
+        let store = ChartSnapshotStore(directory: directory)
+        _chartSnapshotStore = State(initialValue: store)
+        _chartUpdates = State(initialValue: AIPChartUpdates(
+            store: store,
+            service: Self.chartDownloadService(),
+            cache: directory.appending(path: "update-index.json")
+        ))
+    }
+
+    private static func chartDownloadService() -> AIPChartDownloadService {
+#if DEBUG && targetEnvironment(simulator)
+        if let service = AIPChartDownloadFixture.service() { return service }
+#endif
+        return AIPChartDownloadService()
+    }
 
     private static var chartSnapshotDirectory: URL {
 #if DEBUG
@@ -72,7 +91,7 @@ struct NavigationFlightApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(settingsController: settingsController, chartSnapshotStore: chartSnapshotStore)
+            RootView(settingsController: settingsController, chartSnapshotStore: chartSnapshotStore, chartUpdates: chartUpdates)
         }
     }
 }

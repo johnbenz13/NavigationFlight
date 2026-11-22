@@ -3,16 +3,15 @@ import SwiftUI
 struct RootView: View {
     private let settingsController: SettingsController
     @State private var appState: AppFeatureState
-    @State private var shellWidth: CGFloat = 0
     @State private var tabBarPlacement: TabBarPlacement?
-    @State private var showsSettingsFromMore = false
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var moreDestination = MoreDestination.root
+    private let chartUpdates: AIPChartUpdates
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.scenePhase) private var scenePhase
     private let chartSnapshotStore: ChartSnapshotStore
     @State private var chartSnapshot: ChartSnapshot?
     @State private var hasLoadedChartSnapshot = false
 #if DEBUG && targetEnvironment(simulator)
-    @Environment(\.scenePhase) private var scenePhase
     @State private var installedChartFixtureEdition: String?
 #endif
 
@@ -34,9 +33,10 @@ struct RootView: View {
     private let debugRecordingStatus: RecordingStatus?
     private let debugFlightsActiveRecordingID: UUID?
 
-    init(settingsController: SettingsController, chartSnapshotStore: ChartSnapshotStore) {
+    init(settingsController: SettingsController, chartSnapshotStore: ChartSnapshotStore, chartUpdates: AIPChartUpdates) {
         self.settingsController = settingsController
         self.chartSnapshotStore = chartSnapshotStore
+        self.chartUpdates = chartUpdates
         let defaultLibraryDirectory = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -161,6 +161,14 @@ struct RootView: View {
         if environment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] == "flights" {
             selectedAppSection = .flights
         }
+#if targetEnvironment(simulator)
+        if environment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] == "downloads",
+           environment["NAVIGATION_FLIGHT_UI_TEST_DOWNLOADS"] != nil,
+           environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil {
+            selectedAppSection = .settings
+            _moreDestination = State(initialValue: .downloads)
+        }
+#endif
 #endif
         var initialAppState = AppFeatureState(
             selectedAppSection: selectedAppSection,
@@ -298,7 +306,15 @@ struct RootView: View {
             let snapshot = await chartSnapshotStore.currentSnapshot()
             guard !Task.isCancelled else { return }
             updateChartSnapshot(snapshot)
+            chartUpdates.observeInstalled(snapshot)
             hasLoadedChartSnapshot = true
+            chartUpdates.refresh()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active && hasLoadedChartSnapshot { chartUpdates.refresh() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+            chartUpdates.cancel()
         }
 #if DEBUG && targetEnvironment(simulator)
         .task(id: scenePhase) {
@@ -383,39 +399,40 @@ struct RootView: View {
             }
 
             Tab("Charts", systemImage: "document", value: AppFeatureState.AppSection.charts) {
-                ChartLibraryView(catalog: chartCatalog, state: $appState.chartLibrary)
+                ChartLibraryView(
+                    catalog: chartCatalog,
+                    state: $appState.chartLibrary,
+                    onUpdate: chartUpdates.offer == nil ? nil : { openMore(.downloads) }
+                )
                     .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
 
-            Tab(
-                usesMoreTab ? "More" : "Settings",
-                systemImage: usesMoreTab ? "ellipsis" : "gearshape",
-                value: AppFeatureState.AppSection.settings
-            ) {
+            Tab("More", systemImage: "ellipsis", value: AppFeatureState.AppSection.settings) {
                 Group {
-                    if usesMoreTab && !showsSettingsFromMore {
-                        MoreSectionsView {
-                            showsSettingsFromMore = true
+                    switch moreDestination {
+                    case .root:
+                        MoreSectionsView(hasUpdate: chartUpdates.offer != nil) {
+                            moreDestination = .downloads
+                        } onSettings: {
+                            moreDestination = .settings
                         }
-                    } else {
-                        SettingsFeatureView(
-                            controller: settingsController,
-                            onBackToMore: usesMoreTab ? { showsSettingsFromMore = false } : nil
-                        )
+                    case .downloads:
+                        AIPDownloadsView(updates: chartUpdates) {
+                            moreDestination = .root
+                        } onOpenCharts: {
+                            appState.selectAppSection(.charts)
+                        }
+                    case .settings:
+                        SettingsFeatureView(controller: settingsController, onBackToMore: { moreDestination = .root })
                     }
                 }
                 .modifier(AppTabEnvironment(placement: $tabBarPlacement, contentTextSize: dynamicTypeSize))
             }
+            .badge(chartUpdates.offer == nil ? nil : Text(verbatim: "•"))
         }
         .tabViewStyle(.sidebarAdaptable)
         .defaultAdaptableTabBarPlacement(dynamicTypeSize.isAccessibilitySize ? .sidebar : .automatic)
         .dynamicTypeSize(tabBarTextSize)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { shellWidth = $0 }
-        .onChange(of: usesMoreTab) { _, usesMore in
-            if usesMore && appState.selectedAppSection == .settings {
-                showsSettingsFromMore = true
-            }
-        }
         .fullScreenCover(item: chartSelection, onDismiss: {
             appState.chartLibrary.didDismissChart()
         }) { presentation in
@@ -436,6 +453,7 @@ struct RootView: View {
             guard !Task.isCancelled, appState.selectedAppSection == .charts,
                   appState.chartLibrary.presentedChartID == nil else { return }
             updateChartSnapshot(snapshot)
+            chartUpdates.observeInstalled(snapshot)
         }
         .onAppear {
             synchronizeIdleTimer()
@@ -814,12 +832,12 @@ struct RootView: View {
         return dynamicTypeSize
     }
 
-    private var usesMoreTab: Bool {
-        AppFeatureState.usesMoreTab(
-            availableWidth: shellWidth,
-            compact: horizontalSizeClass == .compact,
-            topBar: tabBarPlacement == .topBar
-        )
+    private enum MoreDestination { case root, downloads, settings }
+
+    private func openMore(_ destination: MoreDestination) {
+        guard appState.canSwitchAppSection else { return }
+        moreDestination = destination
+        appState.selectAppSection(.settings)
     }
 
     private struct PresentedChart: Identifiable {
@@ -880,9 +898,6 @@ struct RootView: View {
             set: { selection in
                 guard selection != appState.selectedAppSection, appState.canSwitchAppSection else { return }
                 appState.selectAppSection(selection)
-                if appState.selectedAppSection == .settings && !usesMoreTab {
-                    showsSettingsFromMore = true
-                }
             }
         )
     }

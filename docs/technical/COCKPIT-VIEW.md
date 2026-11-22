@@ -209,3 +209,11 @@ There is no `@Binding` to `Flight`. Operational mutations remain behind `Cockpit
 - [`CockpitPresentationAdapter.swift`](../../NavigationFlight/Features/Cockpit/CockpitPresentationAdapter.swift) — derives cockpit and auxiliary presentation values.
 - [`OfflineAviationMapView.swift`](../../NavigationFlight/Map/OfflineAviationMapView.swift) — renders the map and interactive callouts.
 - [`AviationMapPresentation.swift`](../../NavigationFlight/Map/AviationMapPresentation.swift) — map presentation model and factory.
+
+## Route amendment map input
+
+The pencil opens the draft console in the existing bottom panel or landscape rail. Pause returns the normal Cockpit controls, and Play reopens the current draft step. While editing, the MapLibre bridge routes taps exclusively to the draft and keeps the base chart and map gestures available. The map adapter proposes viewport hits and renders the retained, bypassed, and replacement segments. The draft validates each route occurrence and shares the same intents for tap, map-center placement, and accessible waypoint selection.
+
+While amending, Cockpit keeps the standard console footprint and pins a read-only current-leg panel above the draft editor. Its elapsed timer uses the active leg's original start, and its ETA uses the same operational destination value as the resting Cockpit. The panel marks an exceeded ETA visually. During an untimed handoff it shows that the leg has not started.
+
+The draft editor presents departure, via points and return in route order. Selecting a via point in the console updates the selection on the map. Finish here reuses the last plotted point as the return when it has a valid forward route occurrence, moves directly to geometry review and records one undoable sketch change. When the location matches several eligible occurrences, the pilot chooses the intended route leg before entering review.

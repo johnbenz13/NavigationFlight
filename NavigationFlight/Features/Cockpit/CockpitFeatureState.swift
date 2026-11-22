@@ -59,6 +59,25 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var areDriftLinesVisible = true
     private var navigationGeneration: UUID?
     private(set) var pendingReachUndo: PendingReachUndo?
+    private(set) var routeAmendmentDraft: RouteAmendmentDraft?
+
+    var routeForAmendment: RouteAmendmentRoute? {
+        guard let flightPlan else { return nil }
+        return flight?.routeForAmendment(in: flightPlan)
+    }
+
+    mutating func updateRouteAmendment(_ intent: RouteAmendmentDraft.Intent) {
+        if case .discard = intent {
+            routeAmendmentDraft = nil
+            return
+        }
+        guard let flight, let route = routeForAmendment else { return }
+        if case .open = intent, routeAmendmentDraft == nil {
+            routeAmendmentDraft = RouteAmendmentDraft(flightID: flight.id)
+        }
+        guard routeAmendmentDraft?.flightID == flight.id else { return }
+        routeAmendmentDraft?.update(intent, route: route)
+    }
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
         self.progressionPolicy = progressionPolicy
@@ -121,6 +140,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             navigationGeneration = nil
             areDriftLinesVisible = true
             pendingReachUndo = nil
+            routeAmendmentDraft = nil
         }
     }
 
@@ -142,6 +162,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         areDriftLinesVisible = cockpitContext?.areDriftLinesVisible ?? true
         createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
+        routeAmendmentDraft = nil
     }
 
     mutating func toggleDriftLines() {

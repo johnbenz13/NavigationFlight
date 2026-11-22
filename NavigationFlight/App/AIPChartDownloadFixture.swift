@@ -7,7 +7,7 @@ enum AIPChartDownloadFixture {
         let env = ProcessInfo.processInfo.environment
         guard env["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil,
               let mode = env["NAVIGATION_FLIGHT_UI_TEST_DOWNLOADS"] else { return nil }
-        return makeService(mode: mode)
+        return makeService(mode: mode, assetDelay: mode == "held" ? .seconds(14) : .seconds(5))
     }
 
     static func makeService(mode: String, assetDelay: Duration = .seconds(5)) -> AIPChartDownloadService {
@@ -30,8 +30,8 @@ enum AIPChartDownloadFixture {
                 "totalPdfBytes": pdfs.values.reduce(0) { $0 + $1.count },
             ]
             let payload = try JSONSerialization.data(withJSONObject: [
-                "schemaVersion": 1, "dataset": "aip-charts", "generation": 1,
-                "releases": mode == "current" ? [] : [offer],
+                "schemaVersion": 1, "dataset": "aip-charts", "generation": mode == "retracted" ? 2 : 1,
+                "releases": mode == "current" || mode == "retracted" ? [] : [offer],
             ], options: .sortedKeys)
             let signer = try Curve25519.Signing.PrivateKey(rawRepresentation: Data(repeating: 29, count: 32))
             let index = try JSONSerialization.data(withJSONObject: [
@@ -65,11 +65,18 @@ enum AIPChartDownloadFixture {
 
         func read(_ url: URL, _ limit: Int, _ progress: AIPChartDownloadService.Progress) async throws -> Data {
             if mode == "offline" { throw URLError(.notConnectedToInternet) }
-            if url == AIPChartUpdateIndex.endpoint { return index }
+            if url == AIPChartUpdateIndex.endpoint {
+                if mode == "held" { try await Task.sleep(for: .seconds(7)) }
+                return index
+            }
             if url.lastPathComponent == "manifest.json" { return manifest }
             guard let pdf = pdfs[url.lastPathComponent], pdf.count <= limit else { throw URLError(.fileDoesNotExist) }
             await progress(pdf.count * 40 / 100)
             try await Task.sleep(for: assetDelay)
+            if mode == "transfer-failure", !hasFailedVerification {
+                hasFailedVerification = true
+                throw URLError(.networkConnectionLost)
+            }
             if mode == "verification-failure", !hasFailedVerification {
                 hasFailedVerification = true
                 return Data(repeating: 0, count: pdf.count)

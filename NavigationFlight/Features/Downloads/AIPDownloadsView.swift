@@ -5,6 +5,8 @@ struct AIPDownloadsView: View {
     let onBack: () -> Void
     let onOpenCharts: () -> Void
     @State private var confirmation: AIPChartUpdates.Offer?
+    @State private var returnFocusRequest: UUID?
+    @AccessibilityFocusState(for: .voiceOver) private var downloadFocused: Bool
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -47,7 +49,10 @@ struct AIPDownloadsView: View {
             }
         }
         .alert("Download chart update?", isPresented: confirmationShown, presenting: confirmation) { offer in
-            Button("Cancel", role: .cancel) { confirmation = nil }
+            Button("Cancel", role: .cancel) {
+                confirmation = nil
+                if UIAccessibility.isVoiceOverRunning { returnFocusRequest = UUID() }
+            }
             Button("Download") { updates.confirm(offer) }
         } message: { offer in
             Text("Download edition \(offer.amendment) (\(size(offer.totalPdfBytes))) for offline use.")
@@ -119,12 +124,15 @@ struct AIPDownloadsView: View {
         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 5) {
             edition("Installed edition", updates.installed?.catalog.snapshot.amendment ?? "None")
             if let offer = displayOffer {
-                edition(updates.discovery == .failed && updates.transfer == .idle ? "Last seen edition" : "Available edition", offer.amendment)
+                let showingLastSeen = updates.transfer == .idle
+                    && (updates.discovery == .checking || updates.discovery == .failed)
+                edition(showingLastSeen ? "Last seen edition" : "Available edition", offer.amendment)
                 if !updates.transfer.isRunning { edition("Download size", size(offer.totalPdfBytes)) }
             }
         }
         .frame(maxWidth: compact ? .infinity : 286, alignment: .leading)
         .font(.subheadline)
+        .accessibilityElement(children: .contain)
     }
 
     private func edition(_ name: String, _ value: String) -> some View {
@@ -177,6 +185,15 @@ struct AIPDownloadsView: View {
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.capsule)
                 .accessibilityIdentifier("downloads-confirm")
+                .accessibilityFocused($downloadFocused)
+                .task(id: returnFocusRequest) {
+                    guard returnFocusRequest != nil else { return }
+                    // The native alert moves focus as it dismisses.
+                    try? await Task.sleep(for: .milliseconds(400))
+                    guard !Task.isCancelled, confirmation == nil else { return }
+                    downloadFocused = true
+                    returnFocusRequest = nil
+                }
             } else if updates.discovery == .current {
                 secondaryButton("Check again", id: "downloads-check") { updates.refresh(force: true) }
             }

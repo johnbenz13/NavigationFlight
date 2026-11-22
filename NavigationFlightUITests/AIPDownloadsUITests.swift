@@ -172,6 +172,150 @@ final class AIPDownloadsUITests: XCTestCase {
         XCTAssertTrue(download.isHittable)
     }
 
+    func testCheckingVerifyingAndTransferAcrossTabs() {
+        exerciseTransientDownloadStates(orientation: .portrait)
+    }
+
+    func testTransientDownloadStatesInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad)
+        exerciseTransientDownloadStates(orientation: .landscapeLeft)
+    }
+
+    private func exerciseTransientDownloadStates(orientation: UIDeviceOrientation) {
+        XCUIDevice.shared.orientation = orientation
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = makeApp(mode: "held")
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] = "downloads"
+        app.launch()
+        waitForStatus("Checking for updates", app)
+        capture("checking-without-offer")
+        waitForStatus("Update available", app, timeout: 15)
+        app.buttons["downloads-back"].tap()
+        app.buttons["more-downloads"].tap()
+        waitForStatus("Checking for updates", app)
+        XCTAssertTrue(app.staticTexts["Last known update shown while checking."].exists)
+        XCTAssertTrue(app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Last seen edition")).firstMatch.exists)
+        capture("checking-with-known-offer")
+        waitForStatus("Update available", app, timeout: 15)
+
+        startDownload(app)
+        assertHeldProgress(app)
+        tab("Charts", app).tap()
+        XCTAssertTrue(app.buttons["charts-aip-update"].waitForExistence(timeout: 5))
+        app.buttons["charts-aip-update"].tap()
+        assertHeldProgress(app)
+        capture("progress-after-switching-tabs")
+        waitForStatus("Verifying charts", app, timeout: 20)
+        capture("verifying-charts")
+        waitForStatus("Update installed", app, timeout: 15)
+        app.buttons["downloads-open-charts"].tap()
+        openFixturePDF(app)
+    }
+
+    func testTransferFailureKeepsOfferAndAllowsRetry() {
+        let app = makeApp(mode: "transfer-failure")
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] = "downloads"
+        app.launch()
+        waitForStatus("Update available", app)
+        startDownload(app)
+        waitForStatus("Download failed", app, timeout: 15)
+        XCTAssertTrue(app.staticTexts["The installed edition is still available offline."].exists)
+        XCTAssertEqual(app.buttons["downloads-confirm"].label, "Retry download")
+        capture("download-failed")
+        startDownload(app)
+        waitForStatus("Update installed", app, timeout: 15)
+    }
+
+    func testVoiceOverDownloadsFocus() async throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("The VoiceOver testing service requires iOS 27.") }
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        let wasEnabled = voiceOver.isEnabled
+        try voiceOver.enable()
+        defer { if !wasEnabled { try? voiceOver.disable() } }
+
+        var speech: [String] = []
+
+        let app = makeApp(mode: "held")
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_INITIAL_SECTION"] = "downloads"
+        app.launch()
+        waitForStatus("Update available", app, timeout: 18)
+        let tutorial = app.alerts["VoiceOver Gestures"]
+        if tutorial.exists {
+            tutorial.buttons["OK"].tap()
+            if tutorial.exists { tutorial.buttons["OK"].doubleTap() }
+            XCTAssertTrue(tutorial.waitForNonExistence(timeout: 6))
+        }
+
+        for phrase in ["Israel AIP charts", "Update available", "Installed edition", "Available edition", "Download size", "Download update"] {
+            if try !findSpoken(phrase, with: voiceOver, recording: &speech) {
+                captureSpeech(speech)
+                XCTFail("VoiceOver omitted \(phrase)")
+                return
+            }
+        }
+        captureSpeech(speech)
+
+        app.buttons["downloads-confirm"].doubleTap()
+        let alert = app.alerts["Download chart update?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 6))
+        XCTAssertTrue(try findSpoken("Download chart update", with: voiceOver, recording: &speech))
+        XCTAssertTrue(try findSpoken("Cancel", with: voiceOver, recording: &speech))
+        XCTAssertTrue(try findSpoken("Download Button", with: voiceOver, recording: &speech))
+        capture("voiceover-confirmation")
+        alert.buttons["Cancel"].tap()
+        if alert.exists { alert.buttons["Cancel"].doubleTap() }
+        XCTAssertTrue(alert.waitForNonExistence(timeout: 6))
+        var focusRestored = false
+        for _ in 0..<8 {
+            try await Task.sleep(for: .milliseconds(250))
+            guard let restored = try? voiceOver.currentSpeech().utterance else { continue }
+            speech.append("After cancel: \(restored)")
+            if restored.localizedCaseInsensitiveContains("Download update") {
+                focusRestored = true
+                break
+            }
+        }
+        captureSpeech(speech)
+        XCTAssertTrue(focusRestored, "VoiceOver did not return to Download update.")
+        capture("voiceover-back-to-downloads")
+    }
+
+    @available(iOS 27.0, *)
+    private func findSpoken(
+        _ phrase: String,
+        with voiceOver: XCUIVoiceOverService,
+        recording speech: inout [String]
+    ) throws -> Bool {
+        for step in 0..<20 {
+            let output = step == 0 ? try? voiceOver.currentSpeech() : try voiceOver.moveForward()
+            guard let output else { continue }
+            let utterance = output.utterance
+            speech.append(utterance)
+            if speechKey(utterance).contains(speechKey(phrase)) { return true }
+        }
+        return false
+    }
+
+    private func speechKey(_ value: String) -> String {
+        String(value.lowercased().filter { $0.isLetter || $0.isNumber })
+    }
+
+    private func captureSpeech(_ speech: [String]) {
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "VoiceOver utterances"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func assertHeldProgress(_ app: XCUIApplication) {
+        let indicator = app.progressIndicators["Chart download progress"].firstMatch
+        let value = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "value IN %@", ["39 percent", "40 percent"]), object: indicator
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [value], timeout: 7), .completed)
+    }
+
     private func startDownload(_ app: XCUIApplication) {
         app.buttons["downloads-confirm"].tap()
         app.alerts["Download chart update?"].buttons["Download"].tap()

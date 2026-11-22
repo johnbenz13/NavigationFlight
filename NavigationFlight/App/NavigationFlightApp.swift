@@ -39,13 +39,26 @@ struct NavigationFlightApp: App {
 
     init() {
         let directory = Self.chartSnapshotDirectory
-        let store = ChartSnapshotStore(directory: directory, bundledResources: Self.bundledCharts(in: directory))
+        let holdVerification = Self.holdsChartVerificationForReview
+        let store = ChartSnapshotStore(directory: directory, bundledResources: Self.bundledCharts(in: directory)) {
+            if holdVerification { Thread.sleep(forTimeInterval: 7) }
+        }
         _chartSnapshotStore = State(initialValue: store)
         _chartUpdates = State(initialValue: AIPChartUpdates(
             store: store,
             service: Self.chartDownloadService(),
             cache: directory.appending(path: "update-index.json")
         ))
+    }
+
+    private static var holdsChartVerificationForReview: Bool {
+#if DEBUG && targetEnvironment(simulator)
+        let environment = ProcessInfo.processInfo.environment
+        return environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil
+            && environment["NAVIGATION_FLIGHT_UI_TEST_DOWNLOADS"] == "held"
+#else
+        return false
+#endif
     }
 
     private static func bundledCharts(in directory: URL) -> ChartResources {

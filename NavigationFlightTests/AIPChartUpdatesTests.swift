@@ -85,16 +85,42 @@ struct AIPChartUpdatesTests {
         #expect(await store.currentSnapshot()?.pin == original.pin)
     }
 
+    @Test("An authenticated retraction clears the offer and prevents stale confirmation")
+    func retractedOfferCannotBeConfirmed() async throws {
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ChartSnapshotStore(directory: root)
+        let initial = AIPChartDownloadFixture.makeService(mode: "available", assetDelay: .zero)
+        let retracted = AIPChartDownloadFixture.makeService(mode: "retracted", assetDelay: .zero)
+        let control = ControlledRead(read: initial.read)
+        let service = AIPChartDownloadService(publicKey: initial.publicKey) { url, limit, progress in
+            try await control.read(url, limit, progress)
+        }
+        let owner = AIPChartUpdates(store: store, service: service)
+        let installed = try #require(await store.currentSnapshot())
+        owner.observeInstalled(installed)
+        await owner.refresh()?.value
+        let stale = try #require(owner.offer)
+        await control.replace(with: retracted.read)
+        await owner.refresh(force: true)?.value
+        #expect(owner.discovery == .current)
+        #expect(owner.offer == nil)
+        #expect(owner.confirm(stale) == nil)
+        #expect(owner.transfer == .idle)
+        #expect(await store.currentSnapshot()?.pin == installed.pin)
+    }
+
     private func temporaryDirectory() -> URL {
         URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
     }
 
     private actor ControlledRead {
-        let readOnline: AIPChartDownloadService.Read
+        var readOnline: AIPChartDownloadService.Read
         var offline = false
 
         init(read: @escaping AIPChartDownloadService.Read) { readOnline = read }
         func goOffline() { offline = true }
+        func replace(with read: @escaping AIPChartDownloadService.Read) { readOnline = read }
 
         func read(_ url: URL, _ limit: Int, _ progress: AIPChartDownloadService.Progress) async throws -> Data {
             guard !offline else { throw URLError(.notConnectedToInternet) }

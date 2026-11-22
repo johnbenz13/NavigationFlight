@@ -1110,6 +1110,27 @@ struct NavigationFlightTests {
         #expect(state.activeLegStartChecklist == nil)
     }
 
+    @Test func amendmentLegChooserDistinguishesRepeatedOriginalOccurrences() throws {
+        let base = try twoLegFlight()
+        let first = base.legs[0]
+        let second = base.legs[1]
+        let repeated = NavigationLeg(id: UUID(), departure: first.departure, arrival: first.arrival,
+                                     windOverride: first.windOverride, remark: first.remark)
+        let route = RouteAmendmentRoute(
+            legs: [first, second, repeated],
+            firstAvailable: .init(legIndex: 0, legID: first.id, fraction: 0)
+        )
+        let draft = RouteAmendmentDraft(flightID: UUID())
+        let name = try #require(route.originalLeg(first.id)?.name)
+        let choices = draft.legChoices(on: route, originalsOnly: true)
+        let rows = draft.legChoiceRows(choices, on: route)
+        #expect(rows.map(\.id) == choices)
+        #expect(rows[0].name == "Leg 1 · \(name)")
+        #expect(rows[2].name == "Leg 3 · \(name)")
+        #expect(rows[1].name == route.originalLeg(second.id)?.name)
+        #expect(draft.legChoiceRows([.original(first.id)], on: route).first?.name == name)
+    }
+
     @Test func amendmentOriginalReferenceUsesFullPlannedValuesInTheFlightMode() throws {
         let base = try twoLegFlight()
         let leg = base.legs[0]

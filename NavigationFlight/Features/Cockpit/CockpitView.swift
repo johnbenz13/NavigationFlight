@@ -198,7 +198,8 @@ struct CockpitView: View {
     var routeForAmendment: RouteAmendmentRoute?
     var routeAmendmentDraft: RouteAmendmentDraft?
     @FocusState private var amendmentField: RouteAmendmentLegEntry.Field?
-    private var isEditingAmendmentField: Bool { amendmentField != nil }
+    @State private var nativeAmendmentField: RouteAmendmentLegEntry.Field?
+    private var isEditingAmendmentField: Bool { amendmentField != nil || nativeAmendmentField != nil }
     @State private var restingLayoutSize: CGSize?
     var onRouteAmendment: (RouteAmendmentDraft.Intent) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) async -> Void = { _, _ in }
@@ -526,10 +527,16 @@ struct CockpitView: View {
             }
         }
         .onChange(of: routeAmendmentDraft?.legPanel) { _, panel in
-            if panel != .editor { amendmentField = nil }
+            if panel != .editor {
+                amendmentField = nil
+                nativeAmendmentField = nil
+            }
         }
         .onChange(of: routeAmendmentDraft?.isPaused) { _, paused in
-            if paused == true { amendmentField = nil }
+            if paused == true {
+                amendmentField = nil
+                nativeAmendmentField = nil
+            }
         }
     }
 
@@ -719,7 +726,8 @@ struct CockpitView: View {
                     landscape: isLandscape,
                     camera: preservedMapCamera,
                     onIntent: onRouteAmendment,
-                    focus: $amendmentField
+                    swiftUIFocus: $amendmentField,
+                    nativeFocus: $nativeAmendmentField
                 )
                 .accessibilitySortPriority(110)
             }

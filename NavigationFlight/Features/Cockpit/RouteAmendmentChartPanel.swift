@@ -7,7 +7,10 @@ struct RouteAmendmentChartPanel: View {
     let landscape: Bool
     let camera: AviationMapCameraState?
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
-    @FocusState.Binding var focus: RouteAmendmentLegEntry.Field?
+    @FocusState.Binding var swiftUIFocus: RouteAmendmentLegEntry.Field?
+    @Binding var nativeFocus: RouteAmendmentLegEntry.Field?
+
+    private var focus: RouteAmendmentLegEntry.Field? { nativeFocus ?? swiftUIFocus }
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var contentHeight: CGFloat = 0
     @State private var footerHeight: CGFloat = 0
@@ -163,8 +166,11 @@ struct RouteAmendmentChartPanel: View {
             cue(.visualReference, placeholder: "Landmark note", entry: editor.entry, invalid: invalid, focused: focus)
         }
         if focus != nil {
-            action("Done", id: "amendment-keyboard-done", fill: Style.action, ink: .white) { focus = nil }
-                .keyboardShortcut(.return, modifiers: [])
+            action("Done", id: "amendment-keyboard-done", fill: Style.action, ink: .white) {
+                swiftUIFocus = nil
+                nativeFocus = nil
+            }
+            .keyboardShortcut(.return, modifiers: [])
         } else {
             if let estimate = editor.estimate { comparison(editor.entry, estimate: estimate) }
             if !compact { saveActions }
@@ -271,9 +277,16 @@ struct RouteAmendmentChartPanel: View {
         }
         return HStack(spacing: 2) {
             if field == .heading || field == .seconds {
-                RouteAmendmentBoundedField(text: text, accepts: { entry.allowsInput($0, for: field) }) {
-                    textField(field, placeholder: placeholder, text: $0, keyboard: keyboard, large: large)
-                }
+                RouteAmendmentBoundedField(
+                    label: fieldTitle(field),
+                    placeholder: placeholder,
+                    keyboard: keyboard,
+                    field: field,
+                    focus: $nativeFocus,
+                    text: text,
+                    accepts: { entry.allowsInput($0, for: field) }
+                )
+                .frame(maxWidth: .infinity, minHeight: 44)
             } else {
                 textField(field, placeholder: placeholder, text: text, keyboard: keyboard, large: large)
             }
@@ -299,7 +312,7 @@ struct RouteAmendmentChartPanel: View {
             .keyboardType(keyboard)
             .autocorrectionDisabled(field != .visualReference)
             .textInputAutocapitalization(field == .visualReference ? .sentences : .never)
-            .focused($focus, equals: field)
+            .focused($swiftUIFocus, equals: field)
             .font(large ? .title2.weight(.bold).monospacedDigit() : .subheadline)
             .multilineTextAlignment(large ? .center : .leading)
             .accessibilityIdentifier("amendment-field-\(field.rawValue)")
@@ -407,15 +420,8 @@ struct RouteAmendmentChartPanel: View {
                 Text(overlap ? "More than one leg matches this point." : "Select an original or proposed leg.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
-            ForEach(choices, id: \.self) { choice in
-                switch choice {
-                case .original(let id):
-                    if let original = route.originalLeg(id) { choiceRow(choice, name: original.name, proposed: false) }
-                case .proposed(let id):
-                    if let leg = draft.reviewLegs(on: route).first(where: { $0.id == id }) {
-                        choiceRow(choice, name: leg.name, proposed: true)
-                    }
-                }
+            ForEach(draft.legChoiceRows(choices, on: route)) { row in
+                choiceRow(row.id, name: row.name, proposed: row.isProposed)
             }
             action("Cancel", id: "cancel-amendment-leg-choice") { onIntent(.closeLegPanel) }
         }

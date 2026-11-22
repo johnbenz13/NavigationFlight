@@ -92,7 +92,7 @@ struct RouteAmendmentReview: View {
 
 extension RouteAmendmentDraft.ReviewLeg {
     var name: String {
-        "\u{2068}\(departureName)\u{2069} → \u{2068}\(arrivalName)\u{2069}"
+        RouteAmendmentRoute.legName(from: departureName, to: arrivalName)
     }
 }
 

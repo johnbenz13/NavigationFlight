@@ -1681,11 +1681,19 @@ final class NavigationFlightUITests: XCTestCase {
         tapChartPanelControl(heading, in: panel)
         heading.typeText("435")
         XCTAssertEqual(heading.value as? String, "43")
+        heading.typeText("\u{8}\u{8}360")
+        XCTAssertEqual(heading.value as? String, "360")
+        heading.typeText("\u{8}\u{8}\u{8}435")
+        XCTAssertEqual(heading.value as? String, "43")
         done.tap()
         XCTAssertEqual(heading.value as? String, "043")
 
         tapChartPanelControl(seconds, in: panel)
         seconds.typeText("78")
+        XCTAssertEqual(seconds.value as? String, "7")
+        seconds.typeText("\u{8}59")
+        XCTAssertEqual(seconds.value as? String, "59")
+        seconds.typeText("\u{8}\u{8}78")
         XCTAssertEqual(seconds.value as? String, "7")
         done.tap()
         XCTAssertEqual(seconds.value as? String, "07")
@@ -1853,6 +1861,7 @@ final class NavigationFlightUITests: XCTestCase {
 
         tapMap(x: 0.426, y: 0.78)
         XCTAssertTrue(app.staticTexts["Full planned flight time"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["\u{2068}שפיים\u{2069} → \u{2068}רידינג\u{2069}"].exists)
         captureAmendmentState("manual-review-original", in: app)
         tapChartPanelControl(app.buttons["close-amendment-original"], in: panel)
 
@@ -1876,6 +1885,48 @@ final class NavigationFlightUITests: XCTestCase {
         tapChartPanelControl(app.buttons["cancel-amendment-leg-choice"], in: panel)
         tapChartPanelControl(app.buttons["cancel-amendment-inspection"], in: panel)
         XCTAssertEqual(selected.exists ? selected.label : nil, selectionBefore)
+    }
+
+    @MainActor
+    func testManualAmendmentChooserIdentifiesRepeatedOriginalOccurrences() throws {
+        let fixture = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: fixture) as? [String: Any])
+        var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+        var route = try XCTUnwrap(navigation["route"] as? [String: Any])
+        var waypoints = try XCTUnwrap(route["waypoints"] as? [[String: Any]])
+        waypoints[2]["name"] = waypoints[0]["name"]
+        waypoints[3]["name"] = waypoints[1]["name"]
+        waypoints[2].removeValue(forKey: "reportingPointReference")
+        waypoints[3].removeValue(forKey: "reportingPointReference")
+        route["waypoints"] = waypoints
+        navigation["route"] = route
+        document["navigation"] = navigation
+        let execution = try XCTUnwrap(document["execution"] as? [String: Any])
+        let legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+        let firstTiming = try XCTUnwrap(legs[0]["noWind"] as? [String: Any])
+        let thirdTiming = try XCTUnwrap(legs[2]["noWind"] as? [String: Any])
+        let firstSeconds = try XCTUnwrap(firstTiming["plannedDurationSeconds"] as? Int)
+        let thirdSeconds = try XCTUnwrap(thirdTiming["plannedDurationSeconds"] as? Int)
+        XCTAssertNotEqual(firstSeconds, thirdSeconds)
+
+        let app = launchCockpit(planData: try JSONSerialization.data(withJSONObject: document))
+        app.buttons["start-leg"].tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        tapAmendmentControl(app.buttons["inspect-amendment-leg"], in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        tapChartPanelControl(app.buttons["choose-original-amendment-leg"], in: panel)
+        let originals = app.buttons.matching(identifier: "choose-amendment-original-row")
+        let first = originals.containing(NSPredicate(format: "label BEGINSWITH %@", "Leg 1 ·")).firstMatch
+        let third = originals.containing(NSPredicate(format: "label BEGINSWITH %@", "Leg 3 ·")).firstMatch
+        XCTAssertTrue(first.exists)
+        XCTAssertTrue(third.exists)
+        captureAmendmentState("manual-repeated-original-chooser", in: app)
+        tapChartPanelControl(third, in: panel)
+        let duration = String(format: "%02d:%02d", thirdSeconds / 60, thirdSeconds % 60)
+        XCTAssertTrue(panel.staticTexts[duration].waitForExistence(timeout: 4))
+        captureAmendmentState("manual-repeated-original-reference", in: app)
     }
 
     @MainActor

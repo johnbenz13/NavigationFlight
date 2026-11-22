@@ -32,8 +32,12 @@ struct RouteAmendmentRoute: Equatable, Sendable {
         let plan = planning.first { $0.legID == id }
         let direction = navigationMode == .wind ? plan?.withWind?.magneticHeading : plan?.magneticCourse
         let duration = navigationMode == .wind ? plan?.withWind?.timing.durationSeconds : plan?.noWind.durationSeconds
-        return OriginalLeg(id: id, name: "\(leg.departure.name) → \(leg.arrival.name)", mode: navigationMode,
+        return OriginalLeg(id: id, name: Self.legName(from: leg.departure.name, to: leg.arrival.name), mode: navigationMode,
                            direction: direction.map { Int($0.value.rounded()) % 360 }, durationSeconds: duration)
+    }
+
+    static func legName(from departure: String, to arrival: String) -> String {
+        "\u{2068}\(departure)\u{2069} → \u{2068}\(arrival)\u{2069}"
     }
 
     init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
@@ -242,6 +246,17 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case proposed(ReviewLeg.ID)
     }
 
+    struct LegChoiceRow: Identifiable {
+        let id: LegChoice
+        let name: String
+        let legNumber: Int
+
+        var isProposed: Bool {
+            if case .proposed = id { return true }
+            return false
+        }
+    }
+
     struct Editor: Equatable, Sendable {
         let id: ReviewLeg.ID
         var entry: RouteAmendmentLegEntry
@@ -281,6 +296,29 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     func legChoices(on route: RouteAmendmentRoute, originalsOnly: Bool) -> [LegChoice] {
         let originals = route.legs.map { LegChoice.original($0.id) }
         return originalsOnly ? originals : originals + reviewLegs(on: route).map { .proposed($0.id) }
+    }
+
+    func legChoiceRows(_ choices: [LegChoice], on route: RouteAmendmentRoute) -> [LegChoiceRow] {
+        let proposed = reviewLegs(on: route)
+        let rows = choices.compactMap { choice -> LegChoiceRow? in
+            switch choice {
+            case .original(let id):
+                guard let index = route.legs.firstIndex(where: { $0.id == id }),
+                      let original = route.originalLeg(id) else { return nil }
+                return .init(id: choice, name: original.name, legNumber: index + 1)
+            case .proposed(let id):
+                guard let index = proposed.firstIndex(where: { $0.id == id }) else { return nil }
+                let leg = proposed[index]
+                let name = RouteAmendmentRoute.legName(from: leg.departureName, to: leg.arrivalName)
+                return .init(id: choice, name: name, legNumber: index + 1)
+            }
+        }
+        let groupedByRole = Dictionary(grouping: rows, by: \.isProposed)
+        let groupedByName = groupedByRole.mapValues { Dictionary(grouping: $0, by: \.name) }
+        return rows.map { row in
+            guard (groupedByName[row.isProposed]?[row.name]?.count ?? 0) > 1 else { return row }
+            return .init(id: row.id, name: "Leg \(row.legNumber) · \(row.name)", legNumber: row.legNumber)
+        }
     }
 
     func selectedLegEndpoints(on route: RouteAmendmentRoute) -> (WGS84Coordinate, WGS84Coordinate)? {

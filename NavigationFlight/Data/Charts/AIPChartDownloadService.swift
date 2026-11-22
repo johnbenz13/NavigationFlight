@@ -39,7 +39,7 @@ nonisolated struct AIPChartDownloadService: Sendable {
         guard let manifestURL = URL(string: offer.manifestUrl) else { throw Failure.verification }
         let index = try await read(manifestURL, 1024 * 1024, { _ in })
         let catalog = try validatedCatalog(index, offer: offer)
-        let root = URL.temporaryDirectory.appending(path: "aip-transfer-\(UUID())", directoryHint: .isDirectory)
+        let root = try await store.makeDownloadStagingDirectory()
         let pdf = root.appending(path: "AIPCharts/pdf", directoryHint: .isDirectory)
         let resources = ChartResources(bundleRoot: root)
         defer { try? FileManager.default.removeItem(at: root) }

@@ -17,7 +17,7 @@ struct AIPDownloadsView: View {
                     card
                     if status.note == nil, updates.offer != nil, updates.transfer == .idle,
                        updates.discovery == .current {
-                        Text("Installed charts are available offline.")
+                        Text(offlineAvailability)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -195,19 +195,30 @@ struct AIPDownloadsView: View {
         case .downloading: return ("Downloading update", .blue, nil)
         case .verifying: return ("Verifying charts", .blue, nil)
         case .installed: return ("Update installed", .green, "The new edition opens the next time you visit Charts.")
-        case .cancelled: return ("Download canceled", .blue, "The installed edition is still available offline.")
-        case .failed: return ("Download failed", .orange, "The installed edition is still available offline.")
-        case .verificationFailed: return ("Charts could not be verified", .orange, "The installed edition is still available offline.")
+        case .cancelled: return ("Download canceled", .blue, transferRecoveryNote)
+        case .failed: return ("Download failed", .orange, transferRecoveryNote)
+        case .verificationFailed: return ("Charts could not be verified", .orange, transferRecoveryNote)
         case .idle:
             switch updates.discovery {
             case .idle, .checking:
                 return ("Checking for updates", .secondary, updates.offer == nil ? nil : "Last known update shown while checking.")
             case .failed:
-                return ("Update status unavailable", .orange, "Couldn’t check for updates. Installed charts are available offline.")
+                return ("Update status unavailable", .orange, "Couldn’t check for updates. \(offlineAvailability)")
             case .current:
+                if updates.offer == nil, updates.installed == nil {
+                    return ("No update available", .secondary, offlineAvailability)
+                }
                 return updates.offer == nil ? ("Up to date", .green, nil) : ("Update available", .blue, nil)
             }
         }
+    }
+
+    private var offlineAvailability: String {
+        updates.installed == nil ? "No chart edition is available offline." : "Installed charts are available offline."
+    }
+
+    private var transferRecoveryNote: String {
+        updates.installed == nil ? offlineAvailability : "The installed edition is still available offline."
     }
 
     private func size(_ bytes: Int) -> String {

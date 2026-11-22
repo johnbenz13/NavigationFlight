@@ -220,10 +220,16 @@ struct ChartSnapshotStoreTests {
 
         let abandoned = storage.appending(path: "staging-\(UUID())")
         try FileManager.default.createDirectory(at: abandoned, withIntermediateDirectories: true)
+        let activeDownload = try await store.makeDownloadStagingDirectory()
+        let partialPDF = activeDownload.appending(path: "partial.pdf")
+        try Data([1, 2, 3]).write(to: partialPDF)
+        #expect(await store.currentSnapshot()?.pin == latest.pin)
+        #expect(FileManager.default.fileExists(atPath: partialPDF.path))
         let nextProcess = ChartSnapshotStore(directory: storage, bundledResources: seed.resources)
         #expect(await nextProcess.currentSnapshot()?.pin == latest.pin)
         #expect(!FileManager.default.fileExists(atPath: retiredFolder.path))
         #expect(!FileManager.default.fileExists(atPath: abandoned.path))
+        #expect(!FileManager.default.fileExists(atPath: activeDownload.path))
         #expect(FileManager.default.fileExists(atPath: previousFolder.path))
         #expect(FileManager.default.fileExists(atPath: activeFolder.path))
     }

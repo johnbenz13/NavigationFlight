@@ -39,13 +39,24 @@ struct NavigationFlightApp: App {
 
     init() {
         let directory = Self.chartSnapshotDirectory
-        let store = ChartSnapshotStore(directory: directory)
+        let store = ChartSnapshotStore(directory: directory, bundledResources: Self.bundledCharts(in: directory))
         _chartSnapshotStore = State(initialValue: store)
         _chartUpdates = State(initialValue: AIPChartUpdates(
             store: store,
             service: Self.chartDownloadService(),
             cache: directory.appending(path: "update-index.json")
         ))
+    }
+
+    private static func bundledCharts(in directory: URL) -> ChartResources {
+#if DEBUG && targetEnvironment(simulator)
+        let environment = ProcessInfo.processInfo.environment
+        if environment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] != nil,
+           environment["NAVIGATION_FLIGHT_UI_TEST_NO_BUNDLED_CHARTS"] == "1" {
+            return ChartResources(bundleRoot: directory.appending(path: "missing-chart-bundle"))
+        }
+#endif
+        return .bundled
     }
 
     private static func chartDownloadService() -> AIPChartDownloadService {

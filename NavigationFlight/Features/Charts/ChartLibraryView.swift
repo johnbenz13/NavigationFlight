@@ -48,11 +48,17 @@ struct ChartLibraryView: View {
                     .scrollContentBackground(.hidden)
                     .contentMargins(.horizontal, listSideMargin, for: .scrollContent)
                 } else {
-                    ContentUnavailableView(
-                        "Charts unavailable",
-                        systemImage: "doc",
-                        description: Text("The bundled Israel AIP catalog could not be opened.")
-                    )
+                    ContentUnavailableView {
+                        Label("Charts unavailable", systemImage: "doc")
+                    } description: {
+                        Text("No verified Israel AIP charts are available on this device.")
+                    } actions: {
+                        if let onUpdate {
+                            Button("Update available", action: onUpdate)
+                                .buttonStyle(.borderedProminent)
+                                .accessibilityIdentifier("charts-aip-update")
+                        }
+                    }
                 }
             }
             .navigationTitle("Charts")

@@ -125,6 +125,25 @@ final class AIPDownloadsUITests: XCTestCase {
         capture("downloads-unreachable-known-offer-large-text")
     }
 
+    func testVerifiedOfferRepairsUnavailableChartLibrary() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = makeApp(mode: "available")
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_NO_BUNDLED_CHARTS"] = "1"
+        app.launch()
+        tab("Charts", app).tap()
+        XCTAssertTrue(app.staticTexts["Charts unavailable"].waitForExistence(timeout: 5))
+        let update = app.buttons["charts-aip-update"]
+        XCTAssertTrue(update.waitForExistence(timeout: 5))
+        capture("unavailable-charts-update-link")
+        update.tap()
+        waitForStatus("Update available", app)
+        XCTAssertTrue(app.staticTexts["No chart edition is available offline."].exists)
+        startDownload(app)
+        waitForStatus("Update installed", app, timeout: 15)
+        app.buttons["downloads-open-charts"].tap()
+        openFixturePDF(app)
+    }
+
     func testDownloadsAccessibility() throws {
         XCUIDevice.shared.orientation = .portrait
         let app = makeApp(mode: "available")

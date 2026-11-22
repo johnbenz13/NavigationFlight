@@ -1481,16 +1481,18 @@ struct CockpitView: View {
                 .disabled(isRecordingCommitInFlight)
         case .active where flight.destinationIdentifiedAt == nil:
             VStack(spacing: 2) {
-                compactPrimaryAction("Report destination identified") {
+                destinationReportButton("Report destination identified", isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
                 .accessibilityHint("Records identifying the current destination without changing the active leg")
                 .accessibilityIdentifier("waypoint-identified")
 
-                Button("Report destination reached") {
+                Button {
                     cockpitPresentationState.setNextLegPresented(false)
                     onWaypointReached(cockpitRestoration)
+                } label: {
+                    destinationReportLabel("Report destination reached", systemImage: "checkmark.circle", spacing: 6)
                 }
                 .font(.caption.weight(.semibold))
                 .buttonStyle(.plain)
@@ -1501,7 +1503,7 @@ struct CockpitView: View {
                 .accessibilityIdentifier("reached-now")
             }
         case .active:
-            compactPrimaryAction("Report destination reached") {
+            destinationReportButton("Report destination reached") {
                 onWaypointReached(cockpitRestoration)
             }
             .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2590,16 +2592,18 @@ struct CockpitView: View {
                     .accessibilityHint("Opens the flight plan to choose a starting leg")
                     .accessibilityIdentifier("choose-starting-leg")
             case .active where flight.destinationIdentifiedAt == nil:
-                portraitPrimaryAction("Report destination identified") {
+                destinationReportButton("Report destination identified", isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
                 .accessibilityHint("Records identifying the current destination without changing the active leg")
                 .accessibilityIdentifier("waypoint-identified")
 
-                Button("Report destination reached") {
+                Button {
                     cockpitPresentationState.setNextLegPresented(false)
                     onWaypointReached(cockpitRestoration)
+                } label: {
+                    destinationReportLabel("Report destination reached", systemImage: "checkmark.circle", spacing: 6)
                 }
                 .font(.caption.weight(.semibold))
                 .buttonStyle(.plain)
@@ -2607,7 +2611,7 @@ struct CockpitView: View {
                 .accessibilityHint("Records reaching the waypoint now without identifying it first")
                 .accessibilityIdentifier("reached-now")
             case .active:
-                portraitPrimaryAction("Report destination reached") {
+                destinationReportButton("Report destination reached") {
                     onWaypointReached(cockpitRestoration)
                 }
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2634,6 +2638,42 @@ struct CockpitView: View {
                 .frame(maxWidth: .infinity, minHeight: 58)
                 .background(
                     Color(uiColor: visualStyle.primaryActionColor),
+                    in: RoundedRectangle(cornerRadius: 14)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private static let destinationIdentificationFill = Color(red: 184 / 255, green: 223 / 255, blue: 1)
+    private static let destinationIdentificationForeground = Color(red: 18 / 255, green: 58 / 255, blue: 90 / 255)
+
+    private func destinationReportLabel(
+        _ title: LocalizedStringKey,
+        systemImage: String,
+        spacing: CGFloat = 8
+    ) -> some View {
+        HStack(spacing: spacing) {
+            Image(systemName: systemImage)
+                .accessibilityHidden(true)
+            Text(title)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func destinationReportButton(
+        _ title: LocalizedStringKey,
+        isIdentification: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            destinationReportLabel(title, systemImage: isIdentification ? "eye" : "checkmark.circle")
+                .font(.headline)
+                .foregroundStyle(isIdentification ? Self.destinationIdentificationForeground : .white)
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, minHeight: 58)
+                .background(
+                    isIdentification ? Self.destinationIdentificationFill : Color(uiColor: visualStyle.primaryActionColor),
                     in: RoundedRectangle(cornerRadius: 14)
                 )
         }
@@ -2678,16 +2718,14 @@ struct CockpitView: View {
                         selectedMapCallout = nil
                         onIdentifyDestination()
                     } label: {
-                        HStack(spacing: 8) {
-                            Text("◉")
-                            Text("Report Destination Identified")
-                        }
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
+                        destinationReportLabel("Report Destination Identified", systemImage: "eye")
+                            .font(.headline)
+                            .foregroundStyle(Self.destinationIdentificationForeground)
+                            .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(horizontalSizeClass == .compact ? .small : .regular)
-                    .tint(Color(uiColor: visualStyle.primaryActionColor))
+                    .tint(Self.destinationIdentificationFill)
                     .accessibilityLabel("Report Destination Identified")
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
@@ -2695,7 +2733,7 @@ struct CockpitView: View {
                         cockpitPresentationState.setNextLegPresented(false)
                         onWaypointReached(cockpitRestoration)
                     } label: {
-                        Text("Report Destination Reached")
+                        destinationReportLabel("Report Destination Reached", systemImage: "checkmark.circle", spacing: 6)
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .font(.caption.weight(.semibold))
@@ -2710,7 +2748,7 @@ struct CockpitView: View {
                 Button {
                     onWaypointReached(cockpitRestoration)
                 } label: {
-                    Label("Report Destination Reached", systemImage: "checkmark.circle.fill")
+                    destinationReportLabel("Report Destination Reached", systemImage: "checkmark.circle")
                         .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
                 }
                 .buttonStyle(.borderedProminent)

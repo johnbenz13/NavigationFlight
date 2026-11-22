@@ -35,11 +35,14 @@ final class RouteAmendmentMapOverlay: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError() }
 
-    func input(at tap: CGPoint) -> RouteAmendmentDraft.MapInput? {
+    func input(at tap: CGPoint, placingAtCenter: Bool = false) -> RouteAmendmentDraft.MapInput? {
         guard let map, let presentation, presentation.draft.acceptsMapInput else { return nil }
         let coordinate = map.convert(tap, toCoordinateFrom: map)
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
+        let isChoosingAnchor = presentation.draft.step == .departure || presentation.draft.step == .rejoin
+        if placingAtCenter, !isChoosingAnchor { return .init(position: position) }
+
         let route = presentation.route
         let stopHits = route.stops.map { ($0, distance(tap, project($0.position, on: map))) }
             .filter { $0.1 <= 22 }.sorted { $0.1 < $1.1 }
@@ -64,12 +67,24 @@ final class RouteAmendmentMapOverlay: UIView {
                 anchor == route.anchor(at: index, fraction: 0) || anchor == route.anchor(at: index, fraction: 1)
             }
             if let endpoint { return (endpoint, separation) }
-            return (route.anchor(at: index, fraction: Double(screenFraction)), separation)
+            let coordinate = map.convert(snapped, toCoordinateFrom: map)
+            let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
+            return (route.anchor(at: index, fraction: route.fraction(on: leg, at: position)), separation)
         }
         let nearest = min(stopHits.first?.1 ?? .infinity, routeHits.map(\.1).min() ?? .infinity)
         let anchors = stopHits.filter { $0.1 <= nearest + 7 }.map(\.0.id)
             + routeHits.filter { $0.1 <= nearest + 7 }.map(\.0)
-        return .init(position: position, anchors: anchors, waypoint: stopHits.first?.0, pointID: pointID)
+        // Use the wider hit area for explicit anchor selection. In drawing mode, only a
+        // tap on the line adopts a partway anchor and displays it at its snapped position.
+        let waypoint = stopHits.first?.0
+        let lineHit = routeHits.min { $0.1 < $1.1 }
+        let plotPosition: WGS84Coordinate
+        if !isChoosingAnchor, waypoint == nil, let (anchor, separation) = lineHit, separation <= 3 {
+            plotPosition = route.coordinate(at: anchor)
+        } else {
+            plotPosition = position
+        }
+        return .init(position: plotPosition, anchors: anchors, waypoint: waypoint, pointID: pointID)
     }
 
     override func draw(_ rect: CGRect) {

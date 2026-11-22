@@ -263,7 +263,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 let center = CGPoint(x: mapView.bounds.midX, y: mapView.bounds.midY)
                 DispatchQueue.main.async { [weak self] in
                     guard let self, self.amendmentCenterRequest == centerRequest,
-                          let input = self.amendmentOverlay?.input(at: center) else { return }
+                          let input = self.amendmentOverlay?.input(at: center, placingAtCenter: true) else { return }
                     self.onAmendmentPlot(input)
                 }
             }
@@ -984,12 +984,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         private func focusAmendment(_ coordinates: [AviationMapCoordinate], on mapView: MLNMapView) {
-            fitTrackUp(
-                coordinates,
-                on: mapView,
+            let points = coordinates.map(coordinate)
+            mapView.setVisibleCoordinates(
+                points,
+                count: UInt(points.count),
+                edgePadding: UIEdgeInsets(top: min(150, mapView.bounds.height * 0.35), left: 36, bottom: 38, right: 48),
                 direction: mapView.direction,
-                padding: UIEdgeInsets(top: min(150, mapView.bounds.height * 0.35), left: 36, bottom: 38, right: 48),
-                animated: false
+                duration: 0,
+                animationTimingFunction: nil,
+                completionHandler: nil
             )
         }
 

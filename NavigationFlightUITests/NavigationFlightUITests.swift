@@ -1740,6 +1740,9 @@ final class NavigationFlightUITests: XCTestCase {
         chooseAmendmentWaypoint("תל יונה", in: app)
         let confirmRejoin = app.buttons["confirm-amendment-rejoin"]
         XCTAssertTrue(confirmRejoin.waitForExistence(timeout: 3))
+        XCTAssertTrue(confirmRejoin.isHittable)
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Leg ")).allElementsBoundByIndex
+            .contains(where: \.isHittable))
         captureAmendmentState("rejoin", in: app)
         confirmRejoin.tap()
         app.buttons["review-amendment-legs"].tap()
@@ -1840,6 +1843,26 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testUseMapCenterPlotsBesideAnExistingAmendmentPoint() throws {
+        let app = launchCockpit(planData: try realFlightPlanData(named: "llhz-llib-via-jerusalem"))
+        app.buttons["start-leg"].tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        chooseAmendmentWaypoint("שפיים", in: app)
+
+        let map = app.descendants(matching: .any)["aviation-map"]
+        let nearCenter = map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: 12, dy: 0))
+        nearCenter.tap()
+        let points = app.buttons.matching(identifier: "amendment-draft-point")
+        XCTAssertTrue(points.element(boundBy: 0).waitForExistence(timeout: 3))
+        app.buttons["pick-amendment-point"].tap()
+        app.buttons["Use map center"].tap()
+        XCTAssertTrue(points.element(boundBy: 1).waitForExistence(timeout: 3))
+        XCTAssertEqual(points.count, 2)
+    }
+
+    @MainActor
     func testAmendmentShowsPastETAWhileKeepingDrawingAvailable() throws {
         let plan = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
         var document = try XCTUnwrap(JSONSerialization.jsonObject(with: plan) as? [String: Any])
@@ -1908,8 +1931,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(heading.waitForExistence(timeout: 3))
         let firstLeg = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Leg 1 · Kadima")).firstMatch
         let laterLeg = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Leg 3 · West")).firstMatch
-        XCTAssertTrue(firstLeg.exists)
-        XCTAssertTrue(laterLeg.exists)
+        XCTAssertTrue(firstLeg.isHittable)
+        XCTAssertTrue(laterLeg.isHittable)
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        XCTAssertTrue(console.frame.insetBy(dx: -1, dy: -1).contains(laterLeg.frame))
         laterLeg.tap()
         let departure = app.buttons["amendment-departure-point"]
         XCTAssertTrue(departure.waitForExistence(timeout: 3))

@@ -41,14 +41,37 @@ struct RouteAmendmentRoute: Equatable, Sendable {
         let to = leg.arrival.position
         if fraction == 0 { return from }
         if fraction == 1 { return to }
-        let longitudeDelta = (to.longitudeDegrees - from.longitudeDegrees + 540)
-            .truncatingRemainder(dividingBy: 360) - 180
-        let longitude = (from.longitudeDegrees + longitudeDelta * fraction + 540)
-            .truncatingRemainder(dividingBy: 360) - 180
+        let fromY = mercatorY(from.latitudeDegrees)
+        let y = fromY + (mercatorY(to.latitudeDegrees) - fromY) * fraction
+        let longitude = from.longitudeDegrees + longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * fraction
         return WGS84Coordinate(
-            latitudeDegrees: from.latitudeDegrees + (to.latitudeDegrees - from.latitudeDegrees) * fraction,
-            longitudeDegrees: longitude
+            latitudeDegrees: atan(sinh(y)) * 180 / .pi,
+            longitudeDegrees: longitudeDelta(0, longitude)
         )
+    }
+
+    // The amendment overlay draws straight segments in Web Mercator.
+    func fraction(on leg: NavigationLeg, at coordinate: WGS84Coordinate) -> Double {
+        let from = leg.departure.position
+        let to = leg.arrival.position
+        let fromY = mercatorY(from.latitudeDegrees)
+        let dx = longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * .pi / 180
+        let dy = mercatorY(to.latitudeDegrees) - fromY
+        let lengthSquared = dx * dx + dy * dy
+        guard lengthSquared > 0 else { return 0 }
+        let x = longitudeDelta(from.longitudeDegrees, coordinate.longitudeDegrees) * .pi / 180
+        let y = mercatorY(coordinate.latitudeDegrees) - fromY
+        return min(1, max(0, (x * dx + y * dy) / lengthSquared))
+    }
+
+    private func mercatorY(_ latitude: Double) -> Double {
+        let limit = atan(sinh(Double.pi)) * 180 / .pi
+        let radians = min(limit, max(-limit, latitude)) * .pi / 180
+        return asinh(tan(radians))
+    }
+
+    private func longitudeDelta(_ from: Double, _ to: Double) -> Double {
+        (to - from + 540).truncatingRemainder(dividingBy: 360) - 180
     }
 
     func name(for anchor: RouteAmendmentAnchor) -> String {
@@ -162,12 +185,18 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     var canUndo: Bool { !plotHistory.isEmpty }
     var canReview: Bool { departure != nil && rejoin != nil && step == .drawing }
 
+    func availableStops(on route: RouteAmendmentRoute) -> [RouteAmendmentRoute.Stop] {
+        guard step == .departure || step == .rejoin else { return route.stops }
+        return route.stops.filter { isValid($0.id, forDeparture: step == .departure, route: route) }
+    }
+
     func finishCandidates(on route: RouteAmendmentRoute) -> [RouteAmendmentAnchor] {
         guard rejoin == nil, let last = points.last, let departure, route.contains(departure) else { return [] }
         let previous = points.dropLast().last?.position ?? route.coordinate(at: departure)
         return last.routeCandidates.filter {
-            route.contains($0) && route.precedes(departure, $0) &&
-                !sameLocation(previous, route.coordinate(at: $0))
+            isValid($0, forDeparture: false, route: route) &&
+                sameLocation(last.position, route.coordinate(at: $0)) &&
+                !sameLocation(previous, last.position)
         }
         .sorted(by: route.precedes)
     }
@@ -219,7 +248,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                     return
                 }
                 let choosingDeparture = purpose == .departure
-                guard route.contains(anchor), isValid(anchor, forDeparture: choosingDeparture, route: route) else {
+                guard isValid(anchor, forDeparture: choosingDeparture, route: route) else {
                     message = choosingDeparture ? "Choose a departure on the remaining route before rejoin."
                         : "Choose a return point ahead of departure."
                     return
@@ -341,6 +370,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     private func isValid(_ anchor: RouteAmendmentAnchor, forDeparture: Bool, route: RouteAmendmentRoute) -> Bool {
+        guard route.contains(anchor) else { return false }
         if forDeparture {
             let limit = rejoin ?? route.anchor(at: route.legs.count - 1, fraction: 1)
             return route.precedes(anchor, limit)
@@ -362,17 +392,14 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     private func plottedPoint(from input: MapInput, on route: RouteAmendmentRoute, id: UUID = UUID()) -> Point {
+        // A waypoint tap adopts that waypoint. Free plots keep their displayed location.
         let position = input.waypoint?.position ?? input.position
-        var anchors = input.anchors
-        if let waypoint = input.waypoint {
-            anchors = anchors.filter {
-                route.contains($0) && sameLocation(position, route.coordinate(at: $0))
-            }
-            anchors.append(waypoint.id)
-        }
+        let candidates = input.anchors + [input.waypoint?.id].compactMap { $0 }
         var seen = Set<RouteAmendmentAnchor>()
-        return Point(id: id, position: position, name: input.waypoint?.name,
-                     routeCandidates: anchors.filter { seen.insert($0).inserted })
+        let coincident = candidates.filter {
+            route.contains($0) && sameLocation(position, route.coordinate(at: $0)) && seen.insert($0).inserted
+        }
+        return Point(id: id, position: position, name: input.waypoint?.name, routeCandidates: coincident)
     }
 
     private func sameLocation(_ lhs: WGS84Coordinate, _ rhs: WGS84Coordinate) -> Bool {

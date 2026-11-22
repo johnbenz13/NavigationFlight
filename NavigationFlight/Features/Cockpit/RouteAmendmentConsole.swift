@@ -83,7 +83,12 @@ struct RouteAmendmentConsole: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var actionsFollowEditor: Bool { inSideRail || dynamicTypeSize.isAccessibilitySize }
+    private var actionsFollowEditor: Bool {
+        switch draft.step {
+        case .confirmRejoin, .crossing: true
+        default: inSideRail || dynamicTypeSize.isAccessibilitySize
+        }
+    }
 
     private var showsFooter: Bool {
         switch draft.step {
@@ -135,11 +140,11 @@ struct RouteAmendmentConsole: View {
             routeSequence
             button("Back to drawing", intent: .back)
         case .confirmRejoin(let anchor):
-            routeSequence
             panel {
                 Text(route.name(for: anchor)).font(.headline)
-                Text(route.occurrence(for: anchor)).foregroundStyle(.secondary)
+                Text(route.occurrence(for: anchor)).font(.caption).foregroundStyle(.secondary)
             }
+            .accessibilityIdentifier("amendment-return-candidate")
         case .crossing(let options, _):
             ForEach(options, id: \.self) { anchor in
                 occurrenceOption(anchor)
@@ -306,7 +311,7 @@ struct RouteAmendmentConsole: View {
                     }
                 }
                 Section("Route waypoints") {
-                    ForEach(availableStops) { stop in
+                    ForEach(draft.availableStops(on: route)) { stop in
                         Button {
                             if draft.step == .departure || draft.step == .rejoin {
                                 sendPickerIntent(.chooseAnchor(stop.id))
@@ -333,19 +338,6 @@ struct RouteAmendmentConsole: View {
     private func sendPickerIntent(_ intent: RouteAmendmentDraft.Intent) {
         isPointPickerPresented = false
         onIntent(intent)
-    }
-
-    private var availableStops: [RouteAmendmentRoute.Stop] {
-        if draft.step == .departure {
-            return route.stops.filter { stop in
-                let end = draft.rejoin ?? route.anchor(at: route.legs.count - 1, fraction: 1)
-                return route.contains(stop.id) && route.precedes(stop.id, end)
-            }
-        }
-        if draft.step == .rejoin, let departure = draft.departure {
-            return route.stops.filter { route.contains($0.id) && route.precedes(departure, $0.id) }
-        }
-        return route.stops
     }
 
     @ViewBuilder
@@ -485,7 +477,7 @@ struct RouteAmendmentConsole: View {
     private func occurrenceOption(_ anchor: RouteAmendmentAnchor) -> some View {
         Button { onIntent(.chooseAnchor(anchor)) } label: {
             HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(route.occurrence(for: anchor)).font(.subheadline.weight(.semibold))
                     Text(route.name(for: anchor)).font(.caption).foregroundStyle(.secondary)
                 }
@@ -499,13 +491,15 @@ struct RouteAmendmentConsole: View {
                 }
             }
             .foregroundStyle(.primary)
-            .padding(10)
-            .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Use \(route.occurrence(for: anchor)), \(route.name(for: anchor))")
+        .accessibilityIdentifier("amendment-leg-occurrence")
     }
 
     private func pointName(_ point: RouteAmendmentDraft.Point) -> String {

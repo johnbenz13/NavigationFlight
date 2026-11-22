@@ -1863,6 +1863,30 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testUseMapCenterCanFinishAtAnExactRouteWaypoint() throws {
+        let app = launchCockpit(planData: try realFlightPlanData(named: "llhz-llib-via-jerusalem"))
+        app.buttons["start-leg"].tap()
+        closeStartChecklist(in: app)
+        let map = app.descendants(matching: .any)["aviation-map"]
+        let from = map.coordinate(withNormalizedOffset: CGVector(dx: 0.60, dy: 0.7))
+        let to = map.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.7))
+        from.press(forDuration: 0.05, thenDragTo: to)
+        let destination = app.buttons["show-destination-waypoint"]
+        XCTAssertTrue(destination.waitForExistence(timeout: 3))
+        destination.tap()
+
+        app.buttons["amend-route"].tap()
+        chooseAmendmentWaypoint("שפיים", in: app)
+        app.buttons["pick-amendment-point"].tap()
+        app.buttons["Use map center"].tap()
+        let finish = app.buttons["finish-amendment-here"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 3))
+        finish.tap()
+        XCTAssertTrue(app.staticTexts["Review legs"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.descendants(matching: .any)["amendment-return-point"].label.contains("רידינג"))
+    }
+
+    @MainActor
     func testAmendmentShowsPastETAWhileKeepingDrawingAvailable() throws {
         let plan = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
         var document = try XCTUnwrap(JSONSerialization.jsonObject(with: plan) as? [String: Any])
@@ -1939,6 +1963,30 @@ final class NavigationFlightUITests: XCTestCase {
         let departure = app.buttons["amendment-departure-point"]
         XCTAssertTrue(departure.waitForExistence(timeout: 3))
         XCTAssertTrue(departure.label.contains("Leg 3"))
+    }
+
+    @MainActor
+    func testFinishingNearACrossingRequiresChoosingTheReturnLeg() throws {
+        let app = launchCockpit(planData: try crossingAmendmentPlanData())
+        app.buttons["start-leg"].tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        chooseAmendmentWaypoint("Kadima", in: app)
+
+        let map = app.descendants(matching: .any)["aviation-map"]
+        let nearCrossing = map.coordinate(withNormalizedOffset: CGVector(dx: 0.48, dy: 0.50))
+            .withOffset(CGVector(dx: 1, dy: 0))
+        nearCrossing.tap()
+        XCTAssertTrue(app.buttons["amendment-draft-point"].firstMatch.waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["finish-amendment-here"].exists)
+        app.buttons["choose-amendment-rejoin"].tap()
+        nearCrossing.tap()
+        XCTAssertTrue(app.staticTexts["Choose return leg"].waitForExistence(timeout: 3))
+        let options = app.buttons.matching(identifier: "amendment-leg-occurrence")
+        XCTAssertEqual(options.count, 2)
+        captureAmendmentState("crossing-return", in: app)
+        options.element(boundBy: 1).tap()
+        XCTAssertTrue(app.buttons["confirm-amendment-rejoin"].waitForExistence(timeout: 3))
     }
 
     private func crossingAmendmentPlanData() throws -> Data {

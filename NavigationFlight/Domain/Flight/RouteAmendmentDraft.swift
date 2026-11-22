@@ -74,6 +74,19 @@ struct RouteAmendmentRoute: Equatable, Sendable {
         (to - from + 540).truncatingRemainder(dividingBy: 360) - 180
     }
 
+    func sameLocation(_ lhs: WGS84Coordinate, _ rhs: WGS84Coordinate) -> Bool {
+        let longitudeDifference = abs(lhs.longitudeDegrees - rhs.longitudeDegrees)
+        return abs(lhs.latitudeDegrees - rhs.latitudeDegrees) < 0.00000001 &&
+            (longitudeDifference < 0.00000001 || abs(longitudeDifference - 360) < 0.00000001)
+    }
+
+    func coincidentAnchor(_ candidate: RouteAmendmentAnchor, at position: WGS84Coordinate) -> RouteAmendmentAnchor? {
+        guard contains(candidate), sameLocation(position, coordinate(at: candidate)) else { return nil }
+        // Conversion at a waypoint can produce an endpoint plus a fraction just inside it.
+        let endpoints = [anchor(at: candidate.legIndex, fraction: 0), anchor(at: candidate.legIndex, fraction: 1)]
+        return endpoints.first { contains($0) && sameLocation(position, coordinate(at: $0)) } ?? candidate
+    }
+
     func name(for anchor: RouteAmendmentAnchor) -> String {
         let leg = legs[anchor.legIndex]
         switch anchor.fraction {
@@ -195,8 +208,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let previous = points.dropLast().last?.position ?? route.coordinate(at: departure)
         return last.routeCandidates.filter {
             isValid($0, forDeparture: false, route: route) &&
-                sameLocation(last.position, route.coordinate(at: $0)) &&
-                !sameLocation(previous, last.position)
+                route.sameLocation(last.position, route.coordinate(at: $0)) &&
+                !route.sameLocation(previous, last.position)
         }
         .sorted(by: route.precedes)
     }
@@ -396,22 +409,18 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let position = input.waypoint?.position ?? input.position
         let candidates = input.anchors + [input.waypoint?.id].compactMap { $0 }
         var seen = Set<RouteAmendmentAnchor>()
-        let coincident = candidates.filter {
-            route.contains($0) && sameLocation(position, route.coordinate(at: $0)) && seen.insert($0).inserted
+        let coincident = candidates.compactMap { candidate -> RouteAmendmentAnchor? in
+            guard let anchor = route.coincidentAnchor(candidate, at: position),
+                  seen.insert(anchor).inserted else { return nil }
+            return anchor
         }
         return Point(id: id, position: position, name: input.waypoint?.name, routeCandidates: coincident)
-    }
-
-    private func sameLocation(_ lhs: WGS84Coordinate, _ rhs: WGS84Coordinate) -> Bool {
-        let longitudeDifference = abs(lhs.longitudeDegrees - rhs.longitudeDegrees)
-        return abs(lhs.latitudeDegrees - rhs.latitudeDegrees) < 0.00000001 &&
-            (longitudeDifference < 0.00000001 || abs(longitudeDifference - 360) < 0.00000001)
     }
 
     @discardableResult
     private mutating func applyPlot(_ candidate: Sketch, route: RouteAmendmentRoute) -> Bool {
         let coordinates = positions(in: candidate, on: route)
-        guard !zip(coordinates, coordinates.dropFirst()).contains(where: { sameLocation($0, $1) }) else {
+        guard !zip(coordinates, coordinates.dropFirst()).contains(where: { route.sameLocation($0, $1) }) else {
             message = "Consecutive points must be at different locations."
             return false
         }

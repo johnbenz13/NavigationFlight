@@ -1180,6 +1180,21 @@ struct NavigationFlightTests {
         #expect(draft.segments(on: route).last?.to == onRoute)
     }
 
+    @Test func anExactCenterWaypointDoesNotOfferTheSameLegTwice() throws {
+        let plan = try twoLegFlight()
+        let leg = try #require(plan.legs.first)
+        let route = RouteAmendmentRoute(legs: plan.legs, firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
+        let waypoint = route.anchor(at: 0, fraction: 1)
+        let almostWaypoint = route.anchor(at: 0, fraction: 1 - 1e-9)
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.firstAvailable), route: route)
+        draft.update(.plot(.init(position: leg.arrival.position, anchors: [almostWaypoint, waypoint])), route: route)
+        #expect(draft.finishCandidates(on: route) == [waypoint])
+        draft.update(.finishHere, route: route)
+        #expect(draft.step == .review)
+        #expect(draft.rejoin == waypoint)
+    }
+
     @Test func waypointPickerRespectsProgressAndTheOppositeAnchor() throws {
         let plan = try twoLegFlight()
         let leg = try #require(plan.legs.first)

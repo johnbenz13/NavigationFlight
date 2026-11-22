@@ -41,48 +41,58 @@ final class RouteAmendmentMapOverlay: UIView {
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
         let isChoosingAnchor = presentation.draft.step == .departure || presentation.draft.step == .rejoin
-        if placingAtCenter, !isChoosingAnchor { return .init(position: position) }
+        let retainsCenterPosition = placingAtCenter && !isChoosingAnchor
 
         let route = presentation.route
         let stopHits = route.stops.map { ($0, distance(tap, project($0.position, on: map))) }
             .filter { $0.1 <= 22 }.sorted { $0.1 < $1.1 }
-        let pointID = presentation.draft.points
+        let pointID = retainsCenterPosition ? nil : presentation.draft.points
             .map { ($0.id, distance(tap, project($0.position, on: map))) }
             .filter { $0.1 <= 22 }.min { $0.1 < $1.1 }?.0
-        let routeHits = route.legs.indices.compactMap { index -> (RouteAmendmentAnchor, CGFloat)? in
-            let leg = route.legs[index]
-            let from = project(leg.departure.position, on: map)
-            let to = project(leg.arrival.position, on: map)
-            let dx = to.x - from.x
-            let dy = to.y - from.y
-            let lengthSquared = dx * dx + dy * dy
-            guard lengthSquared > 0 else { return nil }
-            let screenFraction = max(0, min(1, ((tap.x - from.x) * dx + (tap.y - from.y) * dy) / lengthSquared))
-            let snapped = CGPoint(x: from.x + dx * screenFraction, y: from.y + dy * screenFraction)
-            let separation = distance(tap, snapped)
-            guard separation <= 18 else { return nil }
-            // Snap the endpoint occurrence before testing route order. The same coordinate
-            // can still be an interior hit on a different leg crossing this waypoint.
-            let endpoint = stopHits.map(\.0.id).first { anchor in
-                anchor == route.anchor(at: index, fraction: 0) || anchor == route.anchor(at: index, fraction: 1)
+        func routeHits(near tap: CGPoint, snappingEndpoints: Bool) -> [(RouteAmendmentAnchor, CGFloat)] {
+            route.legs.indices.compactMap { index -> (RouteAmendmentAnchor, CGFloat)? in
+                let leg = route.legs[index]
+                let from = project(leg.departure.position, on: map)
+                let to = project(leg.arrival.position, on: map)
+                let dx = to.x - from.x
+                let dy = to.y - from.y
+                let lengthSquared = dx * dx + dy * dy
+                guard lengthSquared > 0 else { return nil }
+                let screenFraction = max(0, min(1, ((tap.x - from.x) * dx + (tap.y - from.y) * dy) / lengthSquared))
+                let snapped = CGPoint(x: from.x + dx * screenFraction, y: from.y + dy * screenFraction)
+                let separation = distance(tap, snapped)
+                guard separation <= 18 else { return nil }
+                // Snap the endpoint occurrence before testing route order. The same coordinate
+                // can still be an interior hit on a different leg crossing this waypoint.
+                let endpoint = stopHits.map(\.0.id).first { anchor in
+                    anchor == route.anchor(at: index, fraction: 0) || anchor == route.anchor(at: index, fraction: 1)
+                }
+                if snappingEndpoints, let endpoint { return (endpoint, separation) }
+                let coordinate = map.convert(snapped, toCoordinateFrom: map)
+                let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
+                return (route.anchor(at: index, fraction: route.fraction(on: leg, at: position)), separation)
             }
-            if let endpoint { return (endpoint, separation) }
-            let coordinate = map.convert(snapped, toCoordinateFrom: map)
-            let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
-            return (route.anchor(at: index, fraction: route.fraction(on: leg, at: position)), separation)
         }
-        let nearest = min(stopHits.first?.1 ?? .infinity, routeHits.map(\.1).min() ?? .infinity)
-        let anchors = stopHits.filter { $0.1 <= nearest + 7 }.map(\.0.id)
-            + routeHits.filter { $0.1 <= nearest + 7 }.map(\.0)
-        // Use the wider hit area for explicit anchor selection. In drawing mode, only a
-        // tap on the line adopts a partway anchor and displays it at its snapped position.
-        let waypoint = stopHits.first?.0
-        let lineHit = routeHits.min { $0.1 < $1.1 }
-        let plotPosition: WGS84Coordinate
-        if !isChoosingAnchor, waypoint == nil, let (anchor, separation) = lineHit, separation <= 3 {
-            plotPosition = route.coordinate(at: anchor)
-        } else {
-            plotPosition = position
+        let tapLegHits = routeHits(near: tap, snappingEndpoints: !retainsCenterPosition)
+        let nearest = min(stopHits.first?.1 ?? .infinity, tapLegHits.map(\.1).min() ?? .infinity)
+        let nearbyLegs = tapLegHits.filter { $0.1 <= nearest + 7 }
+        var anchors = stopHits.filter { $0.1 <= nearest + 7 }.map(\.0.id) + nearbyLegs.map(\.0)
+        let waypoint = retainsCenterPosition ? nil : stopHits.first?.0
+        if !isChoosingAnchor, let waypoint {
+            // A named plot adopts the waypoint position. Test crossing legs there too.
+            anchors += routeHits(near: project(waypoint.position, on: map), snappingEndpoints: false).map(\.0)
+        }
+        var plotPosition = position
+        if !isChoosingAnchor, !retainsCenterPosition, waypoint == nil,
+           let (anchor, separation) = nearbyLegs.min(by: { $0.1 < $1.1 }), separation <= 3 {
+            let snapped = route.coordinate(at: anchor)
+            // Ambiguous hits at different positions stay free plots. The explicit return
+            // picker can then distinguish the route occurrences without shifting the draft.
+            if nearbyLegs.allSatisfy({ hit in
+                route.sameLocation(snapped, route.coordinate(at: hit.0))
+            }) {
+                plotPosition = snapped
+            }
         }
         return .init(position: plotPosition, anchors: anchors, waypoint: waypoint, pointID: pointID)
     }

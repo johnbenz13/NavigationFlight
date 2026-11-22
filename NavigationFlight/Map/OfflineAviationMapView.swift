@@ -65,6 +65,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
     let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
     let amendment: RouteAmendmentMapOverlay.Presentation?
+    let pendingAmendment: RouteAmendmentMapOverlay.Pending?
     let amendmentCenterRequest: UUID?
     let onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void
     let onMapInteraction: () -> Void
@@ -94,6 +95,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
         onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
         amendment: RouteAmendmentMapOverlay.Presentation? = nil,
+        pendingAmendment: RouteAmendmentMapOverlay.Pending? = nil,
         amendmentCenterRequest: UUID? = nil,
         onAmendmentPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void = { _ in },
         onMapInteraction: @escaping () -> Void = {}
@@ -122,6 +124,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.onShowPilotETACheck = onShowPilotETACheck
         self.onHidePilotETACheck = onHidePilotETACheck
         self.amendment = amendment
+        self.pendingAmendment = pendingAmendment
         self.amendmentCenterRequest = amendmentCenterRequest
         self.onAmendmentPlot = onAmendmentPlot
         self.onMapInteraction = onMapInteraction
@@ -191,8 +194,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onHidePilotETACheck: onHidePilotETACheck,
             onMapInteraction: onMapInteraction
         )
-        context.coordinator.updateAmendment(
-            amendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
+        let departureHeaderChanged = context.coordinator.updateAmendment(
+            amendment, pending: pendingAmendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
         )
         context.coordinator.update(
             presentation: presentation,
@@ -202,6 +205,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             timingTargetContext: timingTargetContext,
             focusRequest: focusRequest,
             reducesMotion: accessibilityReduceMotion,
+            departureHeaderChanged: departureHeaderChanged,
             mapView: mapView
         )
     }
@@ -246,14 +250,18 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         func updateAmendment(
             _ amendment: RouteAmendmentMapOverlay.Presentation?,
+            pending: RouteAmendmentMapOverlay.Pending?,
             centerRequest: UUID?,
             onPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void,
             on mapView: MLNMapView
-        ) {
+        ) -> Bool {
             onAmendmentPlot = onPlot
             let modeChanged = (amendmentOverlay?.presentation == nil) != (amendment == nil)
             amendmentOverlay?.presentation = amendment
-            if modeChanged, let style = mapView.style {
+            let previousPending = amendmentOverlay?.pending
+            let pendingChanged = (previousPending == nil) != (pending == nil)
+            amendmentOverlay?.pending = pending
+            if modeChanged || pendingChanged, let style = mapView.style {
                 updateOperationalLayers(in: style)
                 updateEndpointAnnotations(on: mapView)
             }
@@ -267,6 +275,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     self.onAmendmentPlot(input)
                 }
             }
+            return pending?.activePartwayDeparture != nil &&
+                previousPending?.departureHeaderInset != pending?.departureHeaderInset
         }
 
         private func updateOperationalLayers(in style: MLNStyle) {
@@ -279,6 +289,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             ]
             for identifier in layers {
                 style.layer(withIdentifier: identifier)?.isVisible = visible
+            }
+            if amendmentOverlay?.pending != nil {
+                for layer in [Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer] {
+                    style.layer(withIdentifier: layer)?.isVisible = false
+                }
             }
             style.layer(withIdentifier: Identifier.driftReferenceLayer)?.isVisible = visible && showsDriftReferenceArms
         }
@@ -408,7 +423,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
                 restore(initialCamera, on: mapView)
-            } else if amendmentOverlay?.presentation != nil, case .amendment(let coordinates) = lastFocusRequest.mode {
+            } else if amendmentOverlay?.isHidden == false, case .amendment(let coordinates) = lastFocusRequest.mode {
                 focusAmendment(coordinates, on: mapView)
             } else {
                 focusLeg(on: mapView, animated: false)
@@ -429,7 +444,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapViewRegionIsChanging(_ mapView: MLNMapView) {
-            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
+            if amendmentOverlay?.isHidden == false { amendmentOverlay?.setNeedsDisplay() }
             let hasActiveGesture = mapView.gestureRecognizers?.contains {
                 $0.state == .began || $0.state == .changed
             } ?? false
@@ -460,7 +475,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) {
-            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
+            if amendmentOverlay?.isHidden == false { amendmentOverlay?.setNeedsDisplay() }
             guard styleIsReady else { return }
             let camera = AviationMapCameraState(
                 center: AviationMapCoordinate(
@@ -504,6 +519,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     reuseIdentifier: identifier,
                     visualStyle: visualStyle,
                     placesLabelOutward: placesEndpointLabelsOutward,
+                    mapTraits: mapView.traitCollection,
                     onSelectDestination: { [weak self] in
                         self?.onSelectTimingTarget(destinationTargetID)
                     }
@@ -593,6 +609,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             timingTargetContext: AviationMapTimingTargetContext?,
             focusRequest: AviationMapFocusRequest,
             reducesMotion: Bool,
+            departureHeaderChanged: Bool,
             mapView: MLNMapView
         ) {
             self.reducesMotion = reducesMotion
@@ -608,6 +625,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             self.showsDriftReferenceArms = showsDriftReferenceArms
             self.identificationContext = identificationContext
             self.timingTargetContext = timingTargetContext
+            amendmentOverlay?.showsPartwayDepartureLabel = timingTargetContext?.target.id != presentation.destinationTarget.id
             if activeLegChanged {
                 cachedIdentificationPointCalloutOffsets = identificationPointCalloutOffsets.wrappedValue
             }
@@ -635,6 +653,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 )
             } else if activeLegChanged && legState == .ready {
                 focusLeg(on: mapView, animated: !reducesMotion)
+            } else if departureHeaderChanged, !isCameraUserControlled.wrappedValue,
+                      case .amendment(let coordinates) = focusRequest.mode {
+                focusAmendment(coordinates, on: mapView)
             } else if lastFocusRequest.id != focusRequest.id {
                 switch focusRequest.mode {
                 case .leg:
@@ -985,10 +1006,20 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         private func focusAmendment(_ coordinates: [AviationMapCoordinate], on mapView: MLNMapView) {
             let points = coordinates.map(coordinate)
+            let bottomPadding: CGFloat = 38
+            let defaultTopPadding = min(150, mapView.bounds.height * 0.35)
+            var topPadding = defaultTopPadding
+            if let overlay = amendmentOverlay, let pending = overlay.pending,
+               let departure = pending.activePartwayDeparture {
+                let marker = RouteAmendmentMapOverlay.DepartureMarker(name: departure.name, traits: overlay.traitCollection)
+                let requiredTopPadding = pending.departureHeaderInset + marker.anchor.y + 8
+                let maximumTopPadding = max(defaultTopPadding, mapView.bounds.height - bottomPadding - 36)
+                topPadding = min(max(defaultTopPadding, requiredTopPadding), maximumTopPadding)
+            }
             mapView.setVisibleCoordinates(
                 points,
                 count: UInt(points.count),
-                edgePadding: UIEdgeInsets(top: min(150, mapView.bounds.height * 0.35), left: 36, bottom: 38, right: 48),
+                edgePadding: UIEdgeInsets(top: topPadding, left: 36, bottom: bottomPadding, right: 48),
                 direction: mapView.direction,
                 duration: 0,
                 animationTimingFunction: nil,
@@ -1130,7 +1161,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 return EndpointAnnotation(
                     waypoint: waypoint,
                     reference: reference,
-                    isActive: legState == .active
+                    isActive: legState == .active,
+                    isPartwayDeparture: waypoint.id == amendmentOverlay?.pending?.activePartwayDeparture?.id
                 )
             }
             if let destination = presentation.waypoints.first(where: { $0.role == .to }),
@@ -1338,16 +1370,19 @@ private final class EndpointAnnotation: MLNPointAnnotation {
     let waypointName: String
     let referenceText: String?
     let isActive: Bool
+    let isPartwayDeparture: Bool
 
     init(
         waypoint: AviationMapWaypoint,
         reference: AviationMapVORDMEReference?,
-        isActive: Bool
+        isActive: Bool,
+        isPartwayDeparture: Bool
     ) {
         identifier = waypoint.id
         role = waypoint.role
         waypointName = waypoint.name
         self.isActive = isActive
+        self.isPartwayDeparture = isPartwayDeparture
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
             referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
@@ -1468,12 +1503,21 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         reuseIdentifier: String,
         visualStyle: AviationMapVisualStyle,
         placesLabelOutward: Bool,
+        mapTraits: UITraitCollection,
         onSelectDestination: @escaping () -> Void
     ) {
         self.onSelectDestination = onSelectDestination
         super.init(reuseIdentifier: reuseIdentifier)
         if annotation.role == .to {
-            configureDestination(annotation, visualStyle: visualStyle)
+            if annotation.isPartwayDeparture {
+                configurePartwayDepartureTarget(annotation, traits: mapTraits)
+            } else {
+                configureDestination(annotation, visualStyle: visualStyle)
+            }
+            isAccessibilityElement = true
+            accessibilityLabel = "\(annotation.waypointName), arrival ETA target"
+            accessibilityTraits = .button
+            accessibilityIdentifier = "destination-eta-target"
             addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectDestination)))
             isEnabled = true
         } else {
@@ -1538,10 +1582,16 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         waypointLabel.frame = CGRect(x: diameter + 8, y: bounds.midY - 10, width: waypointSize.width, height: 20)
         addSubview(waypointLabel)
         centerOffset = CGVector(dx: bounds.midX - diameter / 2, dy: bounds.midY - diameter / 2)
-        isAccessibilityElement = true
-        accessibilityLabel = "\(annotation.waypointName), arrival ETA target"
-        accessibilityTraits = .button
-        accessibilityIdentifier = "destination-eta-target"
+    }
+
+    private func configurePartwayDepartureTarget(
+        _ annotation: EndpointAnnotation,
+        traits: UITraitCollection
+    ) {
+        // The route overlay draws the marker. Keep the same tappable annotation and ETA action.
+        let marker = RouteAmendmentMapOverlay.DepartureMarker(name: annotation.waypointName, traits: traits)
+        frame = CGRect(origin: .zero, size: marker.size)
+        centerOffset = CGVector(dx: bounds.midX - marker.anchor.x, dy: bounds.midY - marker.anchor.y)
     }
 
     required init?(coder: NSCoder) {

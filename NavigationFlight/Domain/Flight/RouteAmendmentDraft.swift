@@ -1,6 +1,6 @@
 import Foundation
 
-struct RouteAmendmentAnchor: Hashable, Sendable {
+nonisolated struct RouteAmendmentAnchor: Codable, Hashable, Sendable {
     let legIndex: Int
     let legID: UUID
     let fraction: Double
@@ -15,6 +15,7 @@ struct RouteAmendmentRoute: Equatable, Sendable {
 
     let legs: [NavigationLeg]
     let firstAvailable: RouteAmendmentAnchor
+    let identificationPoints: [IdentificationPoint]
 
     struct OriginalLeg: Identifiable, Equatable, Sendable {
         let id: UUID
@@ -41,9 +42,11 @@ struct RouteAmendmentRoute: Equatable, Sendable {
     }
 
     init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
-         planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind) {
+         planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind,
+         identificationPoints: [IdentificationPoint] = []) {
         self.legs = legs
         self.firstAvailable = firstAvailable
+        self.identificationPoints = identificationPoints
         self.planning = planning
         self.navigationMode = navigationMode
     }
@@ -133,6 +136,25 @@ struct RouteAmendmentRoute: Equatable, Sendable {
         return "Leg \(anchor.legIndex + 1) · \(leg.departure.name) → \(leg.arrival.name)"
     }
 
+    func originalSegments(departure: RouteAmendmentAnchor?, rejoin: RouteAmendmentAnchor?) -> [RouteAmendmentDraft.Segment] {
+        typealias Segment = RouteAmendmentDraft.Segment
+        return legs.indices.flatMap { index -> [Segment] in
+            let leg = legs[index]
+            guard let departure, let rejoin,
+                  index >= departure.legIndex, index <= rejoin.legIndex else {
+                return [Segment(from: leg.departure.position, to: leg.arrival.position, role: .retained)]
+            }
+            let start = index == departure.legIndex ? departure.fraction : 0
+            let end = index == rejoin.legIndex ? rejoin.fraction : 1
+            return [(0, start, Segment.Role.retained), (start, end, .bypassed), (end, 1, .retained)]
+                .compactMap { from, to, role in
+                    guard from < to else { return nil }
+                    return Segment(from: coordinate(on: leg, at: from),
+                                   to: coordinate(on: leg, at: to), role: role)
+                }
+        }
+    }
+
     var stops: [Stop] {
         var seen = Set<RouteAmendmentAnchor>()
         return legs.indices.flatMap { index in
@@ -162,7 +184,7 @@ extension Flight {
             : RouteAmendmentAnchor(legIndex: activeLegIndex, legID: leg.id, fraction: reportedProgress)
         return RouteAmendmentRoute(legs: flightPlan.legs, firstAvailable: earliest,
                                    planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
-                                   navigationMode: executionMode)
+                                   navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints)
     }
 }
 
@@ -629,25 +651,18 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     func segments(on route: RouteAmendmentRoute) -> [Segment] {
-        let original = route.legs.indices.flatMap { index -> [Segment] in
-            let leg = route.legs[index]
-            guard let departure, let rejoin,
-                  index >= departure.legIndex, index <= rejoin.legIndex else {
-                return [Segment(from: leg.departure.position, to: leg.arrival.position, role: .retained)]
-            }
-            let start = index == departure.legIndex ? departure.fraction : 0
-            let end = index == rejoin.legIndex ? rejoin.fraction : 1
-            return [(0, start, Segment.Role.retained), (start, end, .bypassed), (end, 1, .retained)]
-                .compactMap { from, to, role in
-                    guard from < to else { return nil }
-                    return Segment(from: route.coordinate(on: leg, at: from),
-                                   to: route.coordinate(on: leg, at: to), role: role)
-                }
-        }
+        let original = route.originalSegments(departure: departure, rejoin: rejoin)
         let proposed = positions(in: sketch, on: route)
         return original + zip(proposed, proposed.dropFirst()).map {
             Segment(from: $0, to: $1, role: .proposed)
         }
+    }
+
+    mutating func requireNewDeparture() {
+        step = .staleDeparture
+        overlapPosition = nil
+        editor = nil
+        legPanel = nil
     }
 
     private mutating func validateDeparture(on route: RouteAmendmentRoute) {

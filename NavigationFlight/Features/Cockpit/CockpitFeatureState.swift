@@ -60,6 +60,19 @@ struct CockpitFeatureState: Equatable, Sendable {
     private var navigationGeneration: UUID?
     private(set) var pendingReachUndo: PendingReachUndo?
     private(set) var routeAmendmentDraft: RouteAmendmentDraft?
+    var amendmentSave: RouteAmendmentSave?
+
+    struct RouteAmendmentSave: Equatable {
+        let amendment: PendingRouteAmendment
+        let timestamp: Date
+        let elapsed: Duration
+        var status: Status
+
+        enum Status: Equatable {
+            case saving
+            case failed(canEdit: Bool)
+        }
+    }
 
     var routeForAmendment: RouteAmendmentRoute? {
         guard let flightPlan else { return nil }
@@ -69,8 +82,10 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func updateRouteAmendment(
         _ intent: RouteAmendmentDraft.Intent, mode: RouteAmendmentMode = .manual
     ) {
+        guard amendmentSave == nil, flight?.pendingRouteAmendment == nil else { return }
         if case .discard = intent {
             routeAmendmentDraft = nil
+            amendmentSave = nil
             return
         }
         guard let flight, let flightPlan, let route = routeForAmendment else { return }
@@ -151,6 +166,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             areDriftLinesVisible = true
             pendingReachUndo = nil
             routeAmendmentDraft = nil
+            amendmentSave = nil
         }
     }
 
@@ -165,7 +181,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         self.flightPlan = flightPlan
         flightPlanSourceData = sourceData
         selectedLegIndex = flight.activeLegIndex
-        mode = .noWind
+        mode = flight.executionMode
         self.flight = flight
         legStartChecklists = cockpitContext?.checklists ?? [:]
         navigationGeneration = cockpitContext?.navigationGeneration
@@ -173,6 +189,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
         routeAmendmentDraft = nil
+        amendmentSave = nil
     }
 
     mutating func toggleDriftLines() {
@@ -201,6 +218,17 @@ struct CockpitFeatureState: Equatable, Sendable {
         flight = nextFlight
         createPendingLegStartChecklistForActiveLeg(selection: checklistSelection)
         pendingReachUndo = nil
+    }
+
+    mutating func installPendingAmendment(_ transition: CommittedNavigationTransition) {
+        installCommittedFlight(transition.flight)
+        installNavigationGeneration(transition.cockpitContext)
+        amendmentSave = nil
+        routeAmendmentDraft = nil
+    }
+
+    mutating func invalidateAmendmentDeparture() {
+        routeAmendmentDraft?.requireNewDeparture()
     }
 
     mutating func installCommittedFlight(_ committedFlight: Flight) {
@@ -597,3 +625,31 @@ struct FPLNavFileLoader: Sendable {
         }
     }
 }
+
+
+#if DEBUG
+extension CockpitFeatureState {
+    mutating func prepareAmendmentConfirmationFixture() {
+        guard let route = routeForAmendment, route.legs.indices.contains(route.firstAvailable.legIndex + 1) else { return }
+        updateRouteAmendment(.open)
+        let departure = route.anchor(at: route.firstAvailable.legIndex, fraction: 0.5)
+        let rejoin = route.anchor(at: departure.legIndex + 1, fraction: 1)
+        let position = route.coordinate(at: departure)
+        let via = WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,
+                                  longitudeDegrees: position.longitudeDegrees + 0.02)
+        updateRouteAmendment(.chooseAnchor(departure))
+        updateRouteAmendment(.plot(.init(position: via)))
+        updateRouteAmendment(.chooseRejoin)
+        updateRouteAmendment(.chooseAnchor(rejoin))
+        updateRouteAmendment(.confirmRejoin)
+        updateRouteAmendment(.review)
+        for leg in routeAmendmentDraft?.reviewLegs(on: route) ?? [] {
+            updateRouteAmendment(.editLeg(leg.id))
+            updateRouteAmendment(.editLegField(.heading, "087"))
+            updateRouteAmendment(.editLegField(.minutes, "03"))
+            updateRouteAmendment(.editLegField(.seconds, "20"))
+            updateRouteAmendment(.saveLegValues)
+        }
+    }
+}
+#endif

@@ -376,18 +376,36 @@ struct AviationMapPresentationFactory {
         }
 
         let activeSourceLeg = flightPlan.legs[flight.activeLegIndex]
+        let activeArrival = flight.operationalArrival(for: activeSourceLeg)
         let resolvedLeg = plannedNavigation.legs[flight.activeLegIndex]
-        let plannedDurationSeconds: Int
+        let originalDuration: Int
         switch flight.executionMode {
         case .noWind:
-            plannedDurationSeconds = resolvedLeg.noWind.durationSeconds
+            originalDuration = resolvedLeg.noWind.durationSeconds
         case .wind:
             guard let wind = resolvedLeg.withWind else {
                 throw AviationMapPresentationError.unavailableWindMode
             }
-            plannedDurationSeconds = wind.timing.durationSeconds
+            originalDuration = wind.timing.durationSeconds
         }
-        let waypoints = flightPlan.waypoints.map { waypoint in
+        let plannedDurationSeconds = flight.activePartwayDeparture?.departurePlannedElapsedSeconds ?? originalDuration
+        let routeWaypoints = activeArrival.id == activeSourceLeg.arrival.id
+            ? flightPlan.waypoints : flightPlan.waypoints + [activeArrival]
+        let bypassedWaypointIDs: Set<UUID>
+        if let pending = flight.pendingRouteAmendment, let route = flight.routeForAmendment(in: flightPlan) {
+            let bypassed = route.stops.filter {
+                route.precedes(pending.departure, $0.id) && route.precedes($0.id, pending.rejoin)
+            }
+            let retained = route.stops.filter { stop in !bypassed.contains(where: { $0.id == stop.id }) }
+            func waypointID(_ stop: RouteAmendmentRoute.Stop) -> UUID {
+                let leg = route.legs[stop.id.legIndex]
+                return stop.id.fraction == 0 ? leg.departure.id : leg.arrival.id
+            }
+            bypassedWaypointIDs = Set(bypassed.map(waypointID)).subtracting(retained.map(waypointID))
+        } else {
+            bypassedWaypointIDs = []
+        }
+        let waypoints = routeWaypoints.filter { !bypassedWaypointIDs.contains($0.id) }.map { waypoint in
             AviationMapWaypoint(
                 id: waypoint.id,
                 name: waypoint.name,
@@ -395,7 +413,7 @@ struct AviationMapPresentationFactory {
                 role: role(
                     for: waypoint.id,
                     departureID: activeSourceLeg.departure.id,
-                    arrivalID: activeSourceLeg.arrival.id
+                    arrivalID: activeArrival.id
                 )
             )
         }
@@ -404,12 +422,12 @@ struct AviationMapPresentationFactory {
                 id: leg.id,
                 index: index,
                 from: coordinate(leg.departure.position),
-                to: coordinate(leg.arrival.position)
+                to: coordinate(flight.operationalArrival(for: leg).position)
             )
         }
         let annotationsByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
         let activeIdentificationPoints = try flightPlan.identificationPoints
-            .filter { $0.legID == activeSourceLeg.id }
+            .filter { $0.legID == activeSourceLeg.id && flight.pendingRouteAmendment?.includes($0) != false }
             .enumerated()
             .map { offset, sourcePoint in
                 guard let resolved = annotationsByID[sourcePoint.id],
@@ -456,7 +474,7 @@ struct AviationMapPresentationFactory {
                 ($0.referenceID, $0)
             }
         )
-        let endpointIDs = Set([activeSourceLeg.departure.id, activeSourceLeg.arrival.id])
+        let endpointIDs = Set([activeSourceLeg.departure.id, activeArrival.id])
         let endpointReferences = try flightPlan.vorDmeReferences
             .filter { endpointIDs.contains($0.waypointID) }
             .map { reference in
@@ -481,32 +499,33 @@ struct AviationMapPresentationFactory {
             waypoints: waypoints,
             legs: legs,
             activeLegIndex: flight.activeLegIndex,
-            nextLegPreview: legs.first { $0.index == flight.activeLegIndex + 1 },
+            nextLegPreview: flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) == true
+                ? nil : legs.first { $0.index == flight.activeLegIndex + 1 },
             endpointReferences: endpointReferences,
             plannedDurationSeconds: plannedDurationSeconds,
             minuteMarkers: AviationMapSymbology.minuteMarkers(
                 from: coordinate(activeSourceLeg.departure.position),
                 to: coordinate(activeSourceLeg.arrival.position),
-                plannedDurationSeconds: plannedDurationSeconds
-            ),
+                plannedDurationSeconds: originalDuration
+            ).filter { $0.fraction < (flight.activePartwayDeparture?.departure.fraction ?? 1) || activeArrival.id == activeSourceLeg.arrival.id },
             identificationPoints: activeIdentificationPoints,
             destinationTarget: AviationMapETATarget(
                 id: NavigationTimingTargetKey(
                     legID: activeSourceLeg.id,
                     kind: .destination,
-                    targetID: activeSourceLeg.arrival.id
+                    targetID: activeArrival.id
                 ),
-                name: activeSourceLeg.arrival.name,
+                name: activeArrival.name,
                 plannedElapsedSeconds: plannedDurationSeconds,
                 committedETASeconds: flight.committedPilotETA(targetKey: NavigationTimingTargetKey(
                     legID: activeSourceLeg.id,
                     kind: .destination,
-                    targetID: activeSourceLeg.arrival.id
+                    targetID: activeArrival.id
                 ))
             ),
             driftReferenceArms: AviationMapGeometry.driftReferenceArms(
                 from: coordinate(activeSourceLeg.departure.position),
-                to: coordinate(activeSourceLeg.arrival.position),
+                to: coordinate(activeArrival.position),
                 angleDegrees: flightPlan.parameters.driftAngle.value
             )
         )

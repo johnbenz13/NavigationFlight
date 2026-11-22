@@ -2,7 +2,8 @@ import Foundation
 
 nonisolated enum RecordedNavigationCommand: Sendable {
     case startLeg(at: Date, recordingID: UUID, eventIDs: [UUID])
-    case identifyDestination(at: Date, elapsed: Duration, eventID: UUID)
+    case confirmPendingAmendment(PendingRouteAmendment, plan: FlightPlan, at: Date, elapsed: Duration)
+    case identifyDestination(at: Date, elapsed: Duration, eventID: UUID, targetID: UUID? = nil)
     case reachIdentificationPoint(
         key: IdentificationPointKey,
         orderedActiveLegPointKeys: [IdentificationPointKey],
@@ -16,7 +17,8 @@ nonisolated enum RecordedNavigationCommand: Sendable {
         orderedActiveLegPointKeys: [IdentificationPointKey],
         at: Date,
         elapsed: Duration,
-        eventIDs: [UUID]
+        eventIDs: [UUID],
+        expectedLegID: UUID? = nil
     )
     case completeNavigation(at: Date, elapsed: Duration, eventID: UUID)
     case automaticLegRecovery(legID: UUID, at: Date, elapsed: Duration, eventID: UUID)
@@ -70,11 +72,13 @@ nonisolated enum FlightRecordingLocationOutcome: Equatable, Sendable {
     case physicalStateCorrected(FlightRecording)
     case closed(FlightRecording)
     case promotionPersistenceFailed
+    case trackPersistenceFailed
 }
 
 actor FlightRecordingEngine {
     enum EngineError: Error, Equatable, Sendable {
         case navigationNotReadyForCompletion
+        case routeOutcomeUncertain
     }
 
     private let store: any FlightRecordingStore
@@ -82,6 +86,7 @@ actor FlightRecordingEngine {
     private let detectorPolicySnapshot: PhysicalFlightDetectionPolicySnapshot
     private var detector: PhysicalFlightDetector
     private var flight: Flight
+    private var unresolvedRouteWrite: (transaction: FlightRouteTransaction, transition: CommittedNavigationTransition)?
     private var mutationInProgress = false
     private var mutationWaiters: [CheckedContinuation<Void, Never>] = []
     var queuedMutationCount: Int { mutationWaiters.count }
@@ -168,12 +173,27 @@ actor FlightRecordingEngine {
         await acquireMutation()
         defer { releaseMutation() }
         guard isArmed else { return .none }
+        let routeWriteUnresolved = unresolvedRouteWrite != nil
         switch event {
         case .sample(let sourceSample, _):
             guard let baseSample = RecordedTrackSample(sourceSample) else { return .none }
             let sample = associateSupplemental(with: baseSample)
             guard !deliveredSamples.contains(sample) else { return .none }
             deliveredSamples.append(sample)
+            if routeWriteUnresolved {
+                guard let recording, !storageDegradations.contains(.lowStorage) else {
+                    return .trackPersistenceFailed
+                }
+                do {
+                    try await appendTrackSample(sample, recordingID: recording.id)
+                } catch {
+                    // Keep the gap visible without appending journal events while its
+                    // route transaction is uncertain.
+                    segmentNeedsReopening = true
+                    return .trackPersistenceFailed
+                }
+                return .none
+            }
             if recording == nil {
                 rollingBuffer.append(sample)
                 let cutoff = sample.observedAt.addingTimeInterval(-120)
@@ -242,17 +262,7 @@ actor FlightRecordingEngine {
                     }
                 }
                 if !storageDegradations.contains(.lowStorage) {
-                    if segmentNeedsReopening || activeSegmentID == nil {
-                        activeSegmentID = UUID()
-                        segmentNeedsReopening = false
-                    }
-                    if let segmentID = activeSegmentID {
-                        try? await store.appendTrackBatch(RecordedTrackBatch(
-                            recordingID: currentRecording.id,
-                            segmentID: segmentID,
-                            samples: [sample]
-                        ))
-                    }
+                    try? await appendTrackSample(sample, recordingID: currentRecording.id)
                 }
                 var candidateDetector = detector
                 let physicalEvents = candidateDetector.process(sourceSample, monotonicTime: monotonicTime)
@@ -340,6 +350,10 @@ actor FlightRecordingEngine {
                 }
             }
         case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
+            if routeWriteUnresolved {
+                segmentNeedsReopening = true
+                return .none
+            }
             if var recording, !segmentNeedsReopening {
                 let availability: RecordingLocationAvailability
                 switch event {
@@ -369,6 +383,13 @@ actor FlightRecordingEngine {
             break
         }
         return .none
+    }
+
+    private func appendTrackSample(_ sample: RecordedTrackSample, recordingID: UUID) async throws {
+        let segmentID = segmentNeedsReopening ? UUID() : activeSegmentID ?? UUID()
+        activeSegmentID = segmentID
+        segmentNeedsReopening = false
+        try await store.appendTrackBatch(.init(recordingID: recordingID, segmentID: segmentID, samples: [sample]))
     }
 
     private func associateSupplemental(with sample: RecordedTrackSample) -> RecordedTrackSample {
@@ -428,7 +449,12 @@ actor FlightRecordingEngine {
     ) async throws -> CommittedNavigationTransition {
         await acquireMutation()
         defer { releaseMutation() }
+        if unresolvedRouteWrite != nil {
+            guard case .confirmPendingAmendment = command else { throw EngineError.routeOutcomeUncertain }
+        }
         switch command {
+        case .confirmPendingAmendment(let amendment, let plan, let timestamp, let elapsed):
+            return try await confirmPendingAmendment(amendment, plan: plan, at: timestamp, elapsed: elapsed, context: context)
         case .startLeg(let timestamp, let recordingID, let eventIDs):
             let currentFlight = flight
             let candidateFlight = try await MainActor.run {
@@ -502,9 +528,14 @@ actor FlightRecordingEngine {
                 recording: promotion.recording,
                 eventIDs: promotion.events.map(\.id), cockpitContext: startedContext
             )
-        case .identifyDestination(let timestamp, let elapsed, let eventID):
+        case .identifyDestination(let timestamp, let elapsed, let eventID, let targetID):
             return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: [eventID], context: context, selection: checklistSelection) { candidate in
                 let legID = candidate.legIDs[candidate.activeLegIndex]
+                if let departure = candidate.activePartwayDeparture?.departureStop {
+                    guard targetID == departure.id else { throw PendingRouteAmendment.Validation.unavailableDeparture }
+                    try candidate.identifyDestination(at: timestamp)
+                    return ([(.pilot, .amendmentDepartureIdentified(legID: legID, targetID: departure.id))], nil)
+                }
                 try candidate.identifyDestination(at: timestamp)
                 return ([(.pilot, .destinationIdentified(legID: legID))], nil)
             }
@@ -531,9 +562,12 @@ actor FlightRecordingEngine {
                 }
                 return ([(.pilot, .identificationPointReached(key: key))], nil)
             }
-        case .reachCurrentWaypoint(let orderedKeys, let timestamp, let elapsed, let eventIDs):
+        case .reachCurrentWaypoint(let orderedKeys, let timestamp, let elapsed, let eventIDs, let expectedLegID):
             return try await commitExistingRecording(at: timestamp, elapsed: elapsed, eventIDs: eventIDs, context: context, selection: checklistSelection) { candidate in
                 let departingLegID = candidate.legIDs[candidate.activeLegIndex]
+                guard expectedLegID == nil || expectedLegID == departingLegID else {
+                    throw PendingRouteAmendment.Validation.unavailableDeparture
+                }
                 try candidate.reachCurrentWaypoint(orderedActiveLegPointKeys: orderedKeys, at: timestamp)
                 if candidate.legState == .completed {
                     return ([
@@ -655,6 +689,11 @@ actor FlightRecordingEngine {
                 ))], nil)
             }
         case .undoReach(let originalEventID, let restoredFlight, let timestamp, let elapsed, let eventID):
+            guard await MainActor.run(body: { [flight] in
+                flight.pendingRouteAmendment == restoredFlight.pendingRouteAmendment
+            }) else {
+                throw PendingRouteAmendment.Validation.unavailableDeparture
+            }
             guard restoredFlight.id == flight.id,
                   restoredFlight.flightPlanID == flight.flightPlanID,
                   restoredFlight.legIDs == flight.legIDs else {
@@ -702,6 +741,112 @@ actor FlightRecordingEngine {
             storageDegradations.insert(reason)
             return transition
         }
+    }
+
+    private func confirmPendingAmendment(
+        _ amendment: PendingRouteAmendment,
+        plan: FlightPlan,
+        at timestamp: Date,
+        elapsed: Duration,
+        context: RecordingCockpitContext?
+    ) async throws -> CommittedNavigationTransition {
+        if let outstanding = unresolvedRouteWrite {
+            guard outstanding.transaction.event.payload == .pendingRouteAmendmentConfirmed(amendment) else {
+                throw FlightRecordingStoreError.operationFailed(id: outstanding.transaction.recordingID)
+            }
+            if try await reconcileRouteWrite(outstanding.transaction) {
+                return publishRouteWrite(outstanding.transition)
+            }
+            unresolvedRouteWrite = nil
+        }
+        if flight.pendingRouteAmendment == amendment, let recording {
+            return .init(flight: flight, recording: recording, eventIDs: [amendment.id], cockpitContext: cockpitContext)
+        }
+        guard var candidate = recording else { throw FlightRecording.TransitionError.recordingAlreadyClosed }
+        let expectedSequence = candidate.nextEventSequence
+        let current = flight
+        let changedFlight = try await MainActor.run {
+            var next = current
+            try next.installPendingAmendment(amendment, in: plan)
+            return next
+        }
+        var capturedContext = context?.navigationGeneration == cockpitContext?.navigationGeneration ? context : nil
+        capturedContext = capturedContext ?? cockpitContext
+        guard var capturedContext else {
+            throw FlightRecordingStoreError.operationFailed(id: candidate.id)
+        }
+        try capturedContext.validate(flightID: current.id, legIDs: flightPlanSnapshot.legIDs)
+        capturedContext.navigationGeneration = amendment.id
+        var event = try candidate.confirmPendingAmendment(amendment, at: timestamp, elapsed: elapsed)
+        event.cockpitContext = capturedContext
+        if candidate.sourceSchemaVersion < 3 {
+            candidate.cockpitContextStartSequence = expectedSequence
+        }
+        candidate.sourceSchemaVersion = 4
+        let transaction = FlightRouteTransaction(recordingID: candidate.id, expectedSequence: expectedSequence, event: event)
+        let transition = CommittedNavigationTransition(
+            flight: changedFlight, recording: candidate, eventIDs: [event.id], cockpitContext: capturedContext
+        )
+        unresolvedRouteWrite = (transaction, transition)
+        do {
+            try await store.commitRouteTransaction(transaction)
+        } catch {
+            // Leave the write fenced if durable state itself cannot be read.
+            if try await reconcileRouteWrite(transaction) {
+                return publishRouteWrite(transition)
+            }
+            unresolvedRouteWrite = nil
+            throw error
+        }
+        return publishRouteWrite(transition)
+    }
+
+    private func reconcileRouteWrite(_ transaction: FlightRouteTransaction) async throws -> Bool {
+        do { return try await store.routeTransactionIsCommitted(transaction) }
+        catch { throw EngineError.routeOutcomeUncertain }
+    }
+
+    private func publishRouteWrite(_ transition: CommittedNavigationTransition) -> CommittedNavigationTransition {
+        flight = transition.flight
+        recording = transition.recording
+        cockpitContext = transition.cockpitContext
+        unresolvedRouteWrite = nil
+        return transition
+    }
+
+    private func requireResolvedRouteWrite() throws {
+        if let unresolvedRouteWrite {
+            throw FlightRecordingStoreError.operationFailed(id: unresolvedRouteWrite.transaction.recordingID)
+        }
+    }
+
+    func checkpoint(recordingID: UUID, at timestamp: Date) async throws {
+        await acquireMutation()
+        defer { releaseMutation() }
+        try requireResolvedRouteWrite()
+        guard recording?.id == recordingID, recording?.closure == nil else { return }
+        try await store.updateRecoveryCheckpoint(recordingID: recordingID, at: timestamp)
+        recording = recording?.restoringRecoveryCheckpoint(at: timestamp)
+    }
+
+    func expireRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) async throws -> FlightRecording? {
+        await acquireMutation()
+        defer { releaseMutation() }
+        try requireResolvedRouteWrite()
+        guard var candidate = recording, candidate.id == recordingID, candidate.closure == nil else { return nil }
+        let snapshot = try await store.readSnapshot(id: recordingID)
+        let lastActivity = snapshot.latestDurableEvidenceAt
+        guard snapshot.recording.closure == nil,
+              timestamp.timeIntervalSince(lastActivity) >= candidate.recoveryWindowSeconds else { return nil }
+        let event = try candidate.closeDuringRecovery(
+            at: lastActivity, elapsed: .seconds(max(0, lastActivity.timeIntervalSince(candidate.startedAt))),
+            cause: .recoveryExpired, eventID: UUID()
+        )
+        try await store.appendEvent(event, recordingID: recordingID, synchronize: true)
+        guard let closure = candidate.closure else { return nil }
+        try await store.close(id: recordingID, closure: closure)
+        recording = candidate
+        return candidate
     }
 
     private func commitExistingRecording(
@@ -770,7 +915,7 @@ actor FlightRecordingEngine {
         return await MainActor.run {
             var result = prior ?? RecordingCockpitContext(flightID: flight.id, checklists: [:], areDriftLinesVisible: true)
             switch payload {
-            case .destinationIdentified(let legID), .waypointReached(let legID):
+            case .destinationIdentified(let legID), .amendmentDepartureIdentified(let legID, _), .waypointReached(let legID):
                 result.checklists[legID]?.phaseState = .hiddenForPhase
             default: break
             }
@@ -786,6 +931,7 @@ actor FlightRecordingEngine {
     func recordPresentation(_ context: RecordingCockpitContext, at timestamp: Date) async throws -> Bool {
         await acquireMutation()
         defer { releaseMutation() }
+        try requireResolvedRouteWrite()
         try context.validate(flightID: flight.id, legIDs: flightPlanSnapshot.legIDs)
         // Check after acquiring the gate: navigation may have committed while this
         // snapshot was queued, including an undo back to otherwise identical values.
@@ -841,6 +987,7 @@ actor FlightRecordingEngine {
     ) async throws -> FlightRecordingEngineSnapshot {
         await acquireMutation()
         defer { releaseMutation() }
+        try requireResolvedRouteWrite()
         guard var candidate = recording else {
             throw FlightRecording.TransitionError.recordingAlreadyClosed
         }
@@ -873,6 +1020,7 @@ actor FlightRecordingEngine {
     ) async throws -> FlightRecordingEngineSnapshot {
         await acquireMutation()
         defer { releaseMutation() }
+        try requireResolvedRouteWrite()
         let currentFlightID = flight.id
         let isReadyForCompletion = await MainActor.run {
             completedFlight.id == currentFlightID && completedFlight.legState == .completed

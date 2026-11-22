@@ -179,7 +179,7 @@ enum AltitudeReference: String, Equatable, Sendable {
     case msl = "MSL"
 }
 
-enum NavigationMode: Equatable, Sendable {
+nonisolated enum NavigationMode: String, Codable, Sendable {
     case noWind
     case wind
 }

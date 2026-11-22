@@ -197,6 +197,9 @@ struct CockpitView: View {
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
     var routeForAmendment: RouteAmendmentRoute?
     var routeAmendmentDraft: RouteAmendmentDraft?
+    var amendmentSaveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
+    var onConfirmAmendment: () -> Void = {}
+    var onKeepEditingAmendment: () -> Void = {}
     @FocusState private var amendmentField: RouteAmendmentLegEntry.Field?
     @State private var nativeAmendmentField: RouteAmendmentLegEntry.Field?
     private var isEditingAmendmentField: Bool { amendmentField != nil || nativeAmendmentField != nil }
@@ -247,10 +250,21 @@ struct CockpitView: View {
     @State private var compactMapDetent: PresentationDetent = .large
     @State private var amendmentCenterRequest: UUID?
     @State private var amendmentDiscardConfirmation = false
+    @State private var compactDepartureHeaderHeight: CGFloat = 0
 
     private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
         guard let routeForAmendment, let routeAmendmentDraft, !routeAmendmentDraft.isPaused else { return nil }
         return .init(draft: routeAmendmentDraft, route: routeForAmendment)
+    }
+
+    private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {
+        guard let routeForAmendment, let amendment = flight.pendingRouteAmendment else { return nil }
+        return .init(
+            amendment: amendment,
+            route: routeForAmendment,
+            activePartwayDeparture: flight.legState == .active ? flight.activePartwayDeparture?.departureStop : nil,
+            departureHeaderInset: horizontalSizeClass == .compact ? compactDepartureHeaderHeight + 12 : 0
+        )
     }
 
     private var isEditingRouteAmendment: Bool { amendmentMapPresentation != nil }
@@ -444,6 +458,19 @@ struct CockpitView: View {
             showsHeadingCommitConfirmation = false
             showsCompactFrequencies = false
         }
+        .onChange(of: flight.pendingRouteAmendment?.id, initial: true) { _, pendingID in
+            guard pendingID != nil, let pendingAmendmentMapPresentation,
+                  flight.activePartwayDeparture != nil, let active = mapPresentation.activeLeg else { return }
+            let stops = pendingAmendmentMapPresentation.amendment.replacementLegs.map {
+                AviationMapCoordinate(latitude: $0.to.latitude, longitude: $0.to.longitude)
+            }
+            focusMap(.amendment([active.from, active.to] + stops))
+        }
+        .onChange(of: mapPresentation.destinationTarget.id) { old, new in
+            if old.legID == new.legID && old.targetID != new.targetID {
+                selectedMapCallout = nil
+            }
+        }
         .onChange(of: flight.legState) { _, newValue in
             guard horizontalSizeClass == .compact else { return }
             isCompactMapChromeVisible = newValue != .active
@@ -597,7 +624,7 @@ struct CockpitView: View {
             }
         } else {
             VStack(spacing: 0) {
-                let mapHeight = isEditingAmendmentField ? min(layout.mapExtent, size.height * 0.72) : layout.mapExtent
+                let mapHeight = amendmentMapHeight(in: size, normalExtent: layout.mapExtent)
                 mapSurface(isLandscape: false, mapWidth: size.width)
                     .frame(height: mapHeight)
                 if let amendmentMapPresentation {
@@ -616,6 +643,17 @@ struct CockpitView: View {
         }
     }
 
+    private func amendmentMapHeight(in size: CGSize, normalExtent: CGFloat) -> CGFloat {
+        var mapExtent = normalExtent
+        if horizontalSizeClass == .compact, routeAmendmentDraft?.step == .review, isEditingRouteAmendment {
+            // Leave space for the live timer, two review rows and the fixed confirmation action.
+            mapExtent = max(0, min(normalExtent, (restingLayoutSize ?? size).height - 344))
+        } else if amendmentSaveStatus != nil {
+            mapExtent = max(0, normalExtent - 32)
+        }
+        return isEditingAmendmentField ? min(mapExtent, size.height * 0.72) : mapExtent
+    }
+
     private func amendmentConsole(
         _ presentation: RouteAmendmentMapOverlay.Presentation, compact: Bool, inSideRail: Bool = false
     ) -> some View {
@@ -626,6 +664,9 @@ struct CockpitView: View {
             compact: compact,
             inSideRail: inSideRail,
             onIntent: onRouteAmendment,
+            saveStatus: amendmentSaveStatus,
+            onConfirm: onConfirmAmendment,
+            onKeepEditing: onKeepEditingAmendment,
             onPlaceAtMapCenter: { amendmentCenterRequest = UUID() },
             onDiscard: {
                 if presentation.draft.hasContent {
@@ -693,6 +734,7 @@ struct CockpitView: View {
                 onShowPilotETACheck: onShowPilotETACheck,
                 onHidePilotETACheck: onHidePilotETACheck,
                 amendment: amendmentMapPresentation,
+                pendingAmendment: pendingAmendmentMapPresentation,
                 amendmentCenterRequest: amendmentCenterRequest,
                 onAmendmentPlot: { onRouteAmendment(.plot($0)) },
                 onMapInteraction: mapInteractionOccurred
@@ -820,6 +862,7 @@ struct CockpitView: View {
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active
             || isCompactMapChromeVisible || isMapDisclosurePresented || routeAmendmentDraft != nil
+            || flight.activePartwayDeparture != nil
     }
 
     private var isPilotETAEditing: Bool {
@@ -1013,14 +1056,24 @@ struct CockpitView: View {
 
     @ViewBuilder
     private var legHeader: some View {
-        if horizontalSizeClass == .compact, !dynamicTypeSize.isAccessibilitySize {
-            compactLegHeader
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
-                .frame(maxHeight: .infinity, alignment: .top)
-                .padding(12)
+        if horizontalSizeClass == .compact,
+           !dynamicTypeSize.isAccessibilitySize || showsCompactPartwayDeparture {
+            Group {
+                if showsCompactPartwayDeparture {
+                    compactPartwayDepartureHeader
+                } else {
+                    compactLegHeader
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                compactDepartureHeaderHeight = height
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(12)
         } else {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
@@ -1040,6 +1093,41 @@ struct CockpitView: View {
                     .allowsHitTesting(false)
             }
             .frame(maxHeight: .infinity, alignment: .top).padding(20)
+        }
+    }
+
+    private var showsCompactPartwayDeparture: Bool {
+        flight.legState == .active && flight.activePartwayDeparture != nil
+    }
+
+    private var compactPartwayDepartureHeader: some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(legStatusText)
+                        .font(.caption.weight(.bold))
+                        .accessibilityIdentifier("leg-status")
+                    Text("·").foregroundStyle(.secondary).accessibilityHidden(true)
+                    Text(data.legPosition.uppercased())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("pending-departure-leg-position")
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(data.origin)
+                    Image(systemName: "arrow.right").font(.caption)
+                    Text(data.destination)
+                }
+                .font(.subheadline.weight(.semibold))
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+                .accessibilityIdentifier("pending-departure-leg-route")
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            amendmentToolbar
+            compactMapToolsButton
         }
     }
 
@@ -1068,16 +1156,20 @@ struct CockpitView: View {
             .accessibilityLabel("From \(data.origin) to \(data.destination)")
             Spacer(minLength: 4)
             amendmentToolbar
-            Button(action: showMapTools) {
-                Image(systemName: "map")
-                    .font(.headline)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Map tools")
+            compactMapToolsButton
         }
+    }
+
+    private var compactMapToolsButton: some View {
+        Button(action: showMapTools) {
+            Image(systemName: "map")
+                .font(.headline)
+        }
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .accessibilityLabel("Map tools")
     }
 
     private var regularLegHeader: some View {
@@ -1119,11 +1211,15 @@ struct CockpitView: View {
     private var amendmentToolbar: some View {
         if routeForAmendment != nil {
             HStack(spacing: 2) {
-                amendmentIcon("pencil", label: "Amend route", id: "amend-route", intent: .open,
-                              highlighted: isEditingRouteAmendment)
-                    .disabled(routeAmendmentDraft != nil)
-                    .accessibilityValue(routeAmendmentDraft == nil ? "" : (isEditingRouteAmendment ? "Editing draft" : "Draft paused"))
-                if let routeAmendmentDraft {
+                if flight.pendingRouteAmendment != nil {
+                    pendingAmendmentPencil
+                } else {
+                    amendmentIcon("pencil", label: "Amend route", id: "amend-route", intent: .open,
+                                  highlighted: isEditingRouteAmendment)
+                        .disabled(routeAmendmentDraft != nil)
+                        .accessibilityValue(routeAmendmentDraft == nil ? "" : (isEditingRouteAmendment ? "Editing draft" : "Draft paused"))
+                }
+                if let routeAmendmentDraft, amendmentSaveStatus == nil {
                     if routeAmendmentDraft.isPaused {
                         amendmentIcon("play.fill", label: "Resume route amendment draft", id: "resume-route-amendment", intent: .resume,
                                       highlighted: true)
@@ -1134,6 +1230,25 @@ struct CockpitView: View {
             }
             .fixedSize(horizontal: true, vertical: false)
         }
+    }
+
+    private var pendingAmendmentPencil: some View {
+        let teal = Color(RouteAmendmentMapOverlay.proposedColor)
+        return ZStack(alignment: .bottomTrailing) {
+            Image(systemName: "pencil")
+                .font(.headline)
+                .padding(3)
+            Image(systemName: "clock")
+                .font(.system(size: 10, weight: .semibold))
+                .offset(x: 3, y: 4)
+        }
+        .foregroundStyle(teal)
+        .frame(width: 44, height: 44)
+        .background(teal.opacity(0.14), in: .rect(cornerRadius: 14))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Manage pending amendment")
+        .accessibilityValue("Pending departure")
+        .accessibilityIdentifier("pending-amendment-pencil")
     }
 
     private func amendmentIcon(
@@ -1510,6 +1625,32 @@ struct CockpitView: View {
     }
 
     @ViewBuilder
+    private var reachDestinationSecondaryLabel: some View {
+        if flight.activePartwayDeparture != nil {
+            Text(reachDestinationTitle)
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color.accentColor.opacity(0.08), in: .rect(cornerRadius: 13))
+        } else {
+            destinationReportLabel(reachDestinationTitle, systemImage: "checkmark.circle", spacing: 6)
+        }
+    }
+
+    private var departureIdentifiedLabel: some View {
+        Text("Departure point identified")
+            .font(.caption.weight(.semibold))
+            .accessibilityIdentifier("departure-point-identified")
+    }
+
+    private var identifyDestinationTitle: LocalizedStringKey {
+        flight.activePartwayDeparture == nil ? "Report destination identified" : "Identify departure point"
+    }
+
+    private var reachDestinationTitle: LocalizedStringKey {
+        flight.activePartwayDeparture == nil ? "Report destination reached" : "Report reached"
+    }
+
+    @ViewBuilder
     private var compactDestinationAction: some View {
         switch flight.legState {
         case .ready:
@@ -1519,7 +1660,7 @@ struct CockpitView: View {
                 .disabled(isRecordingCommitInFlight)
         case .active where flight.destinationIdentifiedAt == nil:
             VStack(spacing: 2) {
-                destinationReportButton("Report destination identified", isIdentification: true) {
+                destinationReportButton(identifyDestinationTitle, isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
@@ -1530,9 +1671,8 @@ struct CockpitView: View {
                     cockpitPresentationState.setNextLegPresented(false)
                     onWaypointReached(cockpitRestoration)
                 } label: {
-                    destinationReportLabel("Report destination reached", systemImage: "checkmark.circle", spacing: 6)
+                    reachDestinationSecondaryLabel
                 }
-                .font(.caption.weight(.semibold))
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
                 .frame(maxWidth: .infinity, minHeight: 22)
@@ -1541,7 +1681,8 @@ struct CockpitView: View {
                 .accessibilityIdentifier("reached-now")
             }
         case .active:
-            destinationReportButton("Report destination reached") {
+            if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
+            destinationReportButton(reachDestinationTitle) {
                 onWaypointReached(cockpitRestoration)
             }
             .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2349,7 +2490,7 @@ struct CockpitView: View {
         case .ready:
             previousLegSummary == nil ? "READY" : "READY · SUCCESSOR TRACK-UP"
         case .active:
-            flight.destinationIdentifiedAt == nil ? "ACTIVE" : "ACTIVE · DESTINATION IDENTIFIED"
+            flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil ? "ACTIVE" : "ACTIVE · DESTINATION IDENTIFIED"
         case .completed:
             "COMPLETE"
         }
@@ -2360,7 +2501,7 @@ struct CockpitView: View {
         case .ready:
             previousLegSummary == nil
         case .active:
-            flight.destinationIdentifiedAt == nil
+            flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil
         case .completed:
             false
         }
@@ -2630,7 +2771,7 @@ struct CockpitView: View {
                     .accessibilityHint("Opens the flight plan to choose a starting leg")
                     .accessibilityIdentifier("choose-starting-leg")
             case .active where flight.destinationIdentifiedAt == nil:
-                destinationReportButton("Report destination identified", isIdentification: true) {
+                destinationReportButton(identifyDestinationTitle, isIdentification: true) {
                     selectedMapCallout = nil
                     onIdentifyDestination()
                 }
@@ -2641,15 +2782,15 @@ struct CockpitView: View {
                     cockpitPresentationState.setNextLegPresented(false)
                     onWaypointReached(cockpitRestoration)
                 } label: {
-                    destinationReportLabel("Report destination reached", systemImage: "checkmark.circle", spacing: 6)
+                    reachDestinationSecondaryLabel
                 }
-                .font(.caption.weight(.semibold))
                 .buttonStyle(.plain)
                 .foregroundStyle(.tint)
                 .accessibilityHint("Records reaching the waypoint now without identifying it first")
                 .accessibilityIdentifier("reached-now")
             case .active:
-                destinationReportButton("Report destination reached") {
+                if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
+                destinationReportButton(reachDestinationTitle) {
                     onWaypointReached(cockpitRestoration)
                 }
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
@@ -2704,16 +2845,24 @@ struct CockpitView: View {
         isIdentification: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            destinationReportLabel(title, systemImage: isIdentification ? "eye" : "checkmark.circle")
-                .font(.headline)
-                .foregroundStyle(isIdentification ? Self.destinationIdentificationForeground : .white)
-                .padding(.horizontal, 8)
-                .frame(maxWidth: .infinity, minHeight: 58)
-                .background(
-                    isIdentification ? Self.destinationIdentificationFill : Color(uiColor: visualStyle.primaryActionColor),
-                    in: RoundedRectangle(cornerRadius: 14)
-                )
+        let isPartwayDeparture = flight.activePartwayDeparture != nil
+        let usesIdentificationStyle = isIdentification && !isPartwayDeparture
+        return Button(action: action) {
+            Group {
+                if isPartwayDeparture {
+                    Text(title)
+                } else {
+                    destinationReportLabel(title, systemImage: isIdentification ? "eye" : "checkmark.circle")
+                        .padding(.horizontal, 8)
+                }
+            }
+            .font(.headline)
+            .foregroundStyle(usesIdentificationStyle ? Self.destinationIdentificationForeground : .white)
+            .frame(maxWidth: .infinity, minHeight: 58)
+            .background(
+                usesIdentificationStyle ? Self.destinationIdentificationFill : Color(uiColor: visualStyle.primaryActionColor),
+                in: RoundedRectangle(cornerRadius: 14)
+            )
         }
         .buttonStyle(.plain)
     }
@@ -2750,51 +2899,81 @@ struct CockpitView: View {
                     .accessibilityIdentifier("choose-starting-leg")
             }
         case .active:
+            let isPartwayDeparture = flight.activePartwayDeparture != nil
+            let identifyTitle: LocalizedStringKey = isPartwayDeparture ? identifyDestinationTitle : "Report Destination Identified"
+            let reachTitle: LocalizedStringKey = isPartwayDeparture ? reachDestinationTitle : "Report Destination Reached"
             if flight.destinationIdentifiedAt == nil {
                 VStack(spacing: 2) {
                     Button {
                         selectedMapCallout = nil
                         onIdentifyDestination()
                     } label: {
-                        destinationReportLabel("Report Destination Identified", systemImage: "eye")
-                            .font(.headline)
-                            .foregroundStyle(Self.destinationIdentificationForeground)
-                            .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
+                        Group {
+                            if isPartwayDeparture {
+                                HStack(spacing: 8) {
+                                    Text("◉")
+                                    Text(identifyTitle)
+                                }
+                            } else {
+                                destinationReportLabel(identifyTitle, systemImage: "eye")
+                                    .foregroundStyle(Self.destinationIdentificationForeground)
+                            }
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: horizontalSizeClass == .compact ? 40 : 46)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(horizontalSizeClass == .compact ? .small : .regular)
-                    .tint(Self.destinationIdentificationFill)
-                    .accessibilityLabel("Report Destination Identified")
+                    .tint(isPartwayDeparture ? Color(uiColor: visualStyle.primaryActionColor) : Self.destinationIdentificationFill)
+                    .accessibilityLabel(identifyTitle)
                     .accessibilityHint("Records identifying the current destination without changing the active leg")
                     .accessibilityIdentifier("waypoint-identified")
                     Button {
                         cockpitPresentationState.setNextLegPresented(false)
                         onWaypointReached(cockpitRestoration)
                     } label: {
-                        destinationReportLabel("Report Destination Reached", systemImage: "checkmark.circle", spacing: 6)
-                            .frame(maxWidth: .infinity, minHeight: 44)
+                        Group {
+                            if isPartwayDeparture {
+                                Text(reachTitle)
+                            } else {
+                                destinationReportLabel(reachTitle, systemImage: "checkmark.circle", spacing: 6)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(isPartwayDeparture ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tint))
                     .contentShape(Rectangle())
-                    .accessibilityLabel("Report Destination Reached")
+                    .accessibilityLabel(reachTitle)
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")
                     .accessibilityIdentifier("reached-now")
                 }
             } else {
-                Button {
-                    onWaypointReached(cockpitRestoration)
-                } label: {
-                    destinationReportLabel("Report Destination Reached", systemImage: "checkmark.circle")
-                        .font(.headline).frame(maxWidth: .infinity, minHeight: 50)
+                VStack(alignment: .leading, spacing: 6) {
+                    if isPartwayDeparture { departureIdentifiedLabel }
+                    Button {
+                        onWaypointReached(cockpitRestoration)
+                    } label: {
+                        Group {
+                            if isPartwayDeparture {
+                                Label(reachTitle, systemImage: "checkmark.circle.fill")
+                            } else {
+                                destinationReportLabel(reachTitle, systemImage: "checkmark.circle")
+                            }
+                        }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color(uiColor: visualStyle.primaryActionColor))
+                    .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
+                    .accessibilityLabel(reachTitle)
+                    .accessibilityHint(isPartwayDeparture
+                        ? "Records reaching the current destination"
+                        : "Records reaching this waypoint and advances the navigation plan")
+                    .accessibilityIdentifier("waypoint-reached")
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(Color(uiColor: visualStyle.primaryActionColor))
-                .foregroundStyle(Color(uiColor: visualStyle.cockpitProgressionActionForegroundColor))
-                .accessibilityLabel("Report Destination Reached")
-                .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
-                .accessibilityIdentifier("waypoint-reached")
             }
         case .completed:
             if isNavigationCompletionCommitted {

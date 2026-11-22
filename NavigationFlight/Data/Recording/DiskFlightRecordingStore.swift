@@ -16,6 +16,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
     private let now: @Sendable () -> Date
     private let beforeAppend: @Sendable (RecordedFlightEvent) throws -> Void
     private let beforeTrackSynchronization: BeforeTrackSynchronization
+    private let afterRouteInstall: @Sendable () throws -> Void
     private var lastTrackSynchronization: [UUID: Date] = [:]
 
     init(
@@ -27,9 +28,11 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         synchronizationInterval: TimeInterval = 5,
         now: @escaping @Sendable () -> Date = Date.init,
         beforeTrackSynchronization: @escaping BeforeTrackSynchronization = { _ in },
-        beforeAppend: @escaping @Sendable (RecordedFlightEvent) throws -> Void = { _ in }
+        beforeAppend: @escaping @Sendable (RecordedFlightEvent) throws -> Void = { _ in },
+        afterRouteInstall: @escaping @Sendable () throws -> Void = {}
     ) {
         self.beforeAppend = beforeAppend
+        self.afterRouteInstall = afterRouteInstall
         self.rootDirectory = rootDirectory
         self.fileManager = fileManager
         self.beforeInstall = beforeInstall
@@ -156,6 +159,8 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
 
     func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) throws {
         let directory = packageDirectory(id: recordingID)
+        let writer = try acquireWriter(in: directory, recordingID: recordingID)
+        defer { Darwin.close(writer) }
         let manifestURL = directory.appending(path: "manifest.json")
         let temporary = directory.appending(path: ".manifest-\(UUID().uuidString).tmp")
         do {
@@ -183,8 +188,13 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         recordingID: UUID,
         synchronize: Bool
     ) throws {
+        let writer = try acquireWriter(in: packageDirectory(id: recordingID), recordingID: recordingID)
+        defer { Darwin.close(writer) }
         try beforeAppend(event)
-        let snapshot = try readSnapshot(id: recordingID)
+        let snapshot = try readSnapshot(at: packageDirectory(id: recordingID), expectedID: recordingID)
+        guard snapshot.recording.closure == nil else {
+            throw FlightRecordingStoreError.operationFailed(id: recordingID)
+        }
         let expectedSequence = snapshot.events.last.map { $0.sequence + 1 } ?? 0
         guard event.sequence == expectedSequence else {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
@@ -218,6 +228,76 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         }
     }
 
+    func commitRouteTransaction(_ transaction: FlightRouteTransaction) async throws {
+        try transaction.validate()
+        let id = transaction.recordingID
+        let directory = packageDirectory(id: id)
+        let writer = try acquireWriter(in: directory, recordingID: id)
+        defer { Darwin.close(writer) }
+        let snapshot = try readSnapshot(at: directory, expectedID: id)
+        if try transaction.isCommitted(in: snapshot.events) {
+            try synchronizeDirectory(directory)
+            return
+        }
+        guard snapshot.recording.closure == nil,
+              transaction.expectedSequence == snapshot.recording.nextEventSequence,
+              !snapshot.events.contains(where: { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }) else {
+            throw FlightRecordingStoreError.invalidEventSequence(id: id)
+        }
+
+        let journal = directory.appending(path: "events.ndjson")
+        let nextJournal = directory.appending(path: ".events-\(UUID()).tmp")
+        let manifestURL = directory.appending(path: "manifest.json")
+        let nextManifest = directory.appending(path: ".manifest-\(UUID()).tmp")
+        defer {
+            try? fileManager.removeItem(at: nextJournal)
+            try? fileManager.removeItem(at: nextManifest)
+        }
+        do {
+            var data = try Data(contentsOf: journal)
+            if let last = data.last, last != 0x0A { data.append(0x0A) }
+            data.append(try FlightRecordingCoding.encoder.encode(RecordedFlightEventEnvelopeDTO(event: transaction.event)))
+            data.append(0x0A)
+            try writeAndSynchronize(data, to: nextJournal)
+
+            // A schema-4 manifest paired with the old journal is valid after an
+            // interruption here. Install it durably before introducing new events.
+            if snapshot.recording.sourceSchemaVersion < 4 {
+                var manifest = try FlightRecordingCoding.decoder.decode(
+                    FlightRecordingManifestDTO.self, from: Data(contentsOf: manifestURL)
+                )
+                manifest.schemaVersion = 4
+                manifest.progressionPolicy = snapshot.recording.recordedProgression
+                if snapshot.recording.sourceSchemaVersion < 3 {
+                    manifest.cockpitContextStartSequence = transaction.expectedSequence
+                }
+                try writeAndSynchronize(FlightRecordingCoding.encoder.encode(manifest), to: nextManifest)
+                try renameFile(nextManifest, to: manifestURL)
+                try synchronizeDirectory(directory)
+            }
+
+            try beforeAppend(transaction.event)
+            try? fileManager.removeItem(at: directory.appending(path: "summary.json"))
+            try renameFile(nextJournal, to: journal)
+            try afterRouteInstall()
+            try synchronizeDirectory(directory)
+        } catch {
+            throw FlightRecordingStoreError.operationFailed(id: id)
+        }
+    }
+
+    func routeTransactionIsCommitted(_ transaction: FlightRouteTransaction) async throws -> Bool {
+        let directory = packageDirectory(id: transaction.recordingID)
+        let writer = try acquireWriter(in: directory, recordingID: transaction.recordingID)
+        defer { Darwin.close(writer) }
+        let snapshot = try readSnapshot(at: directory, expectedID: transaction.recordingID)
+        if try transaction.isCommitted(in: snapshot.events) {
+            try synchronizeDirectory(directory)
+            return true
+        }
+        return false
+    }
+
     func packages() -> [FlightRecordingPackageResult] {
         guard fileManager.fileExists(atPath: rootDirectory.path) else { return [] }
         guard let directories = try? fileManager.contentsOfDirectory(
@@ -230,7 +310,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                   !directory.lastPathComponent.hasSuffix(".tmp") else { return nil }
             let id = UUID(uuidString: directory.lastPathComponent)
             do {
-                return .available(try readSnapshot(at: directory, expectedID: id))
+                return .available(try readLockedSnapshot(at: directory, expectedID: id))
             } catch let FlightRecordingStoreError.unsupportedVersion(id, version) {
                 return .unsupported(id: id, schemaVersion: version)
             } catch {
@@ -240,11 +320,13 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
     }
 
     func readSnapshot(id: UUID) throws -> FlightRecordingReadSnapshot {
-        try readSnapshot(at: packageDirectory(id: id), expectedID: id)
+        try readLockedSnapshot(at: packageDirectory(id: id), expectedID: id)
     }
 
     func close(id: UUID, closure: FlightRecordingClosure) throws {
         let directory = packageDirectory(id: id)
+        let writer = try acquireWriter(in: directory, recordingID: id)
+        defer { Darwin.close(writer) }
         let manifestURL = directory.appending(path: "manifest.json")
         let temporary = directory.appending(path: ".manifest-\(UUID().uuidString).tmp")
         do {
@@ -257,7 +339,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             }
             try beforeClose(id)
             manifest.closure = FlightRecordingClosureDTO(closure: closure)
-            let snapshot = try readSnapshot(id: id)
+            let snapshot = try readSnapshot(at: directory, expectedID: id)
             if snapshot.recording.navigationState == .complete {
                 manifest.navigationState = "complete"
             }
@@ -298,6 +380,12 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         }
     }
 
+    private func readLockedSnapshot(at directory: URL, expectedID: UUID?) throws -> FlightRecordingReadSnapshot {
+        let writer = try acquireWriter(in: directory, recordingID: expectedID)
+        defer { Darwin.close(writer) }
+        return try readSnapshot(at: directory, expectedID: expectedID)
+    }
+
     private func readSnapshot(
         at directory: URL,
         expectedID: UUID?
@@ -309,6 +397,9 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             )
             guard expectedID == nil || expectedID == manifest.id else {
                 throw FlightRecordingStoreError.corruptPackage(id: expectedID)
+            }
+            guard (1...FlightRecordingManifestDTO.currentSchemaVersion).contains(manifest.schemaVersion) else {
+                throw FlightRecordingStoreError.unsupportedVersion(id: manifest.id, schemaVersion: manifest.schemaVersion)
             }
             let plan = try FlightRecordingCoding.decoder.decode(
                 RecordedFlightPlanSnapshotDTO.self,
@@ -327,7 +418,9 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                     from: Data(line)
                 ).domain()
             }
-            guard events.map(\.sequence) == Array(0..<UInt64(events.count)) else {
+            let containsAmendment = events.contains { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }
+            guard events.map(\.sequence) == Array(0..<UInt64(events.count)),
+                  !containsAmendment || manifest.schemaVersion >= 4 else {
                 throw FlightRecordingStoreError.corruptPackage(id: manifest.id)
             }
             let trackSegments = try readTrackSegments(recordingID: manifest.id, directory: directory)
@@ -439,6 +532,22 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             total += Int64(fileSize)
         }
         return total
+    }
+
+    private func acquireWriter(in directory: URL, recordingID: UUID?) throws -> Int32 {
+        let lock = directory.appending(path: ".journal.lock")
+        var descriptor: Int32
+        repeat {
+            descriptor = Darwin.open(lock.path, O_CREAT | O_RDWR | O_EXLOCK, S_IRUSR | S_IWUSR)
+        } while descriptor < 0 && errno == EINTR
+        guard descriptor >= 0 else { throw FlightRecordingStoreError.operationFailed(id: recordingID) }
+        return descriptor
+    }
+
+    private func renameFile(_ source: URL, to destination: URL) throws {
+        guard Darwin.rename(source.path, destination.path) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
     }
 
     private func writeAndSynchronize(_ data: Data, to url: URL) throws {

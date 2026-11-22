@@ -7,6 +7,8 @@ nonisolated protocol FlightRecordingStore: Sendable {
         recordingID: UUID,
         synchronize: Bool
     ) async throws
+    func commitRouteTransaction(_ transaction: FlightRouteTransaction) async throws
+    func routeTransactionIsCommitted(_ transaction: FlightRouteTransaction) async throws -> Bool
     func appendTrackBatch(_ batch: RecordedTrackBatch) async throws
     func synchronizeTrack(recordingID: UUID) async throws
     func updateRecoveryCheckpoint(recordingID: UUID, at timestamp: Date) async throws
@@ -14,6 +16,42 @@ nonisolated protocol FlightRecordingStore: Sendable {
     func readSnapshot(id: UUID) async throws -> FlightRecordingReadSnapshot
     func close(id: UUID, closure: FlightRecordingClosure) async throws
     func remove(id: UUID) async throws
+}
+
+extension FlightRecordingStore {
+    nonisolated func commitRouteTransaction(_ transaction: FlightRouteTransaction) async throws {
+        throw FlightRecordingStoreError.operationFailed(id: transaction.recordingID)
+    }
+
+    nonisolated func routeTransactionIsCommitted(_ transaction: FlightRouteTransaction) async throws -> Bool {
+        let snapshot = try await readSnapshot(id: transaction.recordingID)
+        return try transaction.isCommitted(in: snapshot.events)
+    }
+}
+
+nonisolated struct FlightRouteTransaction: Sendable {
+    let recordingID: UUID
+    let expectedSequence: UInt64
+    let event: RecordedFlightEvent
+
+    func validate() throws {
+        guard event.sequence == expectedSequence,
+              case .pendingRouteAmendmentConfirmed(let amendment) = event.payload,
+              amendment.id == event.id,
+              event.cockpitContext?.flightID == amendment.flightID else {
+            throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        }
+    }
+
+    func isCommitted(in events: [RecordedFlightEvent]) throws -> Bool {
+        guard let recorded = events.first(where: { $0.id == event.id }) else { return false }
+        // Use the same representation as the journal, including its date precision.
+        guard try FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: recorded))
+            == FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: event)) else {
+            throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        }
+        return true
+    }
 }
 
 nonisolated struct FlightRecordingSeed: Equatable, Sendable {
@@ -42,6 +80,15 @@ nonisolated struct FlightRecordingReadSnapshot: Equatable, Sendable {
     let approximateSizeBytes: Int64?
     let evidenceSummary: FlightRecordingEvidenceSummary
     let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
+
+    var latestDurableEvidenceAt: Date {
+        max(
+            recording.startedAt,
+            recording.lastRecoveryCheckpointAt ?? recording.startedAt,
+            events.lazy.map(\.occurredAt).max() ?? recording.startedAt,
+            trackSegments.lazy.flatMap(\.samples).map(\.observedAt).max() ?? recording.startedAt
+        )
+    }
 
     init(
         recording: FlightRecording,

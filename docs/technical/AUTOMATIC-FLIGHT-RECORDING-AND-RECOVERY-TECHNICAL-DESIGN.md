@@ -765,3 +765,8 @@ adapter if measured package performance proves it necessary.
 Editors, sheets, map camera, focus, and undo affordances are not operational
 evidence. Persisting them would violate the recovery contract and complicate
 schema evolution.
+
+## Pending route amendments
+
+See the [Flight-owned pending route amendment contract](FLIGHT-OWNED-PENDING-ROUTE-AMENDMENT.md)
+for the schema 4 upgrade, route journal transaction, and confirmed-route recovery behavior.

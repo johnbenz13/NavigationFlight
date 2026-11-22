@@ -7,6 +7,9 @@ struct RouteAmendmentConsole: View {
     let compact: Bool
     let inSideRail: Bool
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
+    let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
+    let onConfirm: () -> Void
+    let onKeepEditing: () -> Void
     let onPlaceAtMapCenter: () -> Void
     let onDiscard: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -19,6 +22,24 @@ struct RouteAmendmentConsole: View {
         VStack(spacing: 0) {
             RouteAmendmentCurrentLeg(timing: currentLegTiming, compact: compact)
                 .padding(.top, compact ? 8 : 12)
+            if let saveStatus {
+                savePanel(saveStatus)
+            } else {
+                draftContent
+            }
+        }
+        .padding(.horizontal, compact ? 12 : 20)
+        .tint(actionColor)
+        .background(Color(.systemBackground))
+        .sheet(isPresented: $isPointPickerPresented) {
+            pointPicker
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var draftContent: some View {
+        VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
                     draftHeading
@@ -29,6 +50,10 @@ struct RouteAmendmentConsole: View {
                     }
                     controls
                         .allowsHitTesting(draft.legPanel == nil)
+                    if inSideRail, draft.step == .review {
+                        confirmForLaterButton
+                            .padding(.top, 12)
+                    }
                     if showsFooter, actionsFollowEditor { footer }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -44,14 +69,96 @@ struct RouteAmendmentConsole: View {
                     .padding(.bottom, 4)
             }
         }
-        .padding(.horizontal, compact ? 12 : 20)
-        .tint(actionColor)
-        .background(Color(.systemBackground))
-        .sheet(isPresented: $isPointPickerPresented) {
-            pointPicker
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+    }
+
+    private struct AmendmentActionAvailability: ViewModifier {
+        @Environment(\.isEnabled) private var isEnabled
+
+        func body(content: Content) -> some View {
+            content.opacity(isEnabled ? 1 : 0.45)
         }
+    }
+
+    private func savePanel(_ status: CockpitFeatureState.RouteAmendmentSave.Status) -> some View {
+        let saving = status == .saving
+        let rejoin = draft.rejoin.map(route.name(for:)) ?? ""
+        let count = draft.reviewLegs(on: route).count
+        return VStack(alignment: .leading, spacing: 4) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(saving ? "Saving amendment" : "Amendment could not be saved")
+                            .font(.title3.bold())
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier(saving ? "amendment-saving" : "amendment-save-failed")
+                        Text(saving ? "The current route remains operational while the change is saved." : "The last confirmed route remains active.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Group {
+                        if saving {
+                            HStack(spacing: 8) {
+                                ProgressView().controlSize(.small)
+                                Text("Saving the selected departure and replacement legs…")
+                            }
+                        } else {
+                            Text("Your changes are still in this draft. Retry to save the amendment.")
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    .font(.subheadline)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(saving ? RouteAmendmentPanelStyle.neutral : Color.red.opacity(0.08),
+                                in: .rect(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(saving ? "Confirmation" : "Draft route").font(.subheadline.weight(.semibold))
+                        Text("\(count) replacement legs · rejoin at \(rejoin)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RouteAmendmentPanelStyle.neutral, in: .rect(cornerRadius: 12))
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            if case .failed(let canEdit) = status {
+                HStack {
+                    Button(action: onKeepEditing) {
+                        Text("Keep editing")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 52)
+                            .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(actionColor)
+                    .disabled(!canEdit)
+                    .accessibilityIdentifier("keep-editing-amendment")
+                    Spacer(minLength: 12)
+                    confirmationButton("Retry save", id: "retry-amendment-save")
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func confirmationButton(
+        _ title: LocalizedStringKey, id: String, fullWidth: Bool = false, height: CGFloat = 52
+    ) -> some View {
+        Button(action: onConfirm) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 14)
+                .frame(maxWidth: fullWidth ? .infinity : nil, minHeight: height)
+                .foregroundStyle(.white)
+                .background(actionColor, in: .rect(cornerRadius: 13))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .modifier(AmendmentActionAvailability())
+        .accessibilityIdentifier(id)
     }
 
     private var draftHeading: some View {
@@ -214,25 +321,50 @@ struct RouteAmendmentConsole: View {
     }
 
     private var reviewFooter: some View {
-        HStack {
-            lightweightAction("Back to drawing", id: "back-to-amendment-drawing", symbol: "chevron.backward") {
-                onIntent(.back)
+        VStack(spacing: 1) {
+            if compact || dynamicTypeSize.isAccessibilitySize {
+                HStack {
+                    backToDrawingButton
+                    Spacer()
+                    reviewPauseButton
+                }
+                if !inSideRail { confirmForLaterButton }
+            } else {
+                HStack(spacing: 12) {
+                    backToDrawingButton
+                    Spacer(minLength: 4)
+                    confirmForLaterButton.frame(maxWidth: 556)
+                    reviewPauseButton
+                }
             }
-            .allowsHitTesting(draft.legPanel == nil)
-            Spacer()
-            Button { onIntent(.pause) } label: {
-                Image(systemName: "pause")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(width: 44, height: 44)
-                    .contentShape(.rect)
-                    .background(RouteAmendmentPanelStyle.neutral, in: .rect(cornerRadius: 12))
-                    .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Pause route amendment draft")
-            .accessibilityIdentifier("pause-amendment-review")
         }
         .padding(.bottom, 4)
+    }
+
+    private var backToDrawingButton: some View {
+        lightweightAction("Back to drawing", id: "back-to-amendment-drawing", symbol: "chevron.backward") {
+            onIntent(.back)
+        }
+        .allowsHitTesting(draft.legPanel == nil)
+    }
+
+    private var reviewPauseButton: some View {
+        Button { onIntent(.pause) } label: {
+            Image(systemName: "pause")
+                .font(.subheadline.weight(.semibold))
+                .frame(width: 44, height: 44)
+                .contentShape(.rect)
+                .background(RouteAmendmentPanelStyle.neutral, in: .rect(cornerRadius: 12))
+                .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Pause route amendment draft")
+        .accessibilityIdentifier("pause-amendment-review")
+    }
+
+    private var confirmForLaterButton: some View {
+        confirmationButton("Confirm for later", id: "confirm-amendment-for-later", fullWidth: true, height: 54)
+            .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
     }
 
     private func lightweightAction(

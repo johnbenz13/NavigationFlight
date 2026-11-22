@@ -50,4 +50,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Document the estimator interface and per-key preference behavior in the technical design and Settings reference.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#205](https://github.com/johnbenz13/NavigationFlight/issues/205).

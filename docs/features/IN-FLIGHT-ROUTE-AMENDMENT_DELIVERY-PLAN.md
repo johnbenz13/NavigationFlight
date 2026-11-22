@@ -1,6 +1,6 @@
 # In-flight route amendment · Delivery plan
 
-Approved by John for GitHub publication · 2026-11-22
+Approved by John and published · 2026-11-22
 
 John approved the product, detailed Figma design, and technical architecture. He subsequently approved deferring the planned-wind selector and the choice to keep a scheduled amendment pending or cancel it and record an explicit original-destination reach. Confirming a scheduled mid-leg departure now shortens the original leg and retargets its normal controls. The existing pencil is the management entry while pending, with a transient iPad popover or iPhone sheet and no extra console row. John approved the revised frames and nine-ticket breakdown on 2026-11-22.
 
@@ -8,21 +8,21 @@ John approved the product, detailed Figma design, and technical architecture. He
 
 ## Implementation tickets
 
-| Planning ticket | Outcome | Direct blockers | GitHub status |
+| Planning ticket | Outcome | GitHub blockers | GitHub issue |
 | --- | --- | --- | --- |
-| [RA-T01](route-amendment-tickets/RA-T01-plot-and-pause.md) | Plot, edit, and pause a route amendment draft | None | Approved for publication |
-| [RA-T02](route-amendment-tickets/RA-T02-manual-review-and-check.md) | Enter and check Manual amendment leg values | RA-T01 | Approved for publication |
-| [RA-T03](route-amendment-tickets/RA-T03-schedule-and-recover.md) | Confirm a future amendment and restore it with the Flight | RA-T02 | Approved for publication |
-| [RA-T04](route-amendment-tickets/RA-T04-depart-and-fly.md) | Start the amendment and fly its replacement legs | RA-T03 | Approved for publication |
-| [RA-T05](route-amendment-tickets/RA-T05-rejoin-and-rebase.md) | Rejoin the retained route with rebased timing and cues | RA-T04 | Approved for publication |
-| [RA-T06](route-amendment-tickets/RA-T06-manage-and-missed-departure.md) | Replace or cancel a pending amendment and resolve a missed departure | RA-T03 | Approved for publication |
-| [RA-T07](route-amendment-tickets/RA-T07-undo-route-transitions.md) | Undo a departure or rejoin with the previous timer and route intact | RA-T05 | Approved for publication |
-| [RA-T08](route-amendment-tickets/RA-T08-assisted-estimates-and-aids.md) | Review and fly an amendment with Assisted estimates and map aids | RA-T04 | Approved for publication |
-| [RA-T09](route-amendment-tickets/RA-T09-debrief-and-export.md) | Review the amendment in Flight History and diagnostic evidence | RA-T06, RA-T07 | Approved for publication |
+| [RA-T01](route-amendment-tickets/RA-T01-plot-and-pause.md) | Plot, edit, and pause a route amendment draft | None | [#204](https://github.com/johnbenz13/NavigationFlight/issues/204) |
+| [RA-T02](route-amendment-tickets/RA-T02-manual-review-and-check.md) | Enter and check Manual amendment leg values | [#204](https://github.com/johnbenz13/NavigationFlight/issues/204) | [#205](https://github.com/johnbenz13/NavigationFlight/issues/205) |
+| [RA-T03](route-amendment-tickets/RA-T03-schedule-and-recover.md) | Confirm a future amendment and restore it with the Flight | [#205](https://github.com/johnbenz13/NavigationFlight/issues/205) | [#206](https://github.com/johnbenz13/NavigationFlight/issues/206) |
+| [RA-T04](route-amendment-tickets/RA-T04-depart-and-fly.md) | Start the amendment and fly its replacement legs | [#206](https://github.com/johnbenz13/NavigationFlight/issues/206) | [#207](https://github.com/johnbenz13/NavigationFlight/issues/207) |
+| [RA-T05](route-amendment-tickets/RA-T05-rejoin-and-rebase.md) | Rejoin the retained route with rebased timing and cues | [#207](https://github.com/johnbenz13/NavigationFlight/issues/207) | [#208](https://github.com/johnbenz13/NavigationFlight/issues/208) |
+| [RA-T06](route-amendment-tickets/RA-T06-manage-and-missed-departure.md) | Replace or cancel a pending amendment and resolve a missed departure | [#206](https://github.com/johnbenz13/NavigationFlight/issues/206) | [#209](https://github.com/johnbenz13/NavigationFlight/issues/209) |
+| [RA-T07](route-amendment-tickets/RA-T07-undo-route-transitions.md) | Undo a departure or rejoin with the previous timer and route intact | [#208](https://github.com/johnbenz13/NavigationFlight/issues/208) | [#210](https://github.com/johnbenz13/NavigationFlight/issues/210) |
+| [RA-T08](route-amendment-tickets/RA-T08-assisted-estimates-and-aids.md) | Review and fly an amendment with Assisted estimates and map aids | [#207](https://github.com/johnbenz13/NavigationFlight/issues/207) | [#211](https://github.com/johnbenz13/NavigationFlight/issues/211) |
+| [RA-T09](route-amendment-tickets/RA-T09-debrief-and-export.md) | Review the amendment in Flight History and diagnostic evidence | [#209](https://github.com/johnbenz13/NavigationFlight/issues/209), [#210](https://github.com/johnbenz13/NavigationFlight/issues/210) | [#212](https://github.com/johnbenz13/NavigationFlight/issues/212) |
 
 Each ticket delivers an independently reviewable behavior through the necessary app layers. The slices land through the route-amendment integration branch. Draft-only, pending-only, and departure-only checkpoints are demonstrable with disposable fixtures before the feature as a whole is ready to release. Review the full flow, including durable recovery, rejoin and Undo, before making it available in a release. Normal flights stay regression-tested at each checkpoint.
 
-GitHub destination is `johnbenz13/NavigationFlight`. A read-only search of existing issue titles for route amendment, reroute, and unplanned leg found no existing parent or duplicate. Publish the approved issues in dependency order with native blocking relationships if available and explicit issue references otherwise. The GitHub issues link to the immutable planning revision on the published feature branch.
+GitHub destination is `johnbenz13/NavigationFlight`. A read-only search of existing issue titles for route amendment, reroute, and unplanned leg found no existing parent or duplicate. The nine issues were published in dependency order with nine native blocking relationships. GitHub issue bodies and prerequisites were read back after publication. The issues link to the [approved planning revision](https://github.com/johnbenz13/NavigationFlight/tree/047ff3d0b57f035926829009a1cfba17aaf4fc73).
 
 ## Coverage and verification
 
@@ -52,7 +52,7 @@ GitHub destination is `johnbenz13/NavigationFlight`. A read-only search of exist
 | RA-22 | [RA-T03](route-amendment-tickets/RA-T03-schedule-and-recover.md), [RA-T04](route-amendment-tickets/RA-T04-depart-and-fly.md), [RA-T05](route-amendment-tickets/RA-T05-rejoin-and-rebase.md), [RA-T06](route-amendment-tickets/RA-T06-manage-and-missed-departure.md), [RA-T07](route-amendment-tickets/RA-T07-undo-route-transitions.md), [RA-T08](route-amendment-tickets/RA-T08-assisted-estimates-and-aids.md), [RA-T09](route-amendment-tickets/RA-T09-debrief-and-export.md) | [Durability and failure handling](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=14-751) | T06, T07 |
 | RA-23 | [RA-T06](route-amendment-tickets/RA-T06-manage-and-missed-departure.md), [RA-T09](route-amendment-tickets/RA-T09-debrief-and-export.md) | [Explicit original-destination report](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-384) | T11 |
 
-Ticket-specific frames and approved reused patterns are listed within each draft. Verification groups T01–T11 are defined in the technical design. The worktree baseline is `258a42cd060195a24086908fecee9bb44312ff30`. Publication is authorized. Implementation remains a separate decision.
+Ticket-specific frames and approved reused patterns are listed within each draft. Verification groups T01–T11 are defined in the technical design. The worktree baseline is `258a42cd060195a24086908fecee9bb44312ff30`. All nine issues are published. Implementation remains a separate decision.
 
 ## Scope exclusions
  The flight ruler, planned-wind selector, timed identification points on amendment legs, eraser, and iPhone landscape remain outside this release.

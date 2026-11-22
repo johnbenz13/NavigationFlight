@@ -50,4 +50,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Update Flight progression and operational map/cue projections to document the new departure and leg identity semantics.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#207](https://github.com/johnbenz13/NavigationFlight/issues/207).

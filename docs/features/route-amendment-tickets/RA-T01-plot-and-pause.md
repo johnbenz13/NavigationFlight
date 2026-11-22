@@ -51,4 +51,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Record draft projection and tap-intent ownership in the Cockpit and map technical references.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#204](https://github.com/johnbenz13/NavigationFlight/issues/204).

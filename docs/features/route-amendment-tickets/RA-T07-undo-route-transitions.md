@@ -48,4 +48,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Update the Flight Undo and recovery contracts with amendment transitions and restoration rules.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#210](https://github.com/johnbenz13/NavigationFlight/issues/210).

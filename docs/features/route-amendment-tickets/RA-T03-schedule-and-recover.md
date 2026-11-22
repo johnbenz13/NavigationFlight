@@ -50,4 +50,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Update recording schema/recovery technical references and the Flight-owned route contract.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#206](https://github.com/johnbenz13/NavigationFlight/issues/206).

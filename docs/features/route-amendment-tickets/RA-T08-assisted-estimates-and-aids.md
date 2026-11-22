@@ -49,4 +49,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Document Assisted display and map projection behavior, preserving the agreed planned-wind follow-up.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#211](https://github.com/johnbenz13/NavigationFlight/issues/211).

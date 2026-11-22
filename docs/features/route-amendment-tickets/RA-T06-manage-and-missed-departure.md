@@ -50,4 +50,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Record RA-23 and the approved confirmation copy and visual node after review.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#209](https://github.com/johnbenz13/NavigationFlight/issues/209).

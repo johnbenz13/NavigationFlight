@@ -49,4 +49,4 @@ Tests and rendered comparisons belong to the separately authorized implementatio
 
 **Documentation on delivery.** Add amendment fact mappings and legend semantics to the Debrief and diagnostic-export technical references.
 
-**Publication status.** Approved for GitHub publication.
+**GitHub issue.** [#212](https://github.com/johnbenz13/NavigationFlight/issues/212).

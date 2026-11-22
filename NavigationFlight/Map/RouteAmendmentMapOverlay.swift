@@ -11,10 +11,23 @@ final class RouteAmendmentMapOverlay: UIView {
         let route: RouteAmendmentRoute
     }
 
+    struct Pending: Equatable {
+        let amendment: PendingRouteAmendment
+        let route: RouteAmendmentRoute
+    }
+
+    var pending: Pending? {
+        didSet {
+            guard oldValue != pending else { return }
+            isHidden = presentation == nil && pending == nil
+            setNeedsDisplay()
+        }
+    }
+
     var presentation: Presentation? {
         didSet {
             guard oldValue != presentation else { return }
-            isHidden = presentation == nil
+            isHidden = presentation == nil && pending == nil
             setNeedsDisplay()
         }
     }
@@ -102,24 +115,16 @@ final class RouteAmendmentMapOverlay: UIView {
     }
 
     override func draw(_ rect: CGRect) {
-        guard let map, let presentation, let context = UIGraphicsGetCurrentContext() else { return }
+        guard let map, let context = UIGraphicsGetCurrentContext() else { return }
+        if let pending {
+            drawPending(pending, on: map, in: context)
+            return
+        }
+        guard let presentation else { return }
         let draft = presentation.draft
         let route = presentation.route
         let segments = draft.segments(on: route)
-        for role: RouteAmendmentDraft.Segment.Role in [.retained, .bypassed, .proposed] {
-            for segment in segments where segment.role == role {
-                let from = project(segment.from, on: map)
-                let to = project(segment.to, on: map)
-                let color: UIColor
-                switch role {
-                case .retained: color = Self.retainedColor
-                case .bypassed: color = Self.bypassedColor
-                case .proposed: color = Self.proposedColor
-                }
-                stroke(from, to, color: .white, width: 7, dashed: role == .bypassed, in: context)
-                stroke(from, to, color: color, width: 3.5, dashed: role == .bypassed, in: context)
-            }
-        }
+        drawSegments(segments, proposedDashed: false, on: map, in: context)
         drawOriginalMinuteMarks(presentation, on: map, in: context)
         drawSelectedLeg(presentation, on: map, in: context)
         let reserved = [draft.departure, draft.rejoin].compactMap { $0 }
@@ -160,6 +165,45 @@ final class RouteAmendmentMapOverlay: UIView {
         if case .confirmRejoin(let anchor) = draft.step {
             marker(project(route.coordinate(at: anchor), on: map), label: route.name(for: anchor),
                    color: Self.proposedColor, selected: true, in: context)
+        }
+    }
+
+    private func drawPending(_ pending: Pending, on map: MLNMapView, in context: CGContext) {
+        let amendment = pending.amendment
+        let route = pending.route
+        let original = route.originalSegments(departure: amendment.departure, rejoin: amendment.rejoin)
+        let proposal = amendment.replacementLegs.map {
+            RouteAmendmentDraft.Segment(from: $0.from.position, to: $0.to.position, role: .proposed)
+        }
+        drawSegments(original + proposal, proposedDashed: true, on: map, in: context)
+        for stop in route.stops where route.precedes(amendment.departure, stop.id) && route.precedes(stop.id, amendment.rejoin) {
+            marker(project(stop.position, on: map), label: "\(stop.name) · bypassed", color: Self.bypassedColor, in: context)
+        }
+        for leg in amendment.replacementLegs.dropLast() {
+            marker(project(leg.to.position, on: map), label: leg.to.name, color: Self.proposedColor, in: context)
+        }
+        if let rejoin = amendment.replacementLegs.last?.to {
+            marker(project(rejoin.position, on: map), label: "Rejoin · \(rejoin.name)", color: Self.proposedColor, in: context)
+        }
+    }
+
+    private func drawSegments(
+        _ segments: [RouteAmendmentDraft.Segment], proposedDashed: Bool,
+        on map: MLNMapView, in context: CGContext
+    ) {
+        for role: RouteAmendmentDraft.Segment.Role in [.retained, .bypassed, .proposed] {
+            for segment in segments where segment.role == role {
+                let from = project(segment.from, on: map)
+                let to = project(segment.to, on: map)
+                let color: UIColor
+                switch role {
+                case .retained: color = Self.retainedColor
+                case .bypassed: color = Self.bypassedColor
+                case .proposed: color = Self.proposedColor
+                }
+                stroke(from, to, color: .white, width: 7, dashed: role == .bypassed || (proposedDashed && role == .proposed), in: context)
+                stroke(from, to, color: color, width: 3.5, dashed: role == .bypassed || (proposedDashed && role == .proposed), in: context)
+            }
         }
     }
 

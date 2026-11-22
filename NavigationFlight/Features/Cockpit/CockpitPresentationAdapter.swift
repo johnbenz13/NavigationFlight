@@ -678,6 +678,7 @@ struct CockpitPresentationAdapter: Sendable {
         flightPlan: FlightPlan,
         flight: Flight
     ) throws -> NextLegPreparation? {
+        guard flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true else { return nil }
         let nextIndex = flight.activeLegIndex + 1
         guard flightPlan.legs.indices.contains(nextIndex) else { return nil }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
@@ -875,7 +876,8 @@ struct CockpitPresentationAdapter: Sendable {
     func makePresentation(
         flightPlan: FlightPlan,
         legIndex: Int,
-        mode: NavigationMode
+        mode: NavigationMode,
+        flight: Flight? = nil
     ) throws -> CockpitPresentationData {
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {
             throw CockpitPresentationError.unavailablePlannedNavigation
@@ -886,6 +888,8 @@ struct CockpitPresentationAdapter: Sendable {
 
         let leg = plannedNavigation.legs[legIndex]
         let sourceLeg = flightPlan.legs[legIndex]
+        let arrival = flight?.operationalArrival(for: sourceLeg) ?? sourceLeg.arrival
+        let shortened = arrival.id != sourceLeg.arrival.id ? flight?.pendingRouteAmendment : nil
         let timing: PlannedTiming
         let heading: Double?
         switch mode {
@@ -943,12 +947,14 @@ struct CockpitPresentationAdapter: Sendable {
         let sourcePoints = Dictionary(uniqueKeysWithValues: flightPlan.identificationPoints.map { ($0.id, $0) })
         let altitudeChanges = Dictionary(uniqueKeysWithValues: flightPlan.altitudeChanges.map { ($0.id, $0) })
         let frequencyChanges = Dictionary(uniqueKeysWithValues: flightPlan.frequencyChanges.map { ($0.id, $0) })
-        let annotations = plannedNavigation.annotations.filter { $0.legID == leg.legID }
-        let positions = [sourceLeg.departure.position, sourceLeg.arrival.position] + annotations.map(\.position)
+        let annotations = plannedNavigation.annotations.filter {
+            $0.legID == leg.legID && shortened?.includes($0, in: flightPlan) != false
+        }
+        let positions = [sourceLeg.departure.position, arrival.position] + annotations.map(\.position)
         let projected = project(
             positions: positions,
             origin: sourceLeg.departure.position,
-            destination: sourceLeg.arrival.position
+            destination: arrival.position
         )
         let individualEvents = try annotations.enumerated().map { index, annotation in
             let time: Int
@@ -991,19 +997,20 @@ struct CockpitPresentationAdapter: Sendable {
             planTitle: flightPlan.title,
             legPosition: "Leg \(legIndex + 1) of \(plannedNavigation.legs.count)",
             origin: sourceLeg.departure.name,
-            destination: sourceLeg.arrival.name,
+            destination: arrival.name,
             originNormalizedX: projected[0].0,
             originNormalizedY: projected[0].1,
             destinationNormalizedX: projected[1].0,
             destinationNormalizedY: projected[1].1,
             originCrossingAltitudeFeet: sourceLeg.departure.plannedAltitude.value,
-            destinationCrossingAltitudeFeet: sourceLeg.arrival.plannedAltitude.value,
+            destinationCrossingAltitudeFeet: arrival.plannedAltitude.value,
             magneticCourseDegrees: leg.magneticCourse.value,
             magneticHeadingDegrees: heading,
-            distanceNauticalMiles: leg.groundDistance.value,
+            distanceNauticalMiles: leg.groundDistance.value * (shortened?.departure.fraction ?? 1),
             groundSpeedKnots: timing.groundSpeed.value,
-            legDurationSeconds: timing.durationSeconds,
-            cumulativeDurationSeconds: cumulative,
+            legDurationSeconds: shortened?.departurePlannedElapsedSeconds ?? timing.durationSeconds,
+            cumulativeDurationSeconds: cumulative - timing.durationSeconds +
+                (shortened?.departurePlannedElapsedSeconds ?? timing.durationSeconds),
             initialAltitudeFeetMsl: leg.initialAltitudeMsl.value,
             mode: mode,
             supportsWindMode: plannedNavigation.legs.allSatisfy { $0.withWind != nil },

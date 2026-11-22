@@ -1669,6 +1669,105 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testFutureAmendmentRetriesAndRecoversItsShortenedLeg() throws {
+        try verifyFutureAmendment(landscape: false)
+    }
+
+    @MainActor
+    func testFutureAmendmentInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad landscape only")
+        try verifyFutureAmendment(landscape: true)
+    }
+
+    @MainActor
+    func testUnreplayableAmendmentUsesTheIncompleteRecoveryGate() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] =
+            try realFlightPlanData(named: "llhz-llib-via-jerusalem").base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECOVERY_STATE"] = "invalid-amendment"
+        app.launch()
+        let end = app.buttons["end-unavailable-amendment"]
+        XCTAssertTrue(end.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["Continue Flight"].exists)
+        captureAmendmentState("206-amendment-unavailable", in: app)
+        end.tap()
+        let confirmation = app.buttons["End as Incomplete"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 4))
+        confirmation.tap()
+        XCTAssertTrue(end.waitForNonExistence(timeout: 6))
+    }
+
+    @MainActor
+    private func verifyFutureAmendment(landscape: Bool) throws {
+        let app = XCUIApplication()
+        let capturePrefix = landscape ? "206-landscape-" : "206-"
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] =
+            try realFlightPlanData(named: "llhz-llib-via-jerusalem").base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] = "1"
+        app.launch()
+        let start = app.buttons["start-leg"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                app.frame.width > app.frame.height
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
+        }
+        start.tap()
+        closeStartChecklist(in: app)
+        let pencil = app.buttons["amend-route"]
+        XCTAssertTrue(pencil.waitForExistence(timeout: 5))
+        pencil.tap()
+        let confirm = app.buttons["confirm-amendment-for-later"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm.isEnabled)
+        captureAmendmentState(capturePrefix + "review", in: app)
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts["amendment-saving"].waitForExistence(timeout: 2))
+        captureAmendmentState(capturePrefix + "saving", in: app)
+        let retry = app.buttons["retry-amendment-save"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["pending-amendment-pencil"].firstMatch.exists)
+        captureAmendmentState(capturePrefix + "retry", in: app)
+        retry.tap()
+        let pending = app.descendants(matching: .any)["pending-amendment-pencil"].firstMatch
+        XCTAssertTrue(pending.waitForExistence(timeout: 10))
+        XCTAssertGreaterThanOrEqual(pending.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(pending.frame.height, 44)
+        let identify = app.buttons["waypoint-identified"]
+        XCTAssertTrue(identify.exists)
+        XCTAssertEqual(identify.label, "Identify departure point")
+        captureAmendmentState(capturePrefix + "pending", in: app)
+
+        let frequencyPlan = app.buttons["open-frequency-plan"]
+        if frequencyPlan.exists { frequencyPlan.tap() }
+        else { app.buttons["planned-now"].tap() }
+        XCTAssertTrue(app.staticTexts["frequency-plan-title"].waitForExistence(timeout: 4))
+        app.buttons["close-frequency-plan"].tap()
+        identify.tap()
+        let reached = app.buttons["waypoint-reached"]
+        XCTAssertTrue(reached.waitForExistence(timeout: 5))
+        XCTAssertEqual(reached.label, "Report reached")
+        captureAmendmentState(capturePrefix + "identified", in: app)
+
+        app.terminate()
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_PLAN")
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION")
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 6))
+        captureAmendmentState(capturePrefix + "recovery-gate", in: app)
+        resume.tap()
+        XCTAssertTrue(pending.waitForExistence(timeout: 8))
+        XCTAssertTrue(reached.exists)
+        XCTAssertFalse(app.staticTexts["Review legs"].exists)
+        captureAmendmentState(capturePrefix + "recovered", in: app)
+    }
+
+    @MainActor
     func testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder() throws {
         let voiceOver = XCUIDevice.shared.voiceOverService
         let wasEnabled = voiceOver.isEnabled

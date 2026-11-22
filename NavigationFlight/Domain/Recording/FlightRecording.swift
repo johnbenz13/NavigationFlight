@@ -363,6 +363,17 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         )
     }
 
+    mutating func confirmPendingAmendment(
+        _ amendment: PendingRouteAmendment,
+        at timestamp: Date,
+        elapsed: Duration
+    ) throws -> RecordedFlightEvent {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        return makeEvent(id: amendment.id, occurredAt: timestamp, elapsed: elapsed, origin: .pilot,
+                         payload: .pendingRouteAmendmentConfirmed(amendment))
+    }
+
     mutating func recordNavigationEvents(
         at timestamp: Date,
         elapsed: Duration,

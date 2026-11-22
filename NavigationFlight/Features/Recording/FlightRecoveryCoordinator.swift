@@ -38,6 +38,7 @@ nonisolated enum FlightRecoveryState: Equatable, Sendable {
     case reconciledExpired(count: Int)
     case unsupported(UnavailableRecoveryPackage)
     case failure(UnavailableRecoveryPackage)
+    case amendmentUnavailable(RecoveryCandidate, routeName: String)
 }
 
 nonisolated struct RecoveredFlight: Equatable, Sendable {
@@ -86,11 +87,12 @@ final class FlightRecoveryCoordinator {
         persistedElapsedByRecordingID = packages.reduce(into: [:]) { elapsedByID, result in
             guard case .available(let snapshot) = result,
                   snapshot.recording.closure == nil else { return }
-            elapsedByID[snapshot.recording.id] = snapshot.events.last?.elapsed ?? .zero
+            elapsedByID[snapshot.recording.id] = snapshot.events.map(\.elapsed).max() ?? .zero
         }
         var candidates: [RecoveryCandidate] = []
         var invalidAvailablePackages: [UnavailableRecoveryPackage] = []
         var expiredCount = 0
+        var unavailableAmendments: [(RecoveryCandidate, String)] = []
         for result in packages {
             guard case .available(let snapshot) = result,
                   snapshot.recording.closure == nil else { continue }
@@ -111,7 +113,22 @@ final class FlightRecoveryCoordinator {
                 }
                 candidates.append(try validatedCandidate(for: snapshot))
             } catch {
-                invalidAvailablePackages.append(.corrupt(id: snapshot.recording.id))
+                if let amendment = snapshot.events.compactMap({ event -> PendingRouteAmendment? in
+                    if case .pendingRouteAmendmentConfirmed(let amendment) = event.payload { return amendment }
+                    return nil
+                }).first {
+                    let candidate = RecoveryCandidate(
+                        recordingID: snapshot.recording.id,
+                        flightPlanTitle: snapshot.recording.flightPlanSnapshot.title,
+                        startedAt: snapshot.recording.startedAt
+                    )
+                    let name = amendment.replacementLegs.last.flatMap { last in
+                        amendment.departureStop.map { RouteAmendmentRoute.legName(from: $0.name, to: last.to.name) }
+                    } ?? candidate.flightPlanTitle
+                    unavailableAmendments.append((candidate, name))
+                } else {
+                    invalidAvailablePackages.append(.corrupt(id: snapshot.recording.id))
+                }
             }
         }
         candidates.sort { lhs, rhs in
@@ -127,6 +144,10 @@ final class FlightRecoveryCoordinator {
             return .corrupt(id: id)
         } + invalidAvailablePackages
         selectedRecordingID = nil
+        if candidates.isEmpty, let unavailable = unavailableAmendments.max(by: { $0.0.startedAt < $1.0.startedAt }) {
+            state = .amendmentUnavailable(unavailable.0, routeName: unavailable.1)
+            return
+        }
         switch candidates.count {
         case 0:
             if expiredCount > 0 {
@@ -238,6 +259,11 @@ final class FlightRecoveryCoordinator {
         eventIDs: [UUID]
     ) async throws {
         let snapshot = try await store.readSnapshot(id: id)
+        if snapshot.events.last?.payload == .recordingClosed(outcome: .incomplete, cause: .endedDuringRecovery) {
+            try await closeForRecovery(snapshot: snapshot, at: timestamp, cause: .endedDuringRecovery)
+            await bootstrap()
+            return
+        }
         var recording = snapshot.recording
         guard eventIDs.count == 2, let eventID = eventIDs.first else {
             throw FlightRecording.TransitionError.invalidEventIdentifierCount
@@ -341,12 +367,16 @@ final class FlightRecoveryCoordinator {
         let initialIndex = firstStartedLegID.flatMap { id in
             flightPlan.legs.firstIndex { $0.id == id }
         } ?? 0
+        let capturedMode = snapshot.events.lazy.compactMap { event -> NavigationMode? in
+            if case .pendingRouteAmendmentConfirmed(let amendment) = event.payload { return amendment.executionMode }
+            return nil
+        }.first
         var flight = Flight(
             id: snapshot.recording.flightID,
             flightPlanID: flightPlan.id,
             legIDs: flightPlan.legs.map(\.id),
             activeLegIndex: initialIndex,
-            executionMode: .noWind,
+            executionMode: capturedMode ?? .noWind,
             progressionPolicy: snapshot.recording.recordedProgression == .manual ? .manualNextLeg : .automaticNextLeg
         )
         do {
@@ -362,15 +392,24 @@ final class FlightRecoveryCoordinator {
                     if flight.legState == .ready {
                         try flight.startLeg(at: event.occurredAt)
                     }
+                case .pendingRouteAmendmentConfirmed(let amendment):
+                    guard event.id == amendment.id, event.origin == .pilot else { throw FlightRecoveryError.invalidJournal }
+                    try flight.installPendingAmendment(amendment, in: flightPlan)
+                case .amendmentDepartureIdentified(let legID, let targetID):
+                    guard flight.legIDs[flight.activeLegIndex] == legID,
+                          flight.activePartwayDeparture?.departureStop?.id == targetID else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    try flight.identifyDestination(at: event.occurredAt)
                 case .destinationIdentified(let legID):
-                    guard flight.legIDs[flight.activeLegIndex] == legID else {
+                    guard flight.legIDs[flight.activeLegIndex] == legID, flight.activePartwayDeparture == nil else {
                         throw FlightRecoveryError.invalidJournal
                     }
                     try flight.identifyDestination(at: event.occurredAt)
                 case .identificationPointReached(let key):
                     try flight.reachIdentificationPoint(
                         key: key,
-                        orderedActiveLegPointKeys: orderedPointKeys(for: key.legID, in: flightPlan),
+                        orderedActiveLegPointKeys: orderedPointKeys(for: key.legID, in: flightPlan, pending: flight.pendingRouteAmendment),
                         at: event.occurredAt
                     )
                 case .waypointReached(let legID):
@@ -378,7 +417,7 @@ final class FlightRecoveryCoordinator {
                         throw FlightRecoveryError.invalidJournal
                     }
                     try flight.reachCurrentWaypoint(
-                        orderedActiveLegPointKeys: orderedPointKeys(for: legID, in: flightPlan),
+                        orderedActiveLegPointKeys: orderedPointKeys(for: legID, in: flightPlan, pending: flight.pendingRouteAmendment),
                         at: event.occurredAt
                     )
                 case .etaRevised(let target, let priorSeconds, let committedSeconds):
@@ -431,7 +470,8 @@ final class FlightRecoveryCoordinator {
             } else if snapshot.recording.sourceSchemaVersion >= 3,
                       event.sequence >= snapshot.recording.cockpitContextStartSequence {
                 switch event.payload {
-                case .legStarted, .waypointReached, .reachUndone, .destinationIdentified, .cockpitPresentationChanged:
+                case .legStarted, .waypointReached, .reachUndone, .destinationIdentified, .cockpitPresentationChanged,
+                     .pendingRouteAmendmentConfirmed, .amendmentDepartureIdentified:
                     throw FlightRecoveryError.invalidJournal
                 default: break
                 }
@@ -445,9 +485,11 @@ final class FlightRecoveryCoordinator {
         return result
     }
 
-    private func orderedPointKeys(for legID: UUID, in flightPlan: FlightPlan) -> [IdentificationPointKey] {
+    private func orderedPointKeys(
+        for legID: UUID, in flightPlan: FlightPlan, pending: PendingRouteAmendment?
+    ) -> [IdentificationPointKey] {
         flightPlan.identificationPoints
-            .filter { $0.legID == legID }
+            .filter { $0.legID == legID && pending?.includes($0) != false }
             .map { IdentificationPointKey(legID: legID, identificationPointID: $0.id) }
     }
 }

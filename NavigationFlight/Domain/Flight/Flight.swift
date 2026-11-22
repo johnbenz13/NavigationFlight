@@ -161,6 +161,34 @@ struct Flight: Equatable, Sendable {
     let progressionPolicy: ProgressionPolicy
     private(set) var activeLegIndex: Int
     private(set) var executionMode: NavigationMode
+    private(set) var pendingRouteAmendment: PendingRouteAmendment?
+    private var pendingDepartureIdentifiedAt: Date?
+
+    var activePartwayDeparture: PendingRouteAmendment? {
+        guard let pendingRouteAmendment, pendingRouteAmendment.departureIsPartway,
+              pendingRouteAmendment.departure.legIndex == activeLegIndex else { return nil }
+        return pendingRouteAmendment
+    }
+
+    func operationalArrival(for leg: NavigationLeg) -> RouteWaypoint {
+        guard let pendingRouteAmendment, pendingRouteAmendment.departureIsPartway,
+              pendingRouteAmendment.departure.legID == leg.id,
+              let stop = pendingRouteAmendment.departureStop else { return leg.arrival }
+        return RouteWaypoint(
+            id: stop.id, name: stop.name, position: stop.position,
+            plannedAltitude: leg.departure.plannedAltitude,
+            generatedNumber: leg.arrival.generatedNumber, reportingPointReference: nil
+        )
+    }
+
+    mutating func installPendingAmendment(_ amendment: PendingRouteAmendment, in plan: FlightPlan) throws {
+        guard let route = routeForAmendment(in: plan) else {
+            throw PendingRouteAmendment.Validation.unavailableDeparture
+        }
+        try amendment.validate(flight: self, route: route)
+        pendingRouteAmendment = amendment
+    }
+
     private(set) var legState: LegState
     private(set) var legTimings: [LegTiming]
     private(set) var identificationPointTimings: [IdentificationPointTiming]
@@ -172,7 +200,8 @@ struct Flight: Equatable, Sendable {
     }
 
     var destinationIdentifiedAt: Date? {
-        legTimings.first { $0.legIndex == activeLegIndex }?.destinationIdentifiedAt
+        if activePartwayDeparture != nil { return pendingDepartureIdentifiedAt }
+        return legTimings.first { $0.legIndex == activeLegIndex }?.destinationIdentifiedAt
     }
 
     init(
@@ -233,6 +262,14 @@ struct Flight: Equatable, Sendable {
             throw TransitionError.legNotActive
         }
         let current = legTimings[timingIndex]
+        if activePartwayDeparture != nil {
+            guard pendingDepartureIdentifiedAt == nil else {
+                throw TransitionError.destinationAlreadyIdentified(activeLegIndex)
+            }
+            guard timestamp >= current.startedAt else { throw TransitionError.timestampPrecedesStart }
+            pendingDepartureIdentifiedAt = timestamp
+            return
+        }
         guard current.destinationIdentifiedAt == nil else {
             throw TransitionError.destinationAlreadyIdentified(activeLegIndex)
         }
@@ -257,6 +294,10 @@ struct Flight: Equatable, Sendable {
         let activeLegID = legIDs[activeLegIndex]
         guard key.legID == activeLegID else {
             throw TransitionError.identificationPointWrongLeg(key.identificationPointID)
+        }
+        if let departure = activePartwayDeparture,
+           orderedActiveLegPointKeys.map(\.identificationPointID) != departure.retainedDeparturePointIDs {
+            throw TransitionError.invalidIdentificationPointOrder
         }
         guard !orderedActiveLegPointKeys.isEmpty,
               orderedActiveLegPointKeys.allSatisfy({ $0.legID == activeLegID }),
@@ -543,6 +584,14 @@ struct Flight: Equatable, Sendable {
     }
 
     private func canRevisePilotETA(targetKey: NavigationTimingTargetKey) -> Bool {
+        if let departure = activePartwayDeparture, targetKey.legID == departure.departure.legID {
+            switch targetKey.kind {
+            case .destination:
+                guard targetKey.targetID == departure.departureStop?.id else { return false }
+            case .identificationPoint:
+                guard departure.retainedDeparturePointIDs.contains(targetKey.targetID) else { return false }
+            }
+        }
         guard targetKey.kind == .identificationPoint else {
             return legTimings.first(where: { $0.legID == targetKey.legID })?.reachedAt == nil
         }
@@ -556,6 +605,9 @@ struct Flight: Equatable, Sendable {
         orderedActiveLegPointKeys: [IdentificationPointKey] = [],
         at timestamp: Date
     ) throws {
+        if pendingRouteAmendment?.blocksArrival(at: activeLegIndex) == true {
+            throw PendingRouteAmendment.Validation.departureRequiresAmendmentActivation
+        }
         guard legState == .active else {
             if legTimings.first(where: { $0.legIndex == activeLegIndex })?.reachedAt != nil {
                 throw TransitionError.waypointAlreadyReached(activeLegIndex)

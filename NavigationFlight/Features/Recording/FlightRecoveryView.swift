@@ -7,6 +7,7 @@ struct FlightRecoveryView: View {
     let onEndAll: () -> Void
     let onDismissUnavailable: () -> Void
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var pendingEndCandidate: RecoveryCandidate?
 
     var body: some View {
@@ -104,6 +105,8 @@ struct FlightRecoveryView: View {
                     primaryButton("Keep in Flights", action: onDismissUnavailable)
                     secondaryButton("Start New Flight", action: onDismissUnavailable)
                 }
+            case .amendmentUnavailable(let candidate, let routeName):
+                unreplayableAmendment(candidate: candidate, routeName: routeName)
             case .failure:
                 recoverySurface(
                     title: "Recovery unavailable",
@@ -137,6 +140,49 @@ struct FlightRecoveryView: View {
         } message: {
             Text("The recording remains stored, but it can no longer be continued.")
         }
+    }
+
+    private func unreplayableAmendment(candidate: RecoveryCandidate, routeName: String) -> some View {
+        let regular = horizontalSizeClass == .regular
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("NAVIGATIONFLIGHT · RECOVERY")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Text("This Flight can’t be continued")
+                        .font(.title.bold())
+                        .accessibilityAddTraits(.isHeader)
+                    Text("NavigationFlight couldn’t restore the confirmed route amendment. The recorded track and navigation history are available after you end this Flight as incomplete.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(routeName).font(.headline)
+                    Text("Confirmed amendment · unavailable for recovery")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(22)
+                .frame(maxWidth: .infinity, minHeight: 124, alignment: .topLeading)
+                .background(Color(.systemBackground), in: .rect(cornerRadius: 18))
+                Button("End Flight as Incomplete", role: .destructive) {
+                    pendingEndCandidate = candidate
+                }
+                .font(.subheadline.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 13))
+                .accessibilityIdentifier("end-unavailable-amendment")
+            }
+            .padding(regular ? 48 : 24)
+            .frame(maxWidth: 600, minHeight: regular ? 665 : nil, alignment: .topLeading)
+            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 28))
+            .padding(.horizontal, 20)
+            .padding(.top, regular ? 112 : 36)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity)
+        }
+        .background(Color(.systemBackground))
     }
 
     private func remainingTime(until expiration: Date, now: Date) -> String {

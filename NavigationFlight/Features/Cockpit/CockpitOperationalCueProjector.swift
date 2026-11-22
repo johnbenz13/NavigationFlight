@@ -230,7 +230,7 @@ struct CockpitOperationalCueProjector: Sendable {
         let presentation = try presentationAdapter.makePresentation(
             flightPlan: flightPlan,
             legIndex: flight.activeLegIndex,
-            mode: flight.executionMode
+            mode: flight.executionMode, flight: flight
         )
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {
             throw CockpitPresentationError.unavailablePlannedNavigation
@@ -251,6 +251,7 @@ struct CockpitOperationalCueProjector: Sendable {
                 guard let changeLegIndex = legIndexByID[change.legID],
                       changeLegIndex <= flight.activeLegIndex,
                       let annotation = plannedNavigation.annotations.first(where: { $0.entityID == change.id }),
+                      flight.pendingRouteAmendment?.includes(annotation, in: flightPlan) != false,
                       let time = time(for: annotation, mode: flight.executionMode) else { return nil }
                 return (change, changeLegIndex, time, sourceIndex)
             }
@@ -287,7 +288,8 @@ struct CockpitOperationalCueProjector: Sendable {
                 }
                 return candidate.legIndex == flight.activeLegIndex && candidate.time > elapsedSeconds
             }
-        if plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
+        if flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true,
+           plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
             let nextLegID = plannedNavigation.legs[flight.activeLegIndex + 1].legID
             let nextLegTimeZeroChanges = flightPlan.frequencyChanges.enumerated().compactMap {
                 sourceIndex, change -> (change: FrequencyChange, legIndex: Int, time: Int, sourceIndex: Int)? in
@@ -338,6 +340,7 @@ struct CockpitOperationalCueProjector: Sendable {
             .compactMap { sourceIndex, change -> (change: AltitudeChange, time: Int, sourceIndex: Int)? in
                 guard change.legID == legID,
                       let annotation = annotationsByID[change.id],
+                      flight.pendingRouteAmendment?.includes(annotation, in: flightPlan) != false,
                       let time = time(for: annotation, mode: flight.executionMode) else { return nil }
                 return (change, time, sourceIndex)
             }
@@ -359,7 +362,8 @@ struct CockpitOperationalCueProjector: Sendable {
                 target: nextAltitudeChange.change.targetAltitude,
                 direction: nextAltitudeChange.change.symbolDirection
             )
-        } else if plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
+        } else if flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true,
+                  plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
             nextAltitude = beginningAltitudeCue(
                 legIndex: flight.activeLegIndex + 1,
                 currentAltitude: currentAltitude,
@@ -560,7 +564,7 @@ struct CockpitOperationalCueProjector: Sendable {
         let events = FlightPhase.allCases.flatMap { phase in
             (presentation.frequencies[phase] ?? []).filter { entry in
                 entry.source != .vorDme && entry.frequencyMHz >= 118
-            }.map { entry -> CommunicationEvent in
+            }.compactMap { entry -> CommunicationEvent? in
                 guard let change = changeByPlannedID[entry.id],
                       let legIndex = legIndexByID[change.legID],
                       let annotation = annotationByID[change.id],
@@ -568,6 +572,7 @@ struct CockpitOperationalCueProjector: Sendable {
                     let context = phase == .departure ? "Before navigation" : "After navigation"
                     return CommunicationEvent(entry: entry, legIndex: nil, time: nil, dueContext: context)
                 }
+                guard flight.pendingRouteAmendment?.includes(annotation, in: flightPlan) != false else { return nil }
                 return CommunicationEvent(
                     entry: entry,
                     legIndex: legIndex,

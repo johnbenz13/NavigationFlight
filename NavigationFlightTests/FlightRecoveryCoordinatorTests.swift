@@ -1,10 +1,237 @@
 import Foundation
+import os
 import Testing
 @testable import NavigationFlight
 
 @MainActor
 @Suite("Flight recovery coordination")
 struct FlightRecoveryCoordinatorTests {
+    @Test("A later partway departure leaves the preceding leg operational and shortens the manually started successor")
+    func pendingAmendmentOnLaterLeg() async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let store = InMemoryFlightRecordingStore()
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0,
+                            executionMode: .noWind, progressionPolicy: .manualNextLeg)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(flight: started.flight, plan: plan, departureIndex: 1)
+        let confirmed = try await engine.commit(.confirmPendingAmendment(
+            amendment, plan: plan, at: time.addingTimeInterval(5), elapsed: .seconds(5)
+        ))
+        let firstMap = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: confirmed.flight)
+        #expect(firstMap.destinationTarget.id.targetID == plan.legs[0].arrival.id)
+        let ready = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: firstMap.identificationPoints.map(\.id), at: time.addingTimeInterval(12),
+            elapsed: .seconds(12), eventIDs: [UUID()]
+        ))
+        #expect(ready.flight.legState == .ready)
+        #expect(ready.flight.activeLegIndex == 1)
+        #expect(ready.flight.legStartedAt == nil)
+        let second = try await engine.promoteForStartLeg(
+            at: time.addingTimeInterval(15), recordingID: started.recording.id, eventIDs: [UUID()]
+        )
+        #expect(second.flight.legStartedAt == time.addingTimeInterval(15))
+        let secondMap = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: second.flight)
+        #expect(secondMap.destinationTarget.id.targetID == amendment.departureStop?.id)
+        #expect(secondMap.destinationTarget.id.targetID != plan.legs[1].arrival.id)
+    }
+
+    @Test("A pending amendment is invisible until its writer finishes and queued checkpoints preserve it", .timeLimit(.minutes(1)))
+    func pendingAmendmentSerializesWithCheckpoint() async throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let disk = DiskFlightRecordingStore(rootDirectory: directory)
+        let store = SuspendedPresentationRecordingStore(base: disk)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(flight: started.flight, plan: plan)
+        await store.suspendNextAppend()
+        let confirmation = Task {
+            try await engine.commit(.confirmPendingAmendment(
+                amendment, plan: plan, at: time.addingTimeInterval(5), elapsed: .seconds(5)
+            ))
+        }
+        await store.waitUntilSuspended()
+        let duringWrite = await engine.snapshot()
+        #expect(duringWrite.flight.pendingRouteAmendment == nil)
+        let checkpointAt = time.addingTimeInterval(6)
+        let checkpoint = Task { try await engine.checkpoint(recordingID: started.recording.id, at: checkpointAt) }
+        await store.release()
+        let confirmed = try await confirmation.value
+        try await checkpoint.value
+        let snapshot = try await disk.readSnapshot(id: started.recording.id)
+        #expect(snapshot.recording.lastRecoveryCheckpointAt == checkpointAt)
+        #expect(snapshot.events.last?.payload == .pendingRouteAmendmentConfirmed(amendment))
+        #expect(snapshot.events.last?.cockpitContext == confirmed.cockpitContext)
+    }
+
+    @Test("A saved partway departure retains timing, changes the target and recovers the same route", arguments: [false, true])
+    func pendingAmendmentDiskRecovery(loseAcknowledgment: Bool) async throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = DiskFlightRecordingStore(rootDirectory: directory, afterRouteInstall: {
+            if loseAcknowledgment { throw CocoaError(.fileWriteUnknown) }
+        })
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let capturedPlan = RecordedFlightPlanSnapshot(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        let engine = FlightRecordingEngine(store: store, flight: flight, flightPlanSnapshot: capturedPlan)
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let originallyIdentified = try await engine.commit(.identifyDestination(
+            at: time.addingTimeInterval(10), elapsed: .seconds(10), eventID: UUID()
+        ))
+        let initialMap = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: started.flight)
+        let amendment = try makePendingAmendment(flight: originallyIdentified.flight, plan: plan)
+        let command = RecordedNavigationCommand.confirmPendingAmendment(
+            amendment, plan: plan, at: time.addingTimeInterval(20), elapsed: .seconds(20)
+        )
+        let confirmed = try await engine.commit(command)
+        let retry = try await engine.commit(command)
+        #expect(confirmed == retry)
+        #expect(confirmed.flight.legStartedAt == time)
+        #expect(confirmed.flight.destinationIdentifiedAt == nil)
+        #expect(confirmed.flight.legTimings.first?.destinationIdentifiedAt == time.addingTimeInterval(10))
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: confirmed.flight)
+        #expect(map.destinationTarget.id.targetID == amendment.departureStop?.id)
+        #expect(map.destinationTarget.id != initialMap.destinationTarget.id)
+        #expect(map.plannedDurationSeconds == Int((Double(initialMap.plannedDurationSeconds) / 2).rounded()))
+        #expect(map.activeLeg?.to != initialMap.activeLeg?.to)
+        #expect(map.activeLeg?.id == initialMap.activeLeg?.id)
+
+        await #expect(throws: PendingRouteAmendment.Validation.departureRequiresAmendmentActivation) {
+            try await engine.commit(.reachCurrentWaypoint(
+                orderedActiveLegPointKeys: [], at: time.addingTimeInterval(25), elapsed: .seconds(25), eventIDs: [UUID(), UUID()]
+            ))
+        }
+        let identified = try await engine.commit(.identifyDestination(
+            at: time.addingTimeInterval(30), elapsed: .seconds(30), eventID: UUID(), targetID: map.destinationTarget.id.targetID
+        ))
+        let reopened = DiskFlightRecordingStore(rootDirectory: directory)
+        let snapshot = try await reopened.readSnapshot(id: started.recording.id)
+        #expect(snapshot.recording.sourceSchemaVersion == 4)
+        #expect(snapshot.recording.flightPlanSnapshot.sourceData == source)
+        #expect(snapshot.events.filter { $0.id == amendment.id }.count == 1)
+        #expect(snapshot.trackSegments.isEmpty)
+        let recovery = FlightRecoveryCoordinator(store: reopened, now: { time.addingTimeInterval(40) })
+        await recovery.bootstrap()
+        guard case .single(let candidate) = recovery.state else { Issue.record("Expected recoverable flight"); return }
+        let recovered = try await recovery.continueFlight(
+            id: candidate.id, at: time.addingTimeInterval(40), elapsed: .seconds(40), eventID: UUID()
+        )
+        #expect(recovered.flight == identified.flight)
+        #expect(recovered.cockpitContext == identified.cockpitContext)
+        var state = CockpitFeatureState()
+        state.restore(flightPlan: recovered.flightPlan, flight: recovered.flight, sourceData: source, cockpitContext: recovered.cockpitContext)
+        #expect(state.routeAmendmentDraft == nil)
+        #expect(state.flight?.pendingRouteAmendment == amendment)
+    }
+
+    @Test("A failed first install exposes the old route and an identical retry can commit")
+    func pendingAmendmentRetryAfterInterruptedUpgrade() async throws {
+        let source = try fixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let failureCount = OSAllocatedUnfairLock(initialState: 0)
+        let disk = DiskFlightRecordingStore(rootDirectory: directory, beforeAppend: { event in
+            guard case .pendingRouteAmendmentConfirmed = event.payload else { return }
+            let fail = failureCount.withLock { count in
+                count += 1
+                return count == 1
+            }
+            if fail { throw CocoaError(.fileWriteUnknown) }
+        })
+        let time = Date(timeIntervalSince1970: 10_000)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let engine = FlightRecordingEngine(
+            store: disk, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(flight: started.flight, plan: plan)
+        let confirm = RecordedNavigationCommand.confirmPendingAmendment(
+            amendment, plan: plan, at: time.addingTimeInterval(10), elapsed: .seconds(10)
+        )
+        await #expect(throws: FlightRecordingStoreError.self) { try await engine.commit(confirm) }
+        let unchanged = await engine.snapshot()
+        #expect(unchanged.flight.pendingRouteAmendment == nil)
+        let interrupted = try await DiskFlightRecordingStore(rootDirectory: directory).readSnapshot(id: started.recording.id)
+        #expect(!interrupted.events.contains { $0.id == amendment.id })
+        #expect(interrupted.recording.sourceSchemaVersion == 4)
+        let committed = try await engine.commit(confirm)
+        #expect(committed.flight.pendingRouteAmendment == amendment)
+        let journal = try await disk.readSnapshot(id: started.recording.id)
+        #expect(journal.events.filter { $0.id == amendment.id }.count == 1)
+    }
+
+    @Test("Readable but invalid committed geometry can be closed through recovery")
+    func invalidPendingAmendmentEndsIncomplete() async throws {
+        let time = Date(timeIntervalSince1970: 10_000)
+        let original = try recoveryFixture(recordingID: UUID(), startedAt: time)
+        let source = try #require(original.recording.flightPlanSnapshot.sourceData)
+        let plan = try FPLNavDecoder().decode(source)
+        var unrelated = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        try unrelated.startLeg(at: time)
+        let amendment = try makePendingAmendment(flight: unrelated, plan: plan)
+        let event = RecordedFlightEvent(
+            id: amendment.id, sequence: UInt64(original.events.count), occurredAt: time.addingTimeInterval(5),
+            elapsed: .seconds(5), origin: .pilot, payload: .pendingRouteAmendmentConfirmed(amendment)
+        )
+        var recording = original.recording.restoring(navigationState: original.recording.navigationState, nextEventSequence: event.sequence + 1)
+        recording.sourceSchemaVersion = 4
+        let store = InMemoryFlightRecordingStore(packageResults: [
+            .available(.init(recording: recording, events: original.events + [event]))
+        ])
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(15) })
+        await recovery.bootstrap()
+        guard case .amendmentUnavailable(let candidate, _) = recovery.state else {
+            Issue.record("Expected unavailable confirmed route")
+            return
+        }
+        try await recovery.endAsIncomplete(
+            id: candidate.id, at: time.addingTimeInterval(15), elapsed: .seconds(15), eventIDs: [UUID(), UUID()]
+        )
+        let closed = try await store.readSnapshot(id: candidate.id)
+        #expect(closed.recording.closure?.outcome == .incomplete)
+        #expect(closed.events.contains(event))
+        #expect(closed.recording.flightPlanSnapshot.sourceData == source)
+    }
+
+    private func makePendingAmendment(
+        flight: Flight, plan: FlightPlan, departureIndex: Int = 0
+    ) throws -> PendingRouteAmendment {
+        let route = try #require(flight.routeForAmendment(in: plan))
+        let departure = route.anchor(at: departureIndex, fraction: 0.5)
+        let end = route.anchor(at: departureIndex, fraction: 1)
+        var draft = RouteAmendmentDraft(flightID: flight.id, mode: .manual)
+        draft.update(.chooseAnchor(departure), route: route)
+        draft.update(.chooseRejoin, route: route)
+        draft.update(.chooseAnchor(end), route: route)
+        draft.update(.confirmRejoin, route: route)
+        draft.update(.review, route: route)
+        let leg = try #require(draft.reviewLegs(on: route).first)
+        draft.update(.editLeg(leg.id), route: route)
+        draft.update(.editLegField(.heading, "087"), route: route)
+        draft.update(.editLegField(.minutes, "3"), route: route)
+        draft.update(.editLegField(.seconds, "20"), route: route)
+        draft.update(.saveLegValues, route: route)
+        return try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+    }
+
     @Test("Bootstrap expires a recording whose captured recovery window elapsed")
     func bootstrapExpiresStaleRecording() async throws {
         let startedAt = Date(timeIntervalSince1970: 1_000)
@@ -814,7 +1041,7 @@ private actor SuspendedPresentationRecordingStore: FlightRecordingStore {
         releaseContinuation = nil
     }
 
-    func appendEvent(_ event: RecordedFlightEvent, recordingID: UUID, synchronize: Bool) async throws {
+    private func suspendIfRequested() async {
         if shouldSuspend {
             shouldSuspend = false
             await withCheckedContinuation { continuation in
@@ -823,6 +1050,19 @@ private actor SuspendedPresentationRecordingStore: FlightRecordingStore {
                 waiters.removeAll()
             }
         }
+    }
+
+    func commitRouteTransaction(_ transaction: FlightRouteTransaction) async throws {
+        await suspendIfRequested()
+        try await base.commitRouteTransaction(transaction)
+    }
+
+    func routeTransactionIsCommitted(_ transaction: FlightRouteTransaction) async throws -> Bool {
+        try await base.routeTransactionIsCommitted(transaction)
+    }
+
+    func appendEvent(_ event: RecordedFlightEvent, recordingID: UUID, synchronize: Bool) async throws {
+        await suspendIfRequested()
         try await base.appendEvent(event, recordingID: recordingID, synchronize: synchronize)
     }
 

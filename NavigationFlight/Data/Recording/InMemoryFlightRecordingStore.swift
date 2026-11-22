@@ -127,6 +127,24 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         )
     }
 
+    func commitRouteTransaction(_ transaction: FlightRouteTransaction) async throws {
+        try transaction.validate()
+        let id = transaction.recordingID
+        guard let current = snapshotsByID[id] else { throw FlightRecordingStoreError.corruptPackage(id: id) }
+        if try transaction.isCommitted(in: current.events) { return }
+        guard current.recording.closure == nil,
+              !current.events.contains(where: { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }) else {
+            throw FlightRecordingStoreError.operationFailed(id: id)
+        }
+        try appendEvent(transaction.event, recordingID: id, synchronize: true)
+        guard let saved = snapshotsByID[id] else { throw FlightRecordingStoreError.corruptPackage(id: id) }
+        var recording = saved.recording
+        recording.sourceSchemaVersion = 4
+        snapshotsByID[id] = FlightRecordingReadSnapshot(
+            recording: recording, events: saved.events, trackSegments: saved.trackSegments, detectorPolicy: saved.detectorPolicy
+        )
+    }
+
     func packages() -> [FlightRecordingPackageResult] {
         snapshotsByID.values.map(FlightRecordingPackageResult.available) + unavailablePackageResults
     }

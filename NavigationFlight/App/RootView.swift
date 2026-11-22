@@ -1,4 +1,7 @@
 import SwiftUI
+#if DEBUG
+import os
+#endif
 
 struct RootView: View {
     private let settingsController: SettingsController
@@ -230,6 +233,11 @@ struct RootView: View {
                         startedAt: startedAt,
                         eventIDs: [UUID(), UUID()]
                     ) else { return nil }
+                    if recoveryState == "invalid-amendment" {
+                        return Self.makeUnavailableAmendmentFixture(
+                            plan: plan, sourceData: data, promotion: promotion
+                        )
+                    }
                     return .available(FlightRecordingReadSnapshot(
                         recording: promotion.recording,
                         events: promotion.events
@@ -242,7 +250,19 @@ struct RootView: View {
             recordingStore = InMemoryFlightRecordingStore(failure: .create)
             debugFlightsActiveRecordingID = nil
         } else {
+            let routeSaveAttempts = OSAllocatedUnfairLock(initialState: 0)
+            let amendmentFixture = environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] == "1"
             recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory, beforeAppend: { event in
+                if amendmentFixture, case .pendingRouteAmendmentConfirmed = event.payload {
+                    let first = routeSaveAttempts.withLock { count in
+                        count += 1
+                        return count == 1
+                    }
+                    if first {
+                        Thread.sleep(forTimeInterval: 3)
+                        throw FlightRecordingStoreError.operationFailed(id: nil)
+                    }
+                }
                 if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PRESENTATION_FAILURE"] == "1",
                    event.payload == .cockpitPresentationChanged {
                     throw FlightRecordingStoreError.operationFailed(id: nil)
@@ -794,6 +814,31 @@ struct RootView: View {
                 deviceHeadingDegrees: sample.deviceHeadingDegrees,
                 deviceHeadingAccuracyDegrees: sample.deviceHeadingAccuracyDegrees
             )
+        }
+    }
+#endif
+
+#if DEBUG
+    private static func makeUnavailableAmendmentFixture(
+        plan: FlightPlan, sourceData: Data, promotion: FlightRecordingPromotion
+    ) -> FlightRecordingPackageResult? {
+        let startedAt = promotion.recording.startedAt
+        var otherFlight = CockpitFeatureState()
+        do {
+            try otherFlight.accept(plan, sourceData: sourceData)
+            try otherFlight.startLeg(at: startedAt)
+            otherFlight.prepareAmendmentConfirmationFixture()
+            guard let flight = otherFlight.flight, let route = otherFlight.routeForAmendment,
+                  let draft = otherFlight.routeAmendmentDraft else { return nil }
+            let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+            var recording = promotion.recording
+            let event = try recording.confirmPendingAmendment(
+                amendment, at: startedAt.addingTimeInterval(1), elapsed: .seconds(1)
+            )
+            recording.sourceSchemaVersion = 4
+            return .available(.init(recording: recording, events: promotion.events + [event]))
+        } catch {
+            return nil
         }
     }
 #endif

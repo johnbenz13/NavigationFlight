@@ -130,7 +130,7 @@ struct CockpitFeatureView: View {
            let presentation = try? adapter.makePresentation(
                flightPlan: flightPlan,
                legIndex: state.selectedLegIndex,
-               mode: state.mode
+               mode: state.mode, flight: flight
            ) {
             if let mapPresentation = try? AviationMapPresentationFactory().makePresentation(
                     flightPlan: flightPlan,
@@ -195,12 +195,17 @@ struct CockpitFeatureView: View {
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         routeForAmendment: state.routeForAmendment,
                         routeAmendmentDraft: state.routeAmendmentDraft,
-                        onRouteAmendment: { state.updateRouteAmendment($0, mode: amendmentMode()) },
+                        amendmentSaveStatus: state.amendmentSave?.status,
+                        onConfirmAmendment: confirmAmendment,
+                        onKeepEditingAmendment: { state.amendmentSave = nil },
+                        onRouteAmendment: updateAmendmentDraft,
                         onPositionCheckAction: handlePositionCheckAction,
                         onEndRecording: { isEndRecordingConfirmationPresented = true },
                         onNavigationComplete: completeNavigation,
                         onStartLeg: startLeg,
-                        onIdentifyDestination: identifyDestination,
+                        onIdentifyDestination: {
+                            identifyDestination(targetID: mapPresentation.destinationTarget.id.targetID)
+                        },
                         onWaypointReached: { restoration in
                             reachCurrentWaypoint(mapPresentation: mapPresentation, restoration: restoration)
                         },
@@ -323,7 +328,68 @@ struct CockpitFeatureView: View {
         }
     }
 
-    private func identifyDestination() {
+    private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
+        state.updateRouteAmendment(intent, mode: amendmentMode())
+#if DEBUG
+        if case .open = intent,
+           ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] == "1",
+           state.flight != nil {
+            state.prepareAmendmentConfirmationFixture()
+        }
+#endif
+    }
+
+    private func confirmAmendment() {
+        guard let flight = state.flight, let plan = state.flightPlan, let route = state.routeForAmendment,
+              let draft = state.routeAmendmentDraft, let timing = recordingTiming() else { return }
+        if state.amendmentSave?.status == .saving { return }
+        let operation: CockpitFeatureState.RouteAmendmentSave
+        if let retry = state.amendmentSave {
+            let canRecaptureTiming = retry.status == .failed(canEdit: true)
+            operation = .init(
+                amendment: retry.amendment, timestamp: canRecaptureTiming ? timing.now : retry.timestamp,
+                elapsed: canRecaptureTiming ? timing.elapsed : retry.elapsed, status: .saving
+            )
+        } else {
+            do {
+                let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+                operation = .init(amendment: amendment, timestamp: timing.now, elapsed: timing.elapsed, status: .saving)
+            } catch PendingRouteAmendment.Validation.unavailableDeparture {
+                state.invalidateAmendmentDeparture()
+                return
+            } catch {
+                presentedError = .init(title: "Amendment could not be confirmed", message: "Review the departure, return point and values for each leg.")
+                return
+            }
+        }
+        state.amendmentSave = operation
+        let context = state.recordingCockpitContext
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.confirmPendingAmendment(
+                    operation.amendment, plan: plan, at: operation.timestamp, elapsed: operation.elapsed
+                ), context: context)
+                guard state.amendmentSave?.amendment.id == operation.amendment.id else { return }
+                state.installPendingAmendment(transition)
+                progressionNotice = nil
+                if flight.activeLegIndex == operation.amendment.departure.legIndex,
+                   operation.amendment.departureIsPartway {
+                    endPositionCheck(.activeLegChanged)
+                }
+            } catch {
+                guard state.amendmentSave?.amendment.id == operation.amendment.id else { return }
+                if error as? PendingRouteAmendment.Validation == .unavailableDeparture {
+                    state.amendmentSave = nil
+                    state.invalidateAmendmentDeparture()
+                } else {
+                    let canEdit = error as? FlightRecordingEngine.EngineError != .routeOutcomeUncertain
+                    state.amendmentSave?.status = .failed(canEdit: canEdit)
+                }
+            }
+        }
+    }
+
+    private func identifyDestination(targetID: UUID) {
         guard let timing = recordingTiming() else { return }
         let context = state.recordingCockpitContext
         Task {
@@ -331,7 +397,7 @@ struct CockpitFeatureView: View {
                 let transition = try await recordingCoordinator.commitNavigation(.identifyDestination(
                     at: timing.now,
                     elapsed: timing.elapsed,
-                    eventID: UUID()
+                    eventID: UUID(), targetID: targetID
                 ), context: context)
                 state.installCommittedDestinationIdentification(transition.flight)
                 state.installNavigationGeneration(transition.cockpitContext)
@@ -357,7 +423,7 @@ struct CockpitFeatureView: View {
                     orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
                     at: timing.now,
                     elapsed: timing.elapsed,
-                    eventIDs: eventIDs
+                    eventIDs: eventIDs, expectedLegID: mapPresentation.destinationTarget.id.legID
                 ), context: context, checklistSelection: selection)
                 state.installCommittedWaypointReach(
                     transition.flight,
@@ -371,6 +437,8 @@ struct CockpitFeatureView: View {
                     progressionPolicy: transition.flight.progressionPolicy,
                     hasSuccessor: transition.flight.legState != .completed
                 )
+            } catch is PendingRouteAmendment.Validation {
+                progressionNotice = .rejected(.actionUnavailable)
             } catch {
                 if let transitionError = error as? Flight.TransitionError {
                     progressionNotice = progressionRejection(for: transitionError)

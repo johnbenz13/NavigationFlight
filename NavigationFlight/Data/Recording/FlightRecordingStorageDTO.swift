@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 nonisolated struct FlightRecordingManifestDTO: Codable {
-    static let currentSchemaVersion = 3
+    static let currentSchemaVersion = 4
 
     var schemaVersion: Int
     let id: UUID
@@ -51,7 +51,7 @@ nonisolated struct FlightRecordingManifestDTO: Codable {
               let gpsCoverage = GPSCoverageState(storageValue: gpsCoverage) else {
             throw FlightRecordingStoreError.corruptPackage(id: id)
         }
-        if schemaVersion == 3 {
+        if schemaVersion >= 3 {
             guard progressionPolicy != nil, let cockpitContextStartSequence,
                   cockpitContextStartSequence <= (nextEventSequence ?? self.nextEventSequence) else {
                 throw FlightRecordingStoreError.corruptPackage(id: id)
@@ -280,6 +280,7 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     let outcome: String?
     let closureCause: String?
     var cockpitContext: RecordingCockpitContext? = nil
+    var pendingAmendment: PendingRouteAmendment? = nil
     var targetKind: String? = nil
     var priorValue: Int? = nil
     var committedValue: Int? = nil
@@ -303,6 +304,23 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         origin = event.origin
         cockpitContext = event.cockpitContext
         switch event.payload {
+        case .amendmentDepartureIdentified(let value, let target):
+            kind = "amendmentDepartureIdentified"
+            legID = value
+            targetID = target
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .pendingRouteAmendmentConfirmed(let amendment):
+            kind = "pendingRouteAmendmentConfirmed"
+            pendingAmendment = amendment
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
         case .cockpitPresentationChanged:
             kind = "cockpitPresentationChanged"
             legID = nil
@@ -510,6 +528,12 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     func domain() throws -> RecordedFlightEvent {
         let payload: RecordedFlightEventPayload
         switch kind {
+        case "amendmentDepartureIdentified":
+            guard let legID, let targetID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .amendmentDepartureIdentified(legID: legID, targetID: targetID)
+        case "pendingRouteAmendmentConfirmed":
+            guard let pendingAmendment else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .pendingRouteAmendmentConfirmed(pendingAmendment)
         case "cockpitPresentationChanged":
             guard cockpitContext != nil else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .cockpitPresentationChanged

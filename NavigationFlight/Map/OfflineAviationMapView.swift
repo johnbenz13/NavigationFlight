@@ -65,6 +65,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
     let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
     let amendment: RouteAmendmentMapOverlay.Presentation?
+    let pendingAmendment: RouteAmendmentMapOverlay.Pending?
     let amendmentCenterRequest: UUID?
     let onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void
     let onMapInteraction: () -> Void
@@ -94,6 +95,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
         onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
         amendment: RouteAmendmentMapOverlay.Presentation? = nil,
+        pendingAmendment: RouteAmendmentMapOverlay.Pending? = nil,
         amendmentCenterRequest: UUID? = nil,
         onAmendmentPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void = { _ in },
         onMapInteraction: @escaping () -> Void = {}
@@ -122,6 +124,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.onShowPilotETACheck = onShowPilotETACheck
         self.onHidePilotETACheck = onHidePilotETACheck
         self.amendment = amendment
+        self.pendingAmendment = pendingAmendment
         self.amendmentCenterRequest = amendmentCenterRequest
         self.onAmendmentPlot = onAmendmentPlot
         self.onMapInteraction = onMapInteraction
@@ -192,7 +195,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onMapInteraction: onMapInteraction
         )
         context.coordinator.updateAmendment(
-            amendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
+            amendment, pending: pendingAmendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
         )
         context.coordinator.update(
             presentation: presentation,
@@ -246,6 +249,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
 
         func updateAmendment(
             _ amendment: RouteAmendmentMapOverlay.Presentation?,
+            pending: RouteAmendmentMapOverlay.Pending?,
             centerRequest: UUID?,
             onPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void,
             on mapView: MLNMapView
@@ -253,7 +257,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onAmendmentPlot = onPlot
             let modeChanged = (amendmentOverlay?.presentation == nil) != (amendment == nil)
             amendmentOverlay?.presentation = amendment
-            if modeChanged, let style = mapView.style {
+            let pendingChanged = (amendmentOverlay?.pending == nil) != (pending == nil)
+            amendmentOverlay?.pending = pending
+            if modeChanged || pendingChanged, let style = mapView.style {
                 updateOperationalLayers(in: style)
                 updateEndpointAnnotations(on: mapView)
             }
@@ -279,6 +285,11 @@ struct OfflineAviationMapView: UIViewRepresentable {
             ]
             for identifier in layers {
                 style.layer(withIdentifier: identifier)?.isVisible = visible
+            }
+            if amendmentOverlay?.pending != nil {
+                for layer in [Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer] {
+                    style.layer(withIdentifier: layer)?.isVisible = false
+                }
             }
             style.layer(withIdentifier: Identifier.driftReferenceLayer)?.isVisible = visible && showsDriftReferenceArms
         }
@@ -408,7 +419,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
                 restore(initialCamera, on: mapView)
-            } else if amendmentOverlay?.presentation != nil, case .amendment(let coordinates) = lastFocusRequest.mode {
+            } else if amendmentOverlay?.isHidden == false, case .amendment(let coordinates) = lastFocusRequest.mode {
                 focusAmendment(coordinates, on: mapView)
             } else {
                 focusLeg(on: mapView, animated: false)
@@ -429,7 +440,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapViewRegionIsChanging(_ mapView: MLNMapView) {
-            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
+            if amendmentOverlay?.isHidden == false { amendmentOverlay?.setNeedsDisplay() }
             let hasActiveGesture = mapView.gestureRecognizers?.contains {
                 $0.state == .began || $0.state == .changed
             } ?? false
@@ -460,7 +471,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) {
-            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
+            if amendmentOverlay?.isHidden == false { amendmentOverlay?.setNeedsDisplay() }
             guard styleIsReady else { return }
             let camera = AviationMapCameraState(
                 center: AviationMapCoordinate(

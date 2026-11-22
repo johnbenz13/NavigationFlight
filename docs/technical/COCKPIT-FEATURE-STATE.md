@@ -372,3 +372,7 @@ Repository history was consulted to establish the order in which `selectedLegInd
 ## Open specification questions
 
 This reverse-engineering pass found no unresolved ambiguity in current command behavior. The implementation contains two stored leg indices with distinct consumer roles, while current reachable feature states keep them equal. No current product behavior assigns an inspected leg independently from the session's active leg.
+
+## Route amendment drafts
+
+Cockpit holds one in-memory draft for the loaded Flight ID. The Flight projects eligible anchors from the imported leg order and pilot-reported progress. It includes the shared route boundary during an untimed handoff. Opening, editing, pausing, and resuming the draft use this read-only projection and do not write recording events. Resume revalidates departure against the current projection and keeps the plotted points and rejoin available for correction. Accepting a plan or restoring a Flight clears the draft.

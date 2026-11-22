@@ -195,6 +195,9 @@ struct CockpitView: View {
     var isNavigationCompletionCommitted = false
     var positionCheckMapRestoration: PositionCheckMapRestorationCommand? = nil
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
+    var routeForAmendment: RouteAmendmentRoute?
+    var routeAmendmentDraft: RouteAmendmentDraft?
+    var onRouteAmendment: (RouteAmendmentDraft.Intent) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) async -> Void = { _, _ in }
     var onEndRecording: () -> Void = {}
     var onNavigationComplete: () -> Void = {}
@@ -238,6 +241,20 @@ struct CockpitView: View {
     @State private var positionCheckRestoration: CockpitRestoration?
     @State private var cockpitPresentationState = CockpitPresentationState()
     @State private var compactMapDetent: PresentationDetent = .large
+    @State private var amendmentCenterRequest: UUID?
+    @State private var amendmentDiscardConfirmation = false
+
+    private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
+        guard let routeForAmendment, let routeAmendmentDraft, !routeAmendmentDraft.isPaused else { return nil }
+        return .init(draft: routeAmendmentDraft, route: routeForAmendment)
+    }
+
+    private var isEditingRouteAmendment: Bool { amendmentMapPresentation != nil }
+
+    private var amendmentFocusAnchor: RouteAmendmentAnchor? {
+        if case .confirmRejoin(let anchor) = routeAmendmentDraft?.step { return anchor }
+        return routeAmendmentDraft?.rejoin
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -253,6 +270,28 @@ struct CockpitView: View {
             }
         }
         .background(Color(.systemBackground))
+        .alert("Discard this draft?", isPresented: $amendmentDiscardConfirmation) {
+            Button("Keep editing", role: .cancel) {}
+            Button("Discard draft", role: .destructive) { onRouteAmendment(.discard) }
+        } message: {
+            Text("The current route will continue. The waypoints in this draft will be removed.")
+        }
+        .onChange(of: isEditingRouteAmendment) { _, editing in
+            guard editing else { return }
+            dismissMapCallout()
+            dismissTransientPresentations()
+            onCancelPilotHeading()
+        }
+        .onChange(of: amendmentFocusAnchor) { _, rejoin in
+            guard let rejoin, let amendmentMapPresentation,
+                  let departure = amendmentMapPresentation.draft.departure else { return }
+            let route = amendmentMapPresentation.route
+            let stops = [route.coordinate(at: departure)] + amendmentMapPresentation.draft.points.map(\.position)
+                + [route.coordinate(at: rejoin)]
+            focusMap(.amendment(stops.map {
+                AviationMapCoordinate(latitude: $0.latitudeDegrees, longitude: $0.longitudeDegrees)
+            }))
+        }
         .onChange(of: isSectionSelected) { _, selected in
             if !selected {
                 dismissTransientPresentations()
@@ -309,7 +348,7 @@ struct CockpitView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                     .padding(18)
                 }
-                if horizontalSizeClass != .compact,
+                if !isEditingRouteAmendment, horizontalSizeClass != .compact,
                    checklistState?.presentationState == .expanded {
                     LegStartChecklistOverlay(
                         checklist: legStartChecklist,
@@ -454,7 +493,7 @@ struct CockpitView: View {
             }
         }
         .onChange(of: mapPresentation.gpsDisclosureOverlay) { oldValue, newValue in
-            if let newValue, oldValue == nil {
+            if !isEditingRouteAmendment, let newValue, oldValue == nil {
                 selectedMapCallout = nil
                 isMapCameraUserControlled = false
                 mapFocusRequest = AviationMapFocusRequest(
@@ -507,25 +546,39 @@ struct CockpitView: View {
             VStack(spacing: 0) {
                 mapSurface(isLandscape: false, mapWidth: size.width)
                     .frame(height: size.height * 0.47)
-                ScrollView {
-                    accessibilityControlPanel
+                if let amendmentMapPresentation {
+                    amendmentConsole(amendmentMapPresentation, compact: true)
+                        .frame(maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        accessibilityControlPanel
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityIdentifier("compact-cockpit-console")
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityIdentifier("compact-cockpit-console")
             }
         } else if layout.composition == .sideRail {
             HStack(spacing: 0) {
                 mapSurface(isLandscape: true, mapWidth: layout.mapExtent)
                     .frame(width: layout.mapExtent)
-                landscapeControlPanel
-                    .frame(width: layout.consoleExtent)
-                    .frame(maxHeight: .infinity)
+                Group {
+                    if let amendmentMapPresentation {
+                        amendmentConsole(amendmentMapPresentation, compact: true, inSideRail: true)
+                    } else {
+                        landscapeControlPanel
+                    }
+                }
+                .frame(width: layout.consoleExtent)
+                .frame(maxHeight: .infinity)
             }
         } else {
             VStack(spacing: 0) {
                 mapSurface(isLandscape: false, mapWidth: size.width)
                     .frame(height: layout.mapExtent)
-                if horizontalSizeClass == .compact {
+                if let amendmentMapPresentation {
+                    amendmentConsole(amendmentMapPresentation, compact: horizontalSizeClass == .compact)
+                        .frame(height: layout.consoleExtent)
+                } else if horizontalSizeClass == .compact {
                     compactControlPanel
                         .frame(height: layout.consoleExtent, alignment: .top)
                         .frame(maxWidth: .infinity)
@@ -536,6 +589,37 @@ struct CockpitView: View {
                 }
             }
         }
+    }
+
+    private func amendmentConsole(
+        _ presentation: RouteAmendmentMapOverlay.Presentation, compact: Bool, inSideRail: Bool = false
+    ) -> some View {
+        RouteAmendmentConsole(
+            draft: presentation.draft,
+            route: presentation.route,
+            currentLegTiming: amendmentLegTiming,
+            compact: compact,
+            inSideRail: inSideRail,
+            onIntent: onRouteAmendment,
+            onPlaceAtMapCenter: { amendmentCenterRequest = UUID() },
+            onDiscard: {
+                if presentation.draft.hasContent {
+                    amendmentDiscardConfirmation = true
+                } else {
+                    onRouteAmendment(.discard)
+                }
+            }
+        )
+    }
+
+    private var amendmentLegTiming: RouteAmendmentLegTiming? {
+        guard flight.legState == .active, let startedAt = flight.legStartedAt else { return nil }
+        return RouteAmendmentLegTiming(
+            startedAt: startedAt,
+            destination: data.destination,
+            etaSeconds: mapPresentation.operationalDestinationETASeconds,
+            isRevised: mapPresentation.isDestinationETARevised
+        )
     }
 
     private var accessibilityControlPanel: some View {
@@ -570,8 +654,8 @@ struct CockpitView: View {
                 etaCalloutOffset: destinationCalloutOffset,
                 vorDMECalloutOffset: destinationVORDMECalloutOffset,
                 identificationPointCalloutOffsets: $identificationPointCalloutOffsets,
-                identificationContext: identificationContext,
-                timingTargetContext: timingTargetContext(at: timeline.date),
+                identificationContext: isEditingRouteAmendment ? nil : identificationContext,
+                timingTargetContext: isEditingRouteAmendment ? nil : timingTargetContext(at: timeline.date),
                 preservedCamera: $preservedMapCamera,
                 isCameraUserControlled: $isMapCameraUserControlled,
                 onSelectIdentificationPoint: selectIdentificationPoint,
@@ -583,6 +667,9 @@ struct CockpitView: View {
                 onEditPilotETA: onEditPilotETA,
                 onShowPilotETACheck: onShowPilotETACheck,
                 onHidePilotETACheck: onHidePilotETACheck,
+                amendment: amendmentMapPresentation,
+                amendmentCenterRequest: amendmentCenterRequest,
+                onAmendmentPlot: { onRouteAmendment(.plot($0)) },
                 onMapInteraction: mapInteractionOccurred
                 )
                 .id(mapIdentity)
@@ -593,7 +680,20 @@ struct CockpitView: View {
                 legHeader
                     .accessibilitySortPriority(100)
             }
-            if cockpitPresentationState.areQuickFocusControlsVisible {
+            if !shouldShowMapChrome, routeForAmendment != nil, !isPilotETAEditing {
+                amendmentToolbar
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .padding(12)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
+            if let amendmentMapPresentation, amendmentMapPresentation.draft.hasContent {
+                RouteAmendmentLegend()
+                    .padding(.top, dynamicTypeSize.isAccessibilitySize ? 8 : (horizontalSizeClass == .compact ? 76 : 84))
+                    .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity,
+                           alignment: dynamicTypeSize.isAccessibilitySize ? .bottomLeading : .topLeading)
+            }
+            if !isEditingRouteAmendment, cockpitPresentationState.areQuickFocusControlsVisible {
                 MapQuickFocusControls(
                     onShowWholeActiveLeg: { focusMap(.leg) },
                     onShowDestinationWaypoint: { focusMap(.waypoint) }
@@ -603,14 +703,14 @@ struct CockpitView: View {
                 .padding(.trailing, horizontalSizeClass == .compact ? 12 : 20)
                 .accessibilitySortPriority(80)
             }
-            if let recovery = positionCheck?.recovery {
+            if !isEditingRouteAmendment, let recovery = positionCheck?.recovery {
                 PositionCheckRecoveryGuidanceView(recovery: recovery)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
                     .padding(.top, horizontalSizeClass == .compact ? 58 : 80)
                     .accessibilitySortPriority(85)
             }
-            if let pendingReachUndo, let progressionNotice, progressionNotice.supportsUndo {
+            if !isEditingRouteAmendment, let pendingReachUndo, let progressionNotice, progressionNotice.supportsUndo {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     if context.date < pendingReachUndo.expiresAt {
                         ProgressionNoticeBanner(
@@ -624,7 +724,7 @@ struct CockpitView: View {
                 .padding(.horizontal, 18)
                 .padding(.bottom, 72)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            } else if let progressionNotice, !progressionNotice.supportsUndo {
+            } else if !isEditingRouteAmendment, let progressionNotice, !progressionNotice.supportsUndo {
                 ProgressionNoticeBanner(
                     notice: progressionNotice,
                     expiresAt: nil,
@@ -635,7 +735,7 @@ struct CockpitView: View {
                 .padding(.bottom, 72)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
-            if horizontalSizeClass == .compact,
+            if !isEditingRouteAmendment, horizontalSizeClass == .compact,
                checklistState?.presentationState == .expanded {
                 LegStartChecklistOverlay(
                     checklist: legStartChecklist,
@@ -647,7 +747,7 @@ struct CockpitView: View {
                     onNoted: onNoteChecklist
                 )
             }
-            if !isPilotETAEditing {
+            if !isEditingRouteAmendment, !isPilotETAEditing {
                 CockpitDisclosureStrip(
                     checklistTitle: checklistState?.presentationState == .collapsed
                         ? (checklistState?.reviewState == .noted ? "Checklist · Noted" : "Checklist")
@@ -681,7 +781,7 @@ struct CockpitView: View {
 
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active
-            || isCompactMapChromeVisible || isMapDisclosurePresented
+            || isCompactMapChromeVisible || isMapDisclosurePresented || routeAmendmentDraft != nil
     }
 
     private var isPilotETAEditing: Bool {
@@ -929,6 +1029,7 @@ struct CockpitView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("From \(data.origin) to \(data.destination)")
             Spacer(minLength: 4)
+            amendmentToolbar
             Button(action: showMapTools) {
                 Image(systemName: "map")
                     .font(.headline)
@@ -964,6 +1065,7 @@ struct CockpitView: View {
                 }
             }
             Spacer(minLength: 8)
+            amendmentToolbar
             Button(action: showMapTools) {
                 Label("Map tools", systemImage: "map")
                     .font(.headline)
@@ -975,6 +1077,44 @@ struct CockpitView: View {
         }
     }
 
+    @ViewBuilder
+    private var amendmentToolbar: some View {
+        if routeForAmendment != nil {
+            HStack(spacing: 2) {
+                amendmentIcon("pencil", label: "Amend route", id: "amend-route", intent: .open,
+                              highlighted: isEditingRouteAmendment)
+                    .disabled(routeAmendmentDraft != nil)
+                    .accessibilityValue(routeAmendmentDraft == nil ? "" : (isEditingRouteAmendment ? "Editing draft" : "Draft paused"))
+                if let routeAmendmentDraft {
+                    if routeAmendmentDraft.isPaused {
+                        amendmentIcon("play.fill", label: "Resume route amendment draft", id: "resume-route-amendment", intent: .resume,
+                                      highlighted: true)
+                    } else {
+                        amendmentIcon("pause.fill", label: "Pause route amendment draft", id: "pause-route-amendment", intent: .pause)
+                    }
+                }
+            }
+            .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func amendmentIcon(
+        _ symbol: String, label: String, id: String, intent: RouteAmendmentDraft.Intent, highlighted: Bool = false
+    ) -> some View {
+        let teal = Color(RouteAmendmentMapOverlay.proposedColor)
+        return Button { onRouteAmendment(intent) } label: {
+            Image(systemName: symbol)
+                .font(.headline)
+                .frame(width: 44, height: 44)
+                .foregroundStyle(highlighted ? teal : .primary)
+                .background(highlighted ? teal.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 12))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(id)
+    }
+
     private var accessibilityLegHeader: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
@@ -982,6 +1122,7 @@ struct CockpitView: View {
                     .font(.subheadline.weight(.bold))
                     .accessibilityIdentifier("leg-status")
                 Spacer()
+                amendmentToolbar
                 Button(action: showMapTools) {
                     Label("Map tools", systemImage: "map")
                         .frame(minHeight: 44)

@@ -9,6 +9,7 @@ enum AviationMapFocusMode: Equatable, Sendable {
     case waypoint
     case overview
     case timingTarget(AviationMapCoordinate)
+    case amendment([AviationMapCoordinate])
     case positionCheck(aircraft: AviationMapCoordinate, intercept: AviationMapCoordinate?)
 }
 
@@ -63,6 +64,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let onEditPilotETA: (NavigationTimingTargetKey) -> Void
     let onShowPilotETACheck: (NavigationTimingTargetKey) -> Void
     let onHidePilotETACheck: (NavigationTimingTargetKey) -> Void
+    let amendment: RouteAmendmentMapOverlay.Presentation?
+    let amendmentCenterRequest: UUID?
+    let onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void
     let onMapInteraction: () -> Void
 
     init(
@@ -89,6 +93,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
         onEditPilotETA: @escaping (NavigationTimingTargetKey) -> Void,
         onShowPilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
         onHidePilotETACheck: @escaping (NavigationTimingTargetKey) -> Void,
+        amendment: RouteAmendmentMapOverlay.Presentation? = nil,
+        amendmentCenterRequest: UUID? = nil,
+        onAmendmentPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void = { _ in },
         onMapInteraction: @escaping () -> Void = {}
     ) {
         self.presentation = presentation
@@ -114,6 +121,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.onEditPilotETA = onEditPilotETA
         self.onShowPilotETACheck = onShowPilotETACheck
         self.onHidePilotETACheck = onHidePilotETACheck
+        self.amendment = amendment
+        self.amendmentCenterRequest = amendmentCenterRequest
+        self.onAmendmentPlot = onAmendmentPlot
         self.onMapInteraction = onMapInteraction
     }
 
@@ -164,6 +174,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         backgroundTap.cancelsTouchesInView = false
         backgroundTap.delegate = context.coordinator
         mapView.addGestureRecognizer(backgroundTap)
+        context.coordinator.installAmendmentOverlay(on: mapView)
         return mapView
     }
 
@@ -179,6 +190,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onShowPilotETACheck: onShowPilotETACheck,
             onHidePilotETACheck: onHidePilotETACheck,
             onMapInteraction: onMapInteraction
+        )
+        context.coordinator.updateAmendment(
+            amendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
         )
         context.coordinator.update(
             presentation: presentation,
@@ -218,6 +232,55 @@ struct OfflineAviationMapView: UIViewRepresentable {
             static let gpsRecoveryLayer = GPSDisclosureMapContract.recoveryLayerID
             static let gpsInterceptSource = GPSDisclosureMapContract.interceptSourceID
             static let gpsInterceptLayer = GPSDisclosureMapContract.interceptLayerID
+        }
+
+        private var amendmentOverlay: RouteAmendmentMapOverlay?
+        private var amendmentCenterRequest: UUID?
+        private var onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void = { _ in }
+
+        func installAmendmentOverlay(on mapView: MLNMapView) {
+            let overlay = RouteAmendmentMapOverlay(map: mapView)
+            mapView.addSubview(overlay)
+            amendmentOverlay = overlay
+        }
+
+        func updateAmendment(
+            _ amendment: RouteAmendmentMapOverlay.Presentation?,
+            centerRequest: UUID?,
+            onPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void,
+            on mapView: MLNMapView
+        ) {
+            onAmendmentPlot = onPlot
+            let modeChanged = (amendmentOverlay?.presentation == nil) != (amendment == nil)
+            amendmentOverlay?.presentation = amendment
+            if modeChanged, let style = mapView.style {
+                updateOperationalLayers(in: style)
+                updateEndpointAnnotations(on: mapView)
+            }
+            let previousRequest = amendmentCenterRequest
+            amendmentCenterRequest = centerRequest
+            if let centerRequest, previousRequest != centerRequest, amendment != nil {
+                let center = CGPoint(x: mapView.bounds.midX, y: mapView.bounds.midY)
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.amendmentCenterRequest == centerRequest,
+                          let input = self.amendmentOverlay?.input(at: center, placingAtCenter: true) else { return }
+                    self.onAmendmentPlot(input)
+                }
+            }
+        }
+
+        private func updateOperationalLayers(in style: MLNStyle) {
+            let visible = amendmentOverlay?.presentation == nil
+            let layers = [
+                Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer, Identifier.waypointLayer,
+                Identifier.minuteMarkCasingLayer, Identifier.minuteMarkLayer,
+                Identifier.gpsAccuracyLayer, Identifier.gpsMarkerLayer, Identifier.gpsNeutralLayer,
+                Identifier.gpsVisualHaloLayer, Identifier.gpsRecoveryLayer, Identifier.gpsInterceptLayer
+            ]
+            for identifier in layers {
+                style.layer(withIdentifier: identifier)?.isVisible = visible
+            }
+            style.layer(withIdentifier: Identifier.driftReferenceLayer)?.isVisible = visible && showsDriftReferenceArms
         }
 
         private var presentation: AviationMapPresentation
@@ -340,10 +403,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
             addWaypoints(to: style)
             addMinuteMarks(to: style)
             addGPSDisclosure(to: style)
+            updateOperationalLayers(in: style)
             updateEndpointAnnotations(on: mapView)
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
                 restore(initialCamera, on: mapView)
+            } else if amendmentOverlay?.presentation != nil, case .amendment(let coordinates) = lastFocusRequest.mode {
+                focusAmendment(coordinates, on: mapView)
             } else {
                 focusLeg(on: mapView, animated: false)
             }
@@ -363,6 +429,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapViewRegionIsChanging(_ mapView: MLNMapView) {
+            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
             let hasActiveGesture = mapView.gestureRecognizers?.contains {
                 $0.state == .began || $0.state == .changed
             } ?? false
@@ -370,9 +437,15 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onMapInteraction()
         }
 
-        @objc func didTapMapBackground() {
+        @objc func didTapMapBackground(_ recognizer: UITapGestureRecognizer) {
             onMapInteraction()
-            onDismissCallout()
+            if let amendmentOverlay, amendmentOverlay.presentation != nil, let map = amendmentOverlay.map {
+                if let input = amendmentOverlay.input(at: recognizer.location(in: map)) {
+                    onAmendmentPlot(input)
+                }
+            } else {
+                onDismissCallout()
+            }
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
@@ -387,6 +460,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, regionDidChangeAnimated animated: Bool) {
+            if amendmentOverlay?.presentation != nil { amendmentOverlay?.setNeedsDisplay() }
             guard styleIsReady else { return }
             let camera = AviationMapCameraState(
                 center: AviationMapCoordinate(
@@ -547,7 +621,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 updateShapes(in: style)
             }
             if driftVisibilityChanged, let layer = mapView.style?.layer(withIdentifier: Identifier.driftReferenceLayer) as? MLNLineStyleLayer {
-                layer.isVisible = showsDriftReferenceArms
+                layer.isVisible = amendmentOverlay?.presentation == nil && showsDriftReferenceArms
             }
             if presentationChanged || legStateChanged || identificationContextChanged || timingTargetContextChanged {
                 updateEndpointAnnotations(on: mapView)
@@ -573,6 +647,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     focusOverview(on: mapView)
                 case .timingTarget(let coordinate):
                     focusTimingTarget(coordinate, on: mapView)
+                case .amendment(let coordinates):
+                    focusAmendment(coordinates, on: mapView)
                 case .positionCheck(let aircraft, let intercept):
                     focusPositionCheck(aircraft: aircraft, intercept: intercept, on: mapView)
                 }
@@ -907,6 +983,19 @@ struct OfflineAviationMapView: UIViewRepresentable {
             }
         }
 
+        private func focusAmendment(_ coordinates: [AviationMapCoordinate], on mapView: MLNMapView) {
+            let points = coordinates.map(coordinate)
+            mapView.setVisibleCoordinates(
+                points,
+                count: UInt(points.count),
+                edgePadding: UIEdgeInsets(top: min(150, mapView.bounds.height * 0.35), left: 36, bottom: 38, right: 48),
+                direction: mapView.direction,
+                duration: 0,
+                animationTimingFunction: nil,
+                completionHandler: nil
+            )
+        }
+
         private func focusWaypoint(on mapView: MLNMapView) {
             guard let leg = presentation.activeLeg else { return }
             publishCameraOwnership(isUserControlled: false)
@@ -1030,6 +1119,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private func updateEndpointAnnotations(on mapView: MLNMapView) {
             if !endpointAnnotations.isEmpty {
                 mapView.removeAnnotations(endpointAnnotations)
+            }
+            guard amendmentOverlay?.presentation == nil else {
+                endpointAnnotations = []
+                return
             }
             endpointAnnotations = presentation.waypoints.compactMap { waypoint in
                 guard waypoint.role != .route else { return nil }

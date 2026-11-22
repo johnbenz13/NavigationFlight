@@ -2738,7 +2738,7 @@ struct CockpitView: View {
                     }
                     .font(.caption.weight(.semibold))
                     .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tint)
                     .contentShape(Rectangle())
                     .accessibilityLabel("Report Destination Reached")
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")

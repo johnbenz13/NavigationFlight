@@ -12,6 +12,7 @@ struct CockpitFeatureView: View {
     @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
     @State private var progressionNotice: CockpitProgressionNotice?
+    private let amendmentMode: () -> RouteAmendmentMode
     private let checklistSelection: () -> StartChecklistSelection
     private let adapter = CockpitPresentationAdapter()
     private let locationService: AircraftLocationService
@@ -29,12 +30,14 @@ struct CockpitFeatureView: View {
         isSectionSelected: Bool,
         recordingCoordinator: FlightRecordingCoordinator,
         checklistSelection: @escaping () -> StartChecklistSelection = { .tzeKivun },
+        amendmentMode: @escaping () -> RouteAmendmentMode,
         chartCatalog: ChartCatalog? = nil,
         chartResources: ChartResources = .bundled,
         shouldSimulateRecordingDegradation: Bool = false,
         onIntent: @escaping (CockpitFeatureIntent) -> Void
     ) {
         self.checklistSelection = checklistSelection
+        self.amendmentMode = amendmentMode
         _state = state
         self.locationService = locationService
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
@@ -192,7 +195,7 @@ struct CockpitFeatureView: View {
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         routeForAmendment: state.routeForAmendment,
                         routeAmendmentDraft: state.routeAmendmentDraft,
-                        onRouteAmendment: { state.updateRouteAmendment($0) },
+                        onRouteAmendment: { state.updateRouteAmendment($0, mode: amendmentMode()) },
                         onPositionCheckAction: handlePositionCheckAction,
                         onEndRecording: { isEndRecordingConfirmationPresented = true },
                         onNavigationComplete: completeNavigation,

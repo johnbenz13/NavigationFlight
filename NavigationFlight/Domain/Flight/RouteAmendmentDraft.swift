@@ -16,6 +16,38 @@ struct RouteAmendmentRoute: Equatable, Sendable {
     let legs: [NavigationLeg]
     let firstAvailable: RouteAmendmentAnchor
 
+    struct OriginalLeg: Identifiable, Equatable, Sendable {
+        let id: UUID
+        let name: String
+        let mode: NavigationMode
+        let direction: Int?
+        let durationSeconds: Int?
+    }
+
+    private let planning: [PlannedLegNavigation]
+    private let navigationMode: NavigationMode
+
+    func originalLeg(_ id: UUID) -> OriginalLeg? {
+        guard let leg = legs.first(where: { $0.id == id }) else { return nil }
+        let plan = planning.first { $0.legID == id }
+        let direction = navigationMode == .wind ? plan?.withWind?.magneticHeading : plan?.magneticCourse
+        let duration = navigationMode == .wind ? plan?.withWind?.timing.durationSeconds : plan?.noWind.durationSeconds
+        return OriginalLeg(id: id, name: Self.legName(from: leg.departure.name, to: leg.arrival.name), mode: navigationMode,
+                           direction: direction.map { Int($0.value.rounded()) % 360 }, durationSeconds: duration)
+    }
+
+    static func legName(from departure: String, to arrival: String) -> String {
+        "\u{2068}\(departure)\u{2069} → \u{2068}\(arrival)\u{2069}"
+    }
+
+    init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
+         planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind) {
+        self.legs = legs
+        self.firstAvailable = firstAvailable
+        self.planning = planning
+        self.navigationMode = navigationMode
+    }
+
     func anchor(at index: Int, fraction: Double) -> RouteAmendmentAnchor {
         if fraction == 0, index > 0, legs[index - 1].arrival.id == legs[index].departure.id {
             return RouteAmendmentAnchor(legIndex: index - 1, legID: legs[index - 1].id, fraction: 1)
@@ -41,12 +73,12 @@ struct RouteAmendmentRoute: Equatable, Sendable {
         let to = leg.arrival.position
         if fraction == 0 { return from }
         if fraction == 1 { return to }
-        let fromY = mercatorY(from.latitudeDegrees)
-        let y = fromY + (mercatorY(to.latitudeDegrees) - fromY) * fraction
-        let longitude = from.longitudeDegrees + longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * fraction
+        let fromY = Self.mercatorY(from.latitudeDegrees)
+        let y = fromY + (Self.mercatorY(to.latitudeDegrees) - fromY) * fraction
+        let longitude = from.longitudeDegrees + Self.longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * fraction
         return WGS84Coordinate(
             latitudeDegrees: atan(sinh(y)) * 180 / .pi,
-            longitudeDegrees: longitudeDelta(0, longitude)
+            longitudeDegrees: Self.longitudeDelta(0, longitude)
         )
     }
 
@@ -54,23 +86,23 @@ struct RouteAmendmentRoute: Equatable, Sendable {
     func fraction(on leg: NavigationLeg, at coordinate: WGS84Coordinate) -> Double {
         let from = leg.departure.position
         let to = leg.arrival.position
-        let fromY = mercatorY(from.latitudeDegrees)
-        let dx = longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * .pi / 180
-        let dy = mercatorY(to.latitudeDegrees) - fromY
+        let fromY = Self.mercatorY(from.latitudeDegrees)
+        let dx = Self.longitudeDelta(from.longitudeDegrees, to.longitudeDegrees) * .pi / 180
+        let dy = Self.mercatorY(to.latitudeDegrees) - fromY
         let lengthSquared = dx * dx + dy * dy
         guard lengthSquared > 0 else { return 0 }
-        let x = longitudeDelta(from.longitudeDegrees, coordinate.longitudeDegrees) * .pi / 180
-        let y = mercatorY(coordinate.latitudeDegrees) - fromY
+        let x = Self.longitudeDelta(from.longitudeDegrees, coordinate.longitudeDegrees) * .pi / 180
+        let y = Self.mercatorY(coordinate.latitudeDegrees) - fromY
         return min(1, max(0, (x * dx + y * dy) / lengthSquared))
     }
 
-    private func mercatorY(_ latitude: Double) -> Double {
+    nonisolated static func mercatorY(_ latitude: Double) -> Double {
         let limit = atan(sinh(Double.pi)) * 180 / .pi
         let radians = min(limit, max(-limit, latitude)) * .pi / 180
         return asinh(tan(radians))
     }
 
-    private func longitudeDelta(_ from: Double, _ to: Double) -> Double {
+    nonisolated static func longitudeDelta(_ from: Double, _ to: Double) -> Double {
         (to - from + 540).truncatingRemainder(dividingBy: 360) - 180
     }
 
@@ -128,7 +160,9 @@ extension Flight {
         let earliest = sharesPreviousBoundary
             ? RouteAmendmentAnchor(legIndex: activeLegIndex - 1, legID: flightPlan.legs[activeLegIndex - 1].id, fraction: 1)
             : RouteAmendmentAnchor(legIndex: activeLegIndex, legID: leg.id, fraction: reportedProgress)
-        return RouteAmendmentRoute(legs: flightPlan.legs, firstAvailable: earliest)
+        return RouteAmendmentRoute(legs: flightPlan.legs, firstAvailable: earliest,
+                                   planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
+                                   navigationMode: executionMode)
     }
 }
 
@@ -145,6 +179,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var anchors: [RouteAmendmentAnchor] = []
         var waypoint: RouteAmendmentRoute.Stop?
         var pointID: UUID?
+        var legHits: [LegChoice]?
     }
 
     enum CrossingPurpose: Equatable, Sendable {
@@ -167,6 +202,10 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
+        case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
+        case saveLegValues, backToLegReview, checkLeg(ReviewLeg.ID)
+        case toggleCues, toggleCheck, adjustHeading(Int), adjustFlightTime(Int)
+        case inspectOriginal, cancelInspection, chooseLeg, selectLeg(LegChoice), closeLegPanel
     }
 
     struct Segment: Equatable, Sendable {
@@ -183,7 +222,142 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var selection: UUID?
     }
 
+    struct ReviewLeg: Identifiable, Equatable, Sendable {
+        enum Endpoint: Hashable, Sendable {
+            case anchor(RouteAmendmentAnchor)
+            case point(UUID, latitude: Double, longitude: Double)
+        }
+
+        struct ID: Hashable, Sendable {
+            let from: Endpoint
+            let to: Endpoint
+        }
+
+        let id: ID
+        let departureName: String
+        let arrivalName: String
+        let from: WGS84Coordinate
+        let to: WGS84Coordinate
+        let values: RouteAmendmentLegValues?
+    }
+
+    enum LegChoice: Hashable, Sendable {
+        case original(UUID)
+        case proposed(ReviewLeg.ID)
+    }
+
+    struct LegChoiceRow: Identifiable {
+        let id: LegChoice
+        let name: String
+        let legNumber: Int
+
+        var isProposed: Bool {
+            if case .proposed = id { return true }
+            return false
+        }
+    }
+
+    struct Editor: Equatable, Sendable {
+        let id: ReviewLeg.ID
+        var entry: RouteAmendmentLegEntry
+        var showValidation = false
+        var showsCues = false
+        var estimate: RouteAmendmentEstimator.Result?
+        var referenceID: UUID?
+    }
+
+    enum LegPanel: Equatable, Sendable {
+        case editor
+        case inspection
+        case chooser([LegChoice], inspecting: Bool, overlap: Bool)
+        case original(UUID, inspecting: Bool)
+    }
+
     let flightID: UUID
+    let mode: RouteAmendmentMode
+    private(set) var editor: Editor?
+    private(set) var legPanel: LegPanel?
+    private(set) var overlapPosition: WGS84Coordinate?
+
+    var isInspecting: Bool {
+        if case .inspection = legPanel { return true }
+        return false
+    }
+
+    var isChoosingInspectionLeg: Bool {
+        if case .chooser(_, true, _) = legPanel { return true }
+        return false
+    }
+
+    var acceptsLegTap: Bool {
+        !isPaused && (isInspecting || (step == .review && legPanel == nil))
+    }
+
+    func legChoices(on route: RouteAmendmentRoute, originalsOnly: Bool) -> [LegChoice] {
+        let originals = route.legs.map { LegChoice.original($0.id) }
+        return originalsOnly ? originals : originals + reviewLegs(on: route).map { .proposed($0.id) }
+    }
+
+    func legChoiceRows(_ choices: [LegChoice], on route: RouteAmendmentRoute) -> [LegChoiceRow] {
+        let proposed = reviewLegs(on: route)
+        let rows = choices.compactMap { choice -> LegChoiceRow? in
+            switch choice {
+            case .original(let id):
+                guard let index = route.legs.firstIndex(where: { $0.id == id }),
+                      let original = route.originalLeg(id) else { return nil }
+                return .init(id: choice, name: original.name, legNumber: index + 1)
+            case .proposed(let id):
+                guard let index = proposed.firstIndex(where: { $0.id == id }) else { return nil }
+                let leg = proposed[index]
+                let name = RouteAmendmentRoute.legName(from: leg.departureName, to: leg.arrivalName)
+                return .init(id: choice, name: name, legNumber: index + 1)
+            }
+        }
+        let groupedByRole = Dictionary(grouping: rows, by: \.isProposed)
+        let groupedByName = groupedByRole.mapValues { Dictionary(grouping: $0, by: \.name) }
+        return rows.map { row in
+            guard (groupedByName[row.isProposed]?[row.name]?.count ?? 0) > 1 else { return row }
+            return .init(id: row.id, name: "Leg \(row.legNumber) · \(row.name)", legNumber: row.legNumber)
+        }
+    }
+
+    func selectedLegEndpoints(on route: RouteAmendmentRoute) -> (WGS84Coordinate, WGS84Coordinate)? {
+        switch legPanel {
+        case .editor:
+            guard let id = editor?.id, let leg = reviewLegs(on: route).first(where: { $0.id == id }) else { return nil }
+            return (leg.from, leg.to)
+        case .original(let id, _):
+            guard let leg = route.legs.first(where: { $0.id == id }) else { return nil }
+            return (leg.departure.position, leg.arrival.position)
+        default:
+            return nil
+        }
+    }
+
+    private var legValues: [ReviewLeg.ID: RouteAmendmentLegValues] = [:]
+
+    init(flightID: UUID, mode: RouteAmendmentMode = .manual) {
+        self.flightID = flightID
+        self.mode = mode
+    }
+
+    func reviewLegs(on route: RouteAmendmentRoute) -> [ReviewLeg] {
+        guard let departure, let rejoin else { return [] }
+        typealias Stop = (id: ReviewLeg.Endpoint, name: String, position: WGS84Coordinate)
+        func stop(_ anchor: RouteAmendmentAnchor) -> Stop {
+            (.anchor(anchor), route.name(for: anchor), route.coordinate(at: anchor))
+        }
+        let via: [Stop] = points.enumerated().map { index, point in
+            (.point(point.id, latitude: point.position.latitudeDegrees, longitude: point.position.longitudeDegrees),
+             point.name ?? "Point \(index + 1)", point.position)
+        }
+        let stops = [stop(departure)] + via + [stop(rejoin)]
+        return zip(stops, stops.dropFirst()).map { from, to in
+            let id = ReviewLeg.ID(from: from.id, to: to.id)
+            return ReviewLeg(id: id, departureName: from.name, arrivalName: to.name,
+                             from: from.position, to: to.position, values: legValues[id])
+        }
+    }
     private var sketch = Sketch()
     private var plotHistory: [Sketch] = []
     private(set) var step: Step = .departure
@@ -216,12 +390,14 @@ struct RouteAmendmentDraft: Equatable, Sendable {
 
     var acceptsMapInput: Bool {
         switch step {
-        case .departure, .drawing, .rejoin, .move: !isPaused
+        case .departure, .drawing, .rejoin, .move: !isPaused && legPanel == nil
         default: false
         }
     }
 
-    mutating func update(_ intent: Intent, route: RouteAmendmentRoute) {
+    mutating func update(
+        _ intent: Intent, route: RouteAmendmentRoute, estimateInputs: RouteAmendmentEstimator.Inputs? = nil
+    ) {
         switch intent {
         case .pause:
             isPaused = true
@@ -235,9 +411,30 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
 
         validateDeparture(on: route)
+        if legPanel != nil {
+            switch intent {
+            case .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
+                 .editLegField, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
+                 .adjustHeading, .adjustFlightTime: break
+            default: return
+            }
+        }
         message = nil
         switch intent {
         case .plot(let input):
+            if let hits = input.legHits, acceptsLegTap {
+                let eligible = legChoices(on: route, originalsOnly: isInspecting)
+                let choices = eligible.filter { hits.contains($0) }
+                if choices.count > 1 {
+                    overlapPosition = input.position
+                    legPanel = .chooser(choices, inspecting: isInspecting, overlap: true)
+                } else if let choice = choices.first {
+                    selectLeg(choice, inspecting: isInspecting, on: route)
+                } else if isInspecting {
+                    message = "No original leg here. Try another chart location."
+                }
+                return
+            }
             guard acceptsMapInput else { return }
             if case .move(let id) = step {
                 editPoint(id, replacingWith: input, route: route)
@@ -309,7 +506,11 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                 case .finish: step = .drawing
                 }
             case .departure where departure != nil: step = .drawing
-            case .rejoin, .confirmRejoin, .move, .review: step = .drawing
+            case .review:
+                editor = nil
+                legPanel = nil
+                step = .drawing
+            case .rejoin, .confirmRejoin, .move: step = .drawing
             default: break
             }
         case .review:
@@ -324,7 +525,101 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             } else {
                 step = .crossing(candidates, .finish)
             }
+        case .editLeg(let id):
+            openEditor(id, on: route)
+        case .checkLeg(let id):
+            openEditor(id, on: route, check: true, inputs: estimateInputs)
+        case .editLegField(let field, let text):
+            guard legPanel == .editor else { return }
+            editor?.entry[field] = text
+        case .adjustHeading(let delta):
+            guard legPanel == .editor else { return }
+            editor?.entry.adjustHeading(by: delta)
+        case .adjustFlightTime(let delta):
+            guard legPanel == .editor else { return }
+            editor?.entry.adjustFlightTime(by: delta)
+        case .toggleCues:
+            guard legPanel == .editor else { return }
+            editor?.showsCues.toggle()
+        case .toggleCheck:
+            guard legPanel == .editor, let editor,
+                  let leg = reviewLegs(on: route).first(where: { $0.id == editor.id }) else { return }
+            let result = editor.estimate == nil ? estimate(for: leg, inputs: estimateInputs) : nil
+            self.editor?.estimate = result
+        case .saveLegValues:
+            guard legPanel == .editor, let editor else { return }
+            guard let values = editor.entry.values else {
+                self.editor?.showValidation = true
+                if editor.entry.invalidFields.contains(.altitude) || editor.entry.invalidFields.contains(.frequency) {
+                    self.editor?.showsCues = true
+                }
+                return
+            }
+            legValues[editor.id] = values
+            self.editor = nil
+            legPanel = nil
+        case .backToLegReview:
+            guard legPanel == .editor else { return }
+            editor = nil
+            legPanel = nil
+        case .inspectOriginal:
+            guard acceptsMapInput || legPanel == .editor else { return }
+            legPanel = .inspection
+        case .cancelInspection:
+            guard isInspecting || isChoosingInspectionLeg else { return }
+            overlapPosition = nil
+            legPanel = editor == nil ? nil : .editor
+        case .chooseLeg:
+            guard acceptsLegTap || isChoosingInspectionLeg else { return }
+            let inspecting = isInspecting || isChoosingInspectionLeg
+            let originals = legChoices(on: route, originalsOnly: true)
+            let proposed = inspecting ? [] : reviewLegs(on: route).map { LegChoice.proposed($0.id) }
+            overlapPosition = nil
+            legPanel = .chooser(proposed + originals, inspecting: inspecting, overlap: false)
+        case .selectLeg(let choice):
+            guard case .chooser(let choices, let inspecting, _) = legPanel, choices.contains(choice) else { return }
+            selectLeg(choice, inspecting: inspecting, on: route)
+        case .closeLegPanel:
+            overlapPosition = nil
+            switch legPanel {
+            case .inspection, .original:
+                legPanel = editor == nil ? nil : .editor
+            case .chooser(_, let inspecting, _):
+                legPanel = inspecting ? .inspection : nil
+            default: break
+            }
         case .open, .pause, .resume, .discard: break
+        }
+    }
+
+    private mutating func openEditor(
+        _ id: ReviewLeg.ID, on route: RouteAmendmentRoute,
+        check: Bool = false, inputs: RouteAmendmentEstimator.Inputs? = nil
+    ) {
+        guard legPanel == nil, step == .review,
+              let leg = reviewLegs(on: route).first(where: { $0.id == id }) else { return }
+        let entry = RouteAmendmentLegEntry(values: leg.values)
+        editor = Editor(id: id, entry: entry, estimate: check ? estimate(for: leg, inputs: inputs) : nil)
+        legPanel = .editor
+    }
+
+    private func estimate(
+        for leg: ReviewLeg, inputs: RouteAmendmentEstimator.Inputs?
+    ) -> RouteAmendmentEstimator.Result {
+        inputs.map { RouteAmendmentEstimator.estimate(from: leg.from, to: leg.to, inputs: $0) } ?? .unavailable
+    }
+
+    private mutating func selectLeg(_ choice: LegChoice, inspecting: Bool, on route: RouteAmendmentRoute) {
+        overlapPosition = nil
+        switch choice {
+        case .original(let id):
+            guard route.originalLeg(id) != nil else { return }
+            if inspecting { editor?.referenceID = id }
+            legPanel = .original(id, inspecting: inspecting)
+        case .proposed(let id):
+            guard !inspecting else { return }
+            legPanel = nil
+            openEditor(id, on: route)
         }
     }
 
@@ -358,6 +653,9 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     private mutating func validateDeparture(on route: RouteAmendmentRoute) {
         if let departure, !route.contains(departure) {
             step = .staleDeparture
+            overlapPosition = nil
+            editor = nil
+            legPanel = nil
         }
     }
 

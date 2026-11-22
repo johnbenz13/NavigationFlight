@@ -73,6 +73,27 @@ struct SettingsTests {
         #expect(controller.failedAttempt == nil)
     }
 
+    @Test("Legacy settings default to Manual and a failed save preserves that choice")
+    func amendmentModeDefaultsAndSavesIndependently() async throws {
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try await DiskSettingsStore(directory: directory).save(.showDriftLines(false))
+        let controller = SettingsController(store: DiskSettingsStore(directory: directory, failNextSaves: 1))
+        await controller.bootstrap()
+        #expect(controller.preferences.routeAmendmentMode == .manual)
+        controller.change(.routeAmendmentMode(.assisted))
+        await controller.waitForPendingChanges()
+        #expect(controller.preferences.routeAmendmentMode == .manual)
+        #expect(controller.failedAttempt?.change == .routeAmendmentMode(.assisted))
+        #expect(await DiskSettingsStore(directory: directory).load().preferences.routeAmendmentMode == .manual)
+        controller.retry()
+        await controller.waitForPendingChanges()
+        #expect(controller.preferences.routeAmendmentMode == .assisted)
+        let reloaded = await DiskSettingsStore(directory: directory).load().preferences
+        #expect(reloaded.routeAmendmentMode == .assisted)
+        #expect(!reloaded.showDriftLines)
+    }
+
     @Test("Dismiss never retries or changes effective value")
     func dismissFailure() async throws {
         let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)

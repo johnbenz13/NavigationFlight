@@ -66,17 +66,27 @@ struct CockpitFeatureState: Equatable, Sendable {
         return flight?.routeForAmendment(in: flightPlan)
     }
 
-    mutating func updateRouteAmendment(_ intent: RouteAmendmentDraft.Intent) {
+    mutating func updateRouteAmendment(
+        _ intent: RouteAmendmentDraft.Intent, mode: RouteAmendmentMode = .manual
+    ) {
         if case .discard = intent {
             routeAmendmentDraft = nil
             return
         }
-        guard let flight, let route = routeForAmendment else { return }
+        guard let flight, let flightPlan, let route = routeForAmendment else { return }
         if case .open = intent, routeAmendmentDraft == nil {
-            routeAmendmentDraft = RouteAmendmentDraft(flightID: flight.id)
+            routeAmendmentDraft = RouteAmendmentDraft(flightID: flight.id, mode: mode)
         }
         guard routeAmendmentDraft?.flightID == flight.id else { return }
-        routeAmendmentDraft?.update(intent, route: route)
+        routeAmendmentDraft?.update(
+            intent, route: route,
+            estimateInputs: .init(
+                mode: flight.executionMode,
+                magneticVariationEast: flightPlan.parameters.magneticVariationEast,
+                planningAirspeed: flightPlan.parameters.planningAirspeed,
+                defaultWind: flightPlan.operationalContext.defaultWind
+            )
+        )
     }
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {

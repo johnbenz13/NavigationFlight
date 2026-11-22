@@ -36,10 +36,14 @@ final class RouteAmendmentMapOverlay: UIView {
     required init?(coder: NSCoder) { fatalError() }
 
     func input(at tap: CGPoint, placingAtCenter: Bool = false) -> RouteAmendmentDraft.MapInput? {
-        guard let map, let presentation, presentation.draft.acceptsMapInput else { return nil }
+        guard let map, let presentation else { return nil }
         let coordinate = map.convert(tap, toCoordinateFrom: map)
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
+        if presentation.draft.acceptsLegTap, !placingAtCenter {
+            return .init(position: position, legHits: legHits(at: tap, on: map, presentation: presentation))
+        }
+        guard presentation.draft.acceptsMapInput else { return nil }
         let isChoosingAnchor = presentation.draft.step == .departure || presentation.draft.step == .rejoin
         let retainsCenterPosition = placingAtCenter && !isChoosingAnchor
 
@@ -116,6 +120,8 @@ final class RouteAmendmentMapOverlay: UIView {
                 stroke(from, to, color: color, width: 3.5, dashed: role == .bypassed, in: context)
             }
         }
+        drawOriginalMinuteMarks(presentation, on: map, in: context)
+        drawSelectedLeg(presentation, on: map, in: context)
         let reserved = [draft.departure, draft.rejoin].compactMap { $0 }
         let plottedStops = draft.points.filter { $0.name != nil }
         for stop in route.stops where !reserved.contains(stop.id) &&
@@ -136,6 +142,17 @@ final class RouteAmendmentMapOverlay: UIView {
         if let rejoin = draft.rejoin {
             marker(project(route.coordinate(at: rejoin), on: map), label: "Return · \(route.name(for: rejoin))", color: Self.proposedColor, in: context)
         }
+        if let position = draft.overlapPosition {
+            let point = project(position, on: map)
+            let circle = CGRect(x: point.x - 14, y: point.y - 14, width: 28, height: 28)
+            context.setLineDash(phase: 0, lengths: [])
+            context.setStrokeColor(UIColor.white.cgColor)
+            context.setLineWidth(6)
+            context.strokeEllipse(in: circle)
+            context.setStrokeColor(Self.retainedColor.cgColor)
+            context.setLineWidth(2.5)
+            context.strokeEllipse(in: circle)
+        }
         if case .crossing(let options, _) = draft.step, let first = options.first {
             marker(project(route.coordinate(at: first), on: map), label: "Choose leg",
                    color: Self.proposedColor, selected: true, in: context)
@@ -143,6 +160,70 @@ final class RouteAmendmentMapOverlay: UIView {
         if case .confirmRejoin(let anchor) = draft.step {
             marker(project(route.coordinate(at: anchor), on: map), label: route.name(for: anchor),
                    color: Self.proposedColor, selected: true, in: context)
+        }
+    }
+
+    private func legHits(
+        at point: CGPoint, on map: MLNMapView, presentation: Presentation
+    ) -> [RouteAmendmentDraft.LegChoice] {
+        func hits(_ from: WGS84Coordinate, _ to: WGS84Coordinate) -> Bool {
+            let start = project(from, on: map)
+            let end = project(to, on: map)
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let lengthSquared = dx * dx + dy * dy
+            guard lengthSquared > 0 else { return false }
+            let fraction = min(1, max(0, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared))
+            return distance(point, CGPoint(x: start.x + dx * fraction, y: start.y + dy * fraction)) <= 18
+        }
+        let originals = presentation.route.legs.filter { hits($0.departure.position, $0.arrival.position) }
+            .map { RouteAmendmentDraft.LegChoice.original($0.id) }
+        guard !presentation.draft.isInspecting else { return originals }
+        let proposed = presentation.draft.reviewLegs(on: presentation.route)
+            .filter { hits($0.from, $0.to) }.map { RouteAmendmentDraft.LegChoice.proposed($0.id) }
+        return originals + proposed
+    }
+
+    private func drawOriginalMinuteMarks(_ presentation: Presentation, on map: MLNMapView, in context: CGContext) {
+        let route = presentation.route
+        let style = AviationMapVisualStyle.default
+        for (index, leg) in route.legs.enumerated() {
+            guard let duration = route.originalLeg(leg.id)?.durationSeconds, duration >= 60 else { continue }
+            let start = project(leg.departure.position, on: map)
+            let end = project(leg.arrival.position, on: map)
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let length = hypot(dx, dy)
+            guard length > 0 else { continue }
+            let interval = length * 60 / CGFloat(duration)
+            guard interval >= 4 else { continue }
+            for minute in 1...(duration / 60) {
+                let fraction = Double(minute * 60) / Double(duration)
+                let anchor = route.anchor(at: index, fraction: fraction)
+                let point = CGPoint(x: start.x + dx * fraction, y: start.y + dy * fraction)
+                guard bounds.insetBy(dx: -16, dy: -16).contains(point) else { continue }
+                let tickLength: CGFloat = minute.isMultiple(of: AviationMapSymbology.minuteLabelCadence) ? 10 : 7
+                let tip = CGPoint(x: point.x + dy / length * tickLength, y: point.y - dx / length * tickLength)
+                let bypassed = presentation.draft.bypasses(anchor, on: route)
+                let color = bypassed ? Self.bypassedColor.withAlphaComponent(0.75) : Self.retainedColor
+                stroke(point, tip, color: style.minuteTickCasingColor, width: 4, dashed: false, in: context)
+                stroke(point, tip, color: color, width: 2, dashed: false, in: context)
+            }
+        }
+    }
+
+    private func drawSelectedLeg(_ presentation: Presentation, on map: MLNMapView, in context: CGContext) {
+        switch presentation.draft.legPanel {
+        case .editor:
+            guard let id = presentation.draft.editor?.id,
+                  let leg = presentation.draft.reviewLegs(on: presentation.route).first(where: { $0.id == id }) else { return }
+            stroke(project(leg.from, on: map), project(leg.to, on: map),
+                   color: Self.proposedColor, width: 5, dashed: false, in: context)
+        case .original(let id, _):
+            guard let leg = presentation.route.legs.first(where: { $0.id == id }) else { return }
+            stroke(project(leg.departure.position, on: map), project(leg.arrival.position, on: map),
+                   color: Self.retainedColor.withAlphaComponent(0.28), width: 13, dashed: false, in: context)
+        default: break
         }
     }
 

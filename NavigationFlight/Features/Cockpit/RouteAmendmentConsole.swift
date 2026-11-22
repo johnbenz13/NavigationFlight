@@ -22,22 +22,24 @@ struct RouteAmendmentConsole: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
                     draftHeading
-                    if let message = draft.message {
+                    if let message = draft.message, !draft.isInspecting {
                         Label(message, systemImage: "exclamationmark.circle")
                             .font(.subheadline)
                             .accessibilityIdentifier("amendment-feedback")
                     }
                     controls
-                    if showsFooter, actionsFollowEditor {
-                        footer
-                    }
+                        .allowsHitTesting(draft.legPanel == nil)
+                    if showsFooter, actionsFollowEditor { footer }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .scrollBounceBehavior(.basedOnSize)
             .accessibilityIdentifier("route-amendment-console")
-            if showsFooter, !actionsFollowEditor {
+            if draft.step == .review {
+                reviewFooter
+            } else if showsFooter, !actionsFollowEditor {
                 footer
+                    .allowsHitTesting(draft.legPanel == nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 4)
             }
@@ -54,19 +56,29 @@ struct RouteAmendmentConsole: View {
 
     private var draftHeading: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
                 draftTitle
                 Spacer(minLength: 0)
-                if draft.acceptsMapInput { pointInput }
-                if draft.step == .review { reviewLegCount }
+                headingActions
             }
             VStack(alignment: .leading, spacing: 2) {
                 draftTitle
-                if draft.acceptsMapInput { pointInput }
-                if draft.step == .review { reviewLegCount }
+                headingActions
             }
         }
         .frame(minHeight: 44)
+        .allowsHitTesting(draft.legPanel == nil)
+    }
+
+    @ViewBuilder
+    private var headingActions: some View {
+        if draft.step == .review {
+            reviewLegCount
+            lightweightAction("Choose leg", id: "choose-amendment-leg") { onIntent(.chooseLeg) }
+        } else if draft.acceptsMapInput || draft.isInspecting {
+            pointInput
+            lightweightAction("Inspect leg", id: "inspect-amendment-leg") { onIntent(.inspectOriginal) }
+        }
     }
 
     private var draftTitle: some View {
@@ -74,7 +86,7 @@ struct RouteAmendmentConsole: View {
             Text(title)
                 .font(.system(.title3, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
-            if draft.step != .drawing, draft.step != .review {
+            if draft.step != .drawing && draft.step != .review {
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -162,12 +174,9 @@ struct RouteAmendmentConsole: View {
                     .foregroundStyle(.secondary)
             }
         case .review:
-            routeSequence
-            Text("Route sketch complete")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(routeAccent)
-                .padding(.top, 4)
-            filledAction("Back to drawing", id: "back-to-amendment-drawing") { onIntent(.back) }
+            RouteAmendmentReview(draft: draft, route: route, compact: compact, onIntent: onIntent)
+                .allowsHitTesting(draft.legPanel == nil)
+
         }
     }
 
@@ -204,9 +213,48 @@ struct RouteAmendmentConsole: View {
         }
     }
 
+    private var reviewFooter: some View {
+        HStack {
+            lightweightAction("Back to drawing", id: "back-to-amendment-drawing", symbol: "chevron.backward") {
+                onIntent(.back)
+            }
+            .allowsHitTesting(draft.legPanel == nil)
+            Spacer()
+            Button { onIntent(.pause) } label: {
+                Image(systemName: "pause")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .contentShape(.rect)
+                    .background(RouteAmendmentPanelStyle.neutral, in: .rect(cornerRadius: 12))
+                    .foregroundStyle(.primary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Pause route amendment draft")
+            .accessibilityIdentifier("pause-amendment-review")
+        }
+        .padding(.bottom, 4)
+    }
+
+    private func lightweightAction(
+        _ title: LocalizedStringKey, id: String, symbol: String? = nil, perform: @escaping () -> Void
+    ) -> some View {
+        Button(action: perform) {
+            HStack(spacing: 4) {
+                if let symbol { Image(systemName: symbol).font(.caption.weight(.semibold)) }
+                Text(title).font(.subheadline)
+            }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(.rect)
+            .foregroundStyle(RouteAmendmentPanelStyle.action)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+    }
+
     private var reviewLegCount: some View {
         let count = draft.points.count + 1
-        return Text(count == 1 ? "1 leg" : "\(count) legs")
+        let legs = count == 1 ? "1 leg" : "\(count) legs"
+        return Text("\(draft.mode.title) · \(legs)")
             .font(.caption)
             .foregroundStyle(.secondary)
     }
@@ -700,21 +748,35 @@ private struct RouteAmendmentDisabledOpacity: ViewModifier {
 struct RouteAmendmentLegend: View {
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) { entries }
-            VStack(alignment: .leading, spacing: 5) { entries }
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 10) { retained; bypassed }
+                HStack(spacing: 10) { proposed; marks }
+            }
+            VStack(alignment: .leading, spacing: 4) { retained; bypassed; proposed; marks }
         }
         .font(.caption.weight(.semibold))
-        .padding(10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(9)
+        .background(Color(uiColor: .systemBackground), in: .rect(cornerRadius: 9))
         .accessibilityElement(children: .combine)
         .allowsHitTesting(false)
     }
 
-    @ViewBuilder
-    private var entries: some View {
-        entry("Retained", color: Color(RouteAmendmentMapOverlay.retainedColor))
+    private var retained: some View {
+        entry("Original retained", color: Color(RouteAmendmentMapOverlay.retainedColor))
+    }
+
+    private var bypassed: some View {
+        entry("Original bypassed", color: Color(RouteAmendmentMapOverlay.bypassedColor), dashed: true)
+    }
+
+    private var proposed: some View {
         entry("Proposed", color: Color(RouteAmendmentMapOverlay.proposedColor))
-        entry("Bypassed", color: Color(RouteAmendmentMapOverlay.bypassedColor), dashed: true)
+    }
+
+    private var marks: some View {
+        Label("Original minute marks", systemImage: "line.diagonal")
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: true, vertical: false)
     }
 
     private func entry(_ name: String, color: Color, dashed: Bool = false) -> some View {

@@ -250,6 +250,7 @@ struct CockpitView: View {
     @State private var compactMapDetent: PresentationDetent = .large
     @State private var amendmentCenterRequest: UUID?
     @State private var amendmentDiscardConfirmation = false
+    @State private var compactDepartureHeaderHeight: CGFloat = 0
 
     private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
         guard let routeForAmendment, let routeAmendmentDraft, !routeAmendmentDraft.isPaused else { return nil }
@@ -258,7 +259,12 @@ struct CockpitView: View {
 
     private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {
         guard let routeForAmendment, let amendment = flight.pendingRouteAmendment else { return nil }
-        return .init(amendment: amendment, route: routeForAmendment)
+        return .init(
+            amendment: amendment,
+            route: routeForAmendment,
+            activePartwayDeparture: flight.legState == .active ? flight.activePartwayDeparture?.departureStop : nil,
+            departureHeaderInset: horizontalSizeClass == .compact ? compactDepartureHeaderHeight + 12 : 0
+        )
     }
 
     private var isEditingRouteAmendment: Bool { amendmentMapPresentation != nil }
@@ -1063,6 +1069,9 @@ struct CockpitView: View {
             .padding(.vertical, 5)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
             .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                compactDepartureHeaderHeight = height
+            }
             .frame(maxHeight: .infinity, alignment: .top)
             .padding(12)
         } else {

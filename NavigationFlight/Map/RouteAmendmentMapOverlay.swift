@@ -14,6 +14,61 @@ final class RouteAmendmentMapOverlay: UIView {
     struct Pending: Equatable {
         let amendment: PendingRouteAmendment
         let route: RouteAmendmentRoute
+        let activePartwayDeparture: PendingRouteAmendment.Stop?
+        let departureHeaderInset: CGFloat
+    }
+
+    struct DepartureMarker {
+        private static let diameter: CGFloat = 14
+        private static let labelGap: CGFloat = 9
+        private let label: NSAttributedString
+
+        init(name: String, traits: UITraitCollection) {
+            label = NSAttributedString(string: name, attributes: [
+                .font: UIFontMetrics(forTextStyle: .caption1).scaledFont(
+                    for: .systemFont(ofSize: 13, weight: .bold), compatibleWith: traits
+                ),
+                .foregroundColor: UIColor.black
+            ])
+        }
+
+        var anchor: CGPoint {
+            CGPoint(x: size.width / 2, y: badgeSize.height + Self.labelGap + Self.diameter / 2)
+        }
+
+        var size: CGSize {
+            CGSize(width: max(44, badgeSize.width),
+                   height: max(44, badgeSize.height + Self.labelGap + Self.diameter))
+        }
+
+        private var badgeSize: CGSize {
+            let size = label.size()
+            return CGSize(width: ceil(size.width) + 12, height: ceil(size.height) + 6)
+        }
+
+        func draw(at point: CGPoint, color: UIColor, showsLabel: Bool, in context: CGContext) {
+            let ring = CGRect(x: point.x - Self.diameter / 2, y: point.y - Self.diameter / 2,
+                              width: Self.diameter, height: Self.diameter)
+            context.setLineDash(phase: 0, lengths: [])
+            context.setFillColor(UIColor.white.cgColor)
+            context.fillEllipse(in: ring)
+            context.setStrokeColor(color.cgColor)
+            context.setLineWidth(2)
+            context.strokeEllipse(in: ring.insetBy(dx: 1, dy: 1))
+            guard showsLabel else { return }
+            let badge = CGRect(x: point.x - badgeSize.width / 2,
+                               y: ring.minY - Self.labelGap - badgeSize.height,
+                               width: badgeSize.width, height: badgeSize.height)
+            UIColor.white.setFill()
+            UIBezierPath(roundedRect: badge, cornerRadius: 6).fill()
+            label.draw(at: CGPoint(x: badge.minX + 6, y: badge.minY + 3))
+        }
+    }
+
+    var showsPartwayDepartureLabel = true {
+        didSet {
+            if oldValue != showsPartwayDepartureLabel { setNeedsDisplay() }
+        }
     }
 
     var pending: Pending? {
@@ -184,6 +239,11 @@ final class RouteAmendmentMapOverlay: UIView {
         }
         if let rejoin = amendment.replacementLegs.last?.to {
             marker(project(rejoin.position, on: map), label: "Rejoin · \(rejoin.name)", color: Self.proposedColor, in: context)
+        }
+        if let departure = pending.activePartwayDeparture {
+            let marker = DepartureMarker(name: departure.name, traits: traitCollection)
+            marker.draw(at: project(departure.position, on: map), color: Self.retainedColor,
+                        showsLabel: showsPartwayDepartureLabel, in: context)
         }
     }
 

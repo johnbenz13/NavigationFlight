@@ -1050,14 +1050,21 @@ struct CockpitView: View {
 
     @ViewBuilder
     private var legHeader: some View {
-        if horizontalSizeClass == .compact, !dynamicTypeSize.isAccessibilitySize {
-            compactLegHeader
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
-                .frame(maxHeight: .infinity, alignment: .top)
-                .padding(12)
+        if horizontalSizeClass == .compact,
+           !dynamicTypeSize.isAccessibilitySize || showsCompactPartwayDeparture {
+            Group {
+                if showsCompactPartwayDeparture {
+                    compactPartwayDepartureHeader
+                } else {
+                    compactLegHeader
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 5)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(.primary.opacity(0.08)) }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(12)
         } else {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
@@ -1077,6 +1084,41 @@ struct CockpitView: View {
                     .allowsHitTesting(false)
             }
             .frame(maxHeight: .infinity, alignment: .top).padding(20)
+        }
+    }
+
+    private var showsCompactPartwayDeparture: Bool {
+        flight.legState == .active && flight.activePartwayDeparture != nil
+    }
+
+    private var compactPartwayDepartureHeader: some View {
+        HStack(spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(legStatusText)
+                        .font(.caption.weight(.bold))
+                        .accessibilityIdentifier("leg-status")
+                    Text("·").foregroundStyle(.secondary).accessibilityHidden(true)
+                    Text(data.legPosition.uppercased())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityIdentifier("pending-departure-leg-position")
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(data.origin)
+                    Image(systemName: "arrow.right").font(.caption)
+                    Text(data.destination)
+                }
+                .font(.subheadline.weight(.semibold))
+                .environment(\.layoutDirection, .leftToRight)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("From \(data.origin) to \(data.destination)")
+                .accessibilityIdentifier("pending-departure-leg-route")
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            amendmentToolbar
+            compactMapToolsButton
         }
     }
 
@@ -1105,16 +1147,20 @@ struct CockpitView: View {
             .accessibilityLabel("From \(data.origin) to \(data.destination)")
             Spacer(minLength: 4)
             amendmentToolbar
-            Button(action: showMapTools) {
-                Image(systemName: "map")
-                    .font(.headline)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-            .buttonStyle(.plain)
-            .foregroundStyle(.primary)
-            .accessibilityLabel("Map tools")
+            compactMapToolsButton
         }
+    }
+
+    private var compactMapToolsButton: some View {
+        Button(action: showMapTools) {
+            Image(systemName: "map")
+                .font(.headline)
+        }
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .accessibilityLabel("Map tools")
     }
 
     private var regularLegHeader: some View {

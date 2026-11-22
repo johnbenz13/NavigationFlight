@@ -218,6 +218,9 @@ final class FlightRecordingCoordinator {
             status = recording.closure?.outcome == .complete ? .closedComplete : .closedIncomplete
             await stopRecordingLocationCapture()
             return
+        case .trackPersistenceFailed:
+            status = .recordingDegraded
+            return
         case .none, .provisionalBegan, .provisionalDiscarded, .promoted, .promotionPersistenceFailed:
             break
         }
@@ -415,8 +418,6 @@ final class FlightRecordingCoordinator {
         at timestamp: Date,
         eventIDs: [UUID]
     ) async throws {
-        recoveryCheckpointTask?.cancel()
-        recoveryCheckpointTask = nil
         if let recording = publishedRecording,
            recording.closure == nil,
            let engine {
@@ -428,6 +429,8 @@ final class FlightRecordingCoordinator {
                 forcedOutcome: .incomplete
             )
         }
+        recoveryCheckpointTask?.cancel()
+        recoveryCheckpointTask = nil
         engine = nil
         publishedFlight = nil
         publishedRecording = nil

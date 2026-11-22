@@ -715,22 +715,25 @@ struct CockpitPresentationAdapter: Sendable {
                 frequencyMHz: $0.frequency.value
             )
         }
-        let plannedDurationSeconds: Int
+        let originalDurationSeconds: Int
         switch flight.executionMode {
         case .wind:
-            plannedDurationSeconds = resolvedLeg.withWind?.timing.durationSeconds
+            originalDurationSeconds = resolvedLeg.withWind?.timing.durationSeconds
                 ?? resolvedLeg.noWind.durationSeconds
         case .noWind:
-            plannedDurationSeconds = resolvedLeg.noWind.durationSeconds
+            originalDurationSeconds = resolvedLeg.noWind.durationSeconds
         }
 
+        let scheduledDeparture = flight.pendingRouteAmendment.flatMap {
+            $0.departure.legID == sourceLeg.id ? $0 : nil
+        }
         return NextLegPreparation(
             legIndex: nextIndex,
             origin: sourceLeg.departure.name,
-            destination: sourceLeg.arrival.name,
+            destination: flight.operationalArrival(for: sourceLeg).name,
             direction: direction,
             initialAltitudeFeetMsl: resolvedLeg.initialAltitudeMsl.value,
-            plannedDurationSeconds: plannedDurationSeconds,
+            plannedDurationSeconds: scheduledDeparture?.departurePlannedElapsedSeconds ?? originalDurationSeconds,
             immediateAltitudeFeetMsl: immediateAltitude,
             immediateFrequencyChange: immediateFrequency
         )

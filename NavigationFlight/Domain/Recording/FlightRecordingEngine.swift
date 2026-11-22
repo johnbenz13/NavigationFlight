@@ -72,6 +72,7 @@ nonisolated enum FlightRecordingLocationOutcome: Equatable, Sendable {
     case physicalStateCorrected(FlightRecording)
     case closed(FlightRecording)
     case promotionPersistenceFailed
+    case trackPersistenceFailed
 }
 
 actor FlightRecordingEngine {
@@ -171,13 +172,28 @@ actor FlightRecordingEngine {
     func ingest(_ event: LocationSourceEvent, monotonicTime: Duration) async -> FlightRecordingLocationOutcome {
         await acquireMutation()
         defer { releaseMutation() }
-        guard isArmed, unresolvedRouteWrite == nil else { return .none }
+        guard isArmed else { return .none }
+        let routeWriteUnresolved = unresolvedRouteWrite != nil
         switch event {
         case .sample(let sourceSample, _):
             guard let baseSample = RecordedTrackSample(sourceSample) else { return .none }
             let sample = associateSupplemental(with: baseSample)
             guard !deliveredSamples.contains(sample) else { return .none }
             deliveredSamples.append(sample)
+            if routeWriteUnresolved {
+                guard let recording, !storageDegradations.contains(.lowStorage) else {
+                    return .trackPersistenceFailed
+                }
+                do {
+                    try await appendTrackSample(sample, recordingID: recording.id)
+                } catch {
+                    // Keep the gap visible without appending journal events while its
+                    // route transaction is uncertain.
+                    segmentNeedsReopening = true
+                    return .trackPersistenceFailed
+                }
+                return .none
+            }
             if recording == nil {
                 rollingBuffer.append(sample)
                 let cutoff = sample.observedAt.addingTimeInterval(-120)
@@ -246,17 +262,7 @@ actor FlightRecordingEngine {
                     }
                 }
                 if !storageDegradations.contains(.lowStorage) {
-                    if segmentNeedsReopening || activeSegmentID == nil {
-                        activeSegmentID = UUID()
-                        segmentNeedsReopening = false
-                    }
-                    if let segmentID = activeSegmentID {
-                        try? await store.appendTrackBatch(RecordedTrackBatch(
-                            recordingID: currentRecording.id,
-                            segmentID: segmentID,
-                            samples: [sample]
-                        ))
-                    }
+                    try? await appendTrackSample(sample, recordingID: currentRecording.id)
                 }
                 var candidateDetector = detector
                 let physicalEvents = candidateDetector.process(sourceSample, monotonicTime: monotonicTime)
@@ -344,6 +350,10 @@ actor FlightRecordingEngine {
                 }
             }
         case .servicesDisabled, .signalLost, .authorization(.denied), .authorization(.restricted):
+            if routeWriteUnresolved {
+                segmentNeedsReopening = true
+                return .none
+            }
             if var recording, !segmentNeedsReopening {
                 let availability: RecordingLocationAvailability
                 switch event {
@@ -373,6 +383,13 @@ actor FlightRecordingEngine {
             break
         }
         return .none
+    }
+
+    private func appendTrackSample(_ sample: RecordedTrackSample, recordingID: UUID) async throws {
+        let segmentID = segmentNeedsReopening ? UUID() : activeSegmentID ?? UUID()
+        activeSegmentID = segmentID
+        segmentNeedsReopening = false
+        try await store.appendTrackBatch(.init(recordingID: recordingID, segmentID: segmentID, samples: [sample]))
     }
 
     private func associateSupplemental(with sample: RecordedTrackSample) -> RecordedTrackSample {
@@ -817,8 +834,10 @@ actor FlightRecordingEngine {
         defer { releaseMutation() }
         try requireResolvedRouteWrite()
         guard var candidate = recording, candidate.id == recordingID, candidate.closure == nil else { return nil }
-        let lastActivity = candidate.lastRecoveryCheckpointAt ?? candidate.startedAt
-        guard timestamp.timeIntervalSince(lastActivity) >= candidate.recoveryWindowSeconds else { return nil }
+        let snapshot = try await store.readSnapshot(id: recordingID)
+        let lastActivity = snapshot.latestDurableEvidenceAt
+        guard snapshot.recording.closure == nil,
+              timestamp.timeIntervalSince(lastActivity) >= candidate.recoveryWindowSeconds else { return nil }
         let event = try candidate.closeDuringRecovery(
             at: lastActivity, elapsed: .seconds(max(0, lastActivity.timeIntervalSince(candidate.startedAt))),
             cause: .recoveryExpired, eventID: UUID()

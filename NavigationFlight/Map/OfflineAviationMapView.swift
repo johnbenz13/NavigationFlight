@@ -1138,10 +1138,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
             endpointAnnotations = presentation.waypoints.compactMap { waypoint in
                 guard waypoint.role != .route else { return nil }
                 let reference = presentation.endpointReferences.first { $0.waypointID == waypoint.id }
+                let pending = amendmentOverlay?.pending?.amendment
                 return EndpointAnnotation(
                     waypoint: waypoint,
                     reference: reference,
-                    isActive: legState == .active
+                    isActive: legState == .active,
+                    isPartwayDeparture: legState == .active && pending?.departureIsPartway == true
+                        && waypoint.id == pending?.departureStop?.id
                 )
             }
             if let destination = presentation.waypoints.first(where: { $0.role == .to }),
@@ -1349,16 +1352,19 @@ private final class EndpointAnnotation: MLNPointAnnotation {
     let waypointName: String
     let referenceText: String?
     let isActive: Bool
+    let isPartwayDeparture: Bool
 
     init(
         waypoint: AviationMapWaypoint,
         reference: AviationMapVORDMEReference?,
-        isActive: Bool
+        isActive: Bool,
+        isPartwayDeparture: Bool
     ) {
         identifier = waypoint.id
         role = waypoint.role
         waypointName = waypoint.name
         self.isActive = isActive
+        self.isPartwayDeparture = isPartwayDeparture
         if let reference {
             let radial = Int(reference.magneticRadialFromDegrees.rounded())
             referenceText = "\(reference.stationIdentifier) · \(reference.frequencyMHz.formatted(.number.precision(.fractionLength(2...3)))) · \(radial)° · \(reference.slantRangeNauticalMiles.formatted(.number.precision(.fractionLength(1)))) NM"
@@ -1484,7 +1490,15 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         self.onSelectDestination = onSelectDestination
         super.init(reuseIdentifier: reuseIdentifier)
         if annotation.role == .to {
-            configureDestination(annotation, visualStyle: visualStyle)
+            if annotation.isPartwayDeparture {
+                configurePartwayDeparture(annotation, visualStyle: visualStyle)
+            } else {
+                configureDestination(annotation, visualStyle: visualStyle)
+            }
+            isAccessibilityElement = true
+            accessibilityLabel = "\(annotation.waypointName), arrival ETA target"
+            accessibilityTraits = .button
+            accessibilityIdentifier = "destination-eta-target"
             addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(selectDestination)))
             isEnabled = true
         } else {
@@ -1549,10 +1563,46 @@ private final class EndpointAnnotationView: MLNAnnotationView {
         waypointLabel.frame = CGRect(x: diameter + 8, y: bounds.midY - 10, width: waypointSize.width, height: 20)
         addSubview(waypointLabel)
         centerOffset = CGVector(dx: bounds.midX - diameter / 2, dy: bounds.midY - diameter / 2)
-        isAccessibilityElement = true
-        accessibilityLabel = "\(annotation.waypointName), arrival ETA target"
-        accessibilityTraits = .button
-        accessibilityIdentifier = "destination-eta-target"
+    }
+
+    private func configurePartwayDeparture(
+        _ annotation: EndpointAnnotation,
+        visualStyle: AviationMapVisualStyle
+    ) {
+        let title = UILabel()
+        title.text = annotation.waypointName
+        title.textColor = .black
+        title.font = UIFontMetrics(forTextStyle: .caption1).scaledFont(
+            for: .systemFont(ofSize: 13, weight: .bold)
+        )
+        let textSize = title.intrinsicContentSize
+        let padding = UIEdgeInsets(top: 3, left: 6, bottom: 3, right: 6)
+        let badgeWidth = textSize.width + padding.left + padding.right
+        let badgeHeight = textSize.height + padding.top + padding.bottom
+        let ringDiameter: CGFloat = 14
+        let anchor = CGPoint(x: badgeWidth / 2, y: badgeHeight + 9 + ringDiameter / 2)
+        frame = CGRect(x: 0, y: 0, width: badgeWidth, height: max(44, anchor.y + ringDiameter / 2))
+
+        let badge = UIView(frame: CGRect(x: 0, y: 0, width: badgeWidth, height: badgeHeight))
+        badge.backgroundColor = .white
+        badge.layer.cornerRadius = 6
+        title.frame = badge.bounds.inset(by: padding)
+        badge.addSubview(title)
+        addSubview(badge)
+
+        let ring = UIView(frame: CGRect(
+            x: anchor.x - ringDiameter / 2,
+            y: anchor.y - ringDiameter / 2,
+            width: ringDiameter,
+            height: ringDiameter
+        ))
+        ring.backgroundColor = .white
+        ring.layer.cornerRadius = ringDiameter / 2
+        ring.layer.borderWidth = 2
+        ring.layer.borderColor = visualStyle.destinationWaypointStrokeColor.cgColor
+        addSubview(ring)
+
+        centerOffset = CGVector(dx: bounds.midX - anchor.x, dy: bounds.midY - anchor.y)
     }
 
     required init?(coder: NSCoder) {

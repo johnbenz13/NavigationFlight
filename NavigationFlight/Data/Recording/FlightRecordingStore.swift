@@ -81,6 +81,15 @@ nonisolated struct FlightRecordingReadSnapshot: Equatable, Sendable {
     let evidenceSummary: FlightRecordingEvidenceSummary
     let detectorPolicy: PhysicalFlightDetectionPolicySnapshot?
 
+    var latestDurableEvidenceAt: Date {
+        max(
+            recording.startedAt,
+            recording.lastRecoveryCheckpointAt ?? recording.startedAt,
+            events.lazy.map(\.occurredAt).max() ?? recording.startedAt,
+            trackSegments.lazy.flatMap(\.samples).map(\.observedAt).max() ?? recording.startedAt
+        )
+    }
+
     init(
         recording: FlightRecording,
         events: [RecordedFlightEvent],

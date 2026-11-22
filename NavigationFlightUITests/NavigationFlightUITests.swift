@@ -1674,6 +1674,12 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCompactPendingAmendmentKeepsLegIdentityAtLargerText() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, "iPhone only")
+        try verifyFutureAmendment(landscape: false, preferredContentSize: "UICTContentSizeCategoryAccessibilityM")
+    }
+
+    @MainActor
     func testFutureAmendmentInIPadLandscape() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad landscape only")
         try verifyFutureAmendment(landscape: true)
@@ -1699,9 +1705,15 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    private func verifyFutureAmendment(landscape: Bool) throws {
+    private func verifyFutureAmendment(landscape: Bool, preferredContentSize: String? = nil) throws {
         let app = XCUIApplication()
-        let capturePrefix = landscape ? "206-landscape-" : "206-"
+        let capturePrefix: String
+        if let preferredContentSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSize]
+            capturePrefix = "206-larger-text-"
+        } else {
+            capturePrefix = landscape ? "206-landscape-" : "206-"
+        }
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] =
             try realFlightPlanData(named: "llhz-llib-via-jerusalem").base64EncodedString()
@@ -1737,6 +1749,7 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(pending.waitForExistence(timeout: 10))
         XCTAssertGreaterThanOrEqual(pending.frame.width, 44)
         XCTAssertGreaterThanOrEqual(pending.frame.height, 44)
+        assertCompactPendingDepartureHeader(in: app)
         let identify = app.buttons["waypoint-identified"]
         XCTAssertTrue(identify.exists)
         XCTAssertEqual(identify.label, "Identify departure point")
@@ -1763,8 +1776,23 @@ final class NavigationFlightUITests: XCTestCase {
         resume.tap()
         XCTAssertTrue(pending.waitForExistence(timeout: 8))
         XCTAssertTrue(reached.exists)
+        assertCompactPendingDepartureHeader(in: app)
         XCTAssertFalse(app.staticTexts["Review legs"].exists)
         captureAmendmentState(capturePrefix + "recovered", in: app)
+    }
+
+    @MainActor
+    private func assertCompactPendingDepartureHeader(in app: XCUIApplication) {
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        let position = app.staticTexts["pending-departure-leg-position"]
+        let route = app.descendants(matching: .any)["pending-departure-leg-route"].firstMatch
+        XCTAssertEqual(position.label, "LEG 1 OF 25")
+        XCTAssertEqual(route.label, "From שפיים to Departure point")
+        XCTAssertTrue(position.isHittable)
+        XCTAssertTrue(route.isHittable)
+        let mapTools = app.buttons["Map tools"].firstMatch
+        XCTAssertGreaterThanOrEqual(mapTools.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(mapTools.frame.height, 44)
     }
 
     @MainActor

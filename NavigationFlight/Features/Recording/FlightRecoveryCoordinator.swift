@@ -97,7 +97,7 @@ final class FlightRecoveryCoordinator {
             guard case .available(let snapshot) = result,
                   snapshot.recording.closure == nil else { continue }
             do {
-                let evidenceAt = latestDurableEvidence(in: snapshot)
+                let evidenceAt = snapshot.latestDurableEvidenceAt
                 guard evidenceAt <= now() else {
                     invalidAvailablePackages.append(.corrupt(id: snapshot.recording.id))
                     continue
@@ -169,14 +169,6 @@ final class FlightRecoveryCoordinator {
         }
     }
 
-    private func latestDurableEvidence(in snapshot: FlightRecordingReadSnapshot) -> Date {
-        ([snapshot.recording.startedAt]
-            + [snapshot.recording.lastRecoveryCheckpointAt].compactMap { $0 }
-            + snapshot.events.map(\.occurredAt)
-            + snapshot.trackSegments.flatMap(\.samples).map(\.observedAt)).max()
-            ?? snapshot.recording.startedAt
-    }
-
     private func recoveryWindow(for recording: FlightRecording) -> TimeInterval {
         recording.recoveryWindowSeconds > 0
             ? recording.recoveryWindowSeconds
@@ -234,8 +226,8 @@ final class FlightRecoveryCoordinator {
             recordingID: snapshot.recording.id,
             flightPlanTitle: snapshot.recording.flightPlanSnapshot.title,
             startedAt: snapshot.recording.startedAt,
-            lastActivityAt: latestDurableEvidence(in: snapshot),
-            expiresAt: latestDurableEvidence(in: snapshot).addingTimeInterval(
+            lastActivityAt: snapshot.latestDurableEvidenceAt,
+            expiresAt: snapshot.latestDurableEvidenceAt.addingTimeInterval(
                 recoveryWindow(for: snapshot.recording)
             )
         )
@@ -289,7 +281,7 @@ final class FlightRecoveryCoordinator {
         eventID: UUID
     ) async throws -> RecoveredFlight {
         let snapshot = try await store.readSnapshot(id: id)
-        let evidenceAt = latestDurableEvidence(in: snapshot)
+        let evidenceAt = snapshot.latestDurableEvidenceAt
         guard evidenceAt <= now(), now().timeIntervalSince(evidenceAt) < recoveryWindow(for: snapshot.recording) else {
             if evidenceAt <= now() {
                 try await closeForRecovery(snapshot: snapshot, at: evidenceAt, cause: .recoveryExpired)
@@ -319,7 +311,7 @@ final class FlightRecoveryCoordinator {
                   other.recording.closure == nil else { continue }
             try await closeForRecovery(
                 snapshot: other,
-                at: latestDurableEvidence(in: other),
+                at: other.latestDurableEvidenceAt,
                 cause: .supersededDuringRecovery
             )
         }
@@ -339,7 +331,7 @@ final class FlightRecoveryCoordinator {
                   snapshot.recording.closure == nil else { continue }
             try await closeForRecovery(
                 snapshot: snapshot,
-                at: latestDurableEvidence(in: snapshot),
+                at: snapshot.latestDurableEvidenceAt,
                 cause: .endedDuringRecovery
             )
         }
@@ -356,10 +348,7 @@ final class FlightRecoveryCoordinator {
               flightPlan.plannedNavigation.plannedNavigation != nil else {
             throw FlightRecoveryError.invalidFlightPlanSnapshot
         }
-        let undoneEventIDs = Set(snapshot.events.compactMap { event -> UUID? in
-            guard case .reachUndone(let originalEventID) = event.payload else { return nil }
-            return originalEventID
-        })
+        let undoneEventIDs = try replayUndoLinks(in: snapshot.events)
         let firstStartedLegID = snapshot.events.lazy.compactMap { event -> UUID? in
             guard case .legStarted(let legID) = event.payload else { return nil }
             return legID
@@ -452,6 +441,38 @@ final class FlightRecoveryCoordinator {
         }
         _ = try replayCockpitContext(snapshot: snapshot, flight: flight)
         return flight
+    }
+
+    private func replayUndoLinks(in events: [RecordedFlightEvent]) throws -> Set<UUID> {
+        let hasAmendment = events.contains {
+            if case .pendingRouteAmendmentConfirmed = $0.payload { return true }
+            return false
+        }
+        if !hasAmendment {
+            return Set(events.compactMap { event in
+                guard case .reachUndone(let target) = event.payload else { return nil }
+                return target
+            })
+        }
+
+        var seen = Set<UUID>()
+        var candidateReaches = Set<UUID>()
+        var undone = Set<UUID>()
+        for event in events {
+            guard seen.insert(event.id).inserted else { throw FlightRecoveryError.invalidJournal }
+            switch event.payload {
+            case .waypointReached, .identificationPointReached:
+                candidateReaches.insert(event.id)
+            case .pendingRouteAmendmentConfirmed:
+                candidateReaches.removeAll()
+            case .reachUndone(let target):
+                guard candidateReaches.remove(target) != nil else { throw FlightRecoveryError.invalidJournal }
+                undone.insert(target)
+            default:
+                break
+            }
+        }
+        return undone
     }
 
     private func replayCockpitContext(snapshot: FlightRecordingReadSnapshot, flight: Flight) throws -> RecordingCockpitContext? {

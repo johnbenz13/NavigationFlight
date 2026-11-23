@@ -630,7 +630,8 @@ struct CockpitView: View {
             }
         } else {
             VStack(spacing: 0) {
-                let mapHeight = amendmentMapHeight(in: size, normalExtent: layout.mapExtent)
+                let compactReachExtent = min(compactDirectReachExtent, layout.mapExtent)
+                let mapHeight = amendmentMapHeight(in: size, normalExtent: layout.mapExtent - compactReachExtent)
                 mapSurface(isLandscape: false, mapWidth: size.width)
                     .frame(height: mapHeight)
                 if let amendmentMapPresentation {
@@ -638,7 +639,7 @@ struct CockpitView: View {
                         .frame(height: size.height - mapHeight)
                 } else if horizontalSizeClass == .compact {
                     compactControlPanel
-                        .frame(height: layout.consoleExtent, alignment: .top)
+                        .frame(height: layout.consoleExtent + compactReachExtent, alignment: .top)
                         .frame(maxWidth: .infinity)
                 } else {
                     portraitControlPanel
@@ -647,6 +648,10 @@ struct CockpitView: View {
                 }
             }
         }
+    }
+
+    private var compactDirectReachExtent: CGFloat {
+        horizontalSizeClass == .compact && amendmentMapPresentation == nil && showsDirectDestinationReach ? 48 : 0
     }
 
     private func amendmentMapHeight(in size: CGSize, normalExtent: CGFloat) -> CGFloat {
@@ -898,7 +903,7 @@ struct CockpitView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         } else {
             ModalDismissBackdrop(onDismiss: dismissMapCallout)
-                .frame(height: layout.consoleExtent)
+                .frame(height: layout.consoleExtent + min(compactDirectReachExtent, layout.mapExtent))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
     }
@@ -1595,6 +1600,9 @@ struct CockpitView: View {
                 .padding(.top, 4)
             compactPositionCheckAndDestinationAction
                 .padding(.top, 4)
+            if showsDirectDestinationReach {
+                directDestinationReachButton
+            }
         }
         .padding(.horizontal, 12)
         .padding(.top, 10)
@@ -1624,7 +1632,7 @@ struct CockpitView: View {
                     presentation: positionCheck,
                     onAction: handlePositionCheckAction
                 )
-                .frame(width: 174)
+                .frame(width: showsDirectDestinationReach ? 146 : 174)
 
                 compactDestinationAction
                     .frame(maxWidth: .infinity)
@@ -1632,6 +1640,25 @@ struct CockpitView: View {
         } else {
             compactDestinationAction
         }
+    }
+
+    private var showsDirectDestinationReach: Bool {
+        flight.legState == .active && flight.destinationIdentifiedAt == nil && !flight.awaitsAmendmentRejoin
+    }
+
+    private var directDestinationReachButton: some View {
+        Button {
+            cockpitPresentationState.setNextLegPresented(false)
+            onWaypointReached(cockpitRestoration)
+        } label: {
+            reachDestinationSecondaryLabel
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.tint)
+        .accessibilityHint("Records reaching the waypoint now without identifying it first")
+        .accessibilityIdentifier("reached-now")
     }
 
     @ViewBuilder
@@ -1669,28 +1696,12 @@ struct CockpitView: View {
                 .accessibilityIdentifier("start-leg")
                 .disabled(isRecordingCommitInFlight)
         case .active where flight.destinationIdentifiedAt == nil:
-            VStack(spacing: 2) {
-                destinationReportButton(identifyDestinationTitle, isIdentification: true) {
-                    selectedMapCallout = nil
-                    onIdentifyDestination()
-                }
-                .accessibilityHint("Records identifying the current destination without changing the active leg")
-                .accessibilityIdentifier("waypoint-identified")
-
-                Button {
-                    cockpitPresentationState.setNextLegPresented(false)
-                    onWaypointReached(cockpitRestoration)
-                } label: {
-                    reachDestinationSecondaryLabel
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.tint)
-                .frame(maxWidth: .infinity, minHeight: 22)
-                .contentShape(Rectangle())
-                .accessibilityHint("Records reaching the waypoint now without identifying it first")
-                .accessibilityIdentifier("reached-now")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
+            destinationReportButton(identifyDestinationTitle, isIdentification: true) {
+                selectedMapCallout = nil
+                onIdentifyDestination()
             }
+            .accessibilityHint("Records identifying the current destination without changing the active leg")
+            .accessibilityIdentifier("waypoint-identified")
         case .active:
             if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
             destinationReportButton(reachDestinationTitle) {
@@ -2818,17 +2829,9 @@ struct CockpitView: View {
                 .accessibilityHint("Records identifying the current destination without changing the active leg")
                 .accessibilityIdentifier("waypoint-identified")
 
-                Button {
-                    cockpitPresentationState.setNextLegPresented(false)
-                    onWaypointReached(cockpitRestoration)
-                } label: {
-                    reachDestinationSecondaryLabel
+                if showsDirectDestinationReach {
+                    directDestinationReachButton
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.tint)
-                .accessibilityHint("Records reaching the waypoint now without identifying it first")
-                .accessibilityIdentifier("reached-now")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
             case .active:
                 if flight.activePartwayDeparture != nil { departureIdentifiedLabel }
                 destinationReportButton(reachDestinationTitle) {
@@ -2845,7 +2848,7 @@ struct CockpitView: View {
                 waypointReachedButton
             }
         }
-        .frame(height: 126, alignment: .top)
+        .frame(height: 134, alignment: .top)
     }
 
     private func portraitPrimaryAction(

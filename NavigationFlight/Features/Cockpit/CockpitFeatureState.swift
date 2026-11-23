@@ -631,10 +631,15 @@ struct FPLNavFileLoader: Sendable {
 
 #if DEBUG
 extension CockpitFeatureState {
-    mutating func prepareAmendmentConfirmationFixture(includesAdvisoryValues: Bool = false) {
-        guard let route = routeForAmendment, route.legs.indices.contains(route.firstAvailable.legIndex + 1) else { return }
+    mutating func prepareAmendmentConfirmationFixture(
+        includesAdvisoryValues: Bool = false,
+        isFutureDeparture: Bool = false
+    ) {
+        guard let route = routeForAmendment else { return }
+        let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
+        guard route.legs.indices.contains(departureIndex + 1) else { return }
         updateRouteAmendment(.open)
-        let departure = route.anchor(at: route.firstAvailable.legIndex, fraction: 0.5)
+        let departure = route.anchor(at: departureIndex, fraction: 0.5)
         let rejoin = route.anchor(at: departure.legIndex + 1, fraction: 1)
         let position = route.coordinate(at: departure)
         let via = WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,

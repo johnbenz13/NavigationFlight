@@ -373,21 +373,24 @@ struct RouteAmendmentConsole: View {
         }
     }
 
+    @ViewBuilder
     private var startNowButton: some View {
-        Button(action: onStartNow) {
-            Text("Start now")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(actionColor)
-                .padding(.horizontal, 14)
-                .frame(maxWidth: compact ? .infinity : nil, minHeight: 52)
-                .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
-                .contentShape(.rect)
+        if canStartNow {
+            Button(action: onStartNow) {
+                Text("Start now")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(actionColor)
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: compact ? .infinity : nil, minHeight: 52)
+                    .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .modifier(AmendmentActionAvailability())
+            .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
+            .accessibilityHint("Confirms departure at the selected point and starts timing the first amendment leg")
+            .accessibilityIdentifier("start-amendment-now")
         }
-        .buttonStyle(.plain)
-        .modifier(AmendmentActionAvailability())
-        .disabled(!canStartNow || draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
-        .accessibilityHint("Confirms departure at the selected point and starts timing the first amendment leg")
-        .accessibilityIdentifier("start-amendment-now")
     }
 
     private var confirmForLaterButton: some View {

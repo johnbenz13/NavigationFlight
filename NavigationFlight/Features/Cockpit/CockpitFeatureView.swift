@@ -357,11 +357,14 @@ struct CockpitFeatureView: View {
     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
         state.updateRouteAmendment(intent, mode: amendmentMode())
 #if DEBUG
+        let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"]
         if case .open = intent,
-           ["1", "2"].contains(ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] ?? ""),
+           ["1", "2", "3"].contains(fixture ?? ""),
            state.flight != nil {
-            state.prepareAmendmentConfirmationFixture(includesAdvisoryValues:
-                ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] == "2")
+            state.prepareAmendmentConfirmationFixture(
+                includesAdvisoryValues: fixture == "2",
+                isFutureDeparture: fixture == "3"
+            )
         }
 #endif
     }

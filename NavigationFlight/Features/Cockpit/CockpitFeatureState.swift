@@ -67,6 +67,8 @@ struct CockpitFeatureState: Equatable, Sendable {
         let timestamp: Date
         let elapsed: Duration
         var status: Status
+        var eventIDs: [UUID] = []
+        var checklistSelection: StartChecklistSelection = .tzeKivun
 
         enum Status: Equatable {
             case saving
@@ -177,7 +179,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         cockpitContext: RecordingCockpitContext? = nil
     ) {
         precondition(flight.flightPlanID == flightPlan.id)
-        precondition(flight.legIDs == flightPlan.legs.map(\.id))
+        precondition(flight.sourceLegIDs == flightPlan.legs.map(\.id))
         self.flightPlan = flightPlan
         flightPlanSourceData = sourceData
         selectedLegIndex = flight.activeLegIndex
@@ -222,7 +224,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func installPendingAmendment(_ transition: CommittedNavigationTransition) {
         installCommittedFlight(transition.flight)
-        installNavigationGeneration(transition.cockpitContext)
+        installCockpitContext(transition.cockpitContext)
         amendmentSave = nil
         routeAmendmentDraft = nil
     }
@@ -629,10 +631,15 @@ struct FPLNavFileLoader: Sendable {
 
 #if DEBUG
 extension CockpitFeatureState {
-    mutating func prepareAmendmentConfirmationFixture() {
-        guard let route = routeForAmendment, route.legs.indices.contains(route.firstAvailable.legIndex + 1) else { return }
+    mutating func prepareAmendmentConfirmationFixture(
+        includesAdvisoryValues: Bool = false,
+        isFutureDeparture: Bool = false
+    ) {
+        guard let route = routeForAmendment else { return }
+        let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
+        guard route.legs.indices.contains(departureIndex + 1) else { return }
         updateRouteAmendment(.open)
-        let departure = route.anchor(at: route.firstAvailable.legIndex, fraction: 0.5)
+        let departure = route.anchor(at: departureIndex, fraction: 0.5)
         let rejoin = route.anchor(at: departure.legIndex + 1, fraction: 1)
         let position = route.coordinate(at: departure)
         let via = WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,
@@ -643,11 +650,16 @@ extension CockpitFeatureState {
         updateRouteAmendment(.chooseAnchor(rejoin))
         updateRouteAmendment(.confirmRejoin)
         updateRouteAmendment(.review)
-        for leg in routeAmendmentDraft?.reviewLegs(on: route) ?? [] {
+        for (index, leg) in (routeAmendmentDraft?.reviewLegs(on: route) ?? []).enumerated() {
             updateRouteAmendment(.editLeg(leg.id))
-            updateRouteAmendment(.editLegField(.heading, "087"))
-            updateRouteAmendment(.editLegField(.minutes, "03"))
-            updateRouteAmendment(.editLegField(.seconds, "20"))
+            let distinctSuccessor = includesAdvisoryValues && index == 1
+            updateRouteAmendment(.editLegField(.heading, distinctSuccessor ? "024" : "087"))
+            updateRouteAmendment(.editLegField(.minutes, distinctSuccessor ? "05" : "03"))
+            updateRouteAmendment(.editLegField(.seconds, distinctSuccessor ? "40" : "20"))
+            if includesAdvisoryValues, index == 0 {
+                updateRouteAmendment(.editLegField(.altitude, "2500"))
+                updateRouteAmendment(.editLegField(.frequency, "123.50"))
+            }
             updateRouteAmendment(.saveLegValues)
         }
     }

@@ -99,6 +99,10 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         let events = current.events + [event]
         var recording: FlightRecording
         switch event.payload {
+        case .legStarted:
+            recording = current.recording.restoring(
+                navigationState: .active, nextEventSequence: UInt64(events.count)
+            )
         case .navigationCompleted:
             recording = current.recording.restoring(
                 navigationState: .complete,
@@ -132,16 +136,28 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         let id = transaction.recordingID
         guard let current = snapshotsByID[id] else { throw FlightRecordingStoreError.corruptPackage(id: id) }
         if try transaction.isCommitted(in: current.events) { return }
-        guard current.recording.closure == nil,
-              !current.events.contains(where: { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }) else {
+        guard failure != .append, current.recording.closure == nil,
+              transaction.expectedSequence == current.recording.nextEventSequence else {
             throw FlightRecordingStoreError.operationFailed(id: id)
         }
-        try appendEvent(transaction.event, recordingID: id, synchronize: true)
-        guard let saved = snapshotsByID[id] else { throw FlightRecordingStoreError.corruptPackage(id: id) }
-        var recording = saved.recording
+        try transaction.validatePendingIdentity(in: current.events)
+        let events = current.events + transaction.events
+        var navigationState = current.recording.navigationState
+        for event in transaction.events {
+            if case .routeAmendmentActivated(let departure) = event.payload {
+                navigationState = departure.startsReplacement ? .active : .ready
+            }
+        }
+        var recording = current.recording.restoring(
+            navigationState: navigationState,
+            nextEventSequence: UInt64(events.count)
+        )
+        if recording.sourceSchemaVersion < 3 {
+            recording.cockpitContextStartSequence = transaction.expectedSequence
+        }
         recording.sourceSchemaVersion = 4
         snapshotsByID[id] = FlightRecordingReadSnapshot(
-            recording: recording, events: saved.events, trackSegments: saved.trackSegments, detectorPolicy: saved.detectorPolicy
+            recording: recording, events: events, trackSegments: current.trackSegments, detectorPolicy: current.detectorPolicy
         )
     }
 

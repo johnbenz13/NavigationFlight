@@ -32,22 +32,102 @@ extension FlightRecordingStore {
 nonisolated struct FlightRouteTransaction: Sendable {
     let recordingID: UUID
     let expectedSequence: UInt64
-    let event: RecordedFlightEvent
+    let events: [RecordedFlightEvent]
+
+    var event: RecordedFlightEvent { events[0] }
+
+    init(recordingID: UUID, expectedSequence: UInt64, events: [RecordedFlightEvent]) {
+        self.recordingID = recordingID
+        self.expectedSequence = expectedSequence
+        self.events = events
+    }
+
+    init(recordingID: UUID, expectedSequence: UInt64, event: RecordedFlightEvent) {
+        self.init(recordingID: recordingID, expectedSequence: expectedSequence, events: [event])
+    }
 
     func validate() throws {
-        guard event.sequence == expectedSequence,
-              case .pendingRouteAmendmentConfirmed(let amendment) = event.payload,
-              amendment.id == event.id,
-              event.cockpitContext?.flightID == amendment.flightID else {
+        let invalid = FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        guard let first = events.first, let context = first.cockpitContext,
+              Set(events.map(\.id)).count == events.count,
+              events.enumerated().allSatisfy({ offset, event in
+                  event.sequence >= expectedSequence && event.sequence - expectedSequence == UInt64(offset) &&
+                      event.occurredAt == first.occurredAt && event.elapsed == first.elapsed &&
+                      event.cockpitContext == context
+              }) else { throw invalid }
+        let activationIndex: Int
+        let immediate: Bool
+        switch first.payload {
+        case .pendingRouteAmendmentConfirmed(let amendment):
+            guard amendment.id == first.id, context.flightID == amendment.flightID, first.origin == .pilot else {
+                throw invalid
+            }
+            immediate = amendment.startsImmediately == true
+            if !immediate {
+                guard events.count == 1 else { throw invalid }
+                return
+            }
+            activationIndex = 1
+            guard events.indices.contains(activationIndex),
+                  case .routeAmendmentActivated(let departure) = events[activationIndex].payload,
+                  departure.amendmentID == amendment.id else { throw invalid }
+        case .routeAmendmentActivated:
+            activationIndex = 0
+            immediate = false
+        default:
+            throw invalid
+        }
+        guard case .routeAmendmentActivated(let departure) = events[activationIndex].payload,
+              events[activationIndex].origin == .pilot,
+              immediate == false || (departure.startsReplacement && !departure.recordedOriginalArrival) else {
+            throw invalid
+        }
+        let following = events.dropFirst(activationIndex + 1)
+        let companions = RecordedFlightEventPayload.routeActivationCompanions(departure, immediate: immediate)
+        guard following.count == companions.count,
+              zip(following, companions).allSatisfy({ $0.origin == $1.origin && $0.payload == $1.payload }) else {
+            throw invalid
+        }
+        if departure.startsReplacement {
+            guard context.checklists[departure.firstReplacementLegID] != nil else { throw invalid }
+        }
+    }
+
+    func validatePendingIdentity(in journal: [RecordedFlightEvent]) throws {
+        var pendingID: UUID?
+        for event in journal {
+            switch event.payload {
+            case .pendingRouteAmendmentConfirmed(let amendment): pendingID = amendment.id
+            case .routeAmendmentActivated: pendingID = nil
+            default: break
+            }
+        }
+        switch event.payload {
+        case .pendingRouteAmendmentConfirmed where pendingID == nil:
+            return
+        case .routeAmendmentActivated(let departure) where pendingID == departure.amendmentID:
+            return
+        default:
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
     }
 
-    func isCommitted(in events: [RecordedFlightEvent]) throws -> Bool {
-        guard let recorded = events.first(where: { $0.id == event.id }) else { return false }
-        // Use the same representation as the journal, including its date precision.
-        guard try FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: recorded))
-            == FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: event)) else {
+    func isCommitted(in journal: [RecordedFlightEvent]) throws -> Bool {
+        guard let first = events.first else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+        guard let offset = journal.firstIndex(where: { $0.id == first.id }) else {
+            let identifiers = Set(events.map(\.id))
+            guard !journal.contains(where: { identifiers.contains($0.id) }) else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+            return false
+        }
+        // Use the journal representation, including its date precision.
+        let persisted = journal.dropFirst(offset).prefix(events.count)
+        guard persisted.count == events.count,
+              try zip(persisted, events).allSatisfy({ recorded, candidate in
+                  try FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: recorded))
+                      == FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: candidate))
+              }) else {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
         return true

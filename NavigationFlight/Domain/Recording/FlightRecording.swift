@@ -170,11 +170,12 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         legID: UUID,
         at timestamp: Date,
         elapsed: Duration,
-        eventID: UUID
+        eventID: UUID,
+        operationalLegIDs: [UUID]? = nil
     ) throws -> RecordedFlightEvent {
         guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
         guard navigationState == .ready else { throw TransitionError.navigationAlreadyActive }
-        guard flightPlanSnapshot.legIDs.contains(legID) else {
+        guard (operationalLegIDs ?? flightPlanSnapshot.legIDs).contains(legID) else {
             throw TransitionError.legNotInFlightPlan(legID)
         }
         guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
@@ -404,6 +405,25 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
             self.navigationState = navigationState
         }
         return events
+    }
+
+    mutating func recordRouteActivation(
+        at timestamp: Date, elapsed: Duration, departure: ActivatedRouteAmendment.Departure,
+        confirmation: PendingRouteAmendment?, eventIDs: [UUID]
+    ) throws -> [RecordedFlightEvent] {
+        guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
+        guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
+        var entries: [(RecordedFlightEvent.Origin, RecordedFlightEventPayload)] = [(.pilot, .routeAmendmentActivated(departure))]
+        if let confirmation {
+            entries.insert((.pilot, .pendingRouteAmendmentConfirmed(confirmation)), at: 0)
+        }
+        entries += RecordedFlightEventPayload.routeActivationCompanions(departure, immediate: confirmation != nil)
+            .map { ($0.origin, $0.payload) }
+        guard eventIDs.count >= entries.count else { throw TransitionError.invalidEventIdentifierCount }
+        navigationState = departure.startsReplacement ? .active : .ready
+        return zip(entries, eventIDs).map { entry, id in
+            makeEvent(id: id, occurredAt: timestamp, elapsed: elapsed, origin: entry.0, payload: entry.1)
+        }
     }
 
     mutating func recordLocationAvailabilityChange(

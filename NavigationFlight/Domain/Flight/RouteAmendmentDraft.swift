@@ -26,10 +26,16 @@ struct RouteAmendmentRoute: Equatable, Sendable {
     }
 
     private let planning: [PlannedLegNavigation]
+    private let amendmentLegs: [PendingRouteAmendment.Leg]
     private let navigationMode: NavigationMode
 
     func originalLeg(_ id: UUID) -> OriginalLeg? {
         guard let leg = legs.first(where: { $0.id == id }) else { return nil }
+        if let amendment = amendmentLegs.first(where: { $0.id == id }) {
+            return OriginalLeg(id: id, name: Self.legName(from: leg.departure.name, to: leg.arrival.name),
+                               mode: navigationMode, direction: amendment.headingMagnetic,
+                               durationSeconds: amendment.durationSeconds)
+        }
         let plan = planning.first { $0.legID == id }
         let direction = navigationMode == .wind ? plan?.withWind?.magneticHeading : plan?.magneticCourse
         let duration = navigationMode == .wind ? plan?.withWind?.timing.durationSeconds : plan?.noWind.durationSeconds
@@ -43,11 +49,12 @@ struct RouteAmendmentRoute: Equatable, Sendable {
 
     init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
          planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind,
-         identificationPoints: [IdentificationPoint] = []) {
+         identificationPoints: [IdentificationPoint] = [], amendmentLegs: [PendingRouteAmendment.Leg] = []) {
         self.legs = legs
         self.firstAvailable = firstAvailable
         self.identificationPoints = identificationPoints
         self.planning = planning
+        self.amendmentLegs = amendmentLegs
         self.navigationMode = navigationMode
     }
 
@@ -168,9 +175,42 @@ struct RouteAmendmentRoute: Equatable, Sendable {
 
 extension Flight {
     func routeForAmendment(in flightPlan: FlightPlan) -> RouteAmendmentRoute? {
-        guard !legTimings.isEmpty, legState != .completed, flightPlan.id == flightPlanID,
-              flightPlan.legs.indices.contains(activeLegIndex),
-              flightPlan.legs[activeLegIndex].id == legIDs[activeLegIndex] else { return nil }
+        guard !legTimings.isEmpty, legState != .completed, flightPlan.id == flightPlanID else { return nil }
+        if let activation = activatedRouteAmendment {
+            var sourceLegs = Array(flightPlan.legs.prefix(activation.replacementStartIndex))
+            // A flown source leg may have ended at the actual departure instead of its imported destination.
+            if let last = sourceLegs.last, last.id == activation.amendment.departure.legID,
+               activation.amendment.departure.fraction < 1, let stop = activation.amendment.departureStop {
+                let arrival = RouteWaypoint(
+                    id: stop.id, name: stop.name, position: stop.position,
+                    plannedAltitude: last.departure.plannedAltitude, generatedNumber: last.arrival.generatedNumber,
+                    reportingPointReference: nil
+                )
+                sourceLegs[sourceLegs.count - 1] = .init(
+                    id: last.id, departure: last.departure, arrival: arrival, windOverride: last.windOverride, remark: last.remark
+                )
+            }
+            let amendmentLegs = activation.amendment.replacementLegs
+            let replacementLegs = amendmentLegs.enumerated().map { offset, leg in
+                let altitude = AltitudeFeet(value: leg.altitudeFeet ?? 0)
+                @MainActor func waypoint(_ stop: PendingRouteAmendment.Stop, offset: Int) -> RouteWaypoint {
+                    .init(id: stop.id, name: stop.name, position: stop.position, plannedAltitude: altitude,
+                          generatedNumber: activation.replacementStartIndex + offset + 1, reportingPointReference: nil)
+                }
+                return NavigationLeg(id: leg.id, departure: waypoint(leg.from, offset: offset),
+                                     arrival: waypoint(leg.to, offset: offset + 1), windOverride: nil, remark: nil)
+            }
+            let legs = sourceLegs + replacementLegs
+            guard legs.indices.contains(activeLegIndex), legs[activeLegIndex].id == activeLegID else { return nil }
+            return .init(
+                legs: legs, firstAvailable: .init(legIndex: activeLegIndex, legID: activeLegID, fraction: 0),
+                planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
+                navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints,
+                amendmentLegs: amendmentLegs
+            )
+        }
+        guard flightPlan.legs.indices.contains(activeLegIndex),
+              flightPlan.legs[activeLegIndex].id == activeLegID else { return nil }
         let leg = flightPlan.legs[activeLegIndex]
         let reportedProgress = flightPlan.identificationPoints
             .filter { $0.legID == leg.id }

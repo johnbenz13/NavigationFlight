@@ -32,6 +32,16 @@ or restarts that plan and retained through its ready, active, and completed
 states. Separate loads or restarts create distinct Flights.
 _Avoid_: Flight session
 
+**Operational route**:
+The ordered path the pilot follows in a Flight. A confirmed mid-leg departure
+shortens the departing leg to that point. The replacement legs follow after
+the pilot reports reaching it.
+
+**Route amendment**:
+A pilot-confirmed change for the current Flight that replaces a continuous
+portion of its operational route between a departure point and a later rejoin
+point. The imported Flight Plan remains the original planning reference.
+
 **Flights**:
 The collection of actual Flight instances across their ready, active, completed,
 or aborted states. It is reserved for a future app section and does not refer to

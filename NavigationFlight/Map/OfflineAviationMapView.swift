@@ -272,7 +272,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let modeChanged = (amendmentOverlay?.presentation == nil) != (amendment == nil)
             amendmentOverlay?.presentation = amendment
             let previousPending = amendmentOverlay?.pending
-            let pendingChanged = (previousPending == nil) != (pending == nil)
+            let pendingChanged = (previousPending == nil) != (pending == nil) ||
+                (previousPending?.activeReplacementLegID == nil) != (pending?.activeReplacementLegID == nil)
             amendmentOverlay?.pending = pending
             if modeChanged || pendingChanged, let style = mapView.style {
                 updateOperationalLayers(in: style)
@@ -303,7 +304,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             for identifier in layers {
                 style.layer(withIdentifier: identifier)?.isVisible = visible
             }
-            if amendmentOverlay?.pending != nil {
+            if let pending = amendmentOverlay?.pending, pending.activeReplacementLegID == nil {
                 for layer in [Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer] {
                     style.layer(withIdentifier: layer)?.isVisible = false
                 }
@@ -629,7 +630,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         ) {
             self.reducesMotion = reducesMotion
             let becameActive = self.legState == .ready && legState == .active
-            let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
+            let activeLegChanged = self.presentation.activeLeg?.id != presentation.activeLeg?.id
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
             let driftVisibilityChanged = self.showsDriftReferenceArms != showsDriftReferenceArms
@@ -660,7 +661,19 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 updateEndpointAnnotations(on: mapView)
             }
 
-            if becameActive || (activeLegChanged && legState == .active) {
+            if activeLegChanged || becameActive, let pending = amendmentOverlay?.pending, let replacementID = pending.activeReplacementLegID,
+               replacementID == pending.amendment.replacementLegs.first?.id,
+               let active = presentation.activeLeg {
+                let bypassed = pending.route.originalSegments(
+                    departure: pending.amendment.departure, rejoin: pending.amendment.rejoin
+                ).filter { $0.role == .bypassed }
+                let coordinates = [active.from, active.to] + bypassed.map {
+                    AviationMapCoordinate(latitude: $0.to.latitudeDegrees, longitude: $0.to.longitudeDegrees)
+                } + pending.amendment.replacementLegs.map {
+                    AviationMapCoordinate(latitude: $0.to.latitude, longitude: $0.to.longitude)
+                }
+                focusAmendment(coordinates, on: mapView)
+            } else if becameActive || (activeLegChanged && legState == .active) {
                 focusLeg(
                     on: mapView,
                     animated: !reducesMotion,

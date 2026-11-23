@@ -142,10 +142,15 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         }
         try transaction.validatePendingIdentity(in: current.events)
         let events = current.events + transaction.events
-        let navigationState: RecordedNavigationState = switch transaction.events.last?.payload {
+        var navigationState: RecordedNavigationState = switch transaction.events.last?.payload {
         case .finalWaypointReached: .reachedFinalWaypoint
         case .waypointReached: .ready
         default: current.recording.navigationState
+        }
+        for event in transaction.events {
+            if case .routeAmendmentActivated(let departure) = event.payload {
+                navigationState = departure.startsReplacement ? .active : .ready
+            }
         }
         var recording = current.recording.restoring(
             navigationState: navigationState, nextEventSequence: UInt64(events.count)

@@ -283,6 +283,7 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     var pendingAmendment: PendingRouteAmendment? = nil
     var amendmentID: UUID? = nil
     var originalDestination: PendingAmendmentOriginalDestination? = nil
+    var amendmentDeparture: ActivatedRouteAmendment.Departure? = nil
     var targetKind: String? = nil
     var priorValue: Int? = nil
     var committedValue: Int? = nil
@@ -329,6 +330,15 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             amendmentID = id
             originalDestination = destination
             linkedEventID = reachID
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .routeAmendmentActivated(let departure):
+            kind = "routeAmendmentActivated"
+            amendmentDeparture = departure
             legID = nil
             targetID = nil
             successorLegID = nil
@@ -566,6 +576,9 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             payload = .pendingRouteAmendmentCancelled(
                 amendmentID: amendmentID, originalDestination: originalDestination, linkedReachEventID: linkedEventID
             )
+        case "routeAmendmentActivated":
+            guard let amendmentDeparture else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .routeAmendmentActivated(amendmentDeparture)
         case "pendingRouteAmendmentConfirmed":
             guard let pendingAmendment else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .pendingRouteAmendmentConfirmed(pendingAmendment)

@@ -72,6 +72,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
     let replacementLegs: [Leg]
     let departurePlannedElapsedSeconds: Int?
     let retainedDeparturePointIDs: [UUID]
+    let startsImmediately: Bool?
 
     var departureStop: Stop? { replacementLegs.first?.from }
     var departureIsPartway: Bool { departure.fraction > 0 && departure.fraction < 1 }
@@ -84,13 +85,14 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
 
     @MainActor
     func includes(_ point: IdentificationPoint) -> Bool {
-        !departureIsPartway || point.legID != departure.legID || point.progress.fraction < departure.fraction
+        point.legID != departure.legID || Self.keepsSourcePoint(point, before: departure)
     }
 
     @MainActor
     func includes(_ annotation: PlannedNavigationAnnotation, in plan: FlightPlan) -> Bool {
         guard let index = plan.legs.firstIndex(where: { $0.id == annotation.legID }) else { return false }
         if index != departure.legIndex { return index < departure.legIndex }
+        guard departure.fraction > 0 else { return false }
         if annotation.kind == .identificationPoint,
            let point = plan.identificationPoints.first(where: { $0.id == annotation.entityID }) {
             return includes(point)
@@ -103,20 +105,20 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
     @MainActor
     init(
         id: UUID, draft: RouteAmendmentDraft, flight: Flight, route: RouteAmendmentRoute,
-        replacing pendingID: UUID? = nil
+        startNow: Bool = false, replacing pendingID: UUID? = nil
     ) throws {
         guard flight.pendingRouteAmendment?.id == pendingID else { throw Validation.alreadyPending }
         guard draft.flightID == flight.id, draft.step == .review, draft.legPanel == nil,
               let departure = draft.departure, let rejoin = draft.rejoin else { throw Validation.invalidGeometry }
-        guard route.contains(departure), departure.legIndex >= flight.activeLegIndex,
-              departure.fraction > 0,
-              departure.legIndex != flight.activeLegIndex || departure.fraction > route.firstAvailable.fraction ||
-                route.firstAvailable.legIndex < departure.legIndex else { throw Validation.unavailableDeparture }
+        guard Self.canConfirm(departure, flight: flight, route: route, startNow: startNow) else {
+            throw Validation.unavailableDeparture
+        }
         guard route.contains(rejoin), route.precedes(departure, rejoin) else { throw Validation.invalidGeometry }
         let reviewLegs = draft.reviewLegs(on: route)
         guard !reviewLegs.isEmpty, reviewLegs.allSatisfy({ $0.values != nil }) else { throw Validation.incompleteLegs }
-        let partway = departure.fraction < 1
-        let departureSource = route.legs[departure.legIndex].arrival
+        let partway = departure.fraction > 0 && departure.fraction < 1
+        let departureLeg = route.legs[departure.legIndex]
+        let departureSource = departure.fraction == 0 ? departureLeg.departure : departureLeg.arrival
         let rejoinSource = route.legs[rejoin.legIndex]
         let first = Stop(
             id: partway ? UUID() : departureSource.id,
@@ -146,9 +148,10 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
         executionMode = flight.executionMode
         automaticProgression = flight.progressionPolicy == .automaticNextLeg
         replacementLegs = legs
+        startsImmediately = startNow ? true : nil
         departurePlannedElapsedSeconds = partway ? duration.map { max(1, Int((Double($0) * departure.fraction).rounded())) } : nil
         retainedDeparturePointIDs = route.identificationPoints.filter {
-            $0.legID == departure.legID && (!partway || $0.progress.fraction < departure.fraction)
+            $0.legID == departure.legID && Self.keepsSourcePoint($0, before: departure)
         }.map(\.id)
         try validate(flight: flight, route: route, replacing: pendingID)
     }
@@ -159,8 +162,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
               (flight.progressionPolicy == .automaticNextLeg) == automaticProgression,
               id != pendingID,
               flight.pendingRouteAmendment?.id == pendingID else { throw Validation.invalidGeometry }
-        guard route.contains(departure), departure.legIndex >= flight.activeLegIndex,
-              departure.fraction > 0, route.precedes(route.firstAvailable, departure) else {
+        guard Self.canConfirm(departure, flight: flight, route: route, startNow: startsImmediately == true) else {
             throw Validation.unavailableDeparture
         }
         let retained = route.identificationPoints.filter { $0.legID == departure.legID && includes($0) }.map(\.id)
@@ -183,8 +185,32 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
                   planned == max(1, Int((Double(original) * departure.fraction).rounded())) else {
                 throw Validation.invalidGeometry
             }
-        } else if first.id != source.arrival.id || departurePlannedElapsedSeconds != nil {
+        } else if first.id != (departure.fraction == 0 ? source.departure.id : source.arrival.id)
+                    || departurePlannedElapsedSeconds != nil {
             throw Validation.invalidGeometry
         }
+    }
+
+    @MainActor
+    private static func keepsSourcePoint(_ point: IdentificationPoint, before departure: RouteAmendmentAnchor) -> Bool {
+        departure.fraction == 1 || point.progress.fraction < departure.fraction
+    }
+
+    @MainActor
+    static func canConfirm(
+        _ departure: RouteAmendmentAnchor, flight: Flight, route: RouteAmendmentRoute, startNow: Bool
+    ) -> Bool {
+        guard flight.activatedRouteAmendment == nil, route.contains(departure) else { return false }
+        if startNow {
+            switch flight.legState {
+            case .active:
+                return departure.legID == flight.activeLegID ||
+                    departure == route.anchor(at: flight.activeLegIndex, fraction: 0)
+            case .ready: return departure == route.anchor(at: flight.activeLegIndex, fraction: 0)
+            case .completed: return false
+            }
+        }
+        return departure.legIndex >= flight.activeLegIndex &&
+            departure.fraction > 0 && route.precedes(route.firstAvailable, departure)
     }
 }

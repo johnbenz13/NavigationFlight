@@ -9,7 +9,11 @@ struct RouteAmendmentConsole: View {
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
     let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
     var isReplacing = false
+    var confirmationUnavailableWhileAmended = false
     let onConfirm: () -> Void
+    let onStartNow: () -> Void
+    let canStartNow: Bool
+    let canConfirmForLater: Bool
     let onKeepEditing: () -> Void
     let onPlaceAtMapCenter: () -> Void
     let onDiscard: () -> Void
@@ -57,7 +61,7 @@ struct RouteAmendmentConsole: View {
                         if isReplacing {
                             reviewFooter.padding(.top, 14)
                         } else {
-                            confirmForLaterButton.padding(.top, 12)
+                            reviewConfirmationButtons.padding(.top, 12)
                         }
                     }
                     if showsFooter, actionsFollowEditor { footer }
@@ -303,6 +307,11 @@ struct RouteAmendmentConsole: View {
         case .review:
             RouteAmendmentReview(draft: draft, route: route, compact: compact, isReplacing: isReplacing, onIntent: onIntent)
                 .allowsHitTesting(draft.legPanel == nil)
+            if confirmationUnavailableWhileAmended {
+                Text("You can keep editing this draft. Confirming another amendment while flying replacement legs is unavailable.")
+                    .font(.subheadline)
+                    .foregroundStyle(PendingAmendmentPalette.secondary)
+            }
             if isReplacing {
                 Divider().padding(.vertical, 12)
                 Text("Review the replacement leg values before confirming.")
@@ -371,11 +380,12 @@ struct RouteAmendmentConsole: View {
                     Spacer()
                     reviewPauseButton
                 }
-                if !inSideRail { confirmForLaterButton }
+                if !inSideRail { reviewConfirmationButtons }
             } else {
                 HStack(spacing: 12) {
                     backToDrawingButton
                     Spacer(minLength: 4)
+                    startNowButton
                     confirmForLaterButton.frame(maxWidth: 556)
                     reviewPauseButton
                 }
@@ -405,13 +415,40 @@ struct RouteAmendmentConsole: View {
         .accessibilityIdentifier("pause-amendment-review")
     }
 
+    private var reviewConfirmationButtons: some View {
+        VStack(spacing: 8) {
+            confirmForLaterButton
+            startNowButton
+        }
+    }
+
+    @ViewBuilder
+    private var startNowButton: some View {
+        if canStartNow {
+            Button(action: onStartNow) {
+                Text("Start now")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(actionColor)
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: compact ? .infinity : nil, minHeight: 52)
+                    .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .modifier(AmendmentActionAvailability())
+            .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
+            .accessibilityHint("Confirms departure at the selected point and starts timing the first amendment leg")
+            .accessibilityIdentifier("start-amendment-now")
+        }
+    }
+
     private var confirmForLaterButton: some View {
         confirmationButton(
             isReplacing ? "Confirm replacement" : "Confirm for later",
             id: isReplacing ? "confirm-amendment-replacement" : "confirm-amendment-for-later",
             fullWidth: true, height: 54
         )
-            .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
+            .disabled(!canConfirmForLater || draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
     }
 
     private func lightweightAction(

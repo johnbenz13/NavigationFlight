@@ -227,6 +227,9 @@ struct CockpitOperationalCueProjector: Sendable {
         flight: Flight,
         at timestamp: Date
     ) throws -> CockpitOperationalCueState {
+        if flight.activatedRouteAmendment != nil {
+            return try projectAmendment(flightPlan: flightPlan, flight: flight)
+        }
         let presentation = try presentationAdapter.makePresentation(
             flightPlan: flightPlan,
             legIndex: flight.activeLegIndex,
@@ -407,6 +410,100 @@ struct CockpitOperationalCueProjector: Sendable {
                 )
             } ?? initialAltitudeDue,
             dueEvents: dueEvents
+        )
+    }
+
+    func projectAmendment(flightPlan: FlightPlan, flight: Flight) throws -> CockpitOperationalCueState {
+        guard let activation = flight.activatedRouteAmendment, let legIndex = flight.amendmentLegIndex,
+              case .eligible(let planned) = flightPlan.plannedNavigation,
+              planned.legs.indices.contains(activation.amendment.departure.legIndex) else {
+            throw CockpitPresentationError.unavailablePlannedNavigation
+        }
+        let amendment = activation.amendment
+        let sourceIndex = amendment.departure.legIndex
+        let source = planned.legs[sourceIndex]
+        let originalIDs = flight.sourceLegIDs
+        let annotationByID = Dictionary(uniqueKeysWithValues: planned.annotations.map { ($0.entityID, $0) })
+        let elapsed = flight.legTimings.first { $0.legID == source.legID }?.actualElapsedDuration
+        func eligibleTime(for id: UUID, legID: UUID) -> (Int, Int)? {
+            guard let index = originalIDs.firstIndex(of: legID), index <= sourceIndex,
+                  let annotation = annotationByID[id], amendment.includes(annotation, in: flightPlan),
+                  let plannedTime = time(for: annotation, mode: flight.executionMode) else { return nil }
+            if index == sourceIndex {
+                guard let elapsed, Double(plannedTime) <= elapsed else { return nil }
+            }
+            return (index, plannedTime)
+        }
+        let priorAltitude = flightPlan.altitudeChanges.compactMap { change -> (Int, AltitudeFeet)? in
+            guard change.legID == source.legID, let order = eligibleTime(for: change.id, legID: change.legID) else { return nil }
+            return (order.1, change.targetAltitude)
+        }.sorted { $0.0 < $1.0 }.last?.1 ?? source.initialAltitudeMsl
+        let previousFrequencyChange = flightPlan.frequencyChanges.compactMap { change -> ((Int, Int), FrequencyChange)? in
+            guard let order = eligibleTime(for: change.id, legID: change.legID) else { return nil }
+            return (order, change)
+        }.sorted { $0.0 < $1.0 }.last?.1
+        let listedReference = FlightPhase.allCases.lazy.compactMap {
+            planned.frequenciesByPhase[$0]?.first
+        }.first
+
+        let active = flight.legState == .active
+        let throughCurrent = amendment.replacementLegs.prefix(legIndex + 1)
+        let altitude = throughCurrent.reversed().compactMap(\.altitudeFeet).first.map(AltitudeFeet.init) ?? priorAltitude
+        let cueLeg = amendment.replacementLegs[legIndex]
+        let laterLegs = amendment.replacementLegs.dropFirst(legIndex + 1)
+        let next = laterLegs.first
+        var entries: [CockpitOperationalCueState.CommunicationPlan.Entry] = []
+        func appendFrequency(
+            id: String, value: Double, service: String, role: String,
+            state: CockpitOperationalCueState.CommunicationPlan.Entry.State, context: String
+        ) {
+            entries.append(.init(id: id, phase: .enRoute, role: role, service: service,
+                                 frequencyMHz: value, state: state, dueContext: context))
+        }
+        if let leg = throughCurrent.last(where: { $0.frequencyMHz != nil }), let value = leg.frequencyMHz {
+            appendFrequency(id: leg.id.uuidString, value: value, service: String(localized: "Amendment frequency"),
+                            role: String(localized: "Advisory"), state: .current,
+                            context: leg.id == cueLeg.id
+                                ? String(localized: "At start · \(cueLeg.from.name)")
+                                : String(localized: "Retained from \(leg.from.name)"))
+        } else if let value = previousFrequencyChange?.frequency.value ?? listedReference?.frequency.value {
+            appendFrequency(id: previousFrequencyChange?.id.uuidString ?? listedReference?.id ?? "reference",
+                            value: value, service: previousFrequencyChange?.service.name ?? listedReference?.name ?? "",
+                            role: String(localized: "Reference"), state: .current,
+                            context: previousFrequencyChange == nil && listedReference?.source == .vorDme
+                                ? String(localized: "Last planned navigation-aid frequency")
+                                : String(localized: "Last planned value"))
+        }
+        let hasCurrent = !entries.isEmpty
+        for leg in laterLegs {
+            guard let value = leg.frequencyMHz, entries.last?.frequencyMHz != value else { continue }
+            appendFrequency(id: leg.id.uuidString, value: value, service: String(localized: "Amendment frequency"),
+                            role: String(localized: "Advisory"), state: entries.count == (hasCurrent ? 1 : 0) ? .next : .later,
+                            context: String(localized: "At start · \(leg.from.name)"))
+        }
+        let frequencies = entries.map { entry -> CockpitOperationalCueState.FrequencyCue in
+            let status: CockpitOperationalCueState.FrequencyCue.Status = switch entry.state {
+            case .current: .current
+            case .next: .next
+            default: .other
+            }
+            return .init(frequency: .init(id: entry.id, phases: [.enRoute], service: entry.service,
+                                          serviceType: entry.role ?? "", frequencyMHz: entry.frequencyMHz, source: .user),
+                         status: status)
+        }
+        let altitudeBeforeLeg = throughCurrent.dropLast().reversed().compactMap(\.altitudeFeet).first ?? priorAltitude.value
+        let dueAltitude = cueLeg.altitudeFeet.map {
+            CockpitOperationalCueState.AltitudeCue(target: .init(value: $0), direction: $0 < altitudeBeforeLeg ? .down : .up)
+        }
+        let nextAltitude = next?.altitudeFeet.map {
+            CockpitOperationalCueState.AltitudeCue(target: .init(value: $0), direction: $0 < altitude.value ? .down : .up)
+        }
+        var due: Set<CockpitOperationalCueState.DueEvent> = []
+        if active && cueLeg.frequencyMHz != nil { due.insert(.frequency(cueLeg.id)) }
+        if active && cueLeg.altitudeFeet != nil { due.insert(.altitude(cueLeg.id)) }
+        return .init(
+            frequencies: frequencies, communicationPlan: .init(entries: entries, compactEntries: Array(entries.prefix(2))),
+            currentAltitude: altitude, nextAltitude: nextAltitude, dueAltitude: active ? dueAltitude : nil, dueEvents: due
         )
     }
 

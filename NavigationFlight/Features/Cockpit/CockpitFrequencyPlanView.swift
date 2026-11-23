@@ -5,6 +5,7 @@ struct CockpitFrequencyPlanView: View {
     var communicationPlan: CockpitOperationalCueState.CommunicationPlan? = nil
     var navigationAidPlan: CockpitOperationalCueState.NavigationAidPlan? = nil
     var references: [CockpitPresentationData.PlannedReference] = []
+    var showsAmendmentAdvisories = false
     let onClose: () -> Void
 
     var body: some View {
@@ -19,7 +20,9 @@ struct CockpitFrequencyPlanView: View {
                         ContentUnavailableView(
                             "No Planned Frequencies",
                             systemImage: "radio",
-                            description: Text("The imported plan contains no communication or navigation-aid frequencies.")
+                            description: Text(showsAmendmentAdvisories
+                                ? "There are no saved advisory frequencies or retained references."
+                                : "The imported plan contains no communication or navigation-aid frequencies.")
                         )
                         .frame(maxWidth: .infinity)
                         .padding(.top, 48)
@@ -29,7 +32,7 @@ struct CockpitFrequencyPlanView: View {
                                 CockpitFrequencyPlanEntryView(entry: entry)
                             }
                         } else if !communicationEntries.isEmpty {
-                            Text("COMMUNICATIONS")
+                            Text(showsAmendmentAdvisories ? "PLANNED AND ADVISORY FREQUENCIES" : "COMMUNICATIONS")
                                 .font(.caption.weight(.bold))
                                 .tracking(0.7)
                                 .foregroundStyle(.secondary)
@@ -66,7 +69,9 @@ struct CockpitFrequencyPlanView: View {
             }
 
             if hasCommunications || !navigationAidStations.isEmpty {
-                Text("These values come from the imported plan. The app does not know what is tuned.")
+                Text(showsAmendmentAdvisories
+                     ? "These are saved amendment advisories or retained planning references. The app does not know what is tuned."
+                     : "These values come from the imported plan. The app does not know what is tuned.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.top, 8)
@@ -143,7 +148,9 @@ struct CockpitFrequencyPlanView: View {
                     .font(.subheadline.weight(.semibold))
                     .accessibilityIdentifier("close-frequency-plan")
             }
-            Text("Imported planning data—not live radio state")
+            Text(showsAmendmentAdvisories
+                 ? "Amendment advisories and planned references"
+                 : "Imported planning data—not live radio state")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

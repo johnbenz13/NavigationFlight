@@ -6,6 +6,265 @@ import Testing
 @MainActor
 @Suite("Flight recovery coordination")
 struct FlightRecoveryCoordinatorTests {
+    @Test("Reporting the scheduled departure starts or readies the saved first replacement leg",
+          arguments: [false, true], [0.5, 1.0])
+    func scheduledDepartureRespectsProgression(manual: Bool, fraction: Double) async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = DiskFlightRecordingStore(rootDirectory: directory)
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0,
+                            executionMode: .noWind, progressionPolicy: manual ? .manualNextLeg : .automaticNextLeg)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(
+            flight: started.flight, plan: plan, departureFraction: fraction, rejoinIndex: 1
+        )
+        let confirmed = try await engine.commit(.confirmPendingAmendment(
+            amendment, plan: plan, at: time.addingTimeInterval(5), elapsed: .seconds(5)
+        ))
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: confirmed.flight)
+        let reportAt = time.addingTimeInterval(30)
+        if fraction < 1 {
+            await #expect(throws: PendingRouteAmendment.Validation.unavailableDeparture) {
+                try await engine.commit(.reachCurrentWaypoint(
+                    orderedActiveLegPointKeys: [], at: reportAt, elapsed: .seconds(30),
+                    eventIDs: [UUID(), UUID(), UUID()], expectedLegID: plan.legs[0].id,
+                    expectedTargetID: plan.legs[0].arrival.id
+                ))
+            }
+        }
+        let reach = RecordedNavigationCommand.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: map.identificationPoints.map(\.id), at: reportAt,
+            elapsed: .seconds(30), eventIDs: [UUID(), UUID(), UUID()], expectedLegID: plan.legs[0].id,
+            expectedTargetID: map.destinationTarget.id.targetID
+        )
+        let result = try await engine.commit(reach)
+        let retried = try await engine.commit(reach)
+        #expect(retried == result)
+        #expect(result.flight.pendingRouteAmendment == nil)
+        #expect(result.flight.legIDs[result.flight.activeLegIndex] == amendment.replacementLegs[0].id)
+        #expect(result.flight.legTimings.first?.startedAt == time)
+        #expect(result.flight.legTimings.first?.reachedAt == (fraction == 1 ? reportAt : nil))
+        #expect(result.flight.legState == (manual ? .ready : .active))
+        #expect(result.flight.legStartedAt == (manual ? nil : reportAt))
+        let journal = try await store.readSnapshot(id: started.recording.id)
+        #expect(journal.events.filter { $0.payload == .waypointReached(legID: plan.legs[0].id) }.count
+            == (fraction == 1 ? 1 : 0))
+
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(40) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(
+            id: started.recording.id, at: time.addingTimeInterval(40), elapsed: .seconds(40), eventID: UUID()
+        )
+        #expect(recovered.flight == result.flight)
+        #expect(recovered.cockpitContext == result.cockpitContext)
+        if manual {
+            let resumed = FlightRecordingEngine(
+                store: store, recoveredFlight: recovered.flight, recoveredRecording: recovered.recording,
+                recoveredCockpitContext: recovered.cockpitContext
+            )
+            let laterStart = time.addingTimeInterval(55)
+            let replacement = try await resumed.promoteForStartLeg(
+                at: laterStart, recordingID: started.recording.id, eventIDs: [UUID()], checklistSelection: .establishHeading
+            )
+            #expect(replacement.flight.legStartedAt == laterStart)
+            #expect(replacement.cockpitContext?.checklists[amendment.replacementLegs[0].id]?.selection == .establishHeading)
+        }
+
+    }
+
+    @Test("Start Now journals departure and starts immediately with Manual scheduled progression", arguments: [0.0, 0.5])
+    func startNowAndFlyReplacementSuccessor(departureFraction: Double) async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let store = InMemoryFlightRecordingStore()
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0,
+                            executionMode: .noWind, progressionPolicy: .manualNextLeg)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(
+            flight: started.flight, plan: plan, departureFraction: departureFraction,
+            rejoinIndex: 1, startNow: true, addVia: true
+        )
+        let startAt = time.addingTimeInterval(20)
+        let command = RecordedNavigationCommand.startAmendmentNow(
+            amendment, plan: plan, at: startAt, elapsed: .seconds(20), eventIDs: [UUID(), UUID()]
+        )
+        let active = try await engine.commit(command, checklistSelection: .establishHeading)
+        #expect(active.flight.legStartedAt == startAt)
+        #expect(active.flight.legTimings.first?.reachedAt == nil)
+        #expect(active.flight.legTimings.first?.actualElapsedDuration == 20)
+        #expect(active.flight.legTimings.first?.amendmentDepartureAt == startAt)
+        if departureFraction == 0 {
+            #expect(amendment.retainedDeparturePointIDs.isEmpty)
+            #expect(active.flight.identificationPointTimings.isEmpty)
+        }
+        #expect(active.cockpitContext?.checklists[amendment.replacementLegs[0].id]?.selection == .establishHeading)
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: active.flight)
+        #expect(map.activeLeg?.id == amendment.replacementLegs[0].id)
+        #expect(map.nextLegPreview?.id == amendment.replacementLegs[1].id)
+        #expect(map.identificationPoints.isEmpty)
+        #expect(map.minuteMarkers.isEmpty)
+        #expect(map.driftReferenceArms.isEmpty)
+        let cues = try CockpitOperationalCueProjector().project(flightPlan: plan, flight: active.flight, at: startAt)
+        #expect(cues.currentAltitude.value == 2_500)
+        #expect(cues.frequencies.first?.frequency.frequencyMHz == 123.5)
+        #expect(cues.dueEvents.contains(.frequency(amendment.replacementLegs[0].id)))
+        let adapter = CockpitPresentationAdapter()
+        let replacement = try adapter.makePresentation(
+            flightPlan: plan, legIndex: active.flight.activeLegIndex, mode: .noWind, flight: active.flight
+        )
+        #expect(replacement.magneticHeadingDegrees == 87)
+        #expect(replacement.legDurationSeconds == 200)
+        #expect(replacement.frequencyPlan.entries.first?.frequencyMHz == 123.50)
+        #expect(cues.communicationPlan.entries.first?.role == "Advisory")
+        let nextProjection = try adapter.makeNextLegPreparation(flightPlan: plan, flight: active.flight)
+        let next = try #require(nextProjection)
+        #expect(next.direction == .heading(104))
+        #expect(next.origin == amendment.replacementLegs[0].to.name)
+        #expect(try adapter.makePreviousLegSummary(flightPlan: plan, flight: active.flight) == nil)
+
+        let amendedID = active.flight.activeLegID
+        let revised = try await engine.commit(.reviseHeading(
+            legID: amendedID, baselineDegrees: 87, committedDegrees: 88,
+            at: time.addingTimeInterval(22), elapsed: .seconds(22), eventID: UUID()
+        ))
+        #expect(revised.flight.pilotHeadingState(for: amendedID)?.operationalDegrees == 88)
+        let revisedETA = try await engine.commit(.reviseETA(
+            target: map.destinationTarget.id, plannedElapsedSeconds: 200, committedSeconds: 205,
+            at: time.addingTimeInterval(23), elapsed: .seconds(23), eventID: UUID()
+        ))
+        #expect(revisedETA.flight.committedPilotETA(targetKey: map.destinationTarget.id) == 205)
+        let ready = try await engine.commit(.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: [], at: time.addingTimeInterval(30), elapsed: .seconds(30),
+            eventIDs: [UUID()], expectedLegID: map.destinationTarget.id.legID
+        ))
+        #expect(ready.flight.activeLegID == amendment.replacementLegs[1].id)
+        #expect(ready.flight.legStartedAt == nil)
+        let previousProjection = try adapter.makePreviousLegSummary(flightPlan: plan, flight: ready.flight)
+        let previous = try #require(previousProjection)
+        #expect(previous.targets.first?.id == map.destinationTarget.id)
+        #expect(previous.revisedETASeconds == 205)
+        #expect(previous.headingHistory.operationalDegrees == 88)
+        #expect(ready.flight.pilotHeadingState(for: ready.flight.activeLegID) == nil)
+        #expect(try adapter.makeNextLegPreparation(flightPlan: plan, flight: ready.flight) == nil)
+
+        let second = try await engine.promoteForStartLeg(
+            at: time.addingTimeInterval(40), recordingID: started.recording.id, eventIDs: [UUID()], checklistSelection: .none
+        )
+        #expect(second.flight.legStartedAt == time.addingTimeInterval(40))
+        #expect(second.cockpitContext?.checklists[amendment.replacementLegs[1].id]?.selection == StartChecklistSelection.none)
+        let secondCues = try CockpitOperationalCueProjector().project(
+            flightPlan: plan, flight: second.flight, at: time.addingTimeInterval(40)
+        )
+        #expect(secondCues.currentAltitude.value == 2_500)
+        #expect(secondCues.frequencies.first?.frequency.frequencyMHz == 123.5)
+        #expect(secondCues.dueEvents.isEmpty)
+
+        let journal = try await store.readSnapshot(id: started.recording.id)
+        #expect(journal.events.filter { $0.payload == .waypointReached(legID: plan.legs[0].id) }.isEmpty)
+        let recovery = FlightRecoveryCoordinator(store: store, now: { time.addingTimeInterval(50) })
+        await recovery.bootstrap()
+        let recovered = try await recovery.continueFlight(
+            id: started.recording.id, at: time.addingTimeInterval(50), elapsed: .seconds(50), eventID: UUID()
+        )
+        #expect(recovered.flight == second.flight)
+        #expect(recovered.cockpitContext == second.cockpitContext)
+    }
+
+    @Test("An omitted first-leg frequency keeps the first listed source reference across phases")
+    func amendmentKeepsListedFrequencyReference() async throws {
+        let source = try fixtureData()
+        let decoded = try FPLNavDecoder().decode(source)
+        let planned = try #require(decoded.plannedNavigation.plannedNavigation)
+        let reference = PlannedFrequency(
+            id: "route-reference", name: "Synthetic reference", role: nil,
+            frequency: .init(value: 124.75), source: .user
+        )
+        let plan = FlightPlan(
+            id: decoded.id, title: decoded.title, createdAt: decoded.createdAt, modifiedAt: decoded.modifiedAt,
+            parameters: decoded.parameters, waypoints: decoded.waypoints, legs: decoded.legs,
+            identificationPoints: decoded.identificationPoints, altitudeChanges: decoded.altitudeChanges,
+            frequencyChanges: [], vorDmeReferences: [], operationalContext: decoded.operationalContext,
+            plannedNavigation: .eligible(.init(
+                calculationVersion: planned.calculationVersion, altitudeReference: planned.altitudeReference,
+                legs: planned.legs, annotations: planned.annotations, vorDmeReferences: [],
+                frequenciesByPhase: [.enRoute: [reference]], defaultMode: planned.defaultMode
+            ))
+        )
+        let time = Date(timeIntervalSince1970: 10_000)
+        let store = InMemoryFlightRecordingStore()
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(flight: started.flight, plan: plan, startNow: true)
+        let departed = try await engine.commit(.startAmendmentNow(
+            amendment, plan: plan, at: time.addingTimeInterval(10), elapsed: .seconds(10), eventIDs: [UUID(), UUID()]
+        ))
+        let cues = try CockpitOperationalCueProjector().project(
+            flightPlan: plan, flight: departed.flight, at: time.addingTimeInterval(10)
+        )
+        #expect(cues.frequencies.first?.frequency.frequencyMHz == reference.frequency.value)
+        #expect(cues.dueEvents.isEmpty)
+    }
+
+    @Test("Failure writing an arrival companion preserves the pending route and identical retry commits once")
+    func scheduledDepartureDoesNotPublishPartialJournal() async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let directory = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let shouldFail = OSAllocatedUnfairLock(initialState: true)
+        let store = DiskFlightRecordingStore(rootDirectory: directory, beforeAppend: { event in
+            guard case .waypointReached = event.payload else { return }
+            if shouldFail.withLock({ failing in defer { failing = false }; return failing }) {
+                throw CocoaError(.fileWriteUnknown)
+            }
+        })
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(
+            flight: started.flight, plan: plan, departureFraction: 1, rejoinIndex: 1
+        )
+        let pending = try await engine.commit(.confirmPendingAmendment(
+            amendment, plan: plan, at: time.addingTimeInterval(5), elapsed: .seconds(5)
+        ))
+        let map = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: pending.flight)
+        let reportAt = time.addingTimeInterval(30)
+        let ids = [UUID(), UUID(), UUID()]
+        let command = RecordedNavigationCommand.reachCurrentWaypoint(
+            orderedActiveLegPointKeys: map.identificationPoints.map(\.id), at: reportAt,
+            elapsed: .seconds(30), eventIDs: ids, expectedLegID: map.destinationTarget.id.legID,
+            expectedTargetID: map.destinationTarget.id.targetID
+        )
+        await #expect(throws: FlightRecordingStoreError.self) { try await engine.commit(command) }
+        #expect(await engine.snapshot().flight == pending.flight)
+        let failed = try await store.readSnapshot(id: started.recording.id)
+        #expect(failed.events.allSatisfy { !ids.contains($0.id) })
+        let applied = try await engine.commit(command)
+        #expect(applied.eventIDs == ids)
+        let saved = try await store.readSnapshot(id: started.recording.id)
+        #expect(saved.events.suffix(3).map(\.id) == ids)
+    }
+
     @Test("A later partway departure leaves the preceding leg operational and shortens the manually started successor")
     func pendingAmendmentOnLaterLeg() async throws {
         let source = try twoLegFixtureData()
@@ -197,6 +456,61 @@ struct FlightRecoveryCoordinatorTests {
             id: started.recording.id, at: time.addingTimeInterval(12), elapsed: .seconds(12), eventID: UUID()
         )
         #expect(recovered.flight == cancelled.flight)
+    }
+
+    @Test("A draft on the activated route preserves its geometry, inputs and existing flight")
+    func draftAfterActivationUsesRemainingRoute() async throws {
+        let source = try twoLegFixtureData()
+        let plan = try FPLNavDecoder().decode(source)
+        let time = Date(timeIntervalSince1970: 10_000)
+        let store = InMemoryFlightRecordingStore()
+        let flight = Flight(flightPlanID: plan.id, legIDs: plan.legs.map(\.id), activeLegIndex: 0, executionMode: .noWind)
+        let engine = FlightRecordingEngine(
+            store: store, flight: flight,
+            flightPlanSnapshot: .init(id: plan.id, title: plan.title, legIDs: flight.legIDs, sourceData: source)
+        )
+        let started = try await engine.promoteForStartLeg(at: time, recordingID: UUID(), eventIDs: [UUID(), UUID()])
+        let amendment = try makePendingAmendment(flight: started.flight, plan: plan, rejoinIndex: 1, startNow: true, addVia: true)
+        let activated = try await engine.commit(.startAmendmentNow(
+            amendment, plan: plan, at: time.addingTimeInterval(10), elapsed: .seconds(10), eventIDs: [UUID(), UUID()]
+        ))
+        let beforeDraft = try await store.readSnapshot(id: started.recording.id)
+        var state = CockpitFeatureState()
+        state.restore(flightPlan: plan, flight: activated.flight, sourceData: source, cockpitContext: activated.cockpitContext)
+        let route = try #require(state.routeForAmendment)
+        #expect(route.legs.map(\.id) == activated.flight.legIDs)
+        #expect(route.firstAvailable.legID == activated.flight.activeLegID)
+        #expect(route.originalLeg(activated.flight.activeLegID)?.durationSeconds == 200)
+        #expect(route.legs[0].arrival.id == amendment.departureStop?.id)
+        let departure = route.anchor(at: activated.flight.activeLegIndex, fraction: 0.5)
+        let rejoin = route.anchor(at: activated.flight.activeLegIndex + 1, fraction: 1)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.chooseAnchor(departure))
+        state.updateRouteAmendment(.chooseRejoin)
+        state.updateRouteAmendment(.chooseAnchor(rejoin))
+        state.updateRouteAmendment(.confirmRejoin)
+        state.updateRouteAmendment(.review)
+        let initialDraft = try #require(state.routeAmendmentDraft)
+        #expect(initialDraft.step == .review)
+        let proposed = try #require(initialDraft.reviewLegs(on: route).first)
+        state.updateRouteAmendment(.editLeg(proposed.id))
+        state.updateRouteAmendment(.editLegField(.heading, "093"))
+        state.updateRouteAmendment(.editLegField(.minutes, "02"))
+        state.updateRouteAmendment(.editLegField(.seconds, "30"))
+        state.updateRouteAmendment(.saveLegValues)
+        state.updateRouteAmendment(.pause)
+        #expect(state.routeAmendmentDraft?.isPaused == true)
+        state.updateRouteAmendment(.resume)
+        let resumed = try #require(state.routeAmendmentDraft)
+        #expect(resumed.departure == departure)
+        #expect(resumed.rejoin == rejoin)
+        #expect(resumed.reviewLegs(on: route).first?.values?.headingMagnetic == 93)
+        #expect(resumed.reviewLegs(on: route).first?.values?.durationSeconds == 150)
+        #expect(state.flight == activated.flight)
+        #expect(try await store.readSnapshot(id: started.recording.id).events == beforeDraft.events)
+        #expect(throws: PendingRouteAmendment.Validation.unavailableDeparture) {
+            try PendingRouteAmendment(id: UUID(), draft: resumed, flight: activated.flight, route: route)
+        }
     }
 
     @Test("A pending amendment is invisible until its writer finishes and queued checkpoints preserve it", .timeLimit(.minutes(1)))
@@ -537,24 +851,38 @@ struct FlightRecoveryCoordinatorTests {
     }
 
     private func makePendingAmendment(
-        flight: Flight, plan: FlightPlan, departureIndex: Int = 0
+        flight: Flight, plan: FlightPlan, departureIndex: Int = 0,
+        departureFraction: Double = 0.5, rejoinIndex: Int? = nil, startNow: Bool = false, addVia: Bool = false
     ) throws -> PendingRouteAmendment {
         let route = try #require(flight.routeForAmendment(in: plan))
-        let departure = route.anchor(at: departureIndex, fraction: 0.5)
-        let end = route.anchor(at: departureIndex, fraction: 1)
+        let departure = route.anchor(at: departureIndex, fraction: departureFraction)
+        let end = route.anchor(at: rejoinIndex ?? departureIndex, fraction: 1)
         var draft = RouteAmendmentDraft(flightID: flight.id, mode: .manual)
         draft.update(.chooseAnchor(departure), route: route)
+        if addVia {
+            let via = route.coordinate(at: departure)
+            draft.update(.plot(.init(position: .init(
+                latitudeDegrees: via.latitudeDegrees + 0.02, longitudeDegrees: via.longitudeDegrees + 0.02
+            ))), route: route)
+        }
         draft.update(.chooseRejoin, route: route)
         draft.update(.chooseAnchor(end), route: route)
         draft.update(.confirmRejoin, route: route)
         draft.update(.review, route: route)
-        let leg = try #require(draft.reviewLegs(on: route).first)
-        draft.update(.editLeg(leg.id), route: route)
-        draft.update(.editLegField(.heading, "087"), route: route)
-        draft.update(.editLegField(.minutes, "3"), route: route)
-        draft.update(.editLegField(.seconds, "20"), route: route)
-        draft.update(.saveLegValues, route: route)
-        return try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        let legs = draft.reviewLegs(on: route)
+        #expect(legs.count == (addVia ? 2 : 1))
+        for (index, leg) in legs.enumerated() {
+            draft.update(.editLeg(leg.id), route: route)
+            draft.update(.editLegField(.heading, index == 0 ? "087" : "104"), route: route)
+            draft.update(.editLegField(.minutes, "3"), route: route)
+            draft.update(.editLegField(.seconds, "20"), route: route)
+            if addVia && index == 0 {
+                draft.update(.editLegField(.altitude, "2500"), route: route)
+                draft.update(.editLegField(.frequency, "123.50"), route: route)
+            }
+            draft.update(.saveLegValues, route: route)
+        }
+        return try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route, startNow: startNow)
     }
 
     @Test("Bootstrap expires a recording whose captured recovery window elapsed")

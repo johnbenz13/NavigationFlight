@@ -40,6 +40,7 @@ struct Flight: Equatable, Sendable {
         case invalidIdentificationPointOrder
         case timestampPrecedesStart
         case finalLegCompleted
+        case amendmentRejoinUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -67,6 +68,8 @@ struct Flight: Equatable, Sendable {
                 "The reported time cannot be earlier than the leg start."
             case .finalLegCompleted:
                 "Navigation has already been completed."
+            case .amendmentRejoinUnavailable:
+                "Return to the retained route is unavailable in this version."
             }
         }
     }
@@ -77,9 +80,11 @@ struct Flight: Equatable, Sendable {
         let startedAt: Date
         let destinationIdentifiedAt: Date?
         let reachedAt: Date?
+        var amendmentDepartureAt: Date? = nil
+        var recordedDepartureElapsed: TimeInterval? = nil
 
         var actualElapsedDuration: TimeInterval? {
-            reachedAt.map { $0.timeIntervalSince(startedAt) }
+            recordedDepartureElapsed ?? (reachedAt ?? amendmentDepartureAt).map { $0.timeIntervalSince(startedAt) }
         }
     }
 
@@ -157,11 +162,33 @@ struct Flight: Equatable, Sendable {
 
     let id: UUID
     let flightPlanID: UUID
-    let legIDs: [UUID]
+    let sourceLegIDs: [UUID]
     let progressionPolicy: ProgressionPolicy
     private(set) var activeLegIndex: Int
     private(set) var executionMode: NavigationMode
     private(set) var pendingRouteAmendment: PendingRouteAmendment?
+    private(set) var activatedRouteAmendment: ActivatedRouteAmendment?
+
+    var legIDs: [UUID] {
+        guard let activatedRouteAmendment else { return sourceLegIDs }
+        return Array(sourceLegIDs.prefix(activatedRouteAmendment.replacementStartIndex)) +
+            activatedRouteAmendment.amendment.replacementLegs.map(\.id)
+    }
+
+    var activeLegID: UUID { legIDs[activeLegIndex] }
+
+    var amendmentLegIndex: Int? {
+        activatedRouteAmendment.map { activeLegIndex - $0.replacementStartIndex }
+    }
+
+    var amendmentLeg: PendingRouteAmendment.Leg? {
+        guard let activatedRouteAmendment, let amendmentLegIndex else { return nil }
+        return activatedRouteAmendment.amendment.replacementLegs[amendmentLegIndex]
+    }
+
+    var awaitsAmendmentRejoin: Bool {
+        activatedRouteAmendment != nil && activeLegIndex == legIDs.count - 1
+    }
     private var pendingDepartureIdentifiedAt: Date?
 
     var activePartwayDeparture: PendingRouteAmendment? {
@@ -252,7 +279,7 @@ struct Flight: Equatable, Sendable {
         precondition(legIDs.indices.contains(activeLegIndex), "Active leg index must be in the plan")
         self.id = id
         self.flightPlanID = flightPlanID
-        self.legIDs = legIDs
+        self.sourceLegIDs = legIDs
         self.activeLegIndex = activeLegIndex
         self.executionMode = executionMode
         self.progressionPolicy = progressionPolicy
@@ -630,12 +657,68 @@ struct Flight: Equatable, Sendable {
             }
         }
         guard targetKey.kind == .identificationPoint else {
-            return legTimings.first(where: { $0.legID == targetKey.legID })?.reachedAt == nil
+            return legTimings.first(where: { $0.legID == targetKey.legID })?.actualElapsedDuration == nil
         }
         return identificationPointState(for: IdentificationPointKey(
             legID: targetKey.legID,
             identificationPointID: targetKey.targetID
         )) == .future
+    }
+
+    mutating func activateAmendment(
+        id: UUID, expectedLegID: UUID, targetID: UUID, at timestamp: Date,
+        replaying recorded: ActivatedRouteAmendment.Departure? = nil
+    ) throws -> ActivatedRouteAmendment.Departure {
+        guard let amendment = pendingRouteAmendment, amendment.id == id,
+              let firstLeg = amendment.replacementLegs.first, firstLeg.from.id == targetID,
+              activeLegID == expectedLegID else {
+            throw PendingRouteAmendment.Validation.unavailableDeparture
+        }
+        let immediate = amendment.startsImmediately == true
+        let recordsArrival = !immediate && !amendment.departureIsPartway
+        let sourceElapsed: TimeInterval?
+        if legState == .active {
+            let departureOnActiveLeg = amendment.departure.legID == activeLegID
+            guard departureOnActiveLeg || immediate else {
+                throw PendingRouteAmendment.Validation.unavailableDeparture
+            }
+            let retainedKeys = departureOnActiveLeg ? amendment.retainedDeparturePointIDs.map {
+                IdentificationPointKey(legID: expectedLegID, identificationPointID: $0)
+            } : []
+            try finishActiveLeg(orderedActiveLegPointKeys: retainedKeys, at: timestamp, recordsArrival: recordsArrival)
+            sourceElapsed = legTimings.last?.actualElapsedDuration
+        } else if legState == .ready, immediate {
+            sourceElapsed = nil
+        } else {
+            throw TransitionError.legNotActive
+        }
+        let firstReplacement = activeLegIndex + (legState == .active ? 1 : 0)
+        let startsReplacement = immediate || progressionPolicy == .automaticNextLeg
+        var departure = ActivatedRouteAmendment.Departure(
+            amendmentID: amendment.id, sourceLegID: expectedLegID, targetID: targetID,
+            firstReplacementLegID: firstLeg.id, startsReplacement: startsReplacement,
+            sourceElapsedSeconds: sourceElapsed, recordedOriginalArrival: recordsArrival
+        )
+        if let recorded {
+            guard departure.matches(recorded) else { throw PendingRouteAmendment.Validation.invalidGeometry }
+            departure = recorded
+            if let elapsed = recorded.sourceElapsedSeconds,
+               let index = legTimings.lastIndex(where: { $0.legID == expectedLegID }) {
+                legTimings[index].recordedDepartureElapsed = elapsed
+            }
+        } else if let sourceElapsed, let index = legTimings.lastIndex(where: { $0.legID == expectedLegID }) {
+            legTimings[index].recordedDepartureElapsed = sourceElapsed
+        }
+        activatedRouteAmendment = .init(
+            amendment: amendment, departure: departure, departedAt: timestamp,
+            replacementStartIndex: firstReplacement
+        )
+        pendingRouteAmendment = nil
+        pendingDepartureIdentifiedAt = nil
+        activeLegIndex = firstReplacement
+        legState = .ready
+        if startsReplacement { try startLeg(at: timestamp) }
+        return departure
     }
 
     mutating func reachCurrentWaypoint(
@@ -645,6 +728,20 @@ struct Flight: Equatable, Sendable {
         if pendingRouteAmendment?.blocksArrival(at: activeLegIndex) == true {
             throw PendingRouteAmendment.Validation.departureRequiresAmendmentActivation
         }
+        if awaitsAmendmentRejoin { throw TransitionError.amendmentRejoinUnavailable }
+        try finishActiveLeg(orderedActiveLegPointKeys: orderedActiveLegPointKeys, at: timestamp, recordsArrival: true)
+        guard activeLegIndex + 1 < legIDs.count else {
+            legState = .completed
+            return
+        }
+        activeLegIndex += 1
+        legState = .ready
+        if progressionPolicy == .automaticNextLeg { try startLeg(at: timestamp) }
+    }
+
+    private mutating func finishActiveLeg(
+        orderedActiveLegPointKeys: [IdentificationPointKey], at timestamp: Date, recordsArrival: Bool
+    ) throws {
         guard legState == .active else {
             if legTimings.first(where: { $0.legIndex == activeLegIndex })?.reachedAt != nil {
                 throw TransitionError.waypointAlreadyReached(activeLegIndex)
@@ -696,7 +793,8 @@ struct Flight: Equatable, Sendable {
             legIndex: current.legIndex,
             startedAt: current.startedAt,
             destinationIdentifiedAt: current.destinationIdentifiedAt,
-            reachedAt: timestamp
+            reachedAt: recordsArrival ? timestamp : nil,
+            amendmentDepartureAt: recordsArrival ? nil : timestamp
         )
         identificationPointTimings = nextIdentificationPointTimings
         pilotETAStatesByTargetKey = nextETAStates
@@ -707,27 +805,6 @@ struct Flight: Equatable, Sendable {
             pilotHeadingStatesByLegID[activeLegID] = headingState
         }
 
-        guard activeLegIndex + 1 < legIDs.count else {
-            legState = .completed
-            return
-        }
-
-        activeLegIndex += 1
-        switch progressionPolicy {
-        case .automaticNextLeg:
-            legTimings.append(
-                LegTiming(
-                    legID: legIDs[activeLegIndex],
-                    legIndex: activeLegIndex,
-                    startedAt: timestamp,
-                    destinationIdentifiedAt: nil,
-                    reachedAt: nil
-                )
-            )
-            legState = .active
-        case .manualNextLeg:
-            legState = .ready
-        }
     }
 
     private func closePilotETADraft(

@@ -377,7 +377,9 @@ final class FlightRecoveryCoordinator {
             progressionPolicy: snapshot.recording.recordedProgression == .manual ? .manualNextLeg : .automaticNextLeg
         )
         do {
-            for event in snapshot.events where !undoneEventIDs.contains(event.id) {
+            var routeEvidenceIDs = Set<UUID>()
+            for (index, event) in snapshot.events.enumerated()
+            where !undoneEventIDs.contains(event.id) && !routeEvidenceIDs.contains(event.id) {
                 switch event.payload {
                 case .legStarted(let legID):
                     guard let index = flight.legIDs.firstIndex(of: legID) else {
@@ -402,6 +404,29 @@ final class FlightRecoveryCoordinator {
                     } else {
                         try flight.cancelPendingAmendment(id: pendingID)
                     }
+                case .routeAmendmentActivated(let departure):
+                    guard let pending = flight.pendingRouteAmendment, pending.id == departure.amendmentID else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    let immediate = pending.startsImmediately == true
+                    let companions = RecordedFlightEventPayload.routeActivationCompanions(departure, immediate: immediate)
+                    let firstIndex = immediate ? index - 1 : index
+                    guard firstIndex >= 0, index + companions.count < snapshot.events.count else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    let events = Array(snapshot.events[firstIndex...(index + companions.count)])
+                    try FlightRouteTransaction(
+                        recordingID: snapshot.recording.id, expectedSequence: events[0].sequence, events: events
+                    ).validate()
+                    let evidence = events.suffix(companions.count)
+                    guard evidence.allSatisfy({ !undoneEventIDs.contains($0.id) }) else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    routeEvidenceIDs.formUnion(evidence.map(\.id))
+                    _ = try flight.activateAmendment(
+                        id: departure.amendmentID, expectedLegID: departure.sourceLegID,
+                        targetID: departure.targetID, at: event.occurredAt, replaying: departure
+                    )
                 case .amendmentDepartureIdentified(let legID, let targetID):
                     guard flight.legIDs[flight.activeLegIndex] == legID,
                           flight.activePartwayDeparture?.departureStop?.id == targetID else {
@@ -457,6 +482,9 @@ final class FlightRecoveryCoordinator {
         } catch {
             throw FlightRecoveryError.invalidJournal
         }
+        guard flight.pendingRouteAmendment?.startsImmediately != true else {
+            throw FlightRecoveryError.invalidJournal
+        }
         _ = try replayCockpitContext(snapshot: snapshot, flight: flight)
         return flight
     }
@@ -476,13 +504,23 @@ final class FlightRecoveryCoordinator {
 
         var seen = Set<UUID>()
         var candidateReaches = Set<UUID>()
+        var departureArrivalEvidence: (legID: UUID, sequence: UInt64)?
         var undone = Set<UUID>()
         var linkedCancellations: [UUID: UUID] = [:]
         for (index, event) in events.enumerated() {
             guard seen.insert(event.id).inserted else { throw FlightRecoveryError.invalidJournal }
             switch event.payload {
-            case .waypointReached, .identificationPointReached:
+            case .waypointReached(let legID):
+                if departureArrivalEvidence?.legID != legID || departureArrivalEvidence?.sequence != event.sequence {
+                    candidateReaches.insert(event.id)
+                }
+            case .identificationPointReached:
                 candidateReaches.insert(event.id)
+            case .routeAmendmentActivated(let departure):
+                candidateReaches.removeAll()
+                if departure.recordedOriginalArrival {
+                    departureArrivalEvidence = (departure.sourceLegID, event.sequence + 1)
+                }
             case .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced:
                 candidateReaches.removeAll()
             case .pendingRouteAmendmentCancelled(let pendingID, let report, let reachEventID):
@@ -541,7 +579,7 @@ final class FlightRecoveryCoordinator {
                 switch event.payload {
                 case .legStarted, .waypointReached, .reachUndone, .destinationIdentified, .cockpitPresentationChanged,
                      .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced, .pendingRouteAmendmentCancelled,
-                     .amendmentDepartureIdentified:
+                     .amendmentDepartureIdentified, .routeAmendmentActivated:
                     throw FlightRecoveryError.invalidJournal
                 default: break
                 }

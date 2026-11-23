@@ -232,24 +232,30 @@ final class RouteAmendmentMapOverlay: UIView {
         let amendment = pending.amendment
         let route = pending.route
         let original = route.originalSegments(departure: amendment.departure, rejoin: amendment.rejoin)
-        let proposal = amendment.replacementLegs.map {
-            RouteAmendmentDraft.Segment(
-                from: $0.from.position, to: $0.to.position,
-                role: $0.id == pending.activeReplacementLegID ? .retained : .proposed
-            )
+        if pending.activeReplacementLegID != nil {
+            drawSegments(original.filter { $0.role == .bypassed }, proposedDashed: false, on: map, in: context)
+            for stop in route.stops where route.precedes(amendment.departure, stop.id) && route.precedes(stop.id, amendment.rejoin) {
+                let point = project(stop.position, on: map)
+                guard bounds.insetBy(dx: -20, dy: -20).contains(point) else { continue }
+                marker(point, label: "\(stop.name) · bypassed", color: Self.bypassedColor, in: context)
+            }
+            if let rejoin = amendment.replacementLegs.last?.to,
+               rejoin.id != amendment.replacementLegs.first(where: { $0.id == pending.activeReplacementLegID })?.to.id {
+                marker(project(rejoin.position, on: map), label: rejoin.name, color: Self.bypassedColor, in: context)
+            }
+            return
         }
-        drawSegments(original + proposal, proposedDashed: pending.activeReplacementLegID == nil, on: map, in: context)
+        let proposal = amendment.replacementLegs.map {
+            RouteAmendmentDraft.Segment(from: $0.from.position, to: $0.to.position, role: .proposed)
+        }
+        drawSegments(original + proposal, proposedDashed: true, on: map, in: context)
 
         let departure = pending.activePartwayDeparture.map {
             (marker: DepartureMarker(name: $0.name, traits: traitCollection), point: project($0.position, on: map))
         }
         let departureBadge = showsPartwayDepartureLabel ? departure.map { $0.marker.badgeRect(at: $0.point) } : nil
-        let active = amendment.replacementLegs.first { $0.id == pending.activeReplacementLegID }
-        let activeEndpointIDs = Set([active?.from.id, active?.to.id].compactMap { $0 })
-        var proposedMarkers = amendment.replacementLegs.dropLast()
-            .filter { !activeEndpointIDs.contains($0.to.id) }
-            .map { (project($0.to.position, on: map), $0.to.name) }
-        if let rejoin = amendment.replacementLegs.last?.to, !activeEndpointIDs.contains(rejoin.id) {
+        var proposedMarkers = amendment.replacementLegs.dropLast().map { (project($0.to.position, on: map), $0.to.name) }
+        if let rejoin = amendment.replacementLegs.last?.to {
             proposedMarkers.append((project(rejoin.position, on: map), "Rejoin · \(rejoin.name)"))
         }
         let labelViewport = bounds.inset(

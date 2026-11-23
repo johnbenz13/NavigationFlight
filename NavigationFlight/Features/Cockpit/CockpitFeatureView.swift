@@ -360,7 +360,8 @@ struct CockpitFeatureView: View {
         if case .open = intent,
            ["1", "2"].contains(ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] ?? ""),
            state.flight != nil {
-            state.prepareAmendmentConfirmationFixture()
+            state.prepareAmendmentConfirmationFixture(includesAdvisoryValues:
+                ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] == "2")
         }
 #endif
     }

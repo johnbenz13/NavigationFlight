@@ -120,12 +120,45 @@ struct FlightRecoveryCoordinatorTests {
         #expect(cues.currentAltitude.value == 2_500)
         #expect(cues.frequencies.first?.frequency.frequencyMHz == 123.5)
         #expect(cues.dueEvents.contains(.frequency(amendment.replacementLegs[0].id)))
+        let adapter = CockpitPresentationAdapter()
+        let replacement = try adapter.makePresentation(
+            flightPlan: plan, legIndex: active.flight.activeLegIndex, mode: .noWind, flight: active.flight
+        )
+        #expect(replacement.magneticHeadingDegrees == 87)
+        #expect(replacement.legDurationSeconds == 200)
+        #expect(replacement.frequencyPlan.entries.first?.frequencyMHz == 123.50)
+        #expect(cues.communicationPlan.entries.first?.role == "Advisory")
+        let nextProjection = try adapter.makeNextLegPreparation(flightPlan: plan, flight: active.flight)
+        let next = try #require(nextProjection)
+        #expect(next.direction == .heading(104))
+        #expect(next.origin == amendment.replacementLegs[0].to.name)
+        #expect(try adapter.makePreviousLegSummary(flightPlan: plan, flight: active.flight) == nil)
+
+        let amendedID = active.flight.activeLegID
+        let revised = try await engine.commit(.reviseHeading(
+            legID: amendedID, baselineDegrees: 87, committedDegrees: 88,
+            at: time.addingTimeInterval(22), elapsed: .seconds(22), eventID: UUID()
+        ))
+        #expect(revised.flight.pilotHeadingState(for: amendedID)?.operationalDegrees == 88)
+        let revisedETA = try await engine.commit(.reviseETA(
+            target: map.destinationTarget.id, plannedElapsedSeconds: 200, committedSeconds: 205,
+            at: time.addingTimeInterval(23), elapsed: .seconds(23), eventID: UUID()
+        ))
+        #expect(revisedETA.flight.committedPilotETA(targetKey: map.destinationTarget.id) == 205)
         let ready = try await engine.commit(.reachCurrentWaypoint(
             orderedActiveLegPointKeys: [], at: time.addingTimeInterval(30), elapsed: .seconds(30),
             eventIDs: [UUID()], expectedLegID: map.destinationTarget.id.legID
         ))
         #expect(ready.flight.activeLegID == amendment.replacementLegs[1].id)
         #expect(ready.flight.legStartedAt == nil)
+        let previousProjection = try adapter.makePreviousLegSummary(flightPlan: plan, flight: ready.flight)
+        let previous = try #require(previousProjection)
+        #expect(previous.targets.first?.id == map.destinationTarget.id)
+        #expect(previous.revisedETASeconds == 205)
+        #expect(previous.headingHistory.operationalDegrees == 88)
+        #expect(ready.flight.pilotHeadingState(for: ready.flight.activeLegID) == nil)
+        #expect(try adapter.makeNextLegPreparation(flightPlan: plan, flight: ready.flight) == nil)
+
         let second = try await engine.promoteForStartLeg(
             at: time.addingTimeInterval(40), recordingID: started.recording.id, eventIDs: [UUID()], checklistSelection: .none
         )

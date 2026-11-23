@@ -30,6 +30,15 @@ marks and drift arms. Position Check takes the current leg's operational
 geometry and remains a separate pilot action. Return to the retained route and
 route-transition Undo are covered by later slices.
 
+The regular Cockpit presents Ready, Active, and Destination Identified for a
+replacement leg. Its route strip uses the effective order, and the standard
+heading and Next ETA editors address the current replacement leg and its saved
+destination. The ordinary map layers draw the operational route and successor
+preview. A grey dashed overlay displays the bypassed original interval without
+supplying hit targets. Ready shows the leg’s saved starting advisory in the
+instrument scan without marking it due. Active cues and the Frequency Plan
+distinguish confirmed advisories from retained planning references.
+
 ## Recording and recovery
 
 The first route transaction upgrades the package manifest to schema 4. Its event is written in the existing checksummed `events.ndjson` journal. The first event ID identifies the operation. The expected sequence is the

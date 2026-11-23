@@ -631,7 +631,7 @@ struct FPLNavFileLoader: Sendable {
 
 #if DEBUG
 extension CockpitFeatureState {
-    mutating func prepareAmendmentConfirmationFixture() {
+    mutating func prepareAmendmentConfirmationFixture(includesAdvisoryValues: Bool = false) {
         guard let route = routeForAmendment, route.legs.indices.contains(route.firstAvailable.legIndex + 1) else { return }
         updateRouteAmendment(.open)
         let departure = route.anchor(at: route.firstAvailable.legIndex, fraction: 0.5)
@@ -645,11 +645,16 @@ extension CockpitFeatureState {
         updateRouteAmendment(.chooseAnchor(rejoin))
         updateRouteAmendment(.confirmRejoin)
         updateRouteAmendment(.review)
-        for leg in routeAmendmentDraft?.reviewLegs(on: route) ?? [] {
+        for (index, leg) in (routeAmendmentDraft?.reviewLegs(on: route) ?? []).enumerated() {
             updateRouteAmendment(.editLeg(leg.id))
-            updateRouteAmendment(.editLegField(.heading, "087"))
-            updateRouteAmendment(.editLegField(.minutes, "03"))
-            updateRouteAmendment(.editLegField(.seconds, "20"))
+            let distinctSuccessor = includesAdvisoryValues && index == 1
+            updateRouteAmendment(.editLegField(.heading, distinctSuccessor ? "024" : "087"))
+            updateRouteAmendment(.editLegField(.minutes, distinctSuccessor ? "05" : "03"))
+            updateRouteAmendment(.editLegField(.seconds, distinctSuccessor ? "40" : "20"))
+            if includesAdvisoryValues, index == 0 {
+                updateRouteAmendment(.editLegField(.altitude, "2500"))
+                updateRouteAmendment(.editLegField(.frequency, "123.50"))
+            }
             updateRouteAmendment(.saveLegValues)
         }
     }

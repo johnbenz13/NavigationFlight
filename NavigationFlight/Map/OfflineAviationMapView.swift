@@ -259,7 +259,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             let modeChanged = (amendmentOverlay?.presentation == nil) != (amendment == nil)
             amendmentOverlay?.presentation = amendment
             let previousPending = amendmentOverlay?.pending
-            let pendingChanged = (previousPending == nil) != (pending == nil)
+            let pendingChanged = (previousPending == nil) != (pending == nil) ||
+                (previousPending?.activeReplacementLegID == nil) != (pending?.activeReplacementLegID == nil)
             amendmentOverlay?.pending = pending
             if modeChanged || pendingChanged, let style = mapView.style {
                 updateOperationalLayers(in: style)
@@ -290,7 +291,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             for identifier in layers {
                 style.layer(withIdentifier: identifier)?.isVisible = visible
             }
-            if amendmentOverlay?.pending != nil {
+            if let pending = amendmentOverlay?.pending, pending.activeReplacementLegID == nil {
                 for layer in [Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer] {
                     style.layer(withIdentifier: layer)?.isVisible = false
                 }

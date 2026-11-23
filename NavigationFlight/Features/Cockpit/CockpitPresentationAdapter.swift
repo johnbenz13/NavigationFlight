@@ -687,8 +687,22 @@ struct CockpitPresentationAdapter: Sendable {
         flightPlan: FlightPlan,
         flight: Flight
     ) throws -> NextLegPreparation? {
-        guard flight.activatedRouteAmendment == nil,
-              flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true else { return nil }
+        if let amendment = flight.activatedRouteAmendment?.amendment, let index = flight.amendmentLegIndex {
+            let next = index + 1
+            guard amendment.replacementLegs.indices.contains(next) else { return nil }
+            let leg = amendment.replacementLegs[next]
+            let current = try CockpitOperationalCueProjector().projectAmendment(flightPlan: flightPlan, flight: flight)
+            return NextLegPreparation(
+                legIndex: flight.activeLegIndex + 1, origin: leg.from.name, destination: leg.to.name,
+                direction: .heading(Double(leg.headingMagnetic)),
+                initialAltitudeFeetMsl: leg.altitudeFeet ?? current.currentAltitude.value,
+                plannedDurationSeconds: leg.durationSeconds, immediateAltitudeFeetMsl: leg.altitudeFeet,
+                immediateFrequencyChange: leg.frequencyMHz.map {
+                    .init(service: String(localized: "Amendment advisory"), frequencyMHz: $0)
+                }
+            )
+        }
+        guard flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true else { return nil }
         let nextIndex = flight.activeLegIndex + 1
         guard flightPlan.legs.indices.contains(nextIndex) else { return nil }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
@@ -753,6 +767,33 @@ struct CockpitPresentationAdapter: Sendable {
         flightPlan: FlightPlan,
         flight: Flight
     ) throws -> PreviousLegSummary? {
+        if let amendment = flight.activatedRouteAmendment?.amendment {
+            guard let previous = flight.legTimings.last(where: { $0.legID != flight.activeLegID }),
+                  let actualDuration = previous.actualElapsedDuration, previous.reachedAt != nil else { return nil }
+            if let leg = amendment.replacementLegs.first(where: { $0.id == previous.legID }) {
+                let target = NavigationTimingTargetKey(legID: leg.id, kind: .destination, targetID: leg.to.id)
+                let eta = flight.pilotETAState(targetKey: target)
+                let heading = flight.pilotHeadingState(for: leg.id)
+                let elapsed = max(0, Int(actualDuration.rounded()))
+                let difference = elapsed - (eta?.committedSeconds ?? leg.durationSeconds)
+                return PreviousLegSummary(
+                    legIndex: previous.legIndex, origin: leg.from.name, destination: leg.to.name,
+                    plannedDurationSeconds: leg.durationSeconds, revisedETASeconds: eta?.committedSeconds,
+                    actualDurationSeconds: elapsed, deltaSeconds: difference,
+                    magneticHeadingDegrees: Double(leg.headingMagnetic),
+                    magneticCourseDegrees: amendmentCourse(leg, variation: flightPlan.parameters.magneticVariationEast.value),
+                    vorDme: nil,
+                    targets: [.init(id: target, name: leg.to.name, plannedETASeconds: leg.durationSeconds,
+                                    revisedETACommits: eta?.commits.map(\.seconds) ?? [],
+                                    referenceETADisclosures: eta?.checkDisclosures.map(\.referenceSeconds) ?? [],
+                                    outcome: .reached(actualETASeconds: elapsed, differenceSeconds: difference))],
+                    headingHistory: .init(baselineDegrees: leg.headingMagnetic,
+                                          baselineLabel: String(localized: "Confirmed heading"),
+                                          commits: heading?.commits.map(\.degrees) ?? [],
+                                          operationalDegrees: heading?.operationalDegrees ?? leg.headingMagnetic)
+                )
+            }
+        }
         guard let timing = flight.legTimings.last(where: { $0.reachedAt != nil }),
               let reachedAt = timing.reachedAt,
               flightPlan.legs.indices.contains(timing.legIndex),
@@ -901,8 +942,20 @@ struct CockpitPresentationAdapter: Sendable {
                 .distance(from: CLLocation(latitude: leg.to.latitude, longitude: leg.to.longitude)) / 1_852
             let projected = project(positions: [leg.from.position, leg.to.position],
                                     origin: leg.from.position, destination: leg.to.position)
+            let retainedAfterRejoin = flightPlan.legs.count - activation.amendment.rejoin.legIndex
+                - (activation.amendment.rejoin.fraction == 1 ? 1 : 0)
+            let operationalLegCount = flight.legIDs.count + retainedAfterRejoin
+            let frequencyPlan = CockpitFrequencyPlan(entries: cues.communicationPlan.entries.map { entry in
+                let sequence: CockpitFrequencyPlan.Entry.Sequence = switch entry.state {
+                case .current: .now
+                case .next: .next
+                default: .later
+                }
+                return .init(id: entry.id, sequence: sequence, kind: .communication, service: entry.service,
+                             role: entry.role, frequencyMHz: entry.frequencyMHz, association: entry.dueContext)
+            })
             return .init(
-                planTitle: flightPlan.title, legPosition: String(localized: "Amendment leg \(index + 1)"),
+                planTitle: flightPlan.title, legPosition: String(localized: "Leg \(legIndex + 1) of \(operationalLegCount)"),
                 origin: leg.from.name, destination: leg.to.name,
                 originNormalizedX: projected[0].0, originNormalizedY: projected[0].1,
                 destinationNormalizedX: projected[1].0, destinationNormalizedY: projected[1].1,
@@ -915,7 +968,7 @@ struct CockpitPresentationAdapter: Sendable {
                     .reduce(0) { $0 + $1.durationSeconds },
                 initialAltitudeFeetMsl: altitude, mode: mode, supportsWindMode: false,
                 references: [], frequencies: [:], displayFrequencies: cues.frequencies.map(\.frequency),
-                frequencyPlan: .init(entries: []), routeEvents: []
+                frequencyPlan: frequencyPlan, routeEvents: []
             )
         }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {

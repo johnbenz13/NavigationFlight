@@ -18,6 +18,30 @@ nonisolated struct RecordedFlightEvent: Equatable, Sendable, Identifiable {
 }
 
 nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
+    struct RouteActivationFact {
+        let origin: RecordedFlightEvent.Origin
+        let payload: RecordedFlightEventPayload
+    }
+
+    static func routeActivationCompanions(
+        _ departure: ActivatedRouteAmendment.Departure, immediate: Bool
+    ) -> [RouteActivationFact] {
+        var facts: [RouteActivationFact] = []
+        if departure.recordedOriginalArrival {
+            facts.append(.init(origin: .pilot, payload: .waypointReached(legID: departure.sourceLegID)))
+        }
+        if departure.startsReplacement {
+            if immediate {
+                facts.append(.init(origin: .pilot, payload: .legStarted(legID: departure.firstReplacementLegID)))
+            } else {
+                facts.append(.init(origin: .automatic, payload: .automaticNextLegTransition(
+                    fromLegID: departure.sourceLegID, toLegID: departure.firstReplacementLegID
+                )))
+            }
+        }
+        return facts
+    }
+
     enum RecordingStartCause: Equatable, Sendable {
         case startLegWithoutLocation
         case automaticTakeoff
@@ -31,6 +55,7 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     case identificationPointReached(key: IdentificationPointKey)
     case waypointReached(legID: UUID)
     case pendingRouteAmendmentConfirmed(PendingRouteAmendment)
+    case routeAmendmentActivated(ActivatedRouteAmendment.Departure)
     case automaticNextLegTransition(fromLegID: UUID, toLegID: UUID)
     case finalWaypointReached(legID: UUID)
     case automaticLegRecovery(legID: UUID)

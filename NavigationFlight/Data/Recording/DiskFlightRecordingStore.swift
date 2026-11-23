@@ -240,10 +240,11 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
             return
         }
         guard snapshot.recording.closure == nil,
-              transaction.expectedSequence == snapshot.recording.nextEventSequence,
-              !snapshot.events.contains(where: { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }) else {
+              transaction.expectedSequence == snapshot.recording.nextEventSequence else {
             throw FlightRecordingStoreError.invalidEventSequence(id: id)
         }
+
+        try transaction.validatePendingIdentity(in: snapshot.events)
 
         let journal = directory.appending(path: "events.ndjson")
         let nextJournal = directory.appending(path: ".events-\(UUID()).tmp")
@@ -256,8 +257,10 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
         do {
             var data = try Data(contentsOf: journal)
             if let last = data.last, last != 0x0A { data.append(0x0A) }
-            data.append(try FlightRecordingCoding.encoder.encode(RecordedFlightEventEnvelopeDTO(event: transaction.event)))
-            data.append(0x0A)
+            for event in transaction.events {
+                data.append(try FlightRecordingCoding.encoder.encode(RecordedFlightEventEnvelopeDTO(event: event)))
+                data.append(0x0A)
+            }
             try writeAndSynchronize(data, to: nextJournal)
 
             // A schema-4 manifest paired with the old journal is valid after an
@@ -276,7 +279,7 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                 try synchronizeDirectory(directory)
             }
 
-            try beforeAppend(transaction.event)
+            for event in transaction.events { try beforeAppend(event) }
             try? fileManager.removeItem(at: directory.appending(path: "summary.json"))
             try renameFile(nextJournal, to: journal)
             try afterRouteInstall()

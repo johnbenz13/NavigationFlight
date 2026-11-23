@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 
 struct CockpitPresentationData: Equatable, Sendable {
@@ -648,6 +649,14 @@ struct CockpitPresentationAdapter: Sendable {
         flight: Flight,
         template: LegStartChecklistTemplate = .tzeKivun
     ) throws -> LegStartChecklistPresentation? {
+        if flight.legState == .active, let leg = flight.amendmentLeg {
+            let cues = try CockpitOperationalCueProjector().projectAmendment(flightPlan: flightPlan, flight: flight)
+            return LegStartChecklistPresentation(
+                legID: leg.id, template: try template.validated(),
+                direction: .heading(Double(leg.headingMagnetic)),
+                plannedAltitudeFeetMsl: cues.currentAltitude.value, plannedIndicatedAirspeedKnots: nil
+            )
+        }
         guard flight.legState == .active,
               flightPlan.legs.indices.contains(flight.activeLegIndex),
               case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
@@ -678,7 +687,8 @@ struct CockpitPresentationAdapter: Sendable {
         flightPlan: FlightPlan,
         flight: Flight
     ) throws -> NextLegPreparation? {
-        guard flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true else { return nil }
+        guard flight.activatedRouteAmendment == nil,
+              flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true else { return nil }
         let nextIndex = flight.activeLegIndex + 1
         guard flightPlan.legs.indices.contains(nextIndex) else { return nil }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
@@ -746,6 +756,7 @@ struct CockpitPresentationAdapter: Sendable {
         guard let timing = flight.legTimings.last(where: { $0.reachedAt != nil }),
               let reachedAt = timing.reachedAt,
               flightPlan.legs.indices.contains(timing.legIndex),
+              flightPlan.legs[timing.legIndex].id == timing.legID,
               case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
               plannedNavigation.legs.indices.contains(timing.legIndex) else {
             return nil
@@ -882,6 +893,31 @@ struct CockpitPresentationAdapter: Sendable {
         mode: NavigationMode,
         flight: Flight? = nil
     ) throws -> CockpitPresentationData {
+        if let flight, let activation = flight.activatedRouteAmendment,
+           let index = flight.amendmentLegIndex, let leg = flight.amendmentLeg {
+            let cues = try CockpitOperationalCueProjector().projectAmendment(flightPlan: flightPlan, flight: flight)
+            let altitude = cues.currentAltitude.value
+            let distance = CLLocation(latitude: leg.from.latitude, longitude: leg.from.longitude)
+                .distance(from: CLLocation(latitude: leg.to.latitude, longitude: leg.to.longitude)) / 1_852
+            let projected = project(positions: [leg.from.position, leg.to.position],
+                                    origin: leg.from.position, destination: leg.to.position)
+            return .init(
+                planTitle: flightPlan.title, legPosition: String(localized: "Amendment leg \(index + 1)"),
+                origin: leg.from.name, destination: leg.to.name,
+                originNormalizedX: projected[0].0, originNormalizedY: projected[0].1,
+                destinationNormalizedX: projected[1].0, destinationNormalizedY: projected[1].1,
+                originCrossingAltitudeFeet: altitude, destinationCrossingAltitudeFeet: altitude,
+                magneticCourseDegrees: amendmentCourse(leg, variation: flightPlan.parameters.magneticVariationEast.value),
+                magneticHeadingDegrees: Double(leg.headingMagnetic),
+                distanceNauticalMiles: distance, groundSpeedKnots: distance * 3_600 / Double(leg.durationSeconds),
+                legDurationSeconds: leg.durationSeconds,
+                cumulativeDurationSeconds: activation.amendment.replacementLegs.prefix(index + 1)
+                    .reduce(0) { $0 + $1.durationSeconds },
+                initialAltitudeFeetMsl: altitude, mode: mode, supportsWindMode: false,
+                references: [], frequencies: [:], displayFrequencies: cues.frequencies.map(\.frequency),
+                frequencyPlan: .init(entries: []), routeEvents: []
+            )
+        }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation else {
             throw CockpitPresentationError.unavailablePlannedNavigation
         }
@@ -1023,6 +1059,15 @@ struct CockpitPresentationAdapter: Sendable {
             frequencyPlan: frequencyPlan,
             routeEvents: routeEvents
         )
+    }
+
+    private func amendmentCourse(_ leg: PendingRouteAmendment.Leg, variation: Double) -> Double {
+        let bearing = AviationMapGeometry.bearing(
+            from: .init(latitude: leg.from.latitude, longitude: leg.from.longitude),
+            to: .init(latitude: leg.to.latitude, longitude: leg.to.longitude)
+        )
+        let magnetic = (bearing - variation).truncatingRemainder(dividingBy: 360)
+        return magnetic >= 0 ? magnetic : magnetic + 360
     }
 
     func makeDisplayFrequencies(

@@ -367,6 +367,9 @@ struct AviationMapPresentationFactory {
         flightPlan: FlightPlan,
         flight: Flight
     ) throws -> AviationMapPresentation {
+        if let activation = flight.activatedRouteAmendment, let current = flight.amendmentLeg {
+            return makeAmendmentPresentation(flightPlan: flightPlan, flight: flight, activation: activation, current: current)
+        }
         guard flightPlan.legs.indices.contains(flight.activeLegIndex) else {
             throw AviationMapPresentationError.invalidActiveLegIndex(flight.activeLegIndex)
         }
@@ -528,6 +531,41 @@ struct AviationMapPresentationFactory {
                 to: coordinate(activeArrival.position),
                 angleDegrees: flightPlan.parameters.driftAngle.value
             )
+        )
+    }
+
+    private func makeAmendmentPresentation(
+        flightPlan: FlightPlan, flight: Flight, activation: ActivatedRouteAmendment, current: PendingRouteAmendment.Leg
+    ) -> AviationMapPresentation {
+        let amendment = activation.amendment
+        let legs = amendment.replacementLegs.enumerated().map { offset, leg in
+            AviationMapLeg(
+                id: leg.id, index: activation.replacementStartIndex + offset,
+                from: coordinate(leg.from.position), to: coordinate(leg.to.position)
+            )
+        }
+        let waypoints = [current.from, current.to].map { stop in
+            AviationMapWaypoint(
+                id: stop.id, name: stop.name, coordinate: coordinate(stop.position),
+                role: role(for: stop.id, departureID: current.from.id, arrivalID: current.to.id)
+            )
+        }
+        let targetKey = NavigationTimingTargetKey(legID: current.id, kind: .destination, targetID: current.to.id)
+        let from = coordinate(current.from.position)
+        let to = coordinate(current.to.position)
+        return AviationMapPresentation(
+            waypoints: waypoints, legs: legs, activeLegIndex: flight.activeLegIndex,
+            nextLegPreview: legs.first { $0.index == flight.activeLegIndex + 1 },
+            endpointReferences: [], plannedDurationSeconds: current.durationSeconds,
+            minuteMarkers: amendment.mode == .assisted
+                ? AviationMapSymbology.minuteMarkers(from: from, to: to, plannedDurationSeconds: current.durationSeconds) : [],
+            identificationPoints: [],
+            destinationTarget: AviationMapETATarget(
+                id: targetKey, name: current.to.name, plannedElapsedSeconds: current.durationSeconds,
+                committedETASeconds: flight.committedPilotETA(targetKey: targetKey)
+            ),
+            driftReferenceArms: amendment.mode == .assisted
+                ? AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: flightPlan.parameters.driftAngle.value) : []
         )
     }
 

@@ -67,6 +67,8 @@ struct CockpitFeatureState: Equatable, Sendable {
         let timestamp: Date
         let elapsed: Duration
         var status: Status
+        var eventIDs: [UUID] = []
+        var checklistSelection: StartChecklistSelection = .tzeKivun
 
         enum Status: Equatable {
             case saving
@@ -177,7 +179,7 @@ struct CockpitFeatureState: Equatable, Sendable {
         cockpitContext: RecordingCockpitContext? = nil
     ) {
         precondition(flight.flightPlanID == flightPlan.id)
-        precondition(flight.legIDs == flightPlan.legs.map(\.id))
+        precondition(flight.sourceLegIDs == flightPlan.legs.map(\.id))
         self.flightPlan = flightPlan
         flightPlanSourceData = sourceData
         selectedLegIndex = flight.activeLegIndex
@@ -222,7 +224,7 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     mutating func installPendingAmendment(_ transition: CommittedNavigationTransition) {
         installCommittedFlight(transition.flight)
-        installNavigationGeneration(transition.cockpitContext)
+        installCockpitContext(transition.cockpitContext)
         amendmentSave = nil
         routeAmendmentDraft = nil
     }

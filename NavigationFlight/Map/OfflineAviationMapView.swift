@@ -614,7 +614,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         ) {
             self.reducesMotion = reducesMotion
             let becameActive = self.legState == .ready && legState == .active
-            let activeLegChanged = self.presentation.activeLegIndex != presentation.activeLegIndex
+            let activeLegChanged = self.presentation.activeLeg?.id != presentation.activeLeg?.id
             let legStateChanged = self.legState != legState
             let presentationChanged = self.presentation != presentation
             let driftVisibilityChanged = self.showsDriftReferenceArms != showsDriftReferenceArms
@@ -645,7 +645,19 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 updateEndpointAnnotations(on: mapView)
             }
 
-            if becameActive || (activeLegChanged && legState == .active) {
+            if activeLegChanged, let pending = amendmentOverlay?.pending, let replacementID = pending.activeReplacementLegID,
+               replacementID == pending.amendment.replacementLegs.first?.id,
+               let active = presentation.activeLeg {
+                let bypassed = pending.route.originalSegments(
+                    departure: pending.amendment.departure, rejoin: pending.amendment.rejoin
+                ).filter { $0.role == .bypassed }
+                let coordinates = [active.from, active.to] + bypassed.map {
+                    AviationMapCoordinate(latitude: $0.to.latitudeDegrees, longitude: $0.to.longitudeDegrees)
+                } + pending.amendment.replacementLegs.map {
+                    AviationMapCoordinate(latitude: $0.to.latitude, longitude: $0.to.longitude)
+                }
+                focusAmendment(coordinates, on: mapView)
+            } else if becameActive || (activeLegChanged && legState == .active) {
                 focusLeg(
                     on: mapView,
                     animated: !reducesMotion,

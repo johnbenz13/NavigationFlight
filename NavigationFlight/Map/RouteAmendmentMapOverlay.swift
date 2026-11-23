@@ -16,6 +16,7 @@ final class RouteAmendmentMapOverlay: UIView {
         let route: RouteAmendmentRoute
         let activePartwayDeparture: PendingRouteAmendment.Stop?
         let departureHeaderInset: CGFloat
+        var activeReplacementLegID: UUID? = nil
     }
 
     struct DepartureMarker {
@@ -232,16 +233,23 @@ final class RouteAmendmentMapOverlay: UIView {
         let route = pending.route
         let original = route.originalSegments(departure: amendment.departure, rejoin: amendment.rejoin)
         let proposal = amendment.replacementLegs.map {
-            RouteAmendmentDraft.Segment(from: $0.from.position, to: $0.to.position, role: .proposed)
+            RouteAmendmentDraft.Segment(
+                from: $0.from.position, to: $0.to.position,
+                role: $0.id == pending.activeReplacementLegID ? .retained : .proposed
+            )
         }
-        drawSegments(original + proposal, proposedDashed: true, on: map, in: context)
+        drawSegments(original + proposal, proposedDashed: pending.activeReplacementLegID == nil, on: map, in: context)
 
         let departure = pending.activePartwayDeparture.map {
             (marker: DepartureMarker(name: $0.name, traits: traitCollection), point: project($0.position, on: map))
         }
         let departureBadge = showsPartwayDepartureLabel ? departure.map { $0.marker.badgeRect(at: $0.point) } : nil
-        var proposedMarkers = amendment.replacementLegs.dropLast().map { (project($0.to.position, on: map), $0.to.name) }
-        if let rejoin = amendment.replacementLegs.last?.to {
+        let active = amendment.replacementLegs.first { $0.id == pending.activeReplacementLegID }
+        let activeEndpointIDs = Set([active?.from.id, active?.to.id].compactMap { $0 })
+        var proposedMarkers = amendment.replacementLegs.dropLast()
+            .filter { !activeEndpointIDs.contains($0.to.id) }
+            .map { (project($0.to.position, on: map), $0.to.name) }
+        if let rejoin = amendment.replacementLegs.last?.to, !activeEndpointIDs.contains(rejoin.id) {
             proposedMarkers.append((project(rejoin.position, on: map), "Rejoin · \(rejoin.name)"))
         }
         let labelViewport = bounds.inset(

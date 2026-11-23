@@ -199,6 +199,10 @@ struct CockpitView: View {
     var routeAmendmentDraft: RouteAmendmentDraft?
     var amendmentSaveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
     var onConfirmAmendment: () -> Void = {}
+    var onStartAmendmentNow: () -> Void = {}
+    var canStartAmendmentNow = false
+    var canConfirmAmendmentForLater = false
+    var activatedAmendmentSourceRoute: RouteAmendmentRoute?
     var onKeepEditingAmendment: () -> Void = {}
     @FocusState private var amendmentField: RouteAmendmentLegEntry.Field?
     @State private var nativeAmendmentField: RouteAmendmentLegEntry.Field?
@@ -258,12 +262,14 @@ struct CockpitView: View {
     }
 
     private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {
-        guard let routeForAmendment, let amendment = flight.pendingRouteAmendment else { return nil }
+        guard let route = routeForAmendment ?? activatedAmendmentSourceRoute,
+              let amendment = flight.pendingRouteAmendment ?? flight.activatedRouteAmendment?.amendment else { return nil }
         return .init(
             amendment: amendment,
-            route: routeForAmendment,
+            route: route,
             activePartwayDeparture: flight.legState == .active ? flight.activePartwayDeparture?.departureStop : nil,
-            departureHeaderInset: horizontalSizeClass == .compact ? compactDepartureHeaderHeight + 12 : 0
+            departureHeaderInset: horizontalSizeClass == .compact ? compactDepartureHeaderHeight + 12 : 0,
+            activeReplacementLegID: flight.amendmentLeg?.id
         )
     }
 
@@ -448,7 +454,7 @@ struct CockpitView: View {
                 .presentationDragIndicator(.visible)
             }
         }
-        .onChange(of: flight.activeLegIndex) { _, _ in
+        .onChange(of: flight.activeLegID) { _, _ in
             if isRestoringReach {
                 isRestoringReach = false
                 return
@@ -600,6 +606,9 @@ struct CockpitView: View {
                 if let amendmentMapPresentation {
                     amendmentConsole(amendmentMapPresentation, compact: true)
                         .frame(maxHeight: .infinity)
+                } else if flight.amendmentLeg != nil {
+                    amendmentProgressionPanel(compact: true)
+                        .frame(maxHeight: .infinity)
                 } else {
                     ScrollView {
                         accessibilityControlPanel
@@ -615,6 +624,8 @@ struct CockpitView: View {
                 Group {
                     if let amendmentMapPresentation {
                         amendmentConsole(amendmentMapPresentation, compact: true, inSideRail: true)
+                    } else if flight.amendmentLeg != nil {
+                        amendmentProgressionPanel(compact: true)
                     } else {
                         landscapeControlPanel
                     }
@@ -629,6 +640,9 @@ struct CockpitView: View {
                     .frame(height: mapHeight)
                 if let amendmentMapPresentation {
                     amendmentConsole(amendmentMapPresentation, compact: horizontalSizeClass == .compact)
+                        .frame(height: size.height - mapHeight)
+                } else if flight.amendmentLeg != nil {
+                    amendmentProgressionPanel(compact: horizontalSizeClass == .compact)
                         .frame(height: size.height - mapHeight)
                 } else if horizontalSizeClass == .compact {
                     compactControlPanel
@@ -645,9 +659,11 @@ struct CockpitView: View {
 
     private func amendmentMapHeight(in size: CGSize, normalExtent: CGFloat) -> CGFloat {
         var mapExtent = normalExtent
-        if horizontalSizeClass == .compact, routeAmendmentDraft?.step == .review, isEditingRouteAmendment {
+        if flight.amendmentLeg != nil {
+            mapExtent = max(size.height * 0.35, size.height - (horizontalSizeClass == .compact ? 354 : 438))
+        } else if horizontalSizeClass == .compact, routeAmendmentDraft?.step == .review, isEditingRouteAmendment {
             // Leave space for the live timer, two review rows and the fixed confirmation action.
-            mapExtent = max(0, min(normalExtent, (restingLayoutSize ?? size).height - 344))
+            mapExtent = max(0, min(normalExtent, (restingLayoutSize ?? size).height - 397))
         } else if amendmentSaveStatus != nil {
             mapExtent = max(0, normalExtent - 32)
         }
@@ -666,6 +682,9 @@ struct CockpitView: View {
             onIntent: onRouteAmendment,
             saveStatus: amendmentSaveStatus,
             onConfirm: onConfirmAmendment,
+            onStartNow: onStartAmendmentNow,
+            canStartNow: canStartAmendmentNow,
+            canConfirmForLater: canConfirmAmendmentForLater,
             onKeepEditing: onKeepEditingAmendment,
             onPlaceAtMapCenter: { amendmentCenterRequest = UUID() },
             onDiscard: {
@@ -676,6 +695,77 @@ struct CockpitView: View {
                 }
             }
         )
+    }
+
+    @ViewBuilder
+    private func amendmentProgressionPanel(compact: Bool) -> some View {
+        if let activation = flight.activatedRouteAmendment, let leg = flight.amendmentLeg {
+            let isActive = flight.legState == .active
+            let position = flight.amendmentLegIndex ?? 0
+            CockpitAmendmentProgressionPanel(
+                routeName: RouteAmendmentRoute.legName(from: data.origin, to: data.destination),
+                heading: Self.heading(activeHeadingState?.operationalDegrees ?? leg.headingMagnetic),
+                flightTime: mapPresentation.plannedDurationText, startedAt: flight.legStartedAt,
+                legIndex: position, immediateDeparture: activation.amendment.startsImmediately == true,
+                isActive: isActive, compact: compact,
+                altitudeFeet: operationalCues?.currentAltitude.value ?? data.initialAltitudeFeetMsl,
+                frequencyMHz: operationalCues?.frequencies.first { $0.status == .current }?.frequency.frequencyMHz,
+                visualReference: leg.visualReference,
+                onEditHeading: {
+                    showsHeadingCommitConfirmation = false
+                    onCollapseChecklist()
+                    onOpenPilotHeading(importedHeadingDegrees)
+                }
+            ) {
+                recordingStatusControl
+            } positionControl: {
+                if isActive, let positionCheck {
+                    PositionCheckControl(presentation: positionCheck, onAction: handlePositionCheckAction)
+                        .frame(maxWidth: compact ? .infinity : 184)
+                }
+            } actions: {
+                if isActive, checklistState?.presentationState == .collapsed {
+                    Button("Checklist", action: openChecklistDisclosure)
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .frame(minHeight: 44)
+                        .accessibilityIdentifier("leg-start-checklist-chip")
+                }
+                if isActive, flight.destinationIdentifiedAt == nil {
+                    Button("Identify waypoint", action: onIdentifyDestination)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.tint)
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
+                        .disabled(isRecordingCommitInFlight)
+                        .accessibilityIdentifier("waypoint-identified")
+                }
+                if !isActive {
+                    amendmentProgressionAction("Start leg", id: "start-leg", width: compact ? nil : 242, action: onStartLeg)
+                } else if !flight.awaitsAmendmentRejoin {
+                    amendmentProgressionAction("Report waypoint reached", id: "waypoint-reached", width: compact ? nil : 250) {
+                        onWaypointReached(cockpitRestoration)
+                    }
+                }
+            }
+        }
+    }
+
+    private func amendmentProgressionAction(
+        _ title: LocalizedStringKey, id: String, width: CGFloat?, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 20)
+                .frame(minWidth: width, minHeight: 52)
+                .background(Color(uiColor: visualStyle.primaryActionColor), in: .rect(cornerRadius: 13))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(isRecordingCommitInFlight)
+        .accessibilityIdentifier(id)
     }
 
     private var amendmentLegTiming: RouteAmendmentLegTiming? {
@@ -829,7 +919,7 @@ struct CockpitView: View {
             }
             if !isEditingRouteAmendment, !isPilotETAEditing {
                 CockpitDisclosureStrip(
-                    checklistTitle: checklistState?.presentationState == .collapsed
+                    checklistTitle: flight.amendmentLeg == nil && checklistState?.presentationState == .collapsed
                         ? (checklistState?.reviewState == .noted ? "Checklist · Noted" : "Checklist")
                         : nil,
                     previousLeg: previousLegSummary,
@@ -862,7 +952,7 @@ struct CockpitView: View {
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active
             || isCompactMapChromeVisible || isMapDisclosurePresented || routeAmendmentDraft != nil
-            || flight.activePartwayDeparture != nil
+            || flight.activePartwayDeparture != nil || flight.amendmentLeg != nil
     }
 
     private var isPilotETAEditing: Bool {
@@ -2488,7 +2578,7 @@ struct CockpitView: View {
     private var legStatusText: String {
         switch flight.legState {
         case .ready:
-            previousLegSummary == nil ? "READY" : "READY · SUCCESSOR TRACK-UP"
+            previousLegSummary == nil || flight.amendmentLeg != nil ? "READY" : "READY · SUCCESSOR TRACK-UP"
         case .active:
             flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil ? "ACTIVE" : "ACTIVE · DESTINATION IDENTIFIED"
         case .completed:
@@ -2499,7 +2589,7 @@ struct CockpitView: View {
     private var showsLegRouteInHeader: Bool {
         switch flight.legState {
         case .ready:
-            previousLegSummary == nil
+            previousLegSummary == nil || flight.amendmentLeg != nil
         case .active:
             flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil
         case .completed:

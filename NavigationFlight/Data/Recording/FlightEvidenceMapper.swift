@@ -169,6 +169,16 @@ nonisolated struct FlightEvidenceMapper: Sendable {
             ])
         case .pendingRouteAmendmentConfirmed(let amendment):
             return .init(kind: "pendingRouteAmendmentConfirmed", values: ["operationIdentifier": .identifier(amendment.id)])
+        case .routeAmendmentActivated(let departure):
+            var facts: [String: Value] = [
+                "operationIdentifier": .identifier(departure.amendmentID),
+                "legIdentifier": .identifier(departure.sourceLegID),
+                "targetIdentifier": .identifier(departure.targetID),
+                "toLegIdentifier": .identifier(departure.firstReplacementLegID),
+                "originalArrivalReported": .boolean(departure.recordedOriginalArrival)
+            ]
+            if let elapsed = departure.sourceElapsedSeconds { facts["sourceElapsedSeconds"] = .number(elapsed) }
+            return .init(kind: "routeAmendmentActivated", values: facts)
         case .amendmentDepartureIdentified(let legID, let targetID):
             return .init(kind: "amendmentDepartureIdentified", values: [
                 "legIdentifier": .identifier(legID), "targetIdentifier": .identifier(targetID)

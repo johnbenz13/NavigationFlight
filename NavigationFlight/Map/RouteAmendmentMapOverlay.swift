@@ -92,6 +92,12 @@ final class RouteAmendmentMapOverlay: UIView {
     }
 
     weak var map: MLNMapView?
+    var viewportDidLayout: (() -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        viewportDidLayout?()
+    }
 
     init(map: MLNMapView) {
         self.map = map

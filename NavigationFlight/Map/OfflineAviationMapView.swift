@@ -10,7 +10,14 @@ enum AviationMapFocusMode: Equatable, Sendable {
     case overview
     case timingTarget(AviationMapCoordinate)
     case amendment([AviationMapCoordinate])
+    case replacementReview(ReplacementReviewMapFocus)
     case positionCheck(aircraft: AviationMapCoordinate, intercept: AviationMapCoordinate?)
+}
+
+struct ReplacementReviewMapFocus: Equatable, Sendable {
+    let coordinates: [AviationMapCoordinate]
+    let topPadding: CGFloat
+    let bottomPadding: CGFloat
 }
 
 struct AviationMapFocusRequest: Equatable, Sendable {
@@ -239,11 +246,17 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         private var amendmentOverlay: RouteAmendmentMapOverlay?
+        private var fittedReplacementReview: (requestID: UUID, viewport: CGSize)?
+        private var replacementReviewFitScheduled = false
         private var amendmentCenterRequest: UUID?
         private var onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void = { _ in }
 
         func installAmendmentOverlay(on mapView: MLNMapView) {
             let overlay = RouteAmendmentMapOverlay(map: mapView)
+            overlay.viewportDidLayout = { [weak self, weak mapView] in
+                guard let mapView else { return }
+                self?.scheduleReplacementReviewFit(on: mapView)
+            }
             mapView.addSubview(overlay)
             amendmentOverlay = overlay
         }
@@ -423,6 +436,8 @@ struct OfflineAviationMapView: UIViewRepresentable {
             styleIsReady = true
             if isCameraUserControlled.wrappedValue, let initialCamera {
                 restore(initialCamera, on: mapView)
+            } else if case .replacementReview = lastFocusRequest.mode {
+                scheduleReplacementReviewFit(on: mapView)
             } else if amendmentOverlay?.isHidden == false, case .amendment(let coordinates) = lastFocusRequest.mode {
                 focusAmendment(coordinates, on: mapView)
             } else {
@@ -670,11 +685,46 @@ struct OfflineAviationMapView: UIViewRepresentable {
                     focusTimingTarget(coordinate, on: mapView)
                 case .amendment(let coordinates):
                     focusAmendment(coordinates, on: mapView)
+                case .replacementReview:
+                    break // Fit after MapLibre has laid out the resized review viewport.
                 case .positionCheck(let aircraft, let intercept):
                     focusPositionCheck(aircraft: aircraft, intercept: intercept, on: mapView)
                 }
             }
             lastFocusRequest = focusRequest
+            scheduleReplacementReviewFit(on: mapView)
+        }
+
+        private func scheduleReplacementReviewFit(on mapView: MLNMapView) {
+            guard case .replacementReview = lastFocusRequest.mode, canFitReplacementReview,
+                  !replacementReviewFitScheduled,
+                  fittedReplacementReview?.requestID != lastFocusRequest.id ||
+                    fittedReplacementReview?.viewport != mapView.bounds.size else { return }
+            replacementReviewFitScheduled = true
+            DispatchQueue.main.async { [weak self, weak mapView] in
+                guard let self else { return }
+                self.replacementReviewFitScheduled = false
+                guard let mapView, self.canFitReplacementReview,
+                      case .replacementReview(let focus) = self.lastFocusRequest.mode else { return }
+                let size = mapView.bounds.size
+                guard size.width > 72, size.height > 36 else { return }
+                self.fittedReplacementReview = (self.lastFocusRequest.id, size)
+                // Reserve label space even when the compact console changes the map height on entry.
+                let bottom = min(focus.bottomPadding, (size.height - 36) / 2)
+                let top = min(focus.topPadding, size.height - bottom - 36)
+                let points = focus.coordinates.map(self.coordinate)
+                mapView.setVisibleCoordinates(
+                    points, count: UInt(points.count),
+                    edgePadding: UIEdgeInsets(top: top, left: 36, bottom: bottom, right: 36),
+                    direction: mapView.direction, duration: 0,
+                    animationTimingFunction: nil, completionHandler: nil
+                )
+            }
+        }
+
+        private var canFitReplacementReview: Bool {
+            styleIsReady && !isCameraUserControlled.wrappedValue && amendmentOverlay?.presentation?.draft.step == .review
+                && amendmentOverlay?.presentation?.draft.legPanel == nil
         }
 
         private func addChart(to style: MLNStyle) {

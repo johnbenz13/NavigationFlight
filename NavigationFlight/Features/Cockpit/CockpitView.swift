@@ -253,6 +253,7 @@ struct CockpitView: View {
     @State private var cockpitPresentationState = CockpitPresentationState()
     @State private var compactMapDetent: PresentationDetent = .large
     @State private var amendmentCenterRequest: UUID?
+    @State private var amendmentLegendHeight: CGFloat = 0
     @State private var amendmentDiscardConfirmation = false
     @State private var isPendingAmendmentMenuPresented = false
     @State private var pendingAmendmentConfirmation: PendingAmendmentManagement.Confirmation?
@@ -285,6 +286,23 @@ struct CockpitView: View {
     private var amendmentFocusAnchor: RouteAmendmentAnchor? {
         if case .confirmRejoin(let anchor) = routeAmendmentDraft?.step { return anchor }
         return routeAmendmentDraft?.rejoin
+    }
+
+    private var replacementReviewFocus: ReplacementReviewMapFocus? {
+        guard isReplacingPendingAmendment, let presentation = amendmentMapPresentation,
+              presentation.draft.step == .review, presentation.draft.legPanel == nil,
+              let departure = presentation.draft.departure, let rejoin = presentation.draft.rejoin,
+              amendmentLegendHeight > 0 else { return nil }
+        let route = presentation.route
+        let stops = [route.coordinate(at: departure)] + presentation.draft.points.map(\.position)
+            + [route.coordinate(at: rejoin)]
+        let legendAtBottom = dynamicTypeSize.isAccessibilitySize
+        let legendTop = horizontalSizeClass == .compact ? 76.0 : 84.0
+        return .init(
+            coordinates: stops.map { .init(latitude: $0.latitudeDegrees, longitude: $0.longitudeDegrees) },
+            topPadding: legendAtBottom ? 100 : legendTop + amendmentLegendHeight + 16,
+            bottomPadding: legendAtBottom ? amendmentLegendHeight + 24 : 42
+        )
     }
 
     var body: some View {
@@ -322,8 +340,13 @@ struct CockpitView: View {
             dismissTransientPresentations()
             onCancelPilotHeading()
         }
+        .onChange(of: replacementReviewFocus, initial: true) { previous, focus in
+            guard let focus, previous == nil || !isMapCameraUserControlled else { return }
+            focusMap(.replacementReview(focus))
+        }
         .onChange(of: amendmentFocusAnchor) { _, rejoin in
-            guard let rejoin, let amendmentMapPresentation,
+            guard !(isReplacingPendingAmendment && routeAmendmentDraft?.step == .review),
+                  let rejoin, let amendmentMapPresentation,
                   let departure = amendmentMapPresentation.draft.departure else { return }
             let route = amendmentMapPresentation.route
             let stops = [route.coordinate(at: departure)] + amendmentMapPresentation.draft.points.map(\.position)
@@ -801,6 +824,9 @@ struct CockpitView: View {
             }
             if amendmentMapPresentation != nil {
                 RouteAmendmentLegend()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        amendmentLegendHeight = height
+                    }
                     .padding(.top, dynamicTypeSize.isAccessibilitySize ? 8 : (horizontalSizeClass == .compact ? 76 : 84))
                     .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity,

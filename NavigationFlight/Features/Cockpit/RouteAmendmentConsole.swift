@@ -192,7 +192,7 @@ struct RouteAmendmentConsole: View {
                     let elapsed = AviationMapSymbology.formatDuration(timing.elapsedSeconds(at: context.date))
                     Text("\(draft.mode.title) · Active leg · \(elapsed)")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(PendingAmendmentPalette.secondary)
                 }
             } else {
                 reviewLegCount
@@ -212,7 +212,7 @@ struct RouteAmendmentConsole: View {
             if isReplacing && draft.step == .review {
                 Text("The saved amendment remains pending until this replacement is confirmed.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(PendingAmendmentPalette.secondary)
             } else if draft.step != .drawing && draft.step != .review {
                 Text(subtitle)
                     .font(.caption)
@@ -307,7 +307,7 @@ struct RouteAmendmentConsole: View {
                 Divider().padding(.vertical, 12)
                 Text("Review the replacement leg values before confirming.")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(PendingAmendmentPalette.secondary)
             }
 
         }

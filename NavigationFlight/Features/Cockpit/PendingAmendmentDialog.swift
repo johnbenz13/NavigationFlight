@@ -53,8 +53,6 @@ struct PendingAmendmentDialog: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AccessibilityFocusState(for: .voiceOver) private var titleHasFocus: Bool
 
-    private let actionColor = Color(red: 0, green: 0.41, blue: 0.78)
-
     var body: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
@@ -84,7 +82,7 @@ struct PendingAmendmentDialog: View {
                 .accessibilityFocused($titleHasFocus)
             Text(content.message)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(PendingAmendmentPalette.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 18)
             if case .save(.saving) = content {
@@ -107,11 +105,12 @@ struct PendingAmendmentDialog: View {
     @ViewBuilder
     private func buttons(stacked: Bool) -> some View {
         if content.canDismiss {
-            action("Keep pending", id: "keep-pending-amendment", color: actionColor, background: actionColor.opacity(0.08),
-                   stacked: stacked, width: stacked ? nil : 182, perform: onDismiss)
+            action("Keep pending", id: "keep-pending-amendment", color: PendingAmendmentPalette.quietAction,
+                   background: PendingAmendmentPalette.quietBackground, stacked: stacked, width: stacked ? nil : 182, perform: onDismiss)
         }
-        let background = content.isDestructive ? Color.red.opacity(0.08) : actionColor
-        let ink = content.isDestructive ? Color.red : .white
+        let background = content.isDestructive
+            ? PendingAmendmentPalette.destructiveBackground : PendingAmendmentPalette.primaryBackground
+        let ink = content.isDestructive ? PendingAmendmentPalette.destructive : .white
         let id: String = {
             if case .save = content { return "retry-pending-amendment-management" }
             return "confirm-pending-amendment-management"

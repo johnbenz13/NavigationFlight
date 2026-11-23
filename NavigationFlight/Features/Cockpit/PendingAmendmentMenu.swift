@@ -19,12 +19,13 @@ struct PendingAmendmentMenu: View {
                             .accessibilityAddTraits(.isHeader)
                         Text("\(management.departureName) on leg \(management.legNumber)")
                             .font(compact ? .subheadline : .footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(PendingAmendmentPalette.secondary)
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     if compact {
                         Button("Done", action: onDone)
+                            .foregroundStyle(PendingAmendmentPalette.quietAction)
                             .font(.body.weight(.semibold))
                             .frame(minWidth: 44, minHeight: 44)
                             .accessibilityIdentifier("dismiss-pending-amendment-management")
@@ -69,7 +70,7 @@ struct PendingAmendmentMenu: View {
         Button(role: role, action: action) {
             Text(title)
                 .font(compact ? .body : .subheadline)
-                .foregroundStyle(role == .destructive ? Color.red : Color.primary)
+                .foregroundStyle(role == .destructive ? PendingAmendmentPalette.destructive : Color.primary)
                 .frame(maxWidth: .infinity, minHeight: compact ? 57 : 49, alignment: .leading)
                 .padding(.horizontal, 16)
                 .contentShape(.rect)

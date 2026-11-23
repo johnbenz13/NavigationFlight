@@ -16,6 +16,7 @@ final class RouteAmendmentMapOverlay: UIView {
         let route: RouteAmendmentRoute
         let activePartwayDeparture: PendingRouteAmendment.Stop?
         let departureHeaderInset: CGFloat
+        var isActivated = false
         var activeReplacementLegID: UUID? = nil
     }
 
@@ -232,15 +233,15 @@ final class RouteAmendmentMapOverlay: UIView {
         let amendment = pending.amendment
         let route = pending.route
         let original = route.originalSegments(departure: amendment.departure, rejoin: amendment.rejoin)
-        if pending.activeReplacementLegID != nil {
+        if pending.isActivated {
             drawSegments(original.filter { $0.role == .bypassed }, proposedDashed: false, on: map, in: context)
             for stop in route.stops where route.precedes(amendment.departure, stop.id) && route.precedes(stop.id, amendment.rejoin) {
                 let point = project(stop.position, on: map)
                 guard bounds.insetBy(dx: -20, dy: -20).contains(point) else { continue }
                 marker(point, label: "\(stop.name) · bypassed", color: Self.bypassedColor, in: context)
             }
-            if let rejoin = amendment.replacementLegs.last?.to,
-               rejoin.id != amendment.replacementLegs.first(where: { $0.id == pending.activeReplacementLegID })?.to.id {
+            if let activeReplacementLegID = pending.activeReplacementLegID, let rejoin = amendment.replacementLegs.last?.to,
+               rejoin.id != amendment.replacementLegs.first(where: { $0.id == activeReplacementLegID })?.to.id {
                 marker(project(rejoin.position, on: map), label: rejoin.name, color: Self.bypassedColor, in: context)
             }
             return

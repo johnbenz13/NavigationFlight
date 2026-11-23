@@ -364,23 +364,25 @@ enum AviationMapPresentationError: Error, Equatable {
 
 struct AviationMapPresentationFactory {
     func makePresentation(
-        flightPlan: FlightPlan,
+        flightPlan sourcePlan: FlightPlan,
         flight: Flight
     ) throws -> AviationMapPresentation {
         if let activation = flight.activatedRouteAmendment, let current = flight.amendmentLeg {
-            return makeAmendmentPresentation(flightPlan: flightPlan, flight: flight, activation: activation, current: current)
+            return makeAmendmentPresentation(flightPlan: sourcePlan, flight: flight, activation: activation, current: current)
         }
-        guard flightPlan.legs.indices.contains(flight.activeLegIndex) else {
+        let flightPlan = flight.retainedSourcePlan(sourcePlan)
+        guard let sourceIndex = flight.sourceLegIndex(at: flight.activeLegIndex),
+              flightPlan.legs.indices.contains(sourceIndex) else {
             throw AviationMapPresentationError.invalidActiveLegIndex(flight.activeLegIndex)
         }
         guard case .eligible(let plannedNavigation) = flightPlan.plannedNavigation,
-              plannedNavigation.legs.indices.contains(flight.activeLegIndex) else {
+              plannedNavigation.legs.indices.contains(sourceIndex) else {
             throw AviationMapPresentationError.unavailablePlannedNavigation
         }
 
-        let activeSourceLeg = flightPlan.legs[flight.activeLegIndex]
+        let activeSourceLeg = flightPlan.legs[sourceIndex]
         let activeArrival = flight.operationalArrival(for: activeSourceLeg)
-        let resolvedLeg = plannedNavigation.legs[flight.activeLegIndex]
+        let resolvedLeg = plannedNavigation.legs[sourceIndex]
         let originalDuration: Int
         switch flight.executionMode {
         case .noWind:
@@ -408,7 +410,16 @@ struct AviationMapPresentationFactory {
         } else {
             bypassedWaypointIDs = []
         }
-        let waypoints = routeWaypoints.filter { !bypassedWaypointIDs.contains($0.id) }.map { waypoint in
+        let operationalWaypointIDs: Set<UUID>?
+        if let activation = flight.activatedRouteAmendment {
+            operationalWaypointIDs = Set(flightPlan.legs.dropFirst(activation.retainedSourceStartIndex)
+                .flatMap { [$0.departure.id, $0.arrival.id] })
+        } else {
+            operationalWaypointIDs = nil
+        }
+        let waypoints = routeWaypoints.filter {
+            !bypassedWaypointIDs.contains($0.id) && operationalWaypointIDs?.contains($0.id) != false
+        }.map { waypoint in
             AviationMapWaypoint(
                 id: waypoint.id,
                 name: waypoint.name,
@@ -420,14 +431,18 @@ struct AviationMapPresentationFactory {
                 )
             )
         }
-        let legs = flightPlan.legs.enumerated().map { index, leg in
+        let activation = flight.activatedRouteAmendment
+        let retainedSourceStart = activation?.retainedSourceStartIndex ?? 0
+        let retainedOperationalStart = activation?.retainedStartIndex ?? 0
+        let retainedLegs = flightPlan.legs.dropFirst(retainedSourceStart).enumerated().map { offset, leg in
             AviationMapLeg(
                 id: leg.id,
-                index: index,
+                index: retainedOperationalStart + offset,
                 from: coordinate(leg.departure.position),
                 to: coordinate(flight.operationalArrival(for: leg).position)
             )
         }
+        let legs = (activation.map(replacementLegs) ?? []) + retainedLegs
         let annotationsByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
         let activeIdentificationPoints = try flightPlan.identificationPoints
             .filter { $0.legID == activeSourceLeg.id && flight.pendingRouteAmendment?.includes($0) != false }
@@ -538,12 +553,12 @@ struct AviationMapPresentationFactory {
         flightPlan: FlightPlan, flight: Flight, activation: ActivatedRouteAmendment, current: PendingRouteAmendment.Leg
     ) -> AviationMapPresentation {
         let amendment = activation.amendment
-        let legs = amendment.replacementLegs.enumerated().map { offset, leg in
-            AviationMapLeg(
-                id: leg.id, index: activation.replacementStartIndex + offset,
-                from: coordinate(leg.from.position), to: coordinate(leg.to.position)
-            )
-        }
+        let retained = flight.retainedSourcePlan(flightPlan).legs.dropFirst(activation.retainedSourceStartIndex)
+            .enumerated().map { offset, leg in
+                AviationMapLeg(id: leg.id, index: activation.retainedStartIndex + offset,
+                               from: coordinate(leg.departure.position), to: coordinate(leg.arrival.position))
+            }
+        let legs = replacementLegs(activation) + retained
         let waypoints = [current.from, current.to].map { stop in
             AviationMapWaypoint(
                 id: stop.id, name: stop.name, coordinate: coordinate(stop.position),
@@ -567,6 +582,15 @@ struct AviationMapPresentationFactory {
             driftReferenceArms: amendment.mode == .assisted
                 ? AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: flightPlan.parameters.driftAngle.value) : []
         )
+    }
+
+    private func replacementLegs(_ activation: ActivatedRouteAmendment) -> [AviationMapLeg] {
+        activation.amendment.replacementLegs.enumerated().map { offset, leg in
+            AviationMapLeg(
+                id: leg.id, index: activation.replacementStartIndex + offset,
+                from: coordinate(leg.from.position), to: coordinate(leg.to.position)
+            )
+        }
     }
 
     private func role(

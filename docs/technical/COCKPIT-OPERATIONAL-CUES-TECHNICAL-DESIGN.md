@@ -137,6 +137,12 @@ The application coordinator synchronizes the adapter whenever the derived condit
 
 Semantic colors should adapt to light/dark appearance while meeting sufficient contrast. The final color values, spacing, and type treatment are governed by approved Figma nodes and must be checked in both iPad orientations and the supported iPhone portrait layout.
 
+## Cues on a retained route
+
+At a partway rejoin, the retained leg starts with original planned altitude and radio values effective at the source occurrence, including changes attached exactly there. Those values establish the new baseline without emitting a due transition. The projector selects later cues by source attachment and progress, then calculates their time with the same selected-mode interval used by retained timing targets. A forward cue that rounds to zero becomes due at the first elapsed second. Imported positions and VOR/DME reference identities are preserved.
+
+The regular cockpit presents the restored baseline in both Ready and Active. Elapsed-time cues advance from the retained leg's start. The communication plan keeps the effective original frequency and upcoming retained calls, omitting the bypassed sequence. A full waypoint rejoin uses the next original leg's normal start cues. See the [Flying a Leg technical design](FLYING-A-LEG-TECHNICAL-DESIGN.md#retained-legs-after-a-route-amendment).
+
 ## Accessibility
 
 - `PLANNED NOW` and `PLANNED NEXT` are exposed as text and accessibility values, not color-only state. Imported values never assert tuned, not-tuned, active-receiver, or inactive-receiver state.

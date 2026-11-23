@@ -30,6 +30,14 @@ The design covers the complete first-release Flying a Leg behavior:
 
 Durable active-flight persistence, GPS-derived behavior, a heading cross-check, Reference Heading, user-authored checklist templates, and general historical editing remain out of scope.
 
+## Retained legs after a route amendment
+
+The pilot uses the ordinary destination Reach on the final replacement leg. That leg's arrival and the first retained leg's departure bind to the same confirmed occurrence. A waypoint rejoin resumes the next original leg with its original ID. A partway rejoin creates a separately timed suffix with its own ID, reserved by the saved amendment confirmation. Historical timing and revisions keep their original leg keys.
+
+The suffix interval runs from the saved source progress to the original endpoint. The selected mode uses the imported planned duration scaled by the remaining fraction. Its retained identification points come from the source leg's ordered attachments strictly ahead of the boundary. Measure each target’s source progress from the new start and multiply by the saved selected-mode leg duration before rounding. Preserve imported map positions and endpoint references. Targets on or behind the boundary receive no outcome from the rejoin.
+
+Automatic progression starts the retained leg at the report time and captures the checklist in the same recording transaction. Manual progression leaves it Ready until Start Leg captures the checklist and sets the time origin. If the report is at the final waypoint, it records final arrival and leaves Navigation Complete as an explicit action. Recovery validates and applies the same rejoin and progression facts from the journal. See the [route-amendment technical design](IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md).
+
 ## Architectural fit
 
 The implementation extends the current architecture rather than introducing a new state-management layer.

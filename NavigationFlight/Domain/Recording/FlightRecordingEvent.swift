@@ -42,6 +42,20 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
         return facts
     }
 
+    static func rejoinCompanions(_ rejoin: ActivatedRouteAmendment.Rejoin) -> [RouteActivationFact] {
+        var facts: [RouteActivationFact] = [.init(origin: .pilot, payload: .waypointReached(legID: rejoin.replacementLegID))]
+        if let retained = rejoin.retainedLegID {
+            if rejoin.startsRetainedLeg {
+                facts.append(.init(origin: .automatic, payload: .automaticNextLegTransition(
+                    fromLegID: rejoin.replacementLegID, toLegID: retained
+                )))
+            }
+        } else {
+            facts.append(.init(origin: .automatic, payload: .finalWaypointReached(legID: rejoin.replacementLegID)))
+        }
+        return facts
+    }
+
     enum RecordingStartCause: Equatable, Sendable {
         case startLegWithoutLocation
         case automaticTakeoff
@@ -56,6 +70,7 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     case waypointReached(legID: UUID)
     case pendingRouteAmendmentConfirmed(PendingRouteAmendment)
     case routeAmendmentActivated(ActivatedRouteAmendment.Departure)
+    case routeAmendmentRejoined(ActivatedRouteAmendment.Rejoin)
     case automaticNextLegTransition(fromLegID: UUID, toLegID: UUID)
     case finalWaypointReached(legID: UUID)
     case automaticLegRecovery(legID: UUID)
@@ -109,4 +124,11 @@ nonisolated enum RecordingStorageDegradation: String, Codable, Equatable, Sendab
     case trackWriteFailed
     case lowStorage
     case bufferOverflow
+}
+
+nonisolated extension ActivatedRouteAmendment.Rejoin {
+    var navigationState: RecordedNavigationState {
+        guard retainedLegID != nil else { return .reachedFinalWaypoint }
+        return startsRetainedLeg ? .active : .ready
+    }
 }

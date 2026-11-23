@@ -1,0 +1,122 @@
+[
+  {
+    "testIdentifier": "NavigationFlightUITests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions()",
+    "image": "testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.32.12 AM.mp4",
+    "recordingTimestamp": 1795419132.543,
+    "frameSeconds": 15.257,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testAddPickerCancellationPreservesEmptyLibrary()",
+    "image": "testAddPickerCancellationPreservesEmptyLibrary.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.34.58 AM.mp4",
+    "recordingTimestamp": 1795419298.161,
+    "frameSeconds": 13.772,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets()",
+    "image": "testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.35.54 AM.mp4",
+    "recordingTimestamp": 1795419354.946,
+    "frameSeconds": 13.337,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testChecklistActionsRemainReachableWithAccessibilityText()",
+    "image": "testChecklistActionsRemainReachableWithAccessibilityText.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.36.09 AM.mp4",
+    "recordingTimestamp": 1795419369.627,
+    "frameSeconds": 13.28,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testClosedFlightDeletionCancellationPreservesTheNamedFlight()",
+    "image": "testClosedFlightDeletionCancellationPreservesTheNamedFlight.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.37.33 AM.mp4",
+    "recordingTimestamp": 1795419453.991,
+    "frameSeconds": 24.243,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues()",
+    "image": "testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.38.44 AM.mp4",
+    "recordingTimestamp": 1795419524.636,
+    "frameSeconds": 11.572,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval()",
+    "image": "testConfirmedClosedFlightDeletionReturnsToListAfterRemoval.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.41.40 AM.mp4",
+    "recordingTimestamp": 1795419700,
+    "frameSeconds": 15.515,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated()",
+    "image": "testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.42.53 AM.mp4",
+    "recordingTimestamp": 1795419773.267,
+    "frameSeconds": 12.88,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testFailedDeletionPreservesDetailAndOffersRetry()",
+    "image": "testFailedDeletionPreservesDetailAndOffersRetry.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.43.34 AM.mp4",
+    "recordingTimestamp": 1795419814.766,
+    "frameSeconds": 14.275,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector()",
+    "image": "testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.47.26 AM.mp4",
+    "recordingTimestamp": 1795420046.545,
+    "frameSeconds": 18.032,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "CockpitChartsUITests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable()",
+    "image": "testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.33.30 AM.mp4",
+    "recordingTimestamp": 1795419210.622,
+    "frameSeconds": 16.717,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles()",
+    "image": "testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.49.58 AM.mp4",
+    "recordingTimestamp": 1795420198.356,
+    "frameSeconds": 22.497,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testManualAmendmentReviewSupportsLargerText()",
+    "image": "testManualAmendmentReviewSupportsLargerText.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.52.19 AM.mp4",
+    "recordingTimestamp": 1795420339.213,
+    "frameSeconds": 10.102,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testPositionCheckAccessibilityTextStacksDistinctReachableActions()",
+    "image": "testPositionCheckAccessibilityTextStacksDistinctReachableActions.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 09.55.36 AM.mp4",
+    "recordingTimestamp": 1795420536.124,
+    "frameSeconds": 7.29,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  },
+  {
+    "testIdentifier": "NavigationFlightUITests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit()",
+    "image": "testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit.png",
+    "sourceRecording": "Screen Recording 2026-11-23 at 10.06.13 AM.mp4",
+    "recordingTimestamp": 1795421173.644,
+    "frameSeconds": 8.46,
+    "method": "Frame extracted at approximately 0.5 seconds before the end of the original failing-test recording; not a separately captured screenshot."
+  }
+]

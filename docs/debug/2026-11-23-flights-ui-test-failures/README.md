@@ -103,6 +103,147 @@ The inspected test capture shows blue row text and centered wrapped metadata, as
 
 The landscape test only asserts that the second recent row is to the right of the first and their vertical midpoints align. The accessibility-size test asserts nonempty accessibility labels and a hittable Continue button. These checks can pass despite the observed visual problems.
 
+## Frames from the failing UI test recordings
+
+All 15 failing UI tests retained screen recordings. The failure-only export missed these because their attachment metadata reports `isAssociatedWithFailure: false`.
+
+The images below were extracted from those original recordings at approximately 0.5 seconds before the end. They are recording frames, not separately captured screenshots or new test runs. Exact recording names and frame timestamps are in [the extraction manifest](snapshots/failing-tests/manifest.json). The failed unit test `FlightRecordingLibraryTests/corruptPackageDetail()` has no visual attachments.
+
+<details>
+<summary>NavigationFlightUITests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.32.12 AM.mp4`; frame at 15.257 seconds.
+
+![NavigationFlightUITests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions() recording frame](snapshots/failing-tests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testAddPickerCancellationPreservesEmptyLibrary()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.34.58 AM.mp4`; frame at 13.772 seconds.
+
+![NavigationFlightUITests/testAddPickerCancellationPreservesEmptyLibrary() recording frame](snapshots/failing-tests/testAddPickerCancellationPreservesEmptyLibrary.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.35.54 AM.mp4`; frame at 13.337 seconds.
+
+![NavigationFlightUITests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets() recording frame](snapshots/failing-tests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testChecklistActionsRemainReachableWithAccessibilityText()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.36.09 AM.mp4`; frame at 13.28 seconds.
+
+![NavigationFlightUITests/testChecklistActionsRemainReachableWithAccessibilityText() recording frame](snapshots/failing-tests/testChecklistActionsRemainReachableWithAccessibilityText.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testClosedFlightDeletionCancellationPreservesTheNamedFlight()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.37.33 AM.mp4`; frame at 24.243 seconds.
+
+![NavigationFlightUITests/testClosedFlightDeletionCancellationPreservesTheNamedFlight() recording frame](snapshots/failing-tests/testClosedFlightDeletionCancellationPreservesTheNamedFlight.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.38.44 AM.mp4`; frame at 11.572 seconds.
+
+![NavigationFlightUITests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues() recording frame](snapshots/failing-tests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.41.40 AM.mp4`; frame at 15.515 seconds.
+
+![NavigationFlightUITests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval() recording frame](snapshots/failing-tests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.42.53 AM.mp4`; frame at 12.88 seconds.
+
+![NavigationFlightUITests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated() recording frame](snapshots/failing-tests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testFailedDeletionPreservesDetailAndOffersRetry()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.43.34 AM.mp4`; frame at 14.275 seconds.
+
+![NavigationFlightUITests/testFailedDeletionPreservesDetailAndOffersRetry() recording frame](snapshots/failing-tests/testFailedDeletionPreservesDetailAndOffersRetry.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.47.26 AM.mp4`; frame at 18.032 seconds.
+
+![NavigationFlightUITests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector() recording frame](snapshots/failing-tests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector.png)
+
+</details>
+
+<details>
+<summary>CockpitChartsUITests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.33.30 AM.mp4`; frame at 16.717 seconds.
+
+![CockpitChartsUITests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable() recording frame](snapshots/failing-tests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.49.58 AM.mp4`; frame at 22.497 seconds.
+
+![NavigationFlightUITests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles() recording frame](snapshots/failing-tests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testManualAmendmentReviewSupportsLargerText()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.52.19 AM.mp4`; frame at 10.102 seconds.
+
+![NavigationFlightUITests/testManualAmendmentReviewSupportsLargerText() recording frame](snapshots/failing-tests/testManualAmendmentReviewSupportsLargerText.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testPositionCheckAccessibilityTextStacksDistinctReachableActions()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 09.55.36 AM.mp4`; frame at 7.29 seconds.
+
+![NavigationFlightUITests/testPositionCheckAccessibilityTextStacksDistinctReachableActions() recording frame](snapshots/failing-tests/testPositionCheckAccessibilityTextStacksDistinctReachableActions.png)
+
+</details>
+
+<details>
+<summary>NavigationFlightUITests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit()</summary>
+
+Original recording: `Screen Recording 2026-11-23 at 10.06.13 AM.mp4`; frame at 8.46 seconds.
+
+![NavigationFlightUITests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit() recording frame](snapshots/failing-tests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit.png)
+
+</details>
+
 ## Skipped test
 
 `NavigationFlightUITests/testCompactPendingAmendmentKeepsLegIdentityAtLargerText()`

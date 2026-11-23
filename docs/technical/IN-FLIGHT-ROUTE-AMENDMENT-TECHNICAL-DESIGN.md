@@ -73,6 +73,8 @@ The existing pencil position projects the pending state with a clock badge. Give
 
 **Approved.** Extend the existing recording store interface with an idempotent route transaction. Keep logical confirmation, departure, automatic progression, rejoin, replacement, cancellation, and Undo events individually identifiable. Commit their effects, normalized route geometry and inputs, and required checklist context together with an operation ID and expected sequence.
 
+The rejoin transaction starts with the pilot's distinct rejoin event identifying the saved amendment, last replacement leg, shared occurrence and optional retained successor. Its companions record ordinary arrival and, where applicable, automatic successor start or final arrival. All facts share the saved checklist context. Replay checks the companion sequence and reconstructs the source interval and timings from the saved confirmation and imported execution snapshot.
+
 | Alternative | Tradeoff |
 | --- | --- |
 | Atomic replacement of the event journal with a complete transaction | Proposed concrete disk adapter. Existing recordings and track data retain their layout. Copies the small events journal on a route transaction. It gives recovery either the old or complete new sequence. |

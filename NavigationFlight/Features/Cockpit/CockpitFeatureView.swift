@@ -12,15 +12,16 @@ struct CockpitFeatureView: View {
     @State private var suppressNextPositionCheckEndRecording = false
     @State private var isEndRecordingConfirmationPresented = false
     @State private var progressionNotice: CockpitProgressionNotice?
-    @State private var failedDepartureReport: DepartureReport?
-    @State private var isDepartureFailurePresented = false
-    @State private var isDepartureOutcomeUncertain = false
+    @State private var failedRouteBoundaryReport: RouteBoundaryReport?
+    @State private var isRouteBoundaryFailurePresented = false
+    @State private var isRouteBoundaryOutcomeUncertain = false
 
-    private struct DepartureReport {
+    private struct RouteBoundaryReport {
         let command: RecordedNavigationCommand
         let checklist: StartChecklistSelection
         let target: NavigationTimingTargetKey
         let navigationGeneration: UUID?
+        let isRejoin: Bool
     }
     private let amendmentMode: () -> RouteAmendmentMode
     private let checklistSelection: () -> StartChecklistSelection
@@ -110,14 +111,14 @@ struct CockpitFeatureView: View {
                 )
             }
             .alert(
-                "Departure could not be saved",
-                isPresented: $isDepartureFailurePresented,
-                presenting: failedDepartureReport
+                failedRouteBoundaryReport?.isRejoin == true ? "Rejoin could not be saved" : "Departure could not be saved",
+                isPresented: $isRouteBoundaryFailurePresented,
+                presenting: failedRouteBoundaryReport
             ) { report in
-                Button("Keep pending", role: .cancel) {
-                    if !isDepartureOutcomeUncertain { failedDepartureReport = nil }
+                Button(report.isRejoin ? "Keep flying" : "Keep pending", role: .cancel) {
+                    if !isRouteBoundaryOutcomeUncertain { failedRouteBoundaryReport = nil }
                 }
-                Button("Retry save") { commitDepartureReport(report) }
+                Button("Retry save") { commitRouteBoundaryReport(report) }
             } message: { _ in
                 Text("The last confirmed route remains operational.")
             }
@@ -358,12 +359,14 @@ struct CockpitFeatureView: View {
         state.updateRouteAmendment(intent, mode: amendmentMode())
 #if DEBUG
         let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"]
+        let rejoinFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_REJOIN"]
         if case .open = intent,
-           ["1", "2", "3"].contains(fixture ?? ""),
+           ["1", "2", "3"].contains(fixture ?? "") || rejoinFixture != nil,
            state.flight != nil {
             state.prepareAmendmentConfirmationFixture(
-                includesAdvisoryValues: fixture == "2",
-                isFutureDeparture: fixture == "3"
+                includesAdvisoryValues: fixture == "2" || rejoinFixture != nil,
+                isFutureDeparture: fixture == "3",
+                rejoinFixture: rejoinFixture
             )
         }
 #endif
@@ -467,24 +470,25 @@ struct CockpitFeatureView: View {
     ) {
         guard let timing = recordingTiming() else { return }
         let destination = mapPresentation.destinationTarget
-        if let pending = state.flight?.pendingRouteAmendment, pending.departure.legID == destination.id.legID {
+        let isRejoin = state.flight?.awaitsAmendmentRejoin == true
+        let isAmendmentDeparture = state.flight?.pendingRouteAmendment?.departure.legID == destination.id.legID
+        if isRejoin || isAmendmentDeparture {
             let generation = state.recordingCockpitContext?.navigationGeneration
-            if let failedDepartureReport, failedDepartureReport.target == destination.id,
-               failedDepartureReport.navigationGeneration == generation {
-                commitDepartureReport(failedDepartureReport)
+            if let failedRouteBoundaryReport, failedRouteBoundaryReport.target == destination.id,
+               failedRouteBoundaryReport.navigationGeneration == generation {
+                commitRouteBoundaryReport(failedRouteBoundaryReport)
                 return
             }
-            let report = DepartureReport(command: .reachCurrentWaypoint(
+            let report = RouteBoundaryReport(command: .reachCurrentWaypoint(
                 orderedActiveLegPointKeys: mapPresentation.identificationPoints.map(\.id),
                 at: timing.now, elapsed: timing.elapsed, eventIDs: [UUID(), UUID(), UUID()],
                 expectedLegID: destination.id.legID, expectedTargetID: destination.id.targetID
-            ), checklist: checklistSelection(), target: destination.id, navigationGeneration: generation)
-            commitDepartureReport(report)
+            ), checklist: checklistSelection(), target: destination.id, navigationGeneration: generation, isRejoin: isRejoin)
+            commitRouteBoundaryReport(report)
             return
         }
-        let eventIDs = state.flight?.progressionPolicy == .manualNextLeg
-            ? [UUID()]
-            : [UUID(), UUID()]
+        let hasSuccessor = state.flight.map { $0.activeLegIndex + 1 < $0.legIDs.count } ?? false
+        let eventIDs = hasSuccessor && state.flight?.progressionPolicy == .manualNextLeg ? [UUID()] : [UUID(), UUID()]
         let selection = checklistSelection()
         let context = state.recordingCockpitContext
         Task {
@@ -521,10 +525,10 @@ struct CockpitFeatureView: View {
         }
     }
 
-    private func commitDepartureReport(_ report: DepartureReport) {
+    private func commitRouteBoundaryReport(_ report: RouteBoundaryReport) {
         let context = state.recordingCockpitContext
         guard context?.navigationGeneration == report.navigationGeneration else {
-            failedDepartureReport = nil
+            failedRouteBoundaryReport = nil
             progressionNotice = .rejected(.actionUnavailable)
             return
         }
@@ -533,15 +537,20 @@ struct CockpitFeatureView: View {
                 let transition = try await recordingCoordinator.commitNavigation(
                     report.command, context: context, checklistSelection: report.checklist
                 )
-                state.installPendingAmendment(transition)
-                failedDepartureReport = nil
+                if report.isRejoin {
+                    state.installCommittedFlight(transition.flight)
+                    state.installCockpitContext(transition.cockpitContext)
+                } else {
+                    state.installPendingAmendment(transition)
+                }
+                failedRouteBoundaryReport = nil
                 progressionNotice = nil
             } catch is PendingRouteAmendment.Validation {
                 progressionNotice = .rejected(.actionUnavailable)
             } catch {
-                failedDepartureReport = report
-                isDepartureOutcomeUncertain = error as? FlightRecordingEngine.EngineError == .routeOutcomeUncertain
-                isDepartureFailurePresented = true
+                failedRouteBoundaryReport = report
+                isRouteBoundaryOutcomeUncertain = error as? FlightRecordingEngine.EngineError == .routeOutcomeUncertain
+                isRouteBoundaryFailurePresented = true
             }
         }
     }

@@ -1685,6 +1685,175 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testAutomaticRejoinContinuesOnTheOriginalRoute() throws {
+        try verifyRejoin(manual: false, landscape: false)
+    }
+
+    @MainActor
+    func testManualRejoinUsesTheRegularStartChecklist() throws {
+        try verifyRejoin(manual: true, landscape: false)
+    }
+
+    @MainActor
+    func testManualRejoinInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad landscape evidence")
+        try verifyRejoin(manual: true, landscape: true)
+    }
+
+    @MainActor
+    func testRejoinAtFinalWaypointUsesNavigationComplete() throws {
+        let app = try launchRejoinCockpit(fixture: "final", manual: true, landscape: false)
+        let reach = app.buttons["waypoint-reached"]
+        captureAmendmentState("208-final-rejoin-approach", in: app)
+        reach.tap()
+        let complete = app.buttons["navigation-complete"]
+        XCTAssertTrue(complete.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["start-leg"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].firstMatch.label.contains("Stopped at final arrival"))
+        captureAmendmentState("208-final-arrival", in: app)
+        complete.tap()
+        XCTAssertTrue(app.buttons["recording-status"].label.contains("Navigation Complete"))
+        captureAmendmentState("208-navigation-complete", in: app)
+    }
+
+    @MainActor
+    private func verifyRejoin(manual: Bool, landscape: Bool) throws {
+        let app = try launchRejoinCockpit(fixture: "partway", manual: manual, landscape: landscape)
+        defer {
+            if landscape {
+                app.terminate()
+                XCUIDevice.shared.orientation = .portrait
+            }
+        }
+        let scenario = "208-" + (landscape ? "landscape-" : "") + (manual ? "manual" : "automatic")
+        let reach = app.buttons["waypoint-reached"]
+        XCTAssertTrue(reach.isHittable)
+        assertPendingTapTarget(reach)
+        captureAmendmentState(scenario + "-approach", in: app)
+        reach.tap()
+
+        let eta = app.descendants(matching: .any)["cockpit-eta"].firstMatch
+        let timer = app.descendants(matching: .any)["cockpit-time"].firstMatch
+        let retainedETA = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            eta.exists && eta.label.contains("06:00")
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [retainedETA], timeout: 8), .completed, eta.label)
+        if manual {
+            let start = app.buttons["start-leg"]
+            XCTAssertTrue(start.waitForExistence(timeout: 5))
+            XCTAssertTrue(timer.label.contains("Not started"), timer.label)
+            let destination = app.buttons["destination-eta-target"]
+            let map = app.descendants(matching: .any)["aviation-map"]
+            let fitting = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                guard destination.exists else { return false }
+                let frame = destination.frame
+                return !frame.isEmpty && map.frame.contains(CGPoint(x: frame.midX, y: frame.midY))
+            }, object: nil)
+            let fitted = XCTWaiter.wait(for: [fitting], timeout: 8)
+            captureAmendmentState(scenario + "-ready", in: app)
+            XCTAssertEqual(fitted, .completed, "The retained destination should be inside the Ready map.")
+            start.tap()
+        }
+
+        let checklist = app.buttons["leg-start-checklist-close"]
+        XCTAssertTrue(checklist.waitForExistence(timeout: 5))
+        captureAmendmentState(scenario + "-checklist", in: app)
+        closeStartChecklist(in: app)
+        XCTAssertFalse(timer.label.contains("Not started"), timer.label)
+        XCTAssertTrue(app.descendants(matching: .any)["cockpit-altitude"].label.contains("800"))
+        let currentFrequency = app.descendants(matching: .any).matching(
+            NSPredicate(format: "(identifier == %@ OR identifier == %@) AND label CONTAINS %@",
+                        "planned-now", "planned-frequencies", "Planned now")
+        ).firstMatch
+        XCTAssertTrue(currentFrequency.exists)
+        XCTAssertTrue(currentFrequency.label.contains("118.40"))
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            let route = app.descendants(matching: .any)["retained-leg-route"].firstMatch
+            XCTAssertTrue(route.isHittable)
+            XCTAssertTrue(route.label.contains("50%"))
+        }
+        captureAmendmentState(scenario + "-active", in: app)
+        if UIDevice.current.userInterfaceIdiom == .pad && !landscape {
+            eta.tap()
+            let increase = app.buttons["+ 5 sec"]
+            XCTAssertTrue(increase.waitForExistence(timeout: 5))
+            captureAmendmentState(scenario + "-eta", in: app)
+            increase.tap()
+            app.buttons["Commit revised ETA"].tap()
+            XCTAssertTrue(eta.label.contains("06:05"), eta.label)
+
+            app.terminate()
+            app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_PLAN")
+            app.launch()
+            let resume = app.buttons["Continue Flight"]
+            XCTAssertTrue(resume.waitForExistence(timeout: 8))
+            resume.tap()
+            XCTAssertTrue(eta.waitForExistence(timeout: 8))
+            XCTAssertTrue(eta.label.contains("06:05"), eta.label)
+            let destination = app.buttons["destination-eta-target"]
+            let didRestoreMap = destination.waitForExistence(timeout: 20)
+            captureAmendmentState(scenario + "-recovered", in: app)
+            XCTAssertTrue(didRestoreMap, "The recovered map should show the retained destination.")
+        }
+    }
+
+    @MainActor
+    private func launchRejoinCockpit(fixture: String, manual: Bool, landscape: Bool) throws -> XCUIApplication {
+        var document = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: realFlightPlanData(named: "llhz-llib-via-jerusalem")) as? [String: Any]
+        )
+        var execution = try XCTUnwrap(document["execution"] as? [String: Any])
+        var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+        var timing = try XCTUnwrap(legs[0]["noWind"] as? [String: Any])
+        timing["plannedDurationSeconds"] = 720
+        legs[0]["noWind"] = timing
+        execution["legs"] = legs
+        document["execution"] = execution
+
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] =
+            try JSONSerialization.data(withJSONObject: document).base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_REJOIN"] = fixture
+        app.launchEnvironment["NAVIGATION_FLIGHT_PROGRESSION_POLICY"] = manual ? "manual" : "automatic"
+        app.launch()
+        let start = app.buttons["start-leg"]
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                app.frame.width > app.frame.height
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
+            let sidebar = app.buttons["ToggleSidebar"].firstMatch
+            if sidebar.exists, sidebar.label == "Hide Sidebar" { sidebar.tap() }
+        }
+        start.tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        let immediate = app.buttons["start-amendment-now"]
+        XCTAssertTrue(immediate.waitForExistence(timeout: 8))
+        immediate.tap()
+        closeStartChecklist(in: app)
+        let identify = app.buttons["waypoint-identified"]
+        XCTAssertTrue(identify.waitForExistence(timeout: 8))
+        identify.tap()
+        let reach = app.buttons["waypoint-reached"]
+        XCTAssertTrue(reach.waitForExistence(timeout: 5))
+        reach.tap()
+        if manual {
+            XCTAssertTrue(start.waitForExistence(timeout: 5))
+            start.tap()
+        }
+        closeStartChecklist(in: app)
+        XCTAssertTrue(identify.waitForExistence(timeout: 5))
+        assertDirectDestinationReach(in: app, stacked: UIDevice.current.userInterfaceIdiom == .phone)
+        identify.tap()
+        XCTAssertTrue(reach.waitForExistence(timeout: 5))
+        return app
+    }
+
+    @MainActor
     func testFutureAmendmentReviewHidesStartNow() throws {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -1832,7 +2001,7 @@ final class NavigationFlightUITests: XCTestCase {
             XCTAssertEqual(XCTWaiter.wait(for: [newHeading], timeout: 8), .completed)
             closeStartChecklist(in: app)
             XCTAssertTrue(eta.label.contains("05:40"), eta.label)
-            XCTAssertFalse(app.buttons["reached-now"].exists)
+            assertDirectDestinationReach(in: app, stacked: UIDevice.current.userInterfaceIdiom == .phone)
             XCTAssertFalse(reachReplacement.exists)
             captureAmendmentState(capture + "second-active", in: app)
             app.terminate()

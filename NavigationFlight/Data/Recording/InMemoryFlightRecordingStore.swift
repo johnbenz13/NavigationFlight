@@ -144,8 +144,12 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         let events = current.events + transaction.events
         var navigationState = current.recording.navigationState
         for event in transaction.events {
-            if case .routeAmendmentActivated(let departure) = event.payload {
+            switch event.payload {
+            case .routeAmendmentActivated(let departure):
                 navigationState = departure.startsReplacement ? .active : .ready
+            case .routeAmendmentRejoined(let rejoin):
+                navigationState = rejoin.navigationState
+            default: break
             }
         }
         var recording = current.recording.restoring(

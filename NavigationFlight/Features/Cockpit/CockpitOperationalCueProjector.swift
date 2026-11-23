@@ -223,15 +223,19 @@ struct CockpitOperationalCueProjector: Sendable {
     private let presentationAdapter = CockpitPresentationAdapter()
 
     func project(
-        flightPlan: FlightPlan,
+        flightPlan sourcePlan: FlightPlan,
         flight: Flight,
         at timestamp: Date
     ) throws -> CockpitOperationalCueState {
-        if flight.activatedRouteAmendment != nil {
-            return try projectAmendment(flightPlan: flightPlan, flight: flight)
+        if flight.amendmentLeg != nil {
+            return try projectAmendment(flightPlan: sourcePlan, flight: flight)
+        }
+        let flightPlan = flight.retainedSourcePlan(sourcePlan)
+        guard let sourceIndex = flight.sourceLegIndex(at: flight.activeLegIndex) else {
+            throw CockpitPresentationError.invalidLegIndex(flight.activeLegIndex)
         }
         let presentation = try presentationAdapter.makePresentation(
-            flightPlan: flightPlan,
+            flightPlan: sourcePlan,
             legIndex: flight.activeLegIndex,
             mode: flight.executionMode, flight: flight
         )
@@ -248,15 +252,19 @@ struct CockpitOperationalCueProjector: Sendable {
         let elapsedSeconds = flight.elapsedTime(at: timestamp).map {
             IdentificationPointTimingCalculator.displaySeconds($0)
         }
-        let legIndexByID = Dictionary(uniqueKeysWithValues: flight.legIDs.enumerated().map { ($1, $0) })
+        let legIndexByID = Dictionary(flightPlan.legs.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let split = flight.activatedRouteAmendment?.splitLegID == legID
+        let rejoinFrequencyID = split ? flightPlan.frequencyChanges.first {
+            $0.legID == legID && $0.progress.fraction == 0
+        }?.id : nil
         let orderedFrequencyChanges = flightPlan.frequencyChanges.enumerated()
-            .compactMap { sourceIndex, change -> (change: FrequencyChange, legIndex: Int, time: Int, sourceIndex: Int)? in
+            .compactMap { offset, change -> (change: FrequencyChange, legIndex: Int, time: Int, sourceIndex: Int)? in
                 guard let changeLegIndex = legIndexByID[change.legID],
-                      changeLegIndex <= flight.activeLegIndex,
+                      changeLegIndex <= sourceIndex,
                       let annotation = plannedNavigation.annotations.first(where: { $0.entityID == change.id }),
                       flight.pendingRouteAmendment?.includes(annotation, in: flightPlan) != false,
                       let time = time(for: annotation, mode: flight.executionMode) else { return nil }
-                return (change, changeLegIndex, time, sourceIndex)
+                return (change, changeLegIndex, time, offset)
             }
             .sorted { lhs, rhs in
                 if lhs.legIndex != rhs.legIndex { return lhs.legIndex < rhs.legIndex }
@@ -276,9 +284,9 @@ struct CockpitOperationalCueProjector: Sendable {
         }
         let initialFrequencyID = presentation.displayFrequencies.first?.id
         let currentFrequencyChange = distinctFrequencyChanges.last { candidate in
-            if candidate.legIndex < flight.activeLegIndex { return true }
+            if candidate.legIndex < sourceIndex || candidate.change.id == rejoinFrequencyID { return true }
             guard let elapsedSeconds else { return false }
-            return candidate.legIndex == flight.activeLegIndex && candidate.time <= elapsedSeconds
+            return candidate.legIndex == sourceIndex && candidate.time <= elapsedSeconds
         }
         let matchedCurrentFrequencyID = currentFrequencyChange.flatMap {
             displayFrequencyID(for: $0.change, in: presentation.displayFrequencies)
@@ -287,19 +295,19 @@ struct CockpitOperationalCueProjector: Sendable {
         var pendingFrequencyChanges = distinctFrequencyChanges
             .filter { candidate in
                 guard let elapsedSeconds else {
-                    return candidate.legIndex == flight.activeLegIndex
+                    return candidate.legIndex == sourceIndex && candidate.change.id != rejoinFrequencyID
                 }
-                return candidate.legIndex == flight.activeLegIndex && candidate.time > elapsedSeconds
+                return candidate.legIndex == sourceIndex && candidate.time > elapsedSeconds
             }
         if flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true,
-           plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
-            let nextLegID = plannedNavigation.legs[flight.activeLegIndex + 1].legID
+           plannedNavigation.legs.indices.contains(sourceIndex + 1) {
+            let nextLegID = plannedNavigation.legs[sourceIndex + 1].legID
             let nextLegTimeZeroChanges = flightPlan.frequencyChanges.enumerated().compactMap {
-                sourceIndex, change -> (change: FrequencyChange, legIndex: Int, time: Int, sourceIndex: Int)? in
+                offset, change -> (change: FrequencyChange, legIndex: Int, time: Int, sourceIndex: Int)? in
                 guard change.legID == nextLegID,
                       let annotation = plannedNavigation.annotations.first(where: { $0.entityID == change.id }),
                       time(for: annotation, mode: flight.executionMode) == 0 else { return nil }
-                return (change, flight.activeLegIndex + 1, 0, sourceIndex)
+                return (change, sourceIndex + 1, 0, offset)
             }
             pendingFrequencyChanges.append(contentsOf: nextLegTimeZeroChanges)
         }
@@ -331,12 +339,12 @@ struct CockpitOperationalCueProjector: Sendable {
             plannedNavigation: plannedNavigation,
             presentation: presentation,
             flight: flight,
-            elapsedSeconds: elapsedSeconds
+            elapsedSeconds: elapsedSeconds, sourceIndex: sourceIndex, rejoinFrequencyID: rejoinFrequencyID
         )
         let navigationAidPlan = makeNavigationAidPlan(
             flightPlan: flightPlan,
             plannedNavigation: plannedNavigation,
-            flight: flight
+            flight: flight, sourceIndex: sourceIndex
         )
 
         let orderedAltitudeChanges = flightPlan.altitudeChanges.enumerated()
@@ -366,9 +374,9 @@ struct CockpitOperationalCueProjector: Sendable {
                 direction: nextAltitudeChange.change.symbolDirection
             )
         } else if flight.pendingRouteAmendment?.blocksArrival(at: flight.activeLegIndex) != true,
-                  plannedNavigation.legs.indices.contains(flight.activeLegIndex + 1) {
+                  plannedNavigation.legs.indices.contains(sourceIndex + 1) {
             nextAltitude = beginningAltitudeCue(
-                legIndex: flight.activeLegIndex + 1,
+                legIndex: sourceIndex + 1,
                 currentAltitude: currentAltitude,
                 flightPlan: flightPlan,
                 plannedNavigation: plannedNavigation,
@@ -378,9 +386,10 @@ struct CockpitOperationalCueProjector: Sendable {
             nextAltitude = nil
         }
 
-        let initialAltitudeDue = currentAltitudeChange == nil
+        let initialAltitudeDue = currentAltitudeChange == nil && !split
+            && (flight.activatedRouteAmendment == nil || flight.legState == .active)
             ? beginningAltitudeCueForCurrentLeg(
-                legIndex: flight.activeLegIndex,
+                legIndex: sourceIndex,
                 flightPlan: flightPlan,
                 plannedNavigation: plannedNavigation,
                 mode: flight.executionMode
@@ -388,7 +397,10 @@ struct CockpitOperationalCueProjector: Sendable {
             : nil
 
         var dueEvents: Set<CockpitOperationalCueState.DueEvent> = []
-        if let currentFrequencyChange {
+        if let currentFrequencyChange,
+           flight.activatedRouteAmendment == nil ||
+            (flight.legState == .active && currentFrequencyChange.legIndex == sourceIndex
+             && currentFrequencyChange.change.id != rejoinFrequencyID) {
             dueEvents.insert(.frequency(currentFrequencyChange.change.id))
         }
         if let currentAltitudeChange {
@@ -510,7 +522,7 @@ struct CockpitOperationalCueProjector: Sendable {
     private func makeNavigationAidPlan(
         flightPlan: FlightPlan,
         plannedNavigation: PlannedNavigation,
-        flight: Flight
+        flight: Flight, sourceIndex: Int
     ) -> CockpitOperationalCueState.NavigationAidPlan {
         let resolvedByID = Dictionary(
             uniqueKeysWithValues: plannedNavigation.vorDmeReferences.map { ($0.referenceID, $0) }
@@ -536,17 +548,17 @@ struct CockpitOperationalCueProjector: Sendable {
             case .completed:
                 state = .history
             case .active:
-                if referenceLegIndex == flight.activeLegIndex {
+                if referenceLegIndex == sourceIndex {
                     state = .current
-                } else if let referenceLegIndex, referenceLegIndex < flight.activeLegIndex {
+                } else if let referenceLegIndex, referenceLegIndex < sourceIndex {
                     state = .history
                 } else {
                     state = .later
                 }
             case .ready:
-                if referenceLegIndex == flight.activeLegIndex {
+                if referenceLegIndex == sourceIndex {
                     state = flight.hasNavigationProgress ? .upcomingLeg : .firstFlownLeg
-                } else if let referenceLegIndex, referenceLegIndex < flight.activeLegIndex {
+                } else if let referenceLegIndex, referenceLegIndex < sourceIndex {
                     state = .history
                 } else {
                     state = .later
@@ -650,15 +662,15 @@ struct CockpitOperationalCueProjector: Sendable {
         plannedNavigation: PlannedNavigation,
         presentation: CockpitPresentationData,
         flight: Flight,
-        elapsedSeconds: Int?
+        elapsedSeconds: Int?, sourceIndex: Int, rejoinFrequencyID: UUID?
     ) -> CockpitOperationalCueState.CommunicationPlan {
-        let legIndexByID = Dictionary(uniqueKeysWithValues: flight.legIDs.enumerated().map { ($1, $0) })
+        let legIndexByID = Dictionary(flightPlan.legs.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         let changeByPlannedID = Dictionary(uniqueKeysWithValues: flightPlan.frequencyChanges.map {
             ("route:\($0.id.uuidString.lowercased())", $0)
         })
         let annotationByID = Dictionary(uniqueKeysWithValues: plannedNavigation.annotations.map { ($0.entityID, $0) })
 
-        let events = FlightPhase.allCases.flatMap { phase in
+        let sourceEvents = FlightPhase.allCases.flatMap { phase in
             (presentation.frequencies[phase] ?? []).filter { entry in
                 entry.source != .vorDme && entry.frequencyMHz >= 118
             }.compactMap { entry -> CommunicationEvent? in
@@ -684,16 +696,34 @@ struct CockpitOperationalCueProjector: Sendable {
             }
         }
 
+        let events: [CommunicationEvent]
+        if let boundary = flight.activatedRouteAmendment?.retainedSourceStartIndex {
+            let beforeRejoin = sourceEvents.filter { ($0.legIndex ?? .max) < boundary }
+            let baseline = beforeRejoin.enumerated().max {
+                ($0.element.legIndex ?? 0, $0.element.time ?? 0, $0.offset) <
+                    ($1.element.legIndex ?? 0, $1.element.time ?? 0, $1.offset)
+            }?.element
+            let retained = sourceEvents.filter { $0.legIndex.map { $0 >= boundary } == true }
+                .sorted { ($0.legIndex ?? 0, $0.time ?? 0) < ($1.legIndex ?? 0, $1.time ?? 0) }
+            let unassociated = sourceEvents.filter { $0.legIndex == nil }
+            events = unassociated.filter { $0.entry.phase == .departure }
+                + [baseline].compactMap { $0 } + retained
+                + unassociated.filter { $0.entry.phase != .departure }
+        } else {
+            events = sourceEvents
+        }
+
         let orderedRouteEvents = events.filter { $0.legIndex != nil }.sorted {
             if $0.legIndex != $1.legIndex { return ($0.legIndex ?? 0) < ($1.legIndex ?? 0) }
             return ($0.time ?? 0) < ($1.time ?? 0)
         }
         let routeCurrentIndex: Int? = {
-            guard flight.legState != .ready, let elapsedSeconds else { return nil }
+            guard elapsedSeconds != nil || flight.activatedRouteAmendment != nil else { return nil }
             return orderedRouteEvents.lastIndex {
                 guard let legIndex = $0.legIndex, let eventTime = $0.time else { return false }
-                return legIndex < flight.activeLegIndex
-                    || (legIndex == flight.activeLegIndex && eventTime <= elapsedSeconds)
+                return legIndex < sourceIndex
+                    || (rejoinFrequencyID != nil && changeByPlannedID[$0.entry.id]?.id == rejoinFrequencyID)
+                    || (legIndex == sourceIndex && elapsedSeconds.map { eventTime <= $0 } == true)
             }
         }()
         let routeNextIndex: Int? = {
@@ -711,9 +741,9 @@ struct CockpitOperationalCueProjector: Sendable {
         let fullEntries = events.map { event -> CockpitOperationalCueState.CommunicationPlan.Entry in
             let state: CockpitOperationalCueState.CommunicationPlan.Entry.State
             if event.entry.phase == .departure {
-                if flight.legState == .ready && flight.activeLegIndex == 0 {
+                if flight.legState == .ready && sourceIndex == 0 {
                     state = .departurePlan
-                } else if flight.legState == .active,
+                } else if (flight.legState == .active || flight.activatedRouteAmendment != nil),
                           routeCurrentIndex == nil,
                           events.first(where: { $0.entry.phase == .departure })?.entry.id == event.entry.id {
                     state = .current
@@ -729,9 +759,10 @@ struct CockpitOperationalCueProjector: Sendable {
                     state = .arrival
                 }
             } else if let index = orderedRouteEvents.firstIndex(where: { $0.entry.id == event.entry.id }) {
-                if flight.legState == .ready,
-                   event.legIndex == flight.activeLegIndex,
-                   event.time == 0 { state = .atStart }
+                if flight.legState == .ready, event.legIndex == sourceIndex, event.time == 0,
+                   rejoinFrequencyID == nil || changeByPlannedID[event.entry.id]?.id != rejoinFrequencyID {
+                    state = .atStart
+                }
                 else if flight.legState == .completed { state = .past }
                 else if index == routeCurrentIndex { state = .current }
                 else if index == routeNextIndex { state = .next }
@@ -753,14 +784,21 @@ struct CockpitOperationalCueProjector: Sendable {
 
         let compactCandidates: [CockpitOperationalCueState.CommunicationPlan.Entry]
         switch flight.legState {
+        case .ready where flight.isFirstRetainedLeg && flight.activatedRouteAmendment?.splitLegID == flight.activeLegID,
+             .active where flight.activatedRouteAmendment != nil:
+            compactCandidates = fullEntries.filter { $0.state == .current } + fullEntries.filter { $0.state == .next }
         case .ready:
             let currentLegRoute = fullEntries.filter { entry in
                 guard let change = changeByPlannedID[entry.id] else { return false }
-                return legIndexByID[change.legID] == flight.activeLegIndex
+                return legIndexByID[change.legID] == sourceIndex
             }
-            compactCandidates = (flight.activeLegIndex == 0
-                ? Array(fullEntries.filter { $0.phase == .departure }.prefix(1))
-                : []) + currentLegRoute
+            if currentLegRoute.isEmpty, flight.activatedRouteAmendment != nil {
+                compactCandidates = fullEntries.filter { $0.state == .current } + fullEntries.filter { $0.state == .next }
+            } else {
+                compactCandidates = (sourceIndex == 0
+                    ? Array(fullEntries.filter { $0.phase == .departure }.prefix(1))
+                    : []) + currentLegRoute
+            }
         case .active:
             compactCandidates = fullEntries.filter { $0.state == .current || $0.state == .next }
         case .completed:

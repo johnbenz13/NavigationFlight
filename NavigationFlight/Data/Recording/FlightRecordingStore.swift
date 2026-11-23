@@ -55,6 +55,16 @@ nonisolated struct FlightRouteTransaction: Sendable {
                       event.occurredAt == first.occurredAt && event.elapsed == first.elapsed &&
                       event.cockpitContext == context
               }) else { throw invalid }
+        if case .routeAmendmentRejoined(let rejoin) = first.payload {
+            let companions = RecordedFlightEventPayload.rejoinCompanions(rejoin)
+            guard first.origin == .pilot, context.checklists[rejoin.replacementLegID] != nil,
+                  events.count == companions.count + 1,
+                  zip(events.dropFirst(), companions).allSatisfy({ $0.origin == $1.origin && $0.payload == $1.payload }),
+                  !rejoin.startsRetainedLeg || rejoin.retainedLegID.flatMap({ context.checklists[$0] }) != nil else {
+                throw invalid
+            }
+            return
+        }
         let activationIndex: Int
         let immediate: Bool
         switch first.payload {
@@ -95,10 +105,15 @@ nonisolated struct FlightRouteTransaction: Sendable {
 
     func validatePendingIdentity(in journal: [RecordedFlightEvent]) throws {
         var pendingID: UUID?
+        var awaitingRejoinID: UUID?
         for event in journal {
             switch event.payload {
             case .pendingRouteAmendmentConfirmed(let amendment): pendingID = amendment.id
-            case .routeAmendmentActivated: pendingID = nil
+            case .routeAmendmentActivated(let departure):
+                pendingID = nil
+                awaitingRejoinID = departure.amendmentID
+            case .routeAmendmentRejoined:
+                awaitingRejoinID = nil
             default: break
             }
         }
@@ -106,6 +121,8 @@ nonisolated struct FlightRouteTransaction: Sendable {
         case .pendingRouteAmendmentConfirmed where pendingID == nil:
             return
         case .routeAmendmentActivated(let departure) where pendingID == departure.amendmentID:
+            return
+        case .routeAmendmentRejoined(let rejoin) where awaitingRejoinID == rejoin.amendmentID:
             return
         default:
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)

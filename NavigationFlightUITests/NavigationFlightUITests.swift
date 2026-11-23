@@ -2129,8 +2129,35 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchPendingAmendmentForManagement(landscape: Bool = false) throws -> XCUIApplication {
+    func testCompactPendingAmendmentConfirmationAtLargerText() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, "iPhone only")
+        let app = try launchPendingAmendmentForManagement(
+            preferredContentSize: "UICTContentSizeCategoryAccessibilityM"
+        )
+        app.buttons["pending-amendment-pencil"].tap()
+        let report = app.buttons["report-original-destination"]
+        XCTAssertTrue(report.waitForExistence(timeout: 5))
+        report.tap()
+        let keep = app.buttons["keep-pending-amendment"]
+        let commit = app.buttons["confirm-pending-amendment-management"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Report original destination reached?"].exists)
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Ramat")).firstMatch.exists)
+        XCTAssertTrue(keep.isHittable)
+        XCTAssertTrue(commit.isHittable)
+        captureAmendmentState("209-larger-text-original-destination", in: app)
+        keep.tap()
+        XCTAssertTrue(app.buttons["pending-amendment-pencil"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    private func launchPendingAmendmentForManagement(
+        landscape: Bool = false, preferredContentSize: String? = nil
+    ) throws -> XCUIApplication {
         let app = XCUIApplication()
+        if let preferredContentSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSize]
+        }
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = try crossingAmendmentPlanData().base64EncodedString()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] = "1"

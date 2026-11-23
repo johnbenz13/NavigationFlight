@@ -202,8 +202,13 @@ extension Flight {
             }
             let legs = sourceLegs + replacementLegs
             guard legs.indices.contains(activeLegIndex), legs[activeLegIndex].id == activeLegID else { return nil }
+            let sharesPreviousBoundary = activeLegIndex > 0 &&
+                legs[activeLegIndex - 1].arrival.id == legs[activeLegIndex].departure.id
+            let firstAvailable = sharesPreviousBoundary
+                ? RouteAmendmentAnchor(legIndex: activeLegIndex - 1, legID: legs[activeLegIndex - 1].id, fraction: 1)
+                : RouteAmendmentAnchor(legIndex: activeLegIndex, legID: activeLegID, fraction: 0)
             return .init(
-                legs: legs, firstAvailable: .init(legIndex: activeLegIndex, legID: activeLegID, fraction: 0),
+                legs: legs, firstAvailable: firstAvailable,
                 planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
                 navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints,
                 amendmentLegs: amendmentLegs

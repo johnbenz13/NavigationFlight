@@ -1701,6 +1701,8 @@ final class NavigationFlightUITests: XCTestCase {
                 app.frame.width > app.frame.height
             }, object: nil)
             XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
+            let sidebar = app.buttons["ToggleSidebar"].firstMatch
+            if sidebar.exists, sidebar.label == "Hide Sidebar" { sidebar.tap() }
         }
         defer { if landscape { XCUIDevice.shared.orientation = .portrait } }
         initialStart.tap()
@@ -1739,6 +1741,13 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(legState.waitForExistence(timeout: 8))
         XCTAssertTrue(app.staticTexts["Amendment leg active"].waitForExistence(timeout: 8))
         closeStartChecklist(in: app)
+        let liveTimer = app.descendants(matching: .any)["cockpit-timer"].firstMatch
+        XCTAssertTrue(liveTimer.isHittable)
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            let position = app.staticTexts["amendment-leg-position"]
+            XCTAssertTrue(position.isHittable)
+            XCTAssertEqual(position.label, "AMENDMENT LEG 1")
+        }
         let reachReplacement = app.buttons["waypoint-reached"]
         XCTAssertTrue(reachReplacement.isHittable)
         assertPendingTapTarget(reachReplacement)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: View, Actions: View>: View {
+struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: View, SecondaryActions: View, PrimaryAction: View>: View {
     let routeName: String
     let heading: String
     let flightTime: String
@@ -15,7 +15,8 @@ struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: 
     let onEditHeading: () -> Void
     @ViewBuilder let recordingStatus: () -> RecordingStatus
     @ViewBuilder let positionControl: () -> PositionControl
-    @ViewBuilder let actions: () -> Actions
+    @ViewBuilder let secondaryActions: () -> SecondaryActions
+    @ViewBuilder let primaryAction: () -> PrimaryAction
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
@@ -58,16 +59,28 @@ struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: 
                             .accessibilityIdentifier("amendment-departure-notice")
                     }
                     if isActive { cues }
+                    if singleColumn && isActive {
+                        positionControl()
+                        let layout = dynamicTypeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+                            : AnyLayout(HStackLayout(spacing: 12))
+                        layout { secondaryActions() }
+                    }
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
 
-            let layout = singleColumn ? AnyLayout(VStackLayout(spacing: 8))
-                                      : AnyLayout(HStackLayout(spacing: 12))
-            layout {
-                positionControl()
-                if !singleColumn { Spacer(minLength: 0) }
-                actions()
+            Group {
+                if singleColumn {
+                    primaryAction()
+                } else {
+                    HStack(spacing: 12) {
+                        positionControl()
+                        Spacer(minLength: 0)
+                        secondaryActions()
+                        primaryAction()
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.bottom, singleColumn ? 0 : 30)
@@ -82,24 +95,48 @@ struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: 
             : Color(red: 225.0 / 255, green: 242.0 / 255, blue: 236.0 / 255)
     }
 
+    @ViewBuilder
     private var metrics: some View {
-        let layout = singleColumn ? AnyLayout(VStackLayout(spacing: 8))
-                                  : AnyLayout(HStackLayout(spacing: 16))
-        return layout {
-            if isActive {
-                Button(action: onEditHeading) {
-                    card("Operational heading", value: String(localized: "\(heading) magnetic"), id: "cockpit-heading")
+        if isActive {
+            if compact && !dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 8) {
+                    HStack(alignment: .top, spacing: 8) {
+                        headingCard
+                        timerCard
+                    }
+                    card("Planned flight time", value: flightTime, id: "amendment-flight-time")
                 }
-                .buttonStyle(.plain)
-                TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                    let seconds = startedAt.map { max(0, Int(timeline.date.timeIntervalSince($0))) } ?? 0
-                    card("Leg timer", value: String(localized: "\(AviationMapSymbology.formatDuration(seconds)) elapsed"), id: "cockpit-timer")
-                }
-                card("Planned flight time", value: flightTime, id: "amendment-flight-time")
             } else {
+                let layout = singleColumn ? AnyLayout(VStackLayout(spacing: 8))
+                    : AnyLayout(HStackLayout(spacing: 16))
+                layout {
+                    headingCard
+                    timerCard
+                    card("Planned flight time", value: flightTime, id: "amendment-flight-time")
+                }
+            }
+        } else {
+            let layout = dynamicTypeSize.isAccessibilitySize ? AnyLayout(VStackLayout(spacing: 8))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: singleColumn ? 8 : 16))
+            layout {
                 card("Heading", value: String(localized: "\(heading) magnetic"), id: "cockpit-heading")
                 card("Flight time", value: String(localized: "\(flightTime) · Timer starts when you start the leg"), id: "amendment-flight-time")
             }
+        }
+    }
+
+    private var headingCard: some View {
+        Button(action: onEditHeading) {
+            card("Operational heading", value: String(localized: "\(heading) magnetic"), id: "cockpit-heading")
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var timerCard: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+            let elapsed = startedAt.map { max(0, Int(timeline.date.timeIntervalSince($0))) } ?? 0
+            let text = AviationMapSymbology.formatDuration(elapsed)
+            card("Leg timer", value: String(localized: "\(text) elapsed"), id: "cockpit-timer")
         }
     }
 
@@ -136,7 +173,7 @@ struct CockpitAmendmentProgressionPanel<RecordingStatus: View, PositionControl: 
                 .font(.footnote.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
-        .frame(maxWidth: .infinity, minHeight: isActive ? 51 : 43, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: isActive && !singleColumn ? 51 : 43, alignment: .leading)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))

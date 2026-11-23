@@ -723,7 +723,7 @@ struct CockpitView: View {
                     PositionCheckControl(presentation: positionCheck, onAction: handlePositionCheckAction)
                         .frame(maxWidth: compact ? .infinity : 184)
                 }
-            } actions: {
+            } secondaryActions: {
                 if isActive, checklistState?.presentationState == .collapsed {
                     Button("Checklist", action: openChecklistDisclosure)
                         .buttonStyle(.bordered)
@@ -740,6 +740,7 @@ struct CockpitView: View {
                         .disabled(isRecordingCommitInFlight)
                         .accessibilityIdentifier("waypoint-identified")
                 }
+            } primaryAction: {
                 if !isActive {
                     amendmentProgressionAction("Start leg", id: "start-leg", width: compact ? nil : 242, action: onStartLeg)
                 } else if !flight.awaitsAmendmentRejoin {
@@ -759,7 +760,7 @@ struct CockpitView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .padding(.horizontal, 20)
-                .frame(minWidth: width, minHeight: 52)
+                .frame(minWidth: width, maxWidth: width == nil ? .infinity : nil, minHeight: 52)
                 .background(Color(uiColor: visualStyle.primaryActionColor), in: .rect(cornerRadius: 13))
                 .contentShape(.rect)
         }
@@ -1147,10 +1148,10 @@ struct CockpitView: View {
     @ViewBuilder
     private var legHeader: some View {
         if horizontalSizeClass == .compact,
-           !dynamicTypeSize.isAccessibilitySize || showsCompactPartwayDeparture {
+           !dynamicTypeSize.isAccessibilitySize || showsCompactRouteDetails {
             Group {
-                if showsCompactPartwayDeparture {
-                    compactPartwayDepartureHeader
+                if showsCompactRouteDetails {
+                    compactRouteDetailsHeader
                 } else {
                     compactLegHeader
                 }
@@ -1186,11 +1187,11 @@ struct CockpitView: View {
         }
     }
 
-    private var showsCompactPartwayDeparture: Bool {
-        flight.legState == .active && flight.activePartwayDeparture != nil
+    private var showsCompactRouteDetails: Bool {
+        flight.amendmentLeg != nil || (flight.legState == .active && flight.activePartwayDeparture != nil)
     }
 
-    private var compactPartwayDepartureHeader: some View {
+    private var compactRouteDetailsHeader: some View {
         HStack(spacing: 6) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -1201,7 +1202,7 @@ struct CockpitView: View {
                     Text(data.legPosition.uppercased())
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("pending-departure-leg-position")
+                        .accessibilityIdentifier(flight.amendmentLeg == nil ? "pending-departure-leg-position" : "amendment-leg-position")
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(data.origin)
@@ -1212,7 +1213,7 @@ struct CockpitView: View {
                 .environment(\.layoutDirection, .leftToRight)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("From \(data.origin) to \(data.destination)")
-                .accessibilityIdentifier("pending-departure-leg-route")
+                .accessibilityIdentifier(flight.amendmentLeg == nil ? "pending-departure-leg-route" : "amendment-leg-route")
             }
             .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)

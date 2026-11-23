@@ -645,7 +645,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
                 updateEndpointAnnotations(on: mapView)
             }
 
-            if activeLegChanged, let pending = amendmentOverlay?.pending, let replacementID = pending.activeReplacementLegID,
+            if activeLegChanged || becameActive, let pending = amendmentOverlay?.pending, let replacementID = pending.activeReplacementLegID,
                replacementID == pending.amendment.replacementLegs.first?.id,
                let active = presentation.activeLeg {
                 let bypassed = pending.route.originalSegments(

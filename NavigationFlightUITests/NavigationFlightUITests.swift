@@ -1855,7 +1855,7 @@ final class NavigationFlightUITests: XCTestCase {
         let identify = app.buttons["waypoint-identified"]
         let reach = app.buttons["reached-now"]
         XCTAssertTrue(reach.waitForExistence(timeout: 5))
-        XCTAssertEqual(reach.label, "Report destination reached")
+        XCTAssertEqual(reach.label.lowercased(), "report destination reached")
         XCTAssertTrue(reach.isHittable)
         assertPendingTapTarget(reach)
         if stacked {

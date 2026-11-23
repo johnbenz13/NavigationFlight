@@ -12,6 +12,7 @@ e37adbf4d41e92896e548ff8727c419df852dc88364e4d47930ecbe3cafc132e  assets/current
 caac6baa61753772b16b9d38818553c35c705769e157a44a937596f8e43e6057  assets/current/owner-2026-11-23/03-horizontal-route.png
 53bbde075bc92a8bcb34ada8717e9d5c851b80617edd368cd893e23c22962d63  assets/current/owner-2026-11-23/04-leg-editor.png
 a50ebcef92464adb22081e20b8e8b7a33b8c0558e7d25e61f2fccc500143feca  assets/current/owner-2026-11-23/05-pencil.png
+c7a8963ed40de40d62e2d472b638b4839aba8600db833e54929d5de90ee9dbb8  assets/figma/d01-main-screen.png
 09326eeab09b3aa5bd9895574d9a8f757f76990c1b33033319211e09102cf9e3  assets/figma/historical-12-222.png
 7b0e968704c6fad16ac7d317f51343981170ede079cd832aeb81cbbc0b654d14  assets/figma/historical-12-90.png
 7677b0039cc7b8668aabfc978ff5689541f06ec6bc6aa2418ae2f857ba392814  assets/figma/historical-13-485.png

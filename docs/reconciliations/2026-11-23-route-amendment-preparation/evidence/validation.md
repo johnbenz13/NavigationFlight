@@ -38,3 +38,14 @@ Xcode BuildProject succeeded with zero errors on 2026-11-24 (2.044 seconds).
 Retained build log: `/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/34473A2D-5903-405B-84F3-51B3121C66C0/BuildProject/BuildProject-Log-20261124-001909.txt`.
 Scheme XML and changed scheme-management plists parse successfully. No tests ran;
 these changes affect documentation, scheme setup and project serialization.
+
+## D01 design direction · 2026-11-24
+
+Created the first main-screen proposal in Figma and inspected the final 834 × 1194
+preview after targeted badge contrast and app-name fixes. The main screen is
+node 3:2 in file JCyQhDDzCPfrrbv6SBcwKw; all text uses SF Pro and the sole raster
+inside the screen is the discrete chart background. Detailed node counts, reuse
+and coverage limits are recorded in proposed/design-proposal.md. This is design
+inspection, not simulator verification of the future UX. Human direction approval
+is pending. Subsequent repository changes are documentation/assets only; no new
+build or tests were run for them.

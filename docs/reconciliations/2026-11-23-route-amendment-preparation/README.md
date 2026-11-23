@@ -4,8 +4,8 @@ John approved the behavioral direction through Q1–Q31 on 2026-11-23, with an
 additional request to improve the current-leg timing strip. On 2026-11-24 John
 approved Q33–Q36 and explicitly removed Start now from the proposed flow (Q32).
 Preparation ends at **Arm → return to Cockpit**; immediate departure will be
-reconsidered only during the flying-amendment reconciliation. **Design is not
-started. Implementation is not authorized by this reconciliation.**
+reconsidered only during the flying-amendment reconciliation. **D01 is in direction review
+(2026-11-24). Implementation is not authorized by this reconciliation.**
 
 **Baseline:** local `main`, `cffba65f08cd8898294c941a4a3291b2fdb7df38`.
 **Branch:** `feature/route-amendment-preparation` (renamed at John’s request on 2026-11-24).
@@ -20,7 +20,9 @@ Use the existing [planning configuration](../../architecture/planning-configurat
    covers nine portrait/landscape states; see its [transcript](evidence/runtime-observation.md).
 2. [The agreed preparation experience](proposed/preparing-an-amendment.md):
    one workspace for plotting and entering values, followed by explicit arming.
-3. [Decisions and terminology](proposed/decisions.md), including the complete
+3. [First design direction](proposed/design-proposal.md), with its editable Figma
+   frame and inspected preview, awaiting owner review.
+4. [Decisions and terminology](proposed/decisions.md), including the complete
    interview record and distinctions between ready, armed and flying.
 4. [Sources, existing tickets and contract changes](evidence/source-crosswalk.md).
 
@@ -61,11 +63,13 @@ to the [remaining boundary decisions](proposed/decisions.md#boundaries-to-resolv
 and evidence limits. Existing
 Figma nodes are historical references, not the target for this iteration.
 
-**New reconciliation Figma file:** not created. When design begins, create one
-file in [Navigation Flight](https://www.figma.com/files/folder/676737789) and reuse
-it for this effort. Start with iPad Pro 11-inch portrait: amendment workspace
-with plotted legs, some values missing, and plotting off. Review that direction
-before expanding its states, iPad landscape and iPhone 16 Pro portrait.
+**Reconciliation Figma file:** [Amendment preparation](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw),
+created in Navigation Flight project `676737789` on 2026-11-24.
+Review [D01 main-screen proposal and preview](proposed/design-proposal.md) or open
+[the exact Figma frame](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=3-2).
+It shows iPad Pro 11-inch portrait, plotted legs with missing values, plotting off,
+and the lighter timing strip. **Direction approval is pending.** Expand to the
+remaining states, iPad landscape and iPhone portrait only after that approval.
 iPhone landscape remains excluded.
 
 ## Review gates and limits

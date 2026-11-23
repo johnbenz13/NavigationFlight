@@ -1804,6 +1804,141 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testPendingAmendmentManagementAndOriginalDestinationReport() throws {
+        try verifyPendingAmendmentManagement(landscape: false)
+    }
+
+    @MainActor
+    func testPendingAmendmentManagementInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad landscape only")
+        try verifyPendingAmendmentManagement(landscape: true)
+    }
+
+    @MainActor
+    private func verifyPendingAmendmentManagement(landscape: Bool) throws {
+        let app = try launchPendingAmendmentForManagement(landscape: landscape)
+        let prefix = landscape ? "209-landscape-" : "209-"
+        let pencil = app.buttons["pending-amendment-pencil"]
+        XCTAssertEqual(pencil.label, "Manage pending amendment")
+        assertPendingTapTarget(pencil)
+        let identify = app.buttons["waypoint-identified"]
+        XCTAssertEqual(identify.label, "Identify departure point")
+
+        pencil.tap()
+        let report = app.buttons["report-original-destination"]
+        let replace = app.buttons["replace-pending-amendment"]
+        let cancel = app.buttons["cancel-pending-amendment"]
+        XCTAssertTrue(report.waitForExistence(timeout: 4))
+        captureAmendmentState(prefix + "management", in: app)
+        let done = app.buttons["dismiss-pending-amendment-management"]
+        if done.exists { done.tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.45)).tap() }
+        XCTAssertTrue(report.waitForNonExistence(timeout: 4))
+        XCTAssertTrue(pencil.isHittable)
+
+        pencil.tap()
+        XCTAssertTrue(report.waitForExistence(timeout: 4))
+        report.tap()
+        let keep = app.buttons["keep-pending-amendment"]
+        let commit = app.buttons["confirm-pending-amendment-management"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["Report original destination reached?"].exists)
+        XCTAssertEqual(commit.label, "Cancel and record reach")
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Ramat")).firstMatch.exists)
+        captureAmendmentState(prefix + "original-destination", in: app)
+        keep.tap()
+        XCTAssertTrue(keep.waitForNonExistence(timeout: 3))
+        XCTAssertEqual(identify.label, "Identify departure point")
+
+        pencil.tap()
+        XCTAssertTrue(replace.waitForExistence(timeout: 4))
+        replace.tap()
+        let keepSaved = app.buttons["keep-saved-amendment"]
+        let confirmReplacement = app.buttons["confirm-amendment-replacement"]
+        XCTAssertTrue(keepSaved.waitForExistence(timeout: 4))
+        XCTAssertTrue(confirmReplacement.isEnabled)
+        captureAmendmentState(prefix + "replacement-review", in: app)
+        keepSaved.tap()
+        XCTAssertTrue(pencil.waitForExistence(timeout: 4))
+        XCTAssertEqual(identify.label, "Identify departure point")
+        pencil.tap()
+        XCTAssertTrue(replace.waitForExistence(timeout: 4))
+        replace.tap()
+        XCTAssertTrue(confirmReplacement.waitForExistence(timeout: 4))
+        confirmReplacement.tap()
+        XCTAssertTrue(pencil.waitForExistence(timeout: 6))
+
+        pencil.tap()
+        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
+        cancel.tap()
+        XCTAssertTrue(keep.waitForExistence(timeout: 4))
+        XCTAssertEqual(commit.label, "Cancel amendment")
+        captureAmendmentState(prefix + "cancel-confirmation", in: app)
+        keep.tap()
+
+        pencil.tap()
+        XCTAssertTrue(report.waitForExistence(timeout: 4))
+        report.tap()
+        XCTAssertTrue(commit.waitForExistence(timeout: 4))
+        commit.tap()
+        let retry = app.buttons["retry-pending-amendment-management"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 5))
+        captureAmendmentState(prefix + "original-destination-retry", in: app)
+        retry.tap()
+        XCTAssertTrue(pencil.waitForNonExistence(timeout: 6))
+        let successorChecklist = app.buttons["leg-start-checklist-close"]
+        if successorChecklist.waitForExistence(timeout: 2) { successorChecklist.tap() }
+        let undo = app.buttons["undo-reach"]
+        if undo.waitForExistence(timeout: 4) {
+            XCTAssertTrue(undo.isHittable)
+            undo.tap()
+            XCTAssertTrue(pencil.waitForExistence(timeout: 5))
+        } else {
+            XCTFail("Expected ordinary reach Undo after cancel and reach")
+        }
+    }
+
+    @MainActor
+    func testPendingAmendmentDepartureUsesNormalReportControls() throws {
+        let app = try launchPendingAmendmentForManagement()
+        let identify = app.buttons["waypoint-identified"]
+        XCTAssertEqual(identify.label, "Identify departure point")
+        identify.tap()
+        let reached = app.buttons["waypoint-reached"]
+        XCTAssertTrue(reached.waitForExistence(timeout: 5))
+        reached.tap()
+        XCTAssertFalse(app.staticTexts["Report original destination reached?"].exists)
+    }
+
+    @MainActor
+    private func launchPendingAmendmentForManagement(landscape: Bool = false) throws -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = try crossingAmendmentPlanData().base64EncodedString()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] = "1"
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE"] = "1"
+        app.launch()
+        let start = app.buttons["start-leg"]
+        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
+        }
+        start.tap()
+        closeStartChecklist(in: app)
+        app.buttons["amend-route"].tap()
+        let confirm = app.buttons["confirm-amendment-for-later"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 4))
+        confirm.tap()
+        let retry = app.buttons["retry-amendment-save"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 8))
+        retry.tap()
+        XCTAssertTrue(app.buttons["pending-amendment-pencil"].waitForExistence(timeout: 8))
+        return app
+    }
+
+    @MainActor
     func testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder() throws {
         let voiceOver = XCUIDevice.shared.voiceOverService
         let wasEnabled = voiceOver.isEnabled

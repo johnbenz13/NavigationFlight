@@ -32,25 +32,103 @@ extension FlightRecordingStore {
 nonisolated struct FlightRouteTransaction: Sendable {
     let recordingID: UUID
     let expectedSequence: UInt64
-    let event: RecordedFlightEvent
+    let events: [RecordedFlightEvent]
+
+    var event: RecordedFlightEvent { events[0] }
+
+    init(recordingID: UUID, expectedSequence: UInt64, event: RecordedFlightEvent) {
+        self.init(recordingID: recordingID, expectedSequence: expectedSequence, events: [event])
+    }
+
+    init(recordingID: UUID, expectedSequence: UInt64, events: [RecordedFlightEvent]) {
+        self.recordingID = recordingID
+        self.expectedSequence = expectedSequence
+        self.events = events
+    }
 
     func validate() throws {
-        guard event.sequence == expectedSequence,
-              case .pendingRouteAmendmentConfirmed(let amendment) = event.payload,
-              amendment.id == event.id,
-              event.cockpitContext?.flightID == amendment.flightID else {
+        guard let first = events.first, let context = first.cockpitContext,
+              first.origin == .pilot, Set(events.map(\.id)).count == events.count,
+              events.enumerated().allSatisfy({ index, item in
+                  item.sequence >= expectedSequence && item.sequence - expectedSequence == UInt64(index) &&
+                  item.occurredAt == first.occurredAt && item.elapsed == first.elapsed && item.cockpitContext == context
+              }) else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+        switch first.payload {
+        case .pendingRouteAmendmentConfirmed(let amendment):
+            guard events.count == 1, amendment.id == first.id, amendment.flightID == context.flightID else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+        case .pendingRouteAmendmentReplaced(let previousID, let amendment):
+            guard events.count == 1, amendment.id == first.id, amendment.flightID == context.flightID,
+                  previousID != amendment.id else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+        case .pendingRouteAmendmentCancelled(let id, let destination?, let reachID?):
+            guard destination.amendmentID == id, (2...3).contains(events.count), events[1].id == reachID,
+                  events[1].origin == .pilot, events[1].payload == .waypointReached(legID: destination.legID) else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+            if events.count == 3 {
+                switch events[2].payload {
+                case .automaticNextLegTransition(let legID, _), .finalWaypointReached(let legID):
+                    guard legID == destination.legID, events[2].origin == .automatic else {
+                        throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+                    }
+                default: throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+                }
+            }
+        case .pendingRouteAmendmentCancelled(_, nil, nil):
+            guard events.count == 1 else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+        default:
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
     }
 
-    func isCommitted(in events: [RecordedFlightEvent]) throws -> Bool {
-        guard let recorded = events.first(where: { $0.id == event.id }) else { return false }
-        // Use the same representation as the journal, including its date precision.
-        guard try FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: recorded))
-            == FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: event)) else {
+    func isCommitted(in journal: [RecordedFlightEvent]) throws -> Bool {
+        guard let first = events.first else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+        guard let offset = journal.firstIndex(where: { $0.id == first.id }) else {
+            let identifiers = Set(events.map(\.id))
+            guard !journal.contains(where: { identifiers.contains($0.id) }) else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+            return false
+        }
+        // Use the journal representation, including its date precision.
+        let persisted = journal.dropFirst(offset).prefix(events.count)
+        guard persisted.count == events.count,
+              try zip(persisted, events).allSatisfy({ recorded, candidate in
+                  try FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: recorded))
+                      == FlightRecordingCoding.encoder.encode(RecordedFlightEventDTO(event: candidate))
+              }) else {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
         return true
+    }
+
+    func validatePendingIdentity(in journal: [RecordedFlightEvent]) throws {
+        let undoneIDs = Set(journal.compactMap { item -> UUID? in
+            if case .reachUndone(let id) = item.payload { return id }
+            return nil
+        })
+        var currentID: UUID?
+        for item in journal {
+            switch item.payload {
+            case .pendingRouteAmendmentConfirmed(let amendment), .pendingRouteAmendmentReplaced(_, let amendment):
+                currentID = amendment.id
+            case .pendingRouteAmendmentCancelled(_, _, let reachID):
+                if reachID.map(undoneIDs.contains) != true { currentID = nil }
+            default: break
+            }
+        }
+
+        let expectedID: UUID?
+        switch event.payload {
+        case .pendingRouteAmendmentReplaced(let previousID, _),
+             .pendingRouteAmendmentCancelled(let previousID, _, _):
+            expectedID = previousID
+        default: expectedID = nil
+        }
+        guard expectedID == currentID else {
+            throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        }
     }
 }
 

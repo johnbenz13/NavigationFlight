@@ -31,6 +31,8 @@ nonisolated enum RecordedFlightEventPayload: Equatable, Sendable {
     case identificationPointReached(key: IdentificationPointKey)
     case waypointReached(legID: UUID)
     case pendingRouteAmendmentConfirmed(PendingRouteAmendment)
+    case pendingRouteAmendmentReplaced(previousID: UUID, amendment: PendingRouteAmendment)
+    case pendingRouteAmendmentCancelled(amendmentID: UUID, originalDestination: PendingAmendmentOriginalDestination?, linkedReachEventID: UUID?)
     case automaticNextLegTransition(fromLegID: UUID, toLegID: UUID)
     case finalWaypointReached(legID: UUID)
     case automaticLegRecovery(legID: UUID)

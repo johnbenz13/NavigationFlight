@@ -363,6 +363,25 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         self.mode = mode
     }
 
+    init(replacing amendment: PendingRouteAmendment, on route: RouteAmendmentRoute) {
+        self.init(flightID: amendment.flightID, mode: amendment.mode)
+        sketch.departure = amendment.departure
+        sketch.rejoin = amendment.rejoin
+        sketch.points = amendment.replacementLegs.dropLast().map { leg in
+            Point(id: leg.to.id, position: leg.to.position, name: leg.to.name, routeCandidates: [])
+        }
+        step = .review
+        for (review, saved) in zip(reviewLegs(on: route), amendment.replacementLegs) {
+            legValues[review.id] = RouteAmendmentLegValues(
+                headingMagnetic: saved.headingMagnetic, durationSeconds: saved.durationSeconds,
+                altitude: saved.altitudeFeet.map(AltitudeFeet.init(value:)),
+                frequency: saved.frequencyMHz.map(FrequencyMHz.init(value:)),
+                visualReference: saved.visualReference
+            )
+        }
+        validateDeparture(on: route)
+    }
+
     func reviewLegs(on route: RouteAmendmentRoute) -> [ReviewLeg] {
         guard let departure, let rejoin else { return [] }
         typealias Stop = (id: ReviewLeg.Endpoint, name: String, position: WGS84Coordinate)

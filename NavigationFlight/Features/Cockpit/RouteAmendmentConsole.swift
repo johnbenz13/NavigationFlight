@@ -8,6 +8,7 @@ struct RouteAmendmentConsole: View {
     let inSideRail: Bool
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
     let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
+    var isReplacing = false
     let onConfirm: () -> Void
     let onKeepEditing: () -> Void
     let onPlaceAtMapCenter: () -> Void
@@ -20,8 +21,10 @@ struct RouteAmendmentConsole: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            RouteAmendmentCurrentLeg(timing: currentLegTiming, compact: compact)
-                .padding(.top, compact ? 8 : 12)
+            if !isReplacing || draft.step != .review || saveStatus != nil {
+                RouteAmendmentCurrentLeg(timing: currentLegTiming, compact: compact)
+                    .padding(.top, compact ? 8 : 12)
+            }
             if let saveStatus {
                 savePanel(saveStatus)
             } else {
@@ -51,8 +54,11 @@ struct RouteAmendmentConsole: View {
                     controls
                         .allowsHitTesting(draft.legPanel == nil)
                     if inSideRail, draft.step == .review {
-                        confirmForLaterButton
-                            .padding(.top, 12)
+                        if isReplacing {
+                            reviewFooter.padding(.top, 14)
+                        } else {
+                            confirmForLaterButton.padding(.top, 12)
+                        }
                     }
                     if showsFooter, actionsFollowEditor { footer }
                 }
@@ -60,7 +66,7 @@ struct RouteAmendmentConsole: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .accessibilityIdentifier("route-amendment-console")
-            if draft.step == .review {
+            if draft.step == .review, !(inSideRail && isReplacing) {
                 reviewFooter
             } else if showsFooter, !actionsFollowEditor {
                 footer
@@ -174,14 +180,24 @@ struct RouteAmendmentConsole: View {
             }
         }
         .frame(minHeight: 44)
+        .padding(.vertical, isReplacing && draft.step == .review ? 12 : 0)
         .allowsHitTesting(draft.legPanel == nil)
     }
 
     @ViewBuilder
     private var headingActions: some View {
         if draft.step == .review {
-            reviewLegCount
-            lightweightAction("Choose leg", id: "choose-amendment-leg") { onIntent(.chooseLeg) }
+            if isReplacing, let timing = currentLegTiming {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    let elapsed = AviationMapSymbology.formatDuration(timing.elapsedSeconds(at: context.date))
+                    Text("\(draft.mode.title) · Active leg · \(elapsed)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                reviewLegCount
+                lightweightAction("Choose leg", id: "choose-amendment-leg") { onIntent(.chooseLeg) }
+            }
         } else if draft.acceptsMapInput || draft.isInspecting {
             pointInput
             lightweightAction("Inspect leg", id: "inspect-amendment-leg") { onIntent(.inspectOriginal) }
@@ -191,9 +207,13 @@ struct RouteAmendmentConsole: View {
     private var draftTitle: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.system(.title3, weight: .semibold))
+                .font(isReplacing && draft.step == .review ? .title2.bold() : .title3.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
-            if draft.step != .drawing && draft.step != .review {
+            if isReplacing && draft.step == .review {
+                Text("The saved amendment remains pending until this replacement is confirmed.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if draft.step != .drawing && draft.step != .review {
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -222,7 +242,7 @@ struct RouteAmendmentConsole: View {
         case .rejoin, .confirmRejoin: "Pick a return point"
         case .crossing(_, let purpose): purpose == .departure ? "Choose departure leg" : "Choose return leg"
         case .staleDeparture: "Update departure"
-        case .review: "Review legs"
+        case .review: isReplacing ? "Review replacement" : "Review legs"
         }
     }
 
@@ -281,8 +301,14 @@ struct RouteAmendmentConsole: View {
                     .foregroundStyle(.secondary)
             }
         case .review:
-            RouteAmendmentReview(draft: draft, route: route, compact: compact, onIntent: onIntent)
+            RouteAmendmentReview(draft: draft, route: route, compact: compact, isReplacing: isReplacing, onIntent: onIntent)
                 .allowsHitTesting(draft.legPanel == nil)
+            if isReplacing {
+                Divider().padding(.vertical, 12)
+                Text("Review the replacement leg values before confirming.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
         }
     }
@@ -322,7 +348,24 @@ struct RouteAmendmentConsole: View {
 
     private var reviewFooter: some View {
         VStack(spacing: 1) {
-            if compact || dynamicTypeSize.isAccessibilitySize {
+            if isReplacing {
+                let layout = compact || dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
+                layout {
+                    Button { onIntent(.discard) } label: {
+                        Text("Keep saved route")
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 18)
+                            .frame(maxWidth: compact ? .infinity : nil, minHeight: 54)
+                            .foregroundStyle(actionColor)
+                            .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("keep-saved-amendment")
+                    confirmForLaterButton
+                }
+            } else if compact || dynamicTypeSize.isAccessibilitySize {
                 HStack {
                     backToDrawingButton
                     Spacer()
@@ -363,7 +406,11 @@ struct RouteAmendmentConsole: View {
     }
 
     private var confirmForLaterButton: some View {
-        confirmationButton("Confirm for later", id: "confirm-amendment-for-later", fullWidth: true, height: 54)
+        confirmationButton(
+            isReplacing ? "Confirm replacement" : "Confirm for later",
+            id: isReplacing ? "confirm-amendment-replacement" : "confirm-amendment-for-later",
+            fullWidth: true, height: 54
+        )
             .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
     }
 

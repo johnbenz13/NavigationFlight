@@ -382,7 +382,12 @@ nonisolated struct FlightRecording: Equatable, Sendable, Identifiable {
         navigationState: RecordedNavigationState? = nil
     ) throws -> [RecordedFlightEvent] {
         guard closure == nil else { throw TransitionError.recordingAlreadyClosed }
-        guard self.navigationState != .ready else { throw TransitionError.navigationAlreadyActive }
+        if self.navigationState == .ready {
+            switch entries.first?.payload {
+            case .pendingRouteAmendmentReplaced, .pendingRouteAmendmentCancelled, .reachUndone: break
+            default: throw TransitionError.navigationAlreadyActive
+            }
+        }
         guard entries.count == eventIDs.count else { throw TransitionError.invalidEventIdentifierCount }
         guard timestamp >= startedAt else { throw TransitionError.timestampPrecedesStart }
 

@@ -281,6 +281,8 @@ nonisolated struct RecordedFlightEventDTO: Codable {
     let closureCause: String?
     var cockpitContext: RecordingCockpitContext? = nil
     var pendingAmendment: PendingRouteAmendment? = nil
+    var amendmentID: UUID? = nil
+    var originalDestination: PendingAmendmentOriginalDestination? = nil
     var amendmentRejoin: ActivatedRouteAmendment.Rejoin? = nil
     var amendmentDeparture: ActivatedRouteAmendment.Departure? = nil
     var targetKind: String? = nil
@@ -310,6 +312,27 @@ nonisolated struct RecordedFlightEventDTO: Codable {
             kind = "amendmentDepartureIdentified"
             legID = value
             targetID = target
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .pendingRouteAmendmentReplaced(let previousID, let amendment):
+            kind = "pendingRouteAmendmentReplaced"
+            amendmentID = previousID
+            pendingAmendment = amendment
+            legID = nil
+            targetID = nil
+            successorLegID = nil
+            startCause = nil
+            outcome = nil
+            closureCause = nil
+        case .pendingRouteAmendmentCancelled(let id, let destination, let reachID):
+            kind = "pendingRouteAmendmentCancelled"
+            amendmentID = id
+            originalDestination = destination
+            linkedEventID = reachID
+            legID = nil
+            targetID = nil
             successorLegID = nil
             startCause = nil
             outcome = nil
@@ -551,6 +574,18 @@ nonisolated struct RecordedFlightEventDTO: Codable {
         case "amendmentDepartureIdentified":
             guard let legID, let targetID else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .amendmentDepartureIdentified(legID: legID, targetID: targetID)
+        case "pendingRouteAmendmentReplaced":
+            guard let amendmentID, let pendingAmendment else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
+            payload = .pendingRouteAmendmentReplaced(previousID: amendmentID, amendment: pendingAmendment)
+        case "pendingRouteAmendmentCancelled":
+            guard let amendmentID,
+                  (originalDestination == nil) == (linkedEventID == nil),
+                  originalDestination.map({ $0.amendmentID == amendmentID }) != false else {
+                throw FlightRecordingStoreError.corruptPackage(id: nil)
+            }
+            payload = .pendingRouteAmendmentCancelled(
+                amendmentID: amendmentID, originalDestination: originalDestination, linkedReachEventID: linkedEventID
+            )
         case "routeAmendmentActivated":
             guard let amendmentDeparture else { throw FlightRecordingStoreError.corruptPackage(id: nil) }
             payload = .routeAmendmentActivated(amendmentDeparture)

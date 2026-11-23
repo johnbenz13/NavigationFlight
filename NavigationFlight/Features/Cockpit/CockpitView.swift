@@ -197,6 +197,10 @@ struct CockpitView: View {
     var onPositionCheckMapRestored: (UUID) -> Void = { _ in }
     var routeForAmendment: RouteAmendmentRoute?
     var routeAmendmentDraft: RouteAmendmentDraft?
+    var isReplacingPendingAmendment = false
+    var pendingAmendmentManagement: PendingAmendmentManagement?
+    var pendingManagementSave: CockpitFeatureState.PendingAmendmentManagementSave?
+    var onManagePendingAmendment: (PendingAmendmentManagement.Intent) -> Void = { _ in }
     var amendmentSaveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
     var onConfirmAmendment: () -> Void = {}
     var onStartAmendmentNow: () -> Void = {}
@@ -253,7 +257,16 @@ struct CockpitView: View {
     @State private var cockpitPresentationState = CockpitPresentationState()
     @State private var compactMapDetent: PresentationDetent = .large
     @State private var amendmentCenterRequest: UUID?
+    @State private var amendmentLegendHeight: CGFloat = 0
     @State private var amendmentDiscardConfirmation = false
+    @State private var isPendingAmendmentMenuPresented = false
+    @State private var pendingAmendmentConfirmation: PendingAmendmentManagement.Confirmation?
+    @AccessibilityFocusState(for: .voiceOver) private var pendingAmendmentPencilFocused: Bool
+
+    private var pendingAmendmentDialogContent: PendingAmendmentDialog.Content? {
+        if let pendingManagementSave { return .save(pendingManagementSave.status) }
+        return pendingAmendmentConfirmation.map(PendingAmendmentDialog.Content.confirm)
+    }
     @State private var compactDepartureHeaderHeight: CGFloat = 0
 
     private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
@@ -262,8 +275,9 @@ struct CockpitView: View {
     }
 
     private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {
-        guard let route = routeForAmendment ?? activatedAmendmentSourceRoute,
-              let amendment = flight.pendingRouteAmendment ?? flight.activatedRouteAmendment?.amendment else { return nil }
+        guard amendmentMapPresentation == nil,
+              let amendment = flight.pendingRouteAmendment ?? flight.activatedRouteAmendment?.amendment,
+              let route = flight.pendingRouteAmendment == nil ? activatedAmendmentSourceRoute : routeForAmendment else { return nil }
         return .init(
             amendment: amendment,
             route: route,
@@ -281,8 +295,45 @@ struct CockpitView: View {
         return routeAmendmentDraft?.rejoin
     }
 
+    private var replacementReviewFocus: ReplacementReviewMapFocus? {
+        guard isReplacingPendingAmendment, let presentation = amendmentMapPresentation,
+              presentation.draft.step == .review, presentation.draft.legPanel == nil,
+              let departure = presentation.draft.departure, let rejoin = presentation.draft.rejoin,
+              amendmentLegendHeight > 0 else { return nil }
+        let route = presentation.route
+        let stops = [route.coordinate(at: departure)] + presentation.draft.points.map(\.position)
+            + [route.coordinate(at: rejoin)]
+        let legendAtBottom = dynamicTypeSize.isAccessibilitySize
+        let legendTop = horizontalSizeClass == .compact ? 76.0 : 84.0
+        return .init(
+            coordinates: stops.map { .init(latitude: $0.latitudeDegrees, longitude: $0.longitudeDegrees) },
+            topPadding: legendAtBottom ? 100 : legendTop + amendmentLegendHeight + 16,
+            bottomPadding: legendAtBottom ? amendmentLegendHeight + 24 : 42
+        )
+    }
+
     var body: some View {
+        operationalContent
+            .overlay {
+                if let content = pendingAmendmentDialogContent {
+                    ModalDismissBackdrop(isDimmed: true) {
+                        if content.canDismiss { dismissPendingAmendmentDialog() }
+                    }
+                    PendingAmendmentDialog(content: content, onDismiss: dismissPendingAmendmentDialog) {
+                        if let confirmation = pendingAmendmentConfirmation {
+                            pendingAmendmentConfirmation = nil
+                            onManagePendingAmendment(.confirm(confirmation, cockpitRestoration))
+                        } else {
+                            onManagePendingAmendment(.retry)
+                        }
+                    }
+                }
+            }
+    }
+
+    private var operationalContent: some View {
         cockpitContent
+        .accessibilityHidden(pendingAmendmentDialogContent != nil)
         .background(Color(.systemBackground))
         .alert("Discard this draft?", isPresented: $amendmentDiscardConfirmation) {
             Button("Keep editing", role: .cancel) {}
@@ -296,8 +347,13 @@ struct CockpitView: View {
             dismissTransientPresentations()
             onCancelPilotHeading()
         }
+        .onChange(of: replacementReviewFocus, initial: true) { previous, focus in
+            guard let focus, previous == nil || !isMapCameraUserControlled else { return }
+            focusMap(.replacementReview(focus))
+        }
         .onChange(of: amendmentFocusAnchor) { _, rejoin in
-            guard let rejoin, let amendmentMapPresentation,
+            guard !(isReplacingPendingAmendment && routeAmendmentDraft?.step == .review),
+                  let rejoin, let amendmentMapPresentation,
                   let departure = amendmentMapPresentation.draft.departure else { return }
             let route = amendmentMapPresentation.route
             let stops = [route.coordinate(at: departure)] + amendmentMapPresentation.draft.points.map(\.position)
@@ -309,7 +365,15 @@ struct CockpitView: View {
         .onChange(of: isSectionSelected) { _, selected in
             if !selected {
                 dismissTransientPresentations()
+                isPendingAmendmentMenuPresented = false
+                pendingAmendmentConfirmation = nil
             }
+        }
+        .onChange(of: isPendingAmendmentMenuPresented) { _, shown in
+            if !shown && pendingAmendmentDialogContent == nil { pendingAmendmentPencilFocused = true }
+        }
+        .onChange(of: pendingAmendmentDialogContent != nil) { _, shown in
+            if !shown { pendingAmendmentPencilFocused = true }
         }
         .overlay {
             ZStack {
@@ -657,7 +721,11 @@ struct CockpitView: View {
 
     private func amendmentMapHeight(in size: CGSize, normalExtent: CGFloat) -> CGFloat {
         var mapExtent = normalExtent
-        if horizontalSizeClass == .compact, routeAmendmentDraft?.step == .review, isEditingRouteAmendment {
+        if isReplacingPendingAmendment, routeAmendmentDraft?.step == .review, isEditingRouteAmendment,
+           amendmentSaveStatus == nil {
+            let consoleHeight: CGFloat = horizontalSizeClass == .compact ? 356 : 438
+            mapExtent = max(0, min(normalExtent, (restingLayoutSize ?? size).height - consoleHeight))
+        } else if horizontalSizeClass == .compact, routeAmendmentDraft?.step == .review, isEditingRouteAmendment {
             // Leave space for the live timer, two review rows and the fixed confirmation action.
             mapExtent = max(0, min(normalExtent, (restingLayoutSize ?? size).height - 397))
         } else if amendmentSaveStatus != nil {
@@ -677,6 +745,8 @@ struct CockpitView: View {
             inSideRail: inSideRail,
             onIntent: onRouteAmendment,
             saveStatus: amendmentSaveStatus,
+            isReplacing: isReplacingPendingAmendment,
+            confirmationUnavailableWhileAmended: flight.activatedRouteAmendment != nil,
             onConfirm: onConfirmAmendment,
             onStartNow: onStartAmendmentNow,
             canStartNow: canStartAmendmentNow,
@@ -770,6 +840,9 @@ struct CockpitView: View {
             }
             if amendmentMapPresentation != nil {
                 RouteAmendmentLegend()
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                        amendmentLegendHeight = height
+                    }
                     .padding(.top, dynamicTypeSize.isAccessibilitySize ? 8 : (horizontalSizeClass == .compact ? 76 : 84))
                     .padding(.leading, horizontalSizeClass == .compact ? 12 : 20)
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
@@ -1234,8 +1307,11 @@ struct CockpitView: View {
     private var amendmentToolbar: some View {
         if routeForAmendment != nil {
             HStack(spacing: 2) {
-                if flight.pendingRouteAmendment != nil {
-                    pendingAmendmentPencil
+                if let management = pendingAmendmentManagement, !isEditingRouteAmendment {
+                    pendingAmendmentPencil(management)
+                } else if isReplacingPendingAmendment, routeAmendmentDraft?.step == .review {
+                    amendmentIcon("pencil", label: "Back to drawing", id: "back-to-amendment-drawing",
+                                  intent: .back, highlighted: true)
                 } else {
                     amendmentIcon("pencil", label: "Amend route", id: "amend-route", intent: .open,
                                   highlighted: isEditingRouteAmendment)
@@ -1255,23 +1331,52 @@ struct CockpitView: View {
         }
     }
 
-    private var pendingAmendmentPencil: some View {
+    private func pendingAmendmentPencil(_ management: PendingAmendmentManagement) -> some View {
         let teal = Color(RouteAmendmentMapOverlay.proposedColor)
-        return ZStack(alignment: .bottomTrailing) {
-            Image(systemName: "pencil")
-                .font(.headline)
-                .padding(3)
-            Image(systemName: "clock")
-                .font(.system(size: 10, weight: .semibold))
-                .offset(x: 3, y: 4)
+        return Button {
+            dismissMapCallout()
+            dismissTransientPresentations()
+            isPendingAmendmentMenuPresented = true
+        } label: {
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: "pencil")
+                    .font(.headline)
+                    .padding(3)
+                Image(systemName: "clock")
+                    .font(.system(size: 10, weight: .semibold))
+                    .offset(x: 3, y: 4)
+            }
+            .foregroundStyle(teal)
+            .frame(width: 44, height: 44)
+            .background(teal.opacity(0.14), in: .rect(cornerRadius: 14))
+            .contentShape(.rect)
         }
-        .foregroundStyle(teal)
-        .frame(width: 44, height: 44)
-        .background(teal.opacity(0.14), in: .rect(cornerRadius: 14))
-        .accessibilityElement(children: .ignore)
+        .buttonStyle(.plain)
+        .disabled(isRecordingCommitInFlight)
         .accessibilityLabel("Manage pending amendment")
         .accessibilityValue("Pending departure")
         .accessibilityIdentifier("pending-amendment-pencil")
+        .accessibilityFocused($pendingAmendmentPencilFocused)
+        .popover(isPresented: $isPendingAmendmentMenuPresented, arrowEdge: .top) {
+            PendingAmendmentMenu(
+                management: management, compact: horizontalSizeClass == .compact,
+                onDone: { isPendingAmendmentMenuPresented = false },
+                onReplace: {
+                    isPendingAmendmentMenuPresented = false
+                    onManagePendingAmendment(.replace(management.id))
+                },
+                onConfirm: {
+                    pendingAmendmentConfirmation = $0
+                    isPendingAmendmentMenuPresented = false
+                }
+            )
+            .presentationCompactAdaptation(.sheet)
+        }
+    }
+
+    private func dismissPendingAmendmentDialog() {
+        pendingAmendmentConfirmation = nil
+        if pendingManagementSave != nil { onManagePendingAmendment(.dismissFailedSave) }
     }
 
     private func amendmentIcon(

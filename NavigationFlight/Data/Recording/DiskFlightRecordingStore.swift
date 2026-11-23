@@ -421,7 +421,12 @@ actor DiskFlightRecordingStore: FlightRecordingStore {
                     from: Data(line)
                 ).domain()
             }
-            let containsAmendment = events.contains { if case .pendingRouteAmendmentConfirmed = $0.payload { true } else { false } }
+            let containsAmendment = events.contains {
+                switch $0.payload {
+                case .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced, .pendingRouteAmendmentCancelled: true
+                default: false
+                }
+            }
             guard events.map(\.sequence) == Array(0..<UInt64(events.count)),
                   !containsAmendment || manifest.schemaVersion >= 4 else {
                 throw FlightRecordingStoreError.corruptPackage(id: manifest.id)

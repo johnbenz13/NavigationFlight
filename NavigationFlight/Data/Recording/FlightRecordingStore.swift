@@ -84,6 +84,28 @@ nonisolated struct FlightRouteTransaction: Sendable {
         case .routeAmendmentActivated:
             activationIndex = 0
             immediate = false
+        case .pendingRouteAmendmentReplaced(let previousID, let amendment):
+            guard events.count == 1, amendment.id == first.id, amendment.flightID == context.flightID,
+                  previousID != amendment.id, first.origin == .pilot, amendment.startsImmediately != true else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+            return
+        case .pendingRouteAmendmentCancelled(let id, let destination?, let reachID?):
+            guard first.origin == .pilot, destination.amendmentID == id, (2...3).contains(events.count), events[1].id == reachID,
+                  events[1].origin == .pilot, events[1].payload == .waypointReached(legID: destination.legID) else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+            if events.count == 3 {
+                switch events[2].payload {
+                case .automaticNextLegTransition(let legID, _), .finalWaypointReached(let legID):
+                    guard legID == destination.legID, events[2].origin == .automatic else {
+                        throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+                    }
+                default: throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+                }
+            }
+            return
+        case .pendingRouteAmendmentCancelled(_, nil, nil):
+            guard events.count == 1, first.origin == .pilot else { throw FlightRecordingStoreError.invalidEventSequence(id: recordingID) }
+            return
         default:
             throw invalid
         }
@@ -100,32 +122,6 @@ nonisolated struct FlightRouteTransaction: Sendable {
         }
         if departure.startsReplacement {
             guard context.checklists[departure.firstReplacementLegID] != nil else { throw invalid }
-        }
-    }
-
-    func validatePendingIdentity(in journal: [RecordedFlightEvent]) throws {
-        var pendingID: UUID?
-        var awaitingRejoinID: UUID?
-        for event in journal {
-            switch event.payload {
-            case .pendingRouteAmendmentConfirmed(let amendment): pendingID = amendment.id
-            case .routeAmendmentActivated(let departure):
-                pendingID = nil
-                awaitingRejoinID = departure.amendmentID
-            case .routeAmendmentRejoined:
-                awaitingRejoinID = nil
-            default: break
-            }
-        }
-        switch event.payload {
-        case .pendingRouteAmendmentConfirmed where pendingID == nil:
-            return
-        case .routeAmendmentActivated(let departure) where pendingID == departure.amendmentID:
-            return
-        case .routeAmendmentRejoined(let rejoin) where awaitingRejoinID == rejoin.amendmentID:
-            return
-        default:
-            throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
     }
 
@@ -148,6 +144,47 @@ nonisolated struct FlightRouteTransaction: Sendable {
             throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
         }
         return true
+    }
+
+    func validatePendingIdentity(in journal: [RecordedFlightEvent]) throws {
+        let undoneIDs = Set(journal.compactMap { item -> UUID? in
+            if case .reachUndone(let id) = item.payload { return id }
+            return nil
+        })
+        var currentID: UUID?
+        var awaitingRejoinID: UUID?
+        for item in journal {
+            switch item.payload {
+            case .pendingRouteAmendmentConfirmed(let amendment), .pendingRouteAmendmentReplaced(_, let amendment):
+                currentID = amendment.id
+            case .pendingRouteAmendmentCancelled(_, _, let reachID):
+                if reachID.map(undoneIDs.contains) != true { currentID = nil }
+            case .routeAmendmentActivated(let departure):
+                currentID = nil
+                awaitingRejoinID = departure.amendmentID
+            case .routeAmendmentRejoined:
+                awaitingRejoinID = nil
+            default: break
+            }
+        }
+
+        let expectedID: UUID?
+        switch event.payload {
+        case .pendingRouteAmendmentReplaced(let previousID, _),
+             .pendingRouteAmendmentCancelled(let previousID, _, _):
+            expectedID = previousID
+        case .routeAmendmentActivated(let departure):
+            expectedID = departure.amendmentID
+        case .routeAmendmentRejoined(let rejoin):
+            guard awaitingRejoinID == rejoin.amendmentID else {
+                throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+            }
+            return
+        default: expectedID = nil
+        }
+        guard expectedID == currentID else {
+            throw FlightRecordingStoreError.invalidEventSequence(id: recordingID)
+        }
     }
 }
 

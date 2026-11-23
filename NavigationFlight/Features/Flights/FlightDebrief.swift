@@ -271,6 +271,8 @@ nonisolated struct FlightDebriefProjector: Sendable {
         case .legStarted: "Leg started"
         case .destinationIdentified: "Destination identified"
         case .identificationPointReached(let key): "\(identificationPointName(key, plan: plan)) marked reached"
+        case .pendingRouteAmendmentReplaced: "Pending route amendment replaced"
+        case .pendingRouteAmendmentCancelled: "Pending route amendment cancelled"
         case .pendingRouteAmendmentConfirmed(let amendment):
             amendment.startsImmediately == true ? "Route amendment confirmed" : "Route amendment confirmed for later"
         case .routeAmendmentActivated: "Departed on the amended route"

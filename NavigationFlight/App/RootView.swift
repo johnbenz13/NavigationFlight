@@ -251,6 +251,9 @@ struct RootView: View {
             debugFlightsActiveRecordingID = nil
         } else {
             let routeSaveAttempts = OSAllocatedUnfairLock(initialState: 0)
+            let routeManagementFailure = OSAllocatedUnfairLock(initialState:
+                environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE"] == "1"
+            )
             let amendmentFixture = environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] == "1"
             recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory, beforeAppend: { event in
                 if amendmentFixture, case .pendingRouteAmendmentConfirmed = event.payload {
@@ -262,6 +265,12 @@ struct RootView: View {
                         Thread.sleep(forTimeInterval: 3)
                         throw FlightRecordingStoreError.operationFailed(id: nil)
                     }
+                }
+                if case .pendingRouteAmendmentCancelled = event.payload, routeManagementFailure.withLock({ fail in
+                    defer { fail = false }
+                    return fail
+                }) {
+                    throw FlightRecordingStoreError.operationFailed(id: nil)
                 }
                 if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_PRESENTATION_FAILURE"] == "1",
                    event.payload == .cockpitPresentationChanged {

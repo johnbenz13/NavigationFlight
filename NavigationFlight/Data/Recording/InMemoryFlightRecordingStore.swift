@@ -99,7 +99,7 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         let events = current.events + [event]
         var recording: FlightRecording
         switch event.payload {
-        case .legStarted:
+        case .reachUndone, .legStarted:
             recording = current.recording.restoring(
                 navigationState: .active, nextEventSequence: UInt64(events.count)
             )
@@ -137,12 +137,16 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
         guard let current = snapshotsByID[id] else { throw FlightRecordingStoreError.corruptPackage(id: id) }
         if try transaction.isCommitted(in: current.events) { return }
         guard failure != .append, current.recording.closure == nil,
-              transaction.expectedSequence == current.recording.nextEventSequence else {
+              current.recording.nextEventSequence == transaction.expectedSequence else {
             throw FlightRecordingStoreError.operationFailed(id: id)
         }
         try transaction.validatePendingIdentity(in: current.events)
         let events = current.events + transaction.events
-        var navigationState = current.recording.navigationState
+        var navigationState: RecordedNavigationState = switch transaction.events.last?.payload {
+        case .finalWaypointReached: .reachedFinalWaypoint
+        case .waypointReached: .ready
+        default: current.recording.navigationState
+        }
         for event in transaction.events {
             switch event.payload {
             case .routeAmendmentActivated(let departure):
@@ -153,8 +157,7 @@ actor InMemoryFlightRecordingStore: FlightRecordingStore {
             }
         }
         var recording = current.recording.restoring(
-            navigationState: navigationState,
-            nextEventSequence: UInt64(events.count)
+            navigationState: navigationState, nextEventSequence: UInt64(events.count)
         )
         if recording.sourceSchemaVersion < 3 {
             recording.cockpitContextStartSequence = transaction.expectedSequence

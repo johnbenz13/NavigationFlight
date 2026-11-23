@@ -61,9 +61,22 @@ struct CockpitFeatureState: Equatable, Sendable {
     private(set) var pendingReachUndo: PendingReachUndo?
     private(set) var routeAmendmentDraft: RouteAmendmentDraft?
     var amendmentSave: RouteAmendmentSave?
+    private(set) var replacingPendingAmendmentID: UUID?
+    var pendingAmendmentManagementSave: PendingAmendmentManagementSave?
+
+    struct PendingAmendmentManagementSave: Equatable {
+        let change: PendingAmendmentChange
+        let eventID: UUID
+        let timestamp: Date
+        let elapsed: Duration
+        let restoration: CockpitRestoration
+        let destinationName: String?
+        var status: RouteAmendmentSave.Status
+    }
 
     struct RouteAmendmentSave: Equatable {
         let amendment: PendingRouteAmendment
+        let replacingPendingID: UUID?
         let timestamp: Date
         let elapsed: Duration
         var status: Status
@@ -84,10 +97,10 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func updateRouteAmendment(
         _ intent: RouteAmendmentDraft.Intent, mode: RouteAmendmentMode = .manual
     ) {
-        guard amendmentSave == nil, flight?.pendingRouteAmendment == nil else { return }
+        guard amendmentSave == nil, pendingAmendmentManagementSave == nil,
+              flight?.pendingRouteAmendment?.id == replacingPendingAmendmentID else { return }
         if case .discard = intent {
-            routeAmendmentDraft = nil
-            amendmentSave = nil
+            clearAmendmentDraft()
             return
         }
         guard let flight, let flightPlan, let route = routeForAmendment else { return }
@@ -167,8 +180,8 @@ struct CockpitFeatureState: Equatable, Sendable {
             navigationGeneration = nil
             areDriftLinesVisible = true
             pendingReachUndo = nil
-            routeAmendmentDraft = nil
-            amendmentSave = nil
+            clearAmendmentDraft()
+            pendingAmendmentManagementSave = nil
         }
     }
 
@@ -190,8 +203,8 @@ struct CockpitFeatureState: Equatable, Sendable {
         areDriftLinesVisible = cockpitContext?.areDriftLinesVisible ?? true
         createPendingLegStartChecklistForActiveLeg()
         pendingReachUndo = nil
-        routeAmendmentDraft = nil
-        amendmentSave = nil
+        clearAmendmentDraft()
+        pendingAmendmentManagementSave = nil
     }
 
     mutating func toggleDriftLines() {
@@ -225,8 +238,35 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func installPendingAmendment(_ transition: CommittedNavigationTransition) {
         installCommittedFlight(transition.flight)
         installCockpitContext(transition.cockpitContext)
+        clearAmendmentDraft()
+    }
+
+    mutating func clearAmendmentDraft() {
+        replacingPendingAmendmentID = nil
         amendmentSave = nil
         routeAmendmentDraft = nil
+    }
+
+    mutating func openReplacementDraft(pendingID: UUID) {
+        guard pendingAmendmentManagementSave == nil, let route = routeForAmendment,
+              let pending = flight?.pendingRouteAmendment, pending.id == pendingID else { return }
+        if replacingPendingAmendmentID == pendingID, routeAmendmentDraft != nil {
+            updateRouteAmendment(.resume)
+        } else {
+            replacingPendingAmendmentID = pendingID
+            routeAmendmentDraft = RouteAmendmentDraft(replacing: pending, on: route)
+        }
+    }
+
+    var pendingAmendmentManagement: PendingAmendmentManagement? {
+        guard let flight, let plan = flightPlan, let pending = flight.pendingRouteAmendment else { return nil }
+        let original = flight.originalDestinationReport(in: plan).map { report in
+            PendingAmendmentManagement.OriginalDestination(
+                report: report, name: plan.legs[flight.activeLegIndex].arrival.name
+            )
+        }
+        return .init(id: pending.id, departureName: pending.departureStop?.name ?? String(localized: "Departure point"),
+                     legNumber: pending.departure.legIndex + 1, originalDestination: original)
     }
 
     mutating func invalidateAmendmentDeparture() {

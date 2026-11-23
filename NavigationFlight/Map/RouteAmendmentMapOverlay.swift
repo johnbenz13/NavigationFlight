@@ -94,6 +94,12 @@ final class RouteAmendmentMapOverlay: UIView {
     }
 
     weak var map: MLNMapView?
+    var viewportDidLayout: (() -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        viewportDidLayout?()
+    }
 
     init(map: MLNMapView) {
         self.map = map
@@ -401,7 +407,12 @@ final class RouteAmendmentMapOverlay: UIView {
             .foregroundColor: UIColor.label
         ])
         let size = text.size()
-        let x = max(4, min(point.x + radius + 7, bounds.width - size.width - 9))
+        let right = point.x + radius + 7
+        let left = point.x - radius - 7 - size.width
+        let maximumX = bounds.width - size.width - 9
+        // Keep the label beside its marker when the right edge has less room.
+        let preferredX = presentation != nil && right > maximumX ? left : right
+        let x = max(4, min(preferredX, maximumX))
         let origin = CGPoint(x: x, y: point.y - size.height / 2)
         return MarkerLabel(text: text, frame: CGRect(origin: origin, size: size).insetBy(dx: -4, dy: -2))
     }

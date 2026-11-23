@@ -247,12 +247,49 @@ struct Flight: Equatable, Sendable {
         )
     }
 
-    mutating func installPendingAmendment(_ amendment: PendingRouteAmendment, in plan: FlightPlan) throws {
+    mutating func installPendingAmendment(
+        _ amendment: PendingRouteAmendment, in plan: FlightPlan, replacing pendingID: UUID? = nil
+    ) throws {
+        guard pendingRouteAmendment?.id == pendingID else {
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
         guard let route = routeForAmendment(in: plan) else {
             throw PendingRouteAmendment.Validation.unavailableDeparture
         }
-        try amendment.validate(flight: self, route: route)
+        try amendment.validate(flight: self, route: route, replacing: pendingID)
+        if let pendingID { try cancelPendingAmendment(id: pendingID) }
         pendingRouteAmendment = amendment
+    }
+
+    mutating func cancelPendingAmendment(id: UUID) throws {
+        guard let pendingRouteAmendment, pendingRouteAmendment.id == id else {
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
+        if pendingRouteAmendment.departureIsPartway, let stop = pendingRouteAmendment.departureStop {
+            pilotETAStatesByTargetKey.removeValue(forKey: .init(
+                legID: pendingRouteAmendment.departure.legID, kind: .destination, targetID: stop.id
+            ))
+        }
+        self.pendingRouteAmendment = nil
+        pendingDepartureIdentifiedAt = nil
+    }
+
+    func originalDestinationReport(in plan: FlightPlan) -> PendingAmendmentOriginalDestination? {
+        guard legState == .active, let pending = activePartwayDeparture, plan.id == flightPlanID,
+              plan.legs.indices.contains(activeLegIndex) else { return nil }
+        let leg = plan.legs[activeLegIndex]
+        // The current, strictly partway anchor precedes fraction 1 of the same stable leg.
+        guard leg.id == legIDs[activeLegIndex], leg.id == pending.departure.legID else { return nil }
+        return .init(amendmentID: pending.id, legID: leg.id, targetID: leg.arrival.id)
+    }
+
+    mutating func cancelForOriginalDestination(
+        _ report: PendingAmendmentOriginalDestination, in plan: FlightPlan
+    ) throws {
+        guard originalDestinationReport(in: plan) == report else {
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
+        try cancelPendingAmendment(id: report.amendmentID)
     }
 
     private(set) var legState: LegState

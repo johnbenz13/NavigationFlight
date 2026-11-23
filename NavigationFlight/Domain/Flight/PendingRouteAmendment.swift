@@ -55,6 +55,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
 
     enum Validation: Error, Equatable, Sendable {
         case alreadyPending
+        case stalePendingAmendment
         case invalidGeometry
         case unavailableDeparture
         case incompleteLegs
@@ -104,9 +105,9 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
     @MainActor
     init(
         id: UUID, draft: RouteAmendmentDraft, flight: Flight, route: RouteAmendmentRoute,
-        startNow: Bool = false
+        startNow: Bool = false, replacing pendingID: UUID? = nil
     ) throws {
-        guard flight.pendingRouteAmendment == nil else { throw Validation.alreadyPending }
+        guard flight.pendingRouteAmendment?.id == pendingID else { throw Validation.alreadyPending }
         guard draft.flightID == flight.id, draft.step == .review, draft.legPanel == nil,
               let departure = draft.departure, let rejoin = draft.rejoin else { throw Validation.invalidGeometry }
         guard Self.canConfirm(departure, flight: flight, route: route, startNow: startNow) else {
@@ -152,14 +153,15 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
         retainedDeparturePointIDs = route.identificationPoints.filter {
             $0.legID == departure.legID && Self.keepsSourcePoint($0, before: departure)
         }.map(\.id)
-        try validate(flight: flight, route: route)
+        try validate(flight: flight, route: route, replacing: pendingID)
     }
 
     @MainActor
-    func validate(flight: Flight, route: RouteAmendmentRoute) throws {
+    func validate(flight: Flight, route: RouteAmendmentRoute, replacing pendingID: UUID? = nil) throws {
         guard flight.id == flightID, flight.executionMode == executionMode,
               (flight.progressionPolicy == .automaticNextLeg) == automaticProgression,
-              flight.pendingRouteAmendment == nil else { throw Validation.invalidGeometry }
+              id != pendingID,
+              flight.pendingRouteAmendment?.id == pendingID else { throw Validation.invalidGeometry }
         guard Self.canConfirm(departure, flight: flight, route: route, startNow: startsImmediately == true) else {
             throw Validation.unavailableDeparture
         }
@@ -211,7 +213,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
     static func canConfirm(
         _ departure: RouteAmendmentAnchor, flight: Flight, route: RouteAmendmentRoute, startNow: Bool
     ) -> Bool {
-        guard route.contains(departure) else { return false }
+        guard flight.activatedRouteAmendment == nil, route.contains(departure) else { return false }
         if startNow {
             switch flight.legState {
             case .active:

@@ -3,6 +3,7 @@ import Foundation
 nonisolated enum RecordedNavigationCommand: Sendable {
     case startLeg(at: Date, recordingID: UUID, eventIDs: [UUID])
     case confirmPendingAmendment(PendingRouteAmendment, plan: FlightPlan, at: Date, elapsed: Duration)
+    case managePendingAmendment(PendingAmendmentChange, plan: FlightPlan, at: Date, elapsed: Duration, eventID: UUID)
     case startAmendmentNow(PendingRouteAmendment, plan: FlightPlan, at: Date, elapsed: Duration, eventIDs: [UUID])
     case identifyDestination(at: Date, elapsed: Duration, eventID: UUID, targetID: UUID? = nil)
     case reachIdentificationPoint(
@@ -454,13 +455,18 @@ actor FlightRecordingEngine {
         defer { releaseMutation() }
         if unresolvedRouteWrite != nil {
             switch command {
-            case .confirmPendingAmendment, .startAmendmentNow, .reachCurrentWaypoint: break
+            case .confirmPendingAmendment, .managePendingAmendment, .startAmendmentNow, .reachCurrentWaypoint: break
             default: throw EngineError.routeOutcomeUncertain
             }
         }
         switch command {
         case .confirmPendingAmendment(let amendment, let plan, let timestamp, let elapsed):
             return try await confirmPendingAmendment(amendment, plan: plan, at: timestamp, elapsed: elapsed, context: context)
+        case .managePendingAmendment(let change, let plan, let timestamp, let elapsed, let eventID):
+            return try await commitPendingAmendmentChange(
+                change, in: plan, at: timestamp, elapsed: elapsed, eventID: eventID, context: context,
+                checklistSelection: checklistSelection
+            )
         case .startAmendmentNow(let amendment, let plan, let timestamp, let elapsed, let eventIDs):
             guard amendment.startsImmediately == true, let targetID = amendment.departureStop?.id else {
                 throw PendingRouteAmendment.Validation.unavailableDeparture
@@ -624,25 +630,7 @@ actor FlightRecordingEngine {
                     return ([(.pilot, .routeAmendmentRejoined(rejoin))] + companions.map { ($0.origin, $0.payload) },
                             rejoin.navigationState)
                 }
-                if candidate.legState == .completed {
-                    return ([
-                        (.pilot, .waypointReached(legID: departingLegID)),
-                        (.automatic, .finalWaypointReached(legID: departingLegID))
-                    ], .reachedFinalWaypoint)
-                }
-                if candidate.legState == .ready {
-                    return ([
-                        (.pilot, .waypointReached(legID: departingLegID))
-                    ], .ready)
-                }
-                let successorLegID = candidate.legIDs[candidate.activeLegIndex]
-                return ([
-                    (.pilot, .waypointReached(legID: departingLegID)),
-                    (.automatic, .automaticNextLegTransition(
-                        fromLegID: departingLegID,
-                        toLegID: successorLegID
-                    ))
-                ], nil)
+                return Self.waypointReachEvents(from: departingLegID, after: candidate)
             }
         case .completeNavigation(let timestamp, let elapsed, let eventID):
             guard var candidateRecording = recording else {
@@ -745,11 +733,13 @@ actor FlightRecordingEngine {
             }
         case .undoReach(let originalEventID, let restoredFlight, let timestamp, let elapsed, let eventID):
             let current = flight
-            guard await MainActor.run(body: {
-                current.pendingRouteAmendment == restoredFlight.pendingRouteAmendment &&
-                    current.activatedRouteAmendment == restoredFlight.activatedRouteAmendment
-            }) else {
-                throw PendingRouteAmendment.Validation.unavailableDeparture
+            let routeMatches = await MainActor.run {
+                current.activatedRouteAmendment == restoredFlight.activatedRouteAmendment
+            }
+            guard routeMatches else { throw PendingRouteAmendment.Validation.unavailableDeparture }
+            let pendingRouteChanged = current.pendingRouteAmendment != restoredFlight.pendingRouteAmendment
+            if pendingRouteChanged {
+                try await validateUndoOfOriginalDestinationReach(originalEventID, restoring: restoredFlight)
             }
             guard restoredFlight.id == flight.id,
                   restoredFlight.flightPlanID == flight.flightPlanID,
@@ -763,7 +753,7 @@ actor FlightRecordingEngine {
                 origin: .pilot,
                 at: timestamp,
                 elapsed: elapsed,
-                eventID: eventID, context: restoredContext
+                eventID: eventID, context: restoredContext, navigationState: .active
             )
             flight = restoredFlight
             return CommittedNavigationTransition(
@@ -810,7 +800,7 @@ actor FlightRecordingEngine {
         guard amendment.startsImmediately != true else { throw PendingRouteAmendment.Validation.unavailableDeparture }
         if let outstanding = unresolvedRouteWrite {
             guard outstanding.transaction.event.payload == .pendingRouteAmendmentConfirmed(amendment) else {
-                throw FlightRecordingStoreError.operationFailed(id: outstanding.transaction.recordingID)
+                throw EngineError.routeOutcomeUncertain
             }
             if try await reconcileRouteWrite(outstanding.transaction) {
                 return publishRouteWrite(outstanding.transition)
@@ -903,6 +893,126 @@ actor FlightRecordingEngine {
         let committed = try await persistRouteWrite(transaction, transition: transition)
         lastRouteTransition = committed
         return committed
+    }
+
+    private func commitPendingAmendmentChange(
+        _ change: PendingAmendmentChange,
+        in plan: FlightPlan,
+        at timestamp: Date,
+        elapsed: Duration,
+        eventID: UUID,
+        context: RecordingCockpitContext?,
+        checklistSelection: StartChecklistSelection
+    ) async throws -> CommittedNavigationTransition {
+        let payload = change.eventPayload
+        if let outstanding = unresolvedRouteWrite {
+            guard outstanding.transaction.event.id == eventID,
+                  outstanding.transaction.event.payload == payload else { throw EngineError.routeOutcomeUncertain }
+            if try await reconcileRouteWrite(outstanding.transaction) {
+                return publishRouteWrite(outstanding.transition)
+            }
+            unresolvedRouteWrite = nil
+        }
+        guard var candidate = recording else { throw FlightRecording.TransitionError.recordingAlreadyClosed }
+        if flight.pendingRouteAmendment?.id != change.expectedPendingID {
+            // A caller may repeat the operation after publication. A matching journal tail
+            // establishes the same result without applying any route or reach effect again.
+            let saved = try await store.readSnapshot(id: candidate.id)
+            if let index = saved.events.firstIndex(where: { $0.id == eventID && $0.payload == payload }) {
+                let tail = saved.events[index...]
+                if tail.map(\.id) == Array(change.eventIDs(startingWith: eventID).prefix(tail.count)) {
+                    return .init(flight: flight, recording: candidate, eventIDs: tail.map(\.id), cockpitContext: cockpitContext)
+                }
+            }
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
+        let current = flight
+        let result = try await MainActor.run {
+            var next = current
+            var entries: [(RecordedFlightEvent.Origin, RecordedFlightEventPayload)] = [(.pilot, payload)]
+            var navigationState: RecordedNavigationState?
+            switch change {
+            case .replace(let pendingID, let amendment):
+                try next.installPendingAmendment(amendment, in: plan, replacing: pendingID)
+            case .cancel(let pendingID):
+                try next.cancelPendingAmendment(id: pendingID)
+            case .reportOriginalDestination(let report, _, _):
+                try next.cancelForOriginalDestination(report, in: plan)
+                let keys = plan.identificationPoints.lazy.filter { $0.legID == report.legID }
+                    .map { IdentificationPointKey(legID: $0.legID, identificationPointID: $0.id) }
+                try next.reachCurrentWaypoint(orderedActiveLegPointKeys: Array(keys), at: timestamp)
+                let reach = Self.waypointReachEvents(from: report.legID, after: next)
+                entries += reach.entries
+                navigationState = reach.navigationState
+            }
+            return (flight: next, entries: entries, navigationState: navigationState)
+        }
+        let expectedSequence = candidate.nextEventSequence
+        var events = try candidate.recordNavigationEvents(
+            at: timestamp, elapsed: elapsed, entries: result.entries,
+            eventIDs: Array(change.eventIDs(startingWith: eventID).prefix(result.entries.count)),
+            navigationState: result.navigationState
+        )
+        let supplied = context?.navigationGeneration == cockpitContext?.navigationGeneration ? context : nil
+        var captured = supplied ?? cockpitContext
+        if case .reportOriginalDestination(let report, _, _) = change {
+            captured = await transitionContext(supplied, flight: result.flight,
+                                               payload: .waypointReached(legID: report.legID), selection: checklistSelection)
+        }
+        guard var captured else { throw FlightRecordingStoreError.operationFailed(id: candidate.id) }
+        try captured.validate(flightID: current.id, legIDs: current.legIDs)
+        captured.navigationGeneration = eventID
+        for index in events.indices { events[index].cockpitContext = captured }
+        if candidate.sourceSchemaVersion < 3 { candidate.cockpitContextStartSequence = expectedSequence }
+        candidate.sourceSchemaVersion = 4
+        let transaction = FlightRouteTransaction(recordingID: candidate.id, expectedSequence: expectedSequence, events: events)
+        let transition = CommittedNavigationTransition(
+            flight: result.flight, recording: candidate, eventIDs: events.map(\.id), cockpitContext: captured
+        )
+        return try await persistRouteWrite(transaction, transition: transition)
+    }
+
+    @MainActor
+    private static func waypointReachEvents(from departingLegID: UUID, after candidate: Flight) -> (
+        entries: [(RecordedFlightEvent.Origin, RecordedFlightEventPayload)], navigationState: RecordedNavigationState?
+    ) {
+        let reach: (RecordedFlightEvent.Origin, RecordedFlightEventPayload) = (.pilot, .waypointReached(legID: departingLegID))
+        switch candidate.legState {
+        case .completed:
+            return ([reach, (.automatic, .finalWaypointReached(legID: departingLegID))], .reachedFinalWaypoint)
+        case .ready:
+            return ([reach], .ready)
+        case .active:
+            let nextLegID = candidate.legIDs[candidate.activeLegIndex]
+            return ([reach, (.automatic, .automaticNextLegTransition(fromLegID: departingLegID, toLegID: nextLegID))], nil)
+        }
+    }
+
+    private func validateUndoOfOriginalDestinationReach(_ reachEventID: UUID, restoring restored: Flight) async throws {
+        let restoredIsActive = await MainActor.run { restored.legState == .active }
+        guard let recording, let pendingID = restored.pendingRouteAmendment?.id,
+              flight.pendingRouteAmendment == nil, restoredIsActive else {
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
+        let history = try await store.readSnapshot(id: recording.id).events
+        guard let cancellationIndex = history.lastIndex(where: {
+            switch $0.payload {
+            case .pendingRouteAmendmentCancelled, .pendingRouteAmendmentReplaced, .pendingRouteAmendmentConfirmed: true
+            default: false
+            }
+        }), case .pendingRouteAmendmentCancelled(let cancelledID, let destination?, let linkedReachID) = history[cancellationIndex].payload,
+              cancelledID == pendingID, linkedReachID == reachEventID,
+              restored.legIDs[restored.activeLegIndex] == destination.legID,
+              let reach = history.dropFirst(cancellationIndex + 1).first,
+              reach.id == reachEventID, reach.payload == .waypointReached(legID: destination.legID),
+              !history.dropFirst(cancellationIndex + 2).contains(where: {
+                  switch $0.payload {
+                  case .waypointReached, .identificationPointReached, .reachUndone, .legStarted, .navigationCompleted: true
+                  default: false
+                  }
+              }) else {
+            throw PendingRouteAmendment.Validation.stalePendingAmendment
+        }
     }
 
     private func persistRouteWrite(
@@ -1103,7 +1213,8 @@ actor FlightRecordingEngine {
         at timestamp: Date,
         elapsed: Duration,
         eventID: UUID,
-        context: RecordingCockpitContext? = nil
+        context: RecordingCockpitContext? = nil,
+        navigationState: RecordedNavigationState? = nil
     ) async throws -> CommittedNavigationTransition {
         guard var candidateRecording = recording else {
             throw FlightRecording.TransitionError.recordingAlreadyClosed
@@ -1112,7 +1223,8 @@ actor FlightRecordingEngine {
             at: timestamp,
             elapsed: elapsed,
             entries: [(origin, payload)],
-            eventIDs: [eventID]
+            eventIDs: [eventID],
+            navigationState: navigationState
         )
         events[0].cockpitContext = context
         try await store.appendEvent(events[0], recordingID: candidateRecording.id, synchronize: true)

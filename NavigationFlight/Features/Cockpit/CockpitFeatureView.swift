@@ -218,6 +218,10 @@ struct CockpitFeatureView: View {
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         routeForAmendment: state.routeForAmendment,
                         routeAmendmentDraft: state.routeAmendmentDraft,
+                        isReplacingPendingAmendment: state.replacingPendingAmendmentID != nil,
+                        pendingAmendmentManagement: state.pendingAmendmentManagement,
+                        pendingManagementSave: state.pendingAmendmentManagementSave,
+                        onManagePendingAmendment: managePendingAmendment,
                         amendmentSaveStatus: state.amendmentSave?.status,
                         onConfirmAmendment: { confirmAmendment(startNow: false) },
                         onStartAmendmentNow: { confirmAmendment(startNow: true) },
@@ -363,6 +367,7 @@ struct CockpitFeatureView: View {
         if case .open = intent,
            ["1", "2", "3"].contains(fixture ?? "") || rejoinFixture != nil,
            state.flight != nil {
+            if state.flight?.activatedRouteAmendment != nil { return }
             state.prepareAmendmentConfirmationFixture(
                 includesAdvisoryValues: fixture == "2" || rejoinFixture != nil,
                 isFutureDeparture: fixture == "3",
@@ -394,17 +399,19 @@ struct CockpitFeatureView: View {
             let canRecaptureTiming = retry.status == .failed(canEdit: true)
                 && retry.amendment.startsImmediately != true
             operation = .init(
-                amendment: retry.amendment, timestamp: canRecaptureTiming ? timing.now : retry.timestamp,
+                amendment: retry.amendment, replacingPendingID: retry.replacingPendingID,
+                timestamp: canRecaptureTiming ? timing.now : retry.timestamp,
                 elapsed: canRecaptureTiming ? timing.elapsed : retry.elapsed, status: .saving,
                 eventIDs: retry.eventIDs, checklistSelection: retry.checklistSelection
             )
         } else {
             do {
+                let replacingID = state.replacingPendingAmendmentID
                 let amendment = try PendingRouteAmendment(
-                    id: UUID(), draft: draft, flight: flight, route: route, startNow: startNow
+                    id: UUID(), draft: draft, flight: flight, route: route, startNow: startNow, replacing: replacingID
                 )
                 operation = .init(
-                    amendment: amendment, timestamp: timing.now, elapsed: timing.elapsed, status: .saving,
+                    amendment: amendment, replacingPendingID: replacingID, timestamp: timing.now, elapsed: timing.elapsed, status: .saving,
                     eventIDs: startNow ? [UUID(), UUID()] : [], checklistSelection: checklistSelection()
                 )
             } catch PendingRouteAmendment.Validation.unavailableDeparture {
@@ -419,18 +426,28 @@ struct CockpitFeatureView: View {
         let context = state.recordingCockpitContext
         Task {
             do {
-                let command: RecordedNavigationCommand = operation.amendment.startsImmediately == true
-                    ? .startAmendmentNow(operation.amendment, plan: plan, at: operation.timestamp,
-                                         elapsed: operation.elapsed, eventIDs: operation.eventIDs)
-                    : .confirmPendingAmendment(operation.amendment, plan: plan, at: operation.timestamp, elapsed: operation.elapsed)
+                let command: RecordedNavigationCommand
+                if let previousID = operation.replacingPendingID {
+                    command = .managePendingAmendment(.replace(expectedPendingID: previousID, amendment: operation.amendment),
+                        plan: plan, at: operation.timestamp, elapsed: operation.elapsed, eventID: operation.amendment.id)
+                } else if operation.amendment.startsImmediately == true {
+                    command = .startAmendmentNow(
+                        operation.amendment, plan: plan, at: operation.timestamp, elapsed: operation.elapsed,
+                        eventIDs: operation.eventIDs
+                    )
+                } else {
+                    command = .confirmPendingAmendment(
+                        operation.amendment, plan: plan, at: operation.timestamp, elapsed: operation.elapsed
+                    )
+                }
                 let transition = try await recordingCoordinator.commitNavigation(
                     command, context: context, checklistSelection: operation.checklistSelection
                 )
                 guard state.amendmentSave?.amendment.id == operation.amendment.id else { return }
                 state.installPendingAmendment(transition)
                 progressionNotice = nil
-                if flight.activeLegIndex == operation.amendment.departure.legIndex,
-                   operation.amendment.departureIsPartway {
+                if flight.activeLegID != transition.flight.activeLegID
+                    || flight.activePartwayDeparture != transition.flight.activePartwayDeparture {
                     endPositionCheck(.activeLegChanged)
                 }
             } catch {
@@ -442,6 +459,84 @@ struct CockpitFeatureView: View {
                     let canEdit = error as? FlightRecordingEngine.EngineError != .routeOutcomeUncertain
                     state.amendmentSave?.status = .failed(canEdit: canEdit)
                 }
+            }
+        }
+    }
+
+    private func managePendingAmendment(_ intent: PendingAmendmentManagement.Intent) {
+        switch intent {
+        case .replace(let pendingID):
+            state.openReplacementDraft(pendingID: pendingID)
+        case .dismissFailedSave:
+            if state.pendingAmendmentManagementSave?.status == .failed(canEdit: true) {
+                state.pendingAmendmentManagementSave = nil
+            }
+        case .retry:
+            if let operation = state.pendingAmendmentManagementSave, operation.status != .saving {
+                commitPendingAmendmentManagement(operation)
+            }
+        case .confirm(let confirmation, let restoration):
+            guard state.pendingAmendmentManagementSave == nil, let timing = recordingTiming() else { return }
+            let change: PendingAmendmentChange
+            let destinationName: String?
+            switch confirmation {
+            case .cancel(let pendingID):
+                change = .cancel(expectedPendingID: pendingID)
+                destinationName = nil
+            case .reportOriginalDestination(let original):
+                change = .reportOriginalDestination(original.report, reachEventID: UUID(), automaticEventID: UUID())
+                destinationName = original.name
+            }
+            commitPendingAmendmentManagement(.init(
+                change: change, eventID: UUID(), timestamp: timing.now, elapsed: timing.elapsed,
+                restoration: restoration, destinationName: destinationName, status: .saving
+            ))
+        }
+    }
+
+    private func commitPendingAmendmentManagement(_ requested: CockpitFeatureState.PendingAmendmentManagementSave) {
+        guard let plan = state.flightPlan else { return }
+        var operation = requested
+        operation.status = .saving
+        state.pendingAmendmentManagementSave = operation
+        let context = state.recordingCockpitContext
+        let currentPartwayDeparture = state.flight?.activePartwayDeparture
+        let selection = checklistSelection()
+        Task {
+            do {
+                let transition = try await recordingCoordinator.commitNavigation(.managePendingAmendment(
+                    operation.change, plan: plan, at: operation.timestamp, elapsed: operation.elapsed, eventID: operation.eventID
+                ), context: context, checklistSelection: selection)
+                guard state.pendingAmendmentManagementSave?.eventID == operation.eventID else { return }
+                state.pendingAmendmentManagementSave = nil
+                switch operation.change {
+                case .reportOriginalDestination(_, let reachID, _):
+                    state.installCommittedWaypointReach(
+                        transition.flight, originalEventID: reachID, cockpitRestoration: operation.restoration, at: operation.timestamp
+                    )
+                    state.installCockpitContext(transition.cockpitContext)
+                    state.clearAmendmentDraft()
+                    if let destination = operation.destinationName {
+                        progressionNotice = .arrivalReached(
+                            waypoint: destination, progressionPolicy: transition.flight.progressionPolicy,
+                            hasSuccessor: transition.flight.legState != .completed
+                        )
+                    }
+                case .cancel:
+                    state.installPendingAmendment(transition)
+                    progressionNotice = nil
+                case .replace: break
+                }
+                if currentPartwayDeparture != nil { endPositionCheck(.activeLegChanged) }
+            } catch PendingRouteAmendment.Validation.stalePendingAmendment {
+                guard state.pendingAmendmentManagementSave?.eventID == operation.eventID else { return }
+                state.pendingAmendmentManagementSave = nil
+                presentedError = .init(title: "Amendment changed", message: "Open the pending amendment to see the available actions.")
+            } catch {
+                guard state.pendingAmendmentManagementSave?.eventID == operation.eventID else { return }
+                state.pendingAmendmentManagementSave?.status = .failed(
+                    canEdit: error as? FlightRecordingEngine.EngineError != .routeOutcomeUncertain
+                )
             }
         }
     }

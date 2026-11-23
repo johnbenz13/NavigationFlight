@@ -4,12 +4,13 @@ struct RouteAmendmentReview: View {
     let draft: RouteAmendmentDraft
     let route: RouteAmendmentRoute
     let compact: Bool
+    var isReplacing = false
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: isReplacing ? 8 : 3) {
             ForEach(draft.reviewLegs(on: route)) { leg in
                 let layout = dynamicTypeSize.isAccessibilitySize
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
@@ -29,14 +30,16 @@ struct RouteAmendmentReview: View {
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, compact ? 10 : 24)
                             .frame(minWidth: 44, minHeight: 44)
-                            .foregroundStyle(.white)
-                            .background(RouteAmendmentPanelStyle.check, in: .rect(cornerRadius: 10))
+                            .foregroundStyle(isReplacing ? RouteAmendmentPanelStyle.action : .white)
+                            .background(isReplacing ? Color(.systemBackground) : RouteAmendmentPanelStyle.check,
+                                        in: .rect(cornerRadius: 10))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Check estimate for \(leg.name)")
                     .accessibilityIdentifier("check-amendment-leg")
                 }
-                .padding(.trailing, 6)
+                .padding(.trailing, isReplacing ? 12 : 6)
+                .frame(minHeight: isReplacing ? 72 : nil)
                 .background(RouteAmendmentPanelStyle.card, in: .rect(cornerRadius: 8))
             }
         }
@@ -62,10 +65,12 @@ struct RouteAmendmentReview: View {
                     }
                 }
             }
-            Image(systemName: "chevron.forward")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(RouteAmendmentPanelStyle.action)
-                .padding(.horizontal, compact ? 2 : 12)
+            if !isReplacing {
+                Image(systemName: "chevron.forward")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(RouteAmendmentPanelStyle.action)
+                    .padding(.horizontal, compact ? 2 : 12)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, compact ? 4 : 0)
@@ -76,8 +81,12 @@ struct RouteAmendmentReview: View {
     private func metric(_ title: LocalizedStringKey, value: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
+            Text(value).font(isReplacing ? .title3.weight(.semibold).monospacedDigit() : .subheadline.weight(.semibold).monospacedDigit())
         }
+        .padding(.horizontal, isReplacing ? 10 : 0)
+        .padding(.vertical, isReplacing ? 3 : 0)
+        .frame(minWidth: isReplacing && !compact ? 112 : nil, alignment: .leading)
+        .background(isReplacing ? Color(.systemBackground) : .clear, in: .rect(cornerRadius: 9))
         .frame(minWidth: compact ? nil : 100, alignment: .leading)
     }
 

@@ -308,7 +308,7 @@ struct RouteAmendmentConsole: View {
             RouteAmendmentReview(draft: draft, route: route, compact: compact, isReplacing: isReplacing, onIntent: onIntent)
                 .allowsHitTesting(draft.legPanel == nil)
             if confirmationUnavailableWhileAmended {
-                Text("You can keep editing this draft. Confirming another amendment while flying replacement legs is unavailable.")
+                Text("You can keep editing this draft. Confirming another amendment on this revised route is unavailable.")
                     .font(.subheadline)
                     .foregroundStyle(PendingAmendmentPalette.secondary)
             }

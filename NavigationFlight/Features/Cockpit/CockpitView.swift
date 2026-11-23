@@ -283,6 +283,7 @@ struct CockpitView: View {
             route: route,
             activePartwayDeparture: flight.legState == .active ? flight.activePartwayDeparture?.departureStop : nil,
             departureHeaderInset: horizontalSizeClass == .compact ? compactDepartureHeaderHeight + 12 : 0,
+            isActivated: flight.activatedRouteAmendment != nil,
             activeReplacementLegID: flight.amendmentLeg?.id
         )
     }
@@ -949,7 +950,7 @@ struct CockpitView: View {
     private var shouldShowMapChrome: Bool {
         horizontalSizeClass != .compact || flight.legState != .active
             || isCompactMapChromeVisible || isMapDisclosurePresented || routeAmendmentDraft != nil
-            || flight.activePartwayDeparture != nil || flight.amendmentLeg != nil
+            || flight.activePartwayDeparture != nil || flight.amendmentLeg != nil || flight.isFirstRetainedLeg
     }
 
     private var isPilotETAEditing: Bool {
@@ -1185,7 +1186,14 @@ struct CockpitView: View {
     }
 
     private var showsCompactRouteDetails: Bool {
-        flight.amendmentLeg != nil || (flight.legState == .active && flight.activePartwayDeparture != nil)
+        flight.amendmentLeg != nil || flight.isFirstRetainedLeg
+            || (flight.legState == .active && flight.activePartwayDeparture != nil)
+    }
+
+    private var compactRouteAccessibilityPrefix: String {
+        if flight.amendmentLeg != nil { return "amendment-leg" }
+        if flight.isFirstRetainedLeg { return "retained-leg" }
+        return "pending-departure-leg"
     }
 
     private var compactRouteDetailsHeader: some View {
@@ -1199,7 +1207,7 @@ struct CockpitView: View {
                     Text(data.legPosition.uppercased())
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .accessibilityIdentifier(flight.amendmentLeg == nil ? "pending-departure-leg-position" : "amendment-leg-position")
+                        .accessibilityIdentifier("\(compactRouteAccessibilityPrefix)-position")
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(data.origin)
@@ -1210,7 +1218,7 @@ struct CockpitView: View {
                 .environment(\.layoutDirection, .leftToRight)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("From \(data.origin) to \(data.destination)")
-                .accessibilityIdentifier(flight.amendmentLeg == nil ? "pending-departure-leg-route" : "amendment-leg-route")
+                .accessibilityIdentifier("\(compactRouteAccessibilityPrefix)-route")
             }
             .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
@@ -1606,7 +1614,7 @@ struct CockpitView: View {
         } else {
             portraitOperationalMetric(
                 label: "Leg timer",
-                value: "–:––",
+                value: showsStoppedAmendedTimer ? completedLegDurationText : "–:––",
                 detail: readyTimerDetail,
                 identifier: "cockpit-time"
             )
@@ -1748,7 +1756,7 @@ struct CockpitView: View {
     }
 
     private var showsDirectDestinationReach: Bool {
-        flight.legState == .active && flight.destinationIdentifiedAt == nil && !flight.awaitsAmendmentRejoin
+        flight.legState == .active && flight.destinationIdentifiedAt == nil
     }
 
     private var directDestinationReachButton: some View {
@@ -1814,7 +1822,6 @@ struct CockpitView: View {
             }
             .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
             .accessibilityIdentifier("waypoint-reached")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
         case .completed:
             if isNavigationCompletionCommitted {
                 Text("Navigation complete · Recording continues")
@@ -1881,7 +1888,8 @@ struct CockpitView: View {
                 .accessibilityLabel("Leg timer, \(elapsed), \(activeTimerDetail)")
             }
         } else {
-            compactInstrument(label: "Leg timer", value: flight.legState == .ready ? "00:00" : "–:––",
+            let value = showsStoppedAmendedTimer ? completedLegDurationText : flight.legState == .ready ? "00:00" : "–:––"
+            compactInstrument(label: "Leg timer", value: value,
                               detail: readyTimerDetail, identifier: "cockpit-time")
         }
     }
@@ -2178,7 +2186,7 @@ struct CockpitView: View {
     private var readyTimerMetric: some View {
         readyInstrumentCard(
             title: "LEG TIMER",
-            value: flight.amendmentLeg != nil && flight.legState == .ready ? "00:00" : "–:––",
+            value: showsStoppedAmendedTimer ? completedLegDurationText : showsUntimedAmendedLeg ? "00:00" : "–:––",
             detail: readyTimerDetail,
             valueColor: Color(.systemTeal),
             accessibilityIdentifier: "cockpit-time",
@@ -2193,8 +2201,17 @@ struct CockpitView: View {
         return "Elapsed from leg start"
     }
 
+    private var showsUntimedAmendedLeg: Bool {
+        flight.legState == .ready && (flight.amendmentLeg != nil || flight.isFirstRetainedLeg)
+    }
+
+    private var showsStoppedAmendedTimer: Bool {
+        flight.legState == .completed && flight.activatedRouteAmendment != nil
+    }
+
     private var readyTimerDetail: String {
-        if flight.amendmentLeg != nil, flight.legState == .ready { return "Not started" }
+        if showsStoppedAmendedTimer { return "Stopped at final arrival" }
+        if showsUntimedAmendedLeg { return "Not started" }
         if case .manualSuccessor = progressionNotice {
             return "Starts when Start next leg is pressed"
         }
@@ -2643,7 +2660,7 @@ struct CockpitView: View {
     private var legStatusText: String {
         switch flight.legState {
         case .ready:
-            previousLegSummary == nil || flight.amendmentLeg != nil ? "READY" : "READY · SUCCESSOR TRACK-UP"
+            previousLegSummary == nil || flight.amendmentLeg != nil || flight.isFirstRetainedLeg ? "READY" : "READY · SUCCESSOR TRACK-UP"
         case .active:
             flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil ? "ACTIVE" : "ACTIVE · DESTINATION IDENTIFIED"
         case .completed:
@@ -2654,9 +2671,10 @@ struct CockpitView: View {
     private var showsLegRouteInHeader: Bool {
         switch flight.legState {
         case .ready:
-            previousLegSummary == nil || flight.amendmentLeg != nil
+            previousLegSummary == nil || flight.amendmentLeg != nil || flight.isFirstRetainedLeg
         case .active:
-            flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil || flight.amendmentLeg != nil
+            flight.destinationIdentifiedAt == nil || flight.activePartwayDeparture != nil
+                || flight.amendmentLeg != nil || flight.isFirstRetainedLeg
         case .completed:
             false
         }
@@ -2925,7 +2943,7 @@ struct CockpitView: View {
                     .foregroundStyle(.tint)
                     .accessibilityHint("Opens the flight plan to choose a starting leg")
                     .accessibilityIdentifier("choose-starting-leg")
-                    .modifier(CockpitReachAvailability(allowsReach: flight.amendmentLeg == nil))
+                    .modifier(CockpitReachAvailability(allowsReach: flight.activatedRouteAmendment == nil))
             case .active where flight.destinationIdentifiedAt == nil:
                 destinationReportButton(identifyDestinationTitle, isIdentification: true) {
                     selectedMapCallout = nil
@@ -2944,7 +2962,6 @@ struct CockpitView: View {
                 }
                 .accessibilityHint("Records reaching this waypoint and advances the navigation plan")
                 .accessibilityIdentifier("waypoint-reached")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
 
                 Color.clear
                     .frame(height: 22)
@@ -3047,7 +3064,7 @@ struct CockpitView: View {
                     .foregroundStyle(.tint)
                     .accessibilityHint("Opens the flight plan to choose a starting leg")
                     .accessibilityIdentifier("choose-starting-leg")
-                    .modifier(CockpitReachAvailability(allowsReach: flight.amendmentLeg == nil))
+                    .modifier(CockpitReachAvailability(allowsReach: flight.activatedRouteAmendment == nil))
             }
         case .active:
             let isPartwayDeparture = flight.activePartwayDeparture != nil
@@ -3099,7 +3116,6 @@ struct CockpitView: View {
                     .accessibilityLabel(reachTitle)
                     .accessibilityHint("Records reaching the waypoint now without identifying it first")
                     .accessibilityIdentifier("reached-now")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
                 }
             } else {
                 VStack(alignment: .leading, spacing: 6) {
@@ -3125,7 +3141,6 @@ struct CockpitView: View {
                         ? "Records reaching the current destination"
                         : "Records reaching this waypoint and advances the navigation plan")
                     .accessibilityIdentifier("waypoint-reached")
-                .modifier(CockpitReachAvailability(allowsReach: !flight.awaitsAmendmentRejoin))
                 }
             }
         case .completed:

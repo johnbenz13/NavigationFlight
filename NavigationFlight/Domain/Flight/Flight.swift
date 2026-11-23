@@ -40,7 +40,6 @@ struct Flight: Equatable, Sendable {
         case invalidIdentificationPointOrder
         case timestampPrecedesStart
         case finalLegCompleted
-        case amendmentRejoinUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -68,8 +67,6 @@ struct Flight: Equatable, Sendable {
                 "The reported time cannot be earlier than the leg start."
             case .finalLegCompleted:
                 "Navigation has already been completed."
-            case .amendmentRejoinUnavailable:
-                "Return to the retained route is unavailable in this version."
             }
         }
     }
@@ -172,13 +169,16 @@ struct Flight: Equatable, Sendable {
     var legIDs: [UUID] {
         guard let activatedRouteAmendment else { return sourceLegIDs }
         return Array(sourceLegIDs.prefix(activatedRouteAmendment.replacementStartIndex)) +
-            activatedRouteAmendment.amendment.replacementLegs.map(\.id)
+            activatedRouteAmendment.amendment.replacementLegs.map(\.id) +
+            activatedRouteAmendment.retainedLegIDs(in: sourceLegIDs)
     }
 
     var activeLegID: UUID { legIDs[activeLegIndex] }
 
     var amendmentLegIndex: Int? {
-        activatedRouteAmendment.map { activeLegIndex - $0.replacementStartIndex }
+        guard let activation = activatedRouteAmendment,
+              (activation.replacementStartIndex..<activation.retainedStartIndex).contains(activeLegIndex) else { return nil }
+        return activeLegIndex - activation.replacementStartIndex
     }
 
     var amendmentLeg: PendingRouteAmendment.Leg? {
@@ -187,7 +187,46 @@ struct Flight: Equatable, Sendable {
     }
 
     var awaitsAmendmentRejoin: Bool {
-        activatedRouteAmendment != nil && activeLegIndex == legIDs.count - 1
+        guard let activation = activatedRouteAmendment else { return false }
+        return legState != .completed && activeLegIndex == activation.retainedStartIndex - 1
+    }
+
+    var isFirstRetainedLeg: Bool {
+        activatedRouteAmendment?.retainedStartIndex == activeLegIndex
+    }
+
+    func sourceLegIndex(at operationalIndex: Int) -> Int? {
+        guard let activation = activatedRouteAmendment, operationalIndex >= activation.replacementStartIndex else {
+            return sourceLegIDs.indices.contains(operationalIndex) ? operationalIndex : nil
+        }
+        guard operationalIndex >= activation.retainedStartIndex else { return nil }
+        let source = activation.retainedSourceStartIndex + operationalIndex - activation.retainedStartIndex
+        return sourceLegIDs.indices.contains(source) ? source : nil
+    }
+
+    func retainedSourcePlan(_ plan: FlightPlan) -> FlightPlan {
+        RetainedRouteSegment(activatedRouteAmendment)?.project(plan) ?? plan
+    }
+
+    func orderedIdentificationPointKeys(in plan: FlightPlan) -> [IdentificationPointKey] {
+        let legID = activeLegID
+        let points: [IdentificationPoint]
+        if let retained = RetainedRouteSegment(activatedRouteAmendment), retained.legID == legID {
+            points = plan.identificationPoints.filter(retained.includes)
+        } else {
+            points = plan.identificationPoints.filter { $0.legID == legID && pendingRouteAmendment?.includes($0) != false }
+        }
+        return points.map { .init(legID: legID, identificationPointID: $0.id) }
+    }
+
+    var amendmentRejoin: ActivatedRouteAmendment.Rejoin? {
+        guard awaitsAmendmentRejoin, let activation = activatedRouteAmendment,
+              let last = amendmentLeg else { return nil }
+        let retainedLegID = legIDs.dropFirst(activeLegIndex + 1).first
+        return .init(
+            amendmentID: activation.amendment.id, replacementLegID: last.id, targetID: last.to.id,
+            retainedLegID: retainedLegID, startsRetainedLeg: retainedLegID != nil && progressionPolicy == .automaticNextLeg
+        )
     }
     private var pendingDepartureIdentifiedAt: Date?
 
@@ -292,7 +331,10 @@ struct Flight: Equatable, Sendable {
 
     mutating func selectReadyLeg(index: Int, mode: NavigationMode) throws {
         guard legState == .ready else { throw TransitionError.legNotReady }
-        guard legIDs.indices.contains(index) else { throw TransitionError.invalidLegIndex(index) }
+        guard legIDs.indices.contains(index),
+              activatedRouteAmendment == nil || index == activeLegIndex else {
+            throw TransitionError.invalidLegIndex(index)
+        }
         guard legTimings.allSatisfy({ $0.legIndex != index }) else {
             throw TransitionError.legAlreadyStarted(index)
         }
@@ -728,7 +770,9 @@ struct Flight: Equatable, Sendable {
         if pendingRouteAmendment?.blocksArrival(at: activeLegIndex) == true {
             throw PendingRouteAmendment.Validation.departureRequiresAmendmentActivation
         }
-        if awaitsAmendmentRejoin { throw TransitionError.amendmentRejoinUnavailable }
+        guard !awaitsAmendmentRejoin || orderedActiveLegPointKeys.isEmpty else {
+            throw TransitionError.invalidIdentificationPointOrder
+        }
         try finishActiveLeg(orderedActiveLegPointKeys: orderedActiveLegPointKeys, at: timestamp, recordsArrival: true)
         guard activeLegIndex + 1 < legIDs.count else {
             legState = .completed

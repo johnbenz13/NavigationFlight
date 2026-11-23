@@ -200,36 +200,48 @@ extension Flight {
                 return NavigationLeg(id: leg.id, departure: waypoint(leg.from, offset: offset),
                                      arrival: waypoint(leg.to, offset: offset + 1), windOverride: nil, remark: nil)
             }
-            let legs = sourceLegs + replacementLegs
-            guard legs.indices.contains(activeLegIndex), legs[activeLegIndex].id == activeLegID else { return nil }
-            let sharesPreviousBoundary = activeLegIndex > 0 &&
-                legs[activeLegIndex - 1].arrival.id == legs[activeLegIndex].departure.id
-            let firstAvailable = sharesPreviousBoundary
-                ? RouteAmendmentAnchor(legIndex: activeLegIndex - 1, legID: legs[activeLegIndex - 1].id, fraction: 1)
-                : RouteAmendmentAnchor(legIndex: activeLegIndex, legID: activeLegID, fraction: 0)
+            let retainedPlan = retainedSourcePlan(flightPlan)
+            let operationalIDs = legIDs
+            let retainedLegs = (activation.retainedStartIndex..<operationalIDs.count).compactMap { index -> NavigationLeg? in
+                guard let sourceIndex = sourceLegIndex(at: index), retainedPlan.legs.indices.contains(sourceIndex) else {
+                    return nil
+                }
+                return retainedPlan.legs[sourceIndex]
+            }
+            let legs = sourceLegs + replacementLegs + retainedLegs
+            guard legs.map(\.id) == operationalIDs else { return nil }
             return .init(
-                legs: legs, firstAvailable: firstAvailable,
-                planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
-                navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints,
+                legs: legs, firstAvailable: firstAmendableAnchor(in: legs, points: retainedPlan.identificationPoints),
+                planning: retainedPlan.plannedNavigation.plannedNavigation?.legs ?? [],
+                navigationMode: executionMode, identificationPoints: retainedPlan.identificationPoints,
                 amendmentLegs: amendmentLegs
             )
         }
         guard flightPlan.legs.indices.contains(activeLegIndex),
               flightPlan.legs[activeLegIndex].id == activeLegID else { return nil }
-        let leg = flightPlan.legs[activeLegIndex]
-        let reportedProgress = flightPlan.identificationPoints
-            .filter { $0.legID == leg.id }
-            .filter { identificationPointTiming(for: .init(legID: leg.id, identificationPointID: $0.id))?.reachedAt != nil }
+        return RouteAmendmentRoute(
+            legs: flightPlan.legs,
+            firstAvailable: firstAmendableAnchor(in: flightPlan.legs, points: flightPlan.identificationPoints),
+            planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
+            navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints
+        )
+    }
+
+    private func firstAmendableAnchor(in legs: [NavigationLeg], points: [IdentificationPoint]) -> RouteAmendmentAnchor {
+        let leg = legs[activeLegIndex]
+        let reportedProgress = points.lazy
+            .filter { point in
+                point.legID == leg.id && self.identificationPointTiming(
+                    for: .init(legID: leg.id, identificationPointID: point.id)
+                )?.reachedAt != nil
+            }
             .map(\.progress.fraction)
             .max() ?? 0
-        let sharesPreviousBoundary = reportedProgress == 0 && activeLegIndex > 0 &&
-            flightPlan.legs[activeLegIndex - 1].arrival.id == leg.departure.id
-        let earliest = sharesPreviousBoundary
-            ? RouteAmendmentAnchor(legIndex: activeLegIndex - 1, legID: flightPlan.legs[activeLegIndex - 1].id, fraction: 1)
-            : RouteAmendmentAnchor(legIndex: activeLegIndex, legID: leg.id, fraction: reportedProgress)
-        return RouteAmendmentRoute(legs: flightPlan.legs, firstAvailable: earliest,
-                                   planning: flightPlan.plannedNavigation.plannedNavigation?.legs ?? [],
-                                   navigationMode: executionMode, identificationPoints: flightPlan.identificationPoints)
+        if reportedProgress == 0, activeLegIndex > 0,
+           legs[activeLegIndex - 1].arrival.id == leg.departure.id {
+            return .init(legIndex: activeLegIndex - 1, legID: legs[activeLegIndex - 1].id, fraction: 1)
+        }
+        return .init(legIndex: activeLegIndex, legID: leg.id, fraction: reportedProgress)
     }
 }
 

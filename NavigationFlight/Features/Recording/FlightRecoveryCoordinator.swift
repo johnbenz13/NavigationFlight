@@ -427,6 +427,21 @@ final class FlightRecoveryCoordinator {
                         id: departure.amendmentID, expectedLegID: departure.sourceLegID,
                         targetID: departure.targetID, at: event.occurredAt, replaying: departure
                     )
+                case .routeAmendmentRejoined(let rejoin):
+                    let companionCount = RecordedFlightEventPayload.rejoinCompanions(rejoin).count
+                    guard flight.amendmentRejoin == rejoin, index + companionCount < snapshot.events.count else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    let events = Array(snapshot.events[index...(index + companionCount)])
+                    try FlightRouteTransaction(
+                        recordingID: snapshot.recording.id, expectedSequence: event.sequence, events: events
+                    ).validate()
+                    let evidence = events.dropFirst()
+                    guard evidence.allSatisfy({ !undoneEventIDs.contains($0.id) }) else {
+                        throw FlightRecoveryError.invalidJournal
+                    }
+                    routeEvidenceIDs.formUnion(evidence.map(\.id))
+                    try flight.reachCurrentWaypoint(at: event.occurredAt)
                 case .amendmentDepartureIdentified(let legID, let targetID):
                     guard flight.legIDs[flight.activeLegIndex] == legID,
                           flight.activePartwayDeparture?.departureStop?.id == targetID else {
@@ -441,15 +456,15 @@ final class FlightRecoveryCoordinator {
                 case .identificationPointReached(let key):
                     try flight.reachIdentificationPoint(
                         key: key,
-                        orderedActiveLegPointKeys: orderedPointKeys(for: key.legID, in: flightPlan, pending: flight.pendingRouteAmendment),
+                        orderedActiveLegPointKeys: flight.orderedIdentificationPointKeys(in: flightPlan),
                         at: event.occurredAt
                     )
                 case .waypointReached(let legID):
-                    guard flight.legIDs[flight.activeLegIndex] == legID else {
+                    guard !flight.awaitsAmendmentRejoin, flight.activeLegID == legID else {
                         throw FlightRecoveryError.invalidJournal
                     }
                     try flight.reachCurrentWaypoint(
-                        orderedActiveLegPointKeys: orderedPointKeys(for: legID, in: flightPlan, pending: flight.pendingRouteAmendment),
+                        orderedActiveLegPointKeys: flight.orderedIdentificationPointKeys(in: flightPlan),
                         at: event.occurredAt
                     )
                 case .etaRevised(let target, let priorSeconds, let committedSeconds):
@@ -521,6 +536,9 @@ final class FlightRecoveryCoordinator {
                 if departure.recordedOriginalArrival {
                     departureArrivalEvidence = (departure.sourceLegID, event.sequence + 1)
                 }
+            case .routeAmendmentRejoined(let rejoin):
+                candidateReaches.removeAll()
+                departureArrivalEvidence = (rejoin.replacementLegID, event.sequence + 1)
             case .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced:
                 candidateReaches.removeAll()
             case .pendingRouteAmendmentCancelled(let pendingID, let report, let reachEventID):
@@ -579,7 +597,7 @@ final class FlightRecoveryCoordinator {
                 switch event.payload {
                 case .legStarted, .waypointReached, .reachUndone, .destinationIdentified, .cockpitPresentationChanged,
                      .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced, .pendingRouteAmendmentCancelled,
-                     .amendmentDepartureIdentified, .routeAmendmentActivated:
+                     .amendmentDepartureIdentified, .routeAmendmentActivated, .routeAmendmentRejoined:
                     throw FlightRecoveryError.invalidJournal
                 default: break
                 }
@@ -593,11 +611,4 @@ final class FlightRecoveryCoordinator {
         return result
     }
 
-    private func orderedPointKeys(
-        for legID: UUID, in flightPlan: FlightPlan, pending: PendingRouteAmendment?
-    ) -> [IdentificationPointKey] {
-        flightPlan.identificationPoints
-            .filter { $0.legID == legID && pending?.includes($0) != false }
-            .map { IdentificationPointKey(legID: legID, identificationPointID: $0.id) }
-    }
 }

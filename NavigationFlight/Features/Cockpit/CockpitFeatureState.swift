@@ -673,14 +673,19 @@ struct FPLNavFileLoader: Sendable {
 extension CockpitFeatureState {
     mutating func prepareAmendmentConfirmationFixture(
         includesAdvisoryValues: Bool = false,
-        isFutureDeparture: Bool = false
+        isFutureDeparture: Bool = false,
+        rejoinFixture: String? = nil
     ) {
         guard let route = routeForAmendment else { return }
         let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
         guard route.legs.indices.contains(departureIndex + 1) else { return }
         updateRouteAmendment(.open)
-        let departure = route.anchor(at: departureIndex, fraction: 0.5)
-        let rejoin = route.anchor(at: departure.legIndex + 1, fraction: 1)
+        let departure = route.anchor(at: departureIndex, fraction: rejoinFixture == "partway" ? 0.25 : 0.5)
+        let rejoin: RouteAmendmentAnchor = switch rejoinFixture {
+        case "partway": route.anchor(at: departureIndex, fraction: 0.5)
+        case "final": route.anchor(at: route.legs.count - 1, fraction: 1)
+        default: route.anchor(at: departure.legIndex + 1, fraction: 1)
+        }
         let position = route.coordinate(at: departure)
         let via = WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,
                                   longitudeDegrees: position.longitudeDegrees + 0.02)

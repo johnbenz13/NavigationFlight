@@ -171,6 +171,8 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
               let first = replacementLegs.first?.from, let last = replacementLegs.last?.to,
               route.sameLocation(first.position, route.coordinate(at: departure)),
               route.sameLocation(last.position, route.coordinate(at: rejoin)),
+              !flight.legIDs.contains(id), !replacementLegs.contains(where: { $0.id == id }),
+              validRejoinStop(last, on: route),
               Set(replacementLegs.map(\.id)).count == replacementLegs.count,
               Set(replacementLegs.map(\.id)).isDisjoint(with: flight.legIDs),
               replacementLegs.allSatisfy({ $0.isValid && !route.sameLocation($0.from.position, $0.to.position) }),
@@ -189,6 +191,17 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
                     || departurePlannedElapsedSeconds != nil {
             throw Validation.invalidGeometry
         }
+    }
+
+    @MainActor
+    private func validRejoinStop(_ stop: Stop, on route: RouteAmendmentRoute) -> Bool {
+        let source = route.legs[rejoin.legIndex]
+        if rejoin.fraction == 0 { return stop.id == source.departure.id }
+        if rejoin.fraction == 1 {
+            let next = route.legs.dropFirst(rejoin.legIndex + 1).first
+            return stop.id == source.arrival.id && (next == nil || next?.departure.id == stop.id)
+        }
+        return !route.legs.contains { $0.departure.id == stop.id || $0.arrival.id == stop.id }
     }
 
     @MainActor

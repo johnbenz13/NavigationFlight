@@ -215,6 +215,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
             departureHeaderChanged: departureHeaderChanged,
             mapView: mapView
         )
+        if let style = mapView.style {
+            context.coordinator.installOperationalStyle(style, on: mapView)
+        }
     }
 
     final class Coordinator: NSObject, MLNMapViewDelegate, UIGestureRecognizerDelegate {
@@ -273,7 +276,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             amendmentOverlay?.presentation = amendment
             let previousPending = amendmentOverlay?.pending
             let pendingChanged = (previousPending == nil) != (pending == nil) ||
-                (previousPending?.activeReplacementLegID == nil) != (pending?.activeReplacementLegID == nil)
+                previousPending?.isActivated != pending?.isActivated
             amendmentOverlay?.pending = pending
             if modeChanged || pendingChanged, let style = mapView.style {
                 updateOperationalLayers(in: style)
@@ -304,7 +307,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             for identifier in layers {
                 style.layer(withIdentifier: identifier)?.isVisible = visible
             }
-            if let pending = amendmentOverlay?.pending, pending.activeReplacementLegID == nil {
+            if let pending = amendmentOverlay?.pending, !pending.isActivated {
                 for layer in [Identifier.routeLayer, Identifier.activeLayer, Identifier.previewLayer] {
                     style.layer(withIdentifier: layer)?.isVisible = false
                 }
@@ -330,6 +333,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private let isCameraUserControlled: Binding<Bool>
         private var reducesMotion: Bool
         private var styleIsReady = false
+        private var needsInitialFocus = true
         private var endpointAnnotations: [MLNPointAnnotation] = []
         private weak var etaCalloutView: DestinationCalloutAnnotationView?
         private weak var vorDMECalloutView: VORDMECalloutAnnotationView?
@@ -426,6 +430,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
         }
 
         func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
+            installOperationalStyle(style, on: mapView)
+        }
+
+        func installOperationalStyle(_ style: MLNStyle, on mapView: MLNMapView) {
+            // A bundled style can finish before the delegate is attached,
+            // particularly when the Cockpit is mounted after disk recovery.
+            guard !styleIsReady else { return }
             addChart(to: style)
             addRoute(to: style)
             addDriftReferences(to: style)
@@ -435,6 +446,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
             updateOperationalLayers(in: style)
             updateEndpointAnnotations(on: mapView)
             styleIsReady = true
+        }
+
+        func mapViewDidFinishRenderingFrame(_ mapView: MLNMapView, fullyRendered: Bool) {
+            // Fit against the laid-out viewport instead of the zero-sized view
+            // that can exist when a restored tab first receives its style.
+            guard styleIsReady, needsInitialFocus, mapView.window != nil, !mapView.bounds.isEmpty else { return }
+            needsInitialFocus = false
             if isCameraUserControlled.wrappedValue, let initialCamera {
                 restore(initialCamera, on: mapView)
             } else if case .replacementReview = lastFocusRequest.mode {
@@ -1042,13 +1060,19 @@ struct OfflineAviationMapView: UIViewRepresentable {
             guard let leg = presentation.activeLeg else { return }
             publishCameraOwnership(isUserControlled: false)
             if legState == .ready {
-                fit(
-                    [leg.from, leg.to],
-                    on: mapView,
-                    padding: UIEdgeInsets(top: 185, left: 105, bottom: 115, right: 190),
-                    animated: animated
-                )
-                mapView.setDirection(0, animated: animated)
+                let padding = UIEdgeInsets(top: 185, left: 105, bottom: 115, right: 190)
+                if let pending = amendmentOverlay?.pending, pending.isActivated, pending.activeReplacementLegID == nil {
+                    // Fit the retained endpoints and reset the prior replacement bearing in one camera update.
+                    let endpoints = [coordinate(leg.from), coordinate(leg.to)]
+                    mapView.setVisibleCoordinates(
+                        endpoints, count: UInt(endpoints.count), edgePadding: padding, direction: 0,
+                        duration: animated ? duration ?? 0.35 : 0,
+                        animationTimingFunction: nil, completionHandler: nil
+                    )
+                } else {
+                    fit([leg.from, leg.to], on: mapView, padding: padding, animated: animated)
+                    mapView.setDirection(0, animated: animated)
+                }
             } else {
                 var coordinates = [leg.from, leg.to]
                 if let next = presentation.nextLegPreview {

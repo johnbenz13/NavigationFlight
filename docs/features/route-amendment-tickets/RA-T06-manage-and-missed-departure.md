@@ -1,6 +1,6 @@
 # RA-T06 · Replace or cancel a pending amendment and resolve a missed departure
 
-Approved implementation contract · 2026-11-22. Implementation requires separate authorization.
+Approved implementation contract · 2026-11-22. Cockpit reconciliation approved by John · 2026-11-23. Implementation requires separate authorization.
 
 ## Outcome
 
@@ -18,6 +18,7 @@ A pilot can manage one pending amendment and explicitly report the original dest
 - The explicit original-destination report from Manage opens the confirmation. The app compares route order after that pilot action. GPS, elapsed time, and passive map activity never cause the prompt. Keep pending records neither reach nor cancellation. Cancel and record reach commits both effects once and advances the current route under its existing policy.
 - Expose the original-destination action only while the shortened leg is current. A report for its departure follows the normal transition and does not show this dialog. Retain earlier history and permit another draft on the remaining route after activation using RA-T01.
 - Preserve the current route, pending amendment and requested intent on failure. Retry cannot apply only one part. Existing ordinary reach Undo retains atomic prior-state restoration when it applies.
+- Pending management remains a disclosure over the regular Cockpit. Reporting the actual departure continues into the shared cockpit specified in #207. The cancel-and-reach path continues on the original route through the ordinary successor or final-arrival state.
 
 ## Interface and source context
 
@@ -27,12 +28,14 @@ Proposed change. Extend pending management on the existing route revision. Open 
 
 ## Visual contract
 
-The canonical comparison is iPad Pro 11-inch portrait (834 × 1194). Where this slice touches adaptive UI, use the approved 1194 × 834 iPad landscape and 402 × 874 iPhone 16 Pro portrait references. The Figma route and values are illustrative. Reuse the existing UIKit/SwiftUI integration and app typography, spacing, tap-target and localization patterns specified by the design.
+Compare iPad Pro 11-inch portrait (834 × 1194) first. Compare iPad landscape (1194 × 834) and iPhone 16 Pro portrait (402 × 874) using the [regular iPad landscape](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=26-2) and [regular iPhone portrait](https://www.figma.com/design/BjpTMuX6RmEE7Ifs59Al7M?node-id=26-176). Use the app’s existing native fonts, placement and spacing, 44-point interactive targets, and accessibility behavior. The reference route and values are illustrative.
 
-| Region and state | Design target | Reuse and acceptance |
+| State or region | Figma or regular pattern | Visual acceptance |
 | --- | --- | --- |
-| Pending management | [Pending state](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=14-1236) · [iPad pencil popover](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-266) · [iPhone management sheet](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-461) · [Cancellation confirmation](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-362) · [Replacement review](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=15-743) | Reuse the existing pencil slot and Cockpit console. The pending management actions appear only while the anchored popover or compact sheet is open. Dismiss without changing the route. Reuse the review fields and confirmation dialog pattern.  |
-| Explicit original-destination report | [Explicit original destination report](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-384) · [Exact dialog node](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-457) | Use a confirmable sheet/dialog over operational Cockpit with a clear destination example and both explicit actions. Keep pending must leave the existing Cockpit available.  |
+| Pending management | [pending Cockpit](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=14-1236) · [iPad anchored popover](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-266) · [iPhone sheet](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-461) | Reuse the clock pencil in the same slot with the Manage pending amendment label. Offer scoped actions in the popover or native sheet, show the original-destination report only on a shortened current leg, and return focus on dismissal. |
+| Replace and cancel | [replacement review](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=15-743) · [editor/adaptation](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=42-4420) · [cancel confirmation](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=26-362) | Fit the named departure and rejoin within the chart’s visible region above the review console. Reuse the ordered review, leg fields, regular contrast and confirmation treatment. Keep saved route closes the review without replacing the pending record. |
+| Original report and save failure | [surrounding Cockpit](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-384) · [exact dialog](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-457) · [save/retry pattern](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=14-751) | Use the destination name, Keep pending and Cancel and record reach. Keep secondary copy and destructive controls readable on the presented surfaces. Adapt the dialog to compact and Larger Text. Retry preserves the last committed route and requested action. |
+| Report the actual departure | [shortened departure identified](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=23-296) · [Ready](https://www.figma.com/design/o6gfoVEgyzJ0UA51d9Vi9M?node-id=2-3) · [Active](https://www.figma.com/design/o6gfoVEgyzJ0UA51d9Vi9M?node-id=2-6) | Use the shortened leg’s standard Reach without opening the original-destination confirmation. The resulting regular replacement-leg Cockpit belongs to #207. |
 
 ## Reproduction and acceptance
 
@@ -41,6 +44,8 @@ The canonical comparison is iPad Pro 11-inch portrait (834 × 1194). Where this 
 - Domain and transaction tests cover replace/cancel, both later-reach outcomes, the anchor equality branch, a stale prompt and persistence failure with no partial events.
 - Verify that ordinary reach Undo restores the state before its atomic action when available, and recovery reconstructs pending or cancelled state from the same journal records.
 - XCUITest opens and dismisses the pending pencil popover or compact sheet, checks both original-destination dialog paths, and verifies the normal Identify and Reach target is the departure point and proceeds without opening this dialog. Capture the updated iPad portrait path and the iPhone sheet and confirmation sizing. Verify VoiceOver announces Manage pending amendment and returns focus to the pencil on dismissal.
+
+- Capture both dialog actions, iPad popover and iPhone native sheet dismissal, cancellation, replacement review with both anchors visible, and failure/retry. Under Larger Text the controls and instructions remain usable. Confirm the actual departure does not show the original-destination dialog.
 
 Tests and rendered comparisons belong to the separately authorized implementation. Record the exact Figma node, device, scenario, and resulting evidence.
 

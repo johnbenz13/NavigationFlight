@@ -1,6 +1,6 @@
 # RA-T09 · Review the amendment in Flight History and diagnostic evidence
 
-Approved implementation contract · 2026-11-22. Implementation requires separate authorization.
+Approved implementation contract · 2026-11-22. Cockpit reconciliation approved by John · 2026-11-23. Implementation requires separate authorization.
 
 ## Outcome
 
@@ -17,6 +17,7 @@ A pilot can reconstruct the confirmed and flown route changes, including bypasse
 - Show original, bypassed, operational amendment, and available recorded track geometry with distinct legend entries.
 - Timeline exposes confirmation, replacement or cancellation, departure, rejoin and Undo as distinct actions. A bundled missed-departure decision contains the cancellation and ordinary reach facts. An unconfirmed draft produces no amendment event.
 - Debug/diagnostic evidence round-trips the normalized route and event values. Preserve GPX as observed track evidence and keep action-only evidence useful without inferring a recorded location.
+- In historical route geometry, the preceding leg ends at the first replacement leg’s departure, and the final replacement leg ends at the retained leg’s start. Reconstruct these shared points even when no track is available. The regular flight Cockpit revision changes no replay interaction or evidence meaning.
 
 ## Interface and source context
 
@@ -26,12 +27,13 @@ Proposed change. Project operational route facts and ordered journal events into
 
 ## Visual contract
 
-The canonical comparison is iPad Pro 11-inch portrait (834 × 1194). Where this slice touches adaptive UI, use the approved 1194 × 834 iPad landscape and 402 × 874 iPhone 16 Pro portrait references. The Figma route and values are illustrative. Reuse the existing UIKit/SwiftUI integration and app typography, spacing, tap-target and localization patterns specified by the design.
+Compare iPad Pro 11-inch portrait (834 × 1194) first, with 1194 × 834 iPad landscape and 402 × 874 iPhone 16 Pro portrait adaptations. Use the standard Debrief layout, labels, target sizes and VoiceOver reading order. The reference route and values are illustrative.
 
-| Region and state | Design target | Reuse and acceptance |
+| State or region | Figma or regular pattern | Visual acceptance |
 | --- | --- | --- |
-| Amendment route and events | [Debrief map and replay console](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=15-423) | Reuse the [approved compact replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321), action selection, legend treatment, and [action-only layout](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-522). |
-| Responsive history | [Accessibility coverage](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=15-301) | Retain [approved iPad landscape replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1088) and [iPhone portrait replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1288) layout; the new legend and event labels must wrap and retain reading order. |
+| Route and event selection | [amendment Debrief](https://www.figma.com/design/7RYloAn7AntwSMe3zz5F4B?node-id=15-423) · [standard replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=73-321) | Reuse existing replay transport, route legend and event selection. Distinguish original, bypassed, operational replacement/retained and recorded track. A dashed bypass is planned route evidence. Preserve shared departure and rejoin occurrences and individual event facts when selecting events. |
+| No recorded track | [action-only replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-522) | Show the no-usable-track treatment and action timeline. Keep route evidence readable and independent of any location or track inferred from a recorded action. |
+| Responsive Debrief | [iPad landscape replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1088) · [iPhone portrait replay](https://www.figma.com/design/OSPuLyy5Qtde2iajUNeWDL?node-id=95-1288) | Use the regular Debrief layout. Keep the legend, selected event, action reading order and replay controls available at the supported sizes. |
 
 ## Reproduction and acceptance
 
@@ -40,6 +42,8 @@ The canonical comparison is iPad Pro 11-inch portrait (834 × 1194). Where this 
 - Synthetic debrief projection and portable export tests round-trip ordered actions, route geometries, stable selection and Undo links, with and without track. Verify untouched and legacy evidence compatibility and existing GPX output.
 - XCUITest opens a closed Flight, selects amendment and Undo events and reviews the affected route. Capture the approved iPad portrait replay and the reused compact, landscape, and action-only patterns with amendment data.
 - Verify the ordinary route, partial evidence styling, diagnostic package validation and GPX regression suites.
+
+- In the closed fixture, select departure and rejoin in the timeline and inspect the shared points consistently with and without recorded track. Verify that the bypass and operational route remain legible in the amendment-specific legend and the existing responsive and action-only replay shells.
 
 Tests and rendered comparisons belong to the separately authorized implementation. Record the exact Figma node, device, scenario, and resulting evidence.
 

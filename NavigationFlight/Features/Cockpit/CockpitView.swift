@@ -199,6 +199,7 @@ struct CockpitView: View {
     var routeAmendmentDraft: RouteAmendmentDraft?
     var isAmendmentWorkspaceVisible = false
     var isAmendmentPlotting = false
+    @State private var isAmendmentPointPickerPresented = false
     var amendmentDisplayDate: Date?
     var isReplacingPendingAmendment = false
     var pendingAmendmentManagement: PendingAmendmentManagement?
@@ -753,7 +754,8 @@ struct CockpitView: View {
                 } else {
                     onRouteAmendment(.discard)
                 }
-            }
+            },
+            isPointPickerPresented: $isAmendmentPointPickerPresented
         )
     }
 
@@ -1129,7 +1131,11 @@ struct CockpitView: View {
                 cockpitPresentationState.setMapToolsPresented(false)
                 onShowPlanInspection()
             },
-            onClose: { cockpitPresentationState.setMapToolsPresented(false) }
+            onClose: { cockpitPresentationState.setMapToolsPresented(false) },
+            onAmendmentPointInput: isEditingRouteAmendment && isAmendmentPlotting ? {
+                cockpitPresentationState.setMapToolsPresented(false)
+                isAmendmentPointPickerPresented = true
+            } : nil
         )
     }
 

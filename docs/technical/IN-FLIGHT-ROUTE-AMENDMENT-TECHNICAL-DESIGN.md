@@ -48,6 +48,31 @@ DEBUG workspace fixture seeds a hidden three-leg draft and injects a display dat
 (07:22) without changing operational timestamps. The fixture uses disposable Flight
 data; it is not a second navigation clock.
 
+## AP-02 partial projection and input routing · 2026-11-24
+
+`RouteAmendmentDraft.reviewLegs` zips the departure, plotted points and optional
+rejoin; projection no longer requires a completed route. Directed leg identity
+uses anchor occurrence or plotted UUID only. `LegGeometry` separately keys saved
+complete values by identity and endpoint coordinates, preserving the existing
+geometry-invalidates-values behavior and geometry Undo without identity churn.
+Full value/selection/cue Undo remains AP-07.
+
+`CockpitFeatureState` owns plotting intent: on placement it strips leg-hit choices;
+off placement accepts only explicit leg hits. Row/editor commands are unavailable
+while plotting. `stopPlotting` cancels transient anchor/placement choices into
+an editable partial workspace without asserting a rejoin or Flight transition.
+The legacy review step remains a compatibility state; `PendingRouteAmendment`
+still independently validates rejoin, ordering, geometry and complete values.
+
+`RouteAmendmentConsole` always renders `RouteAmendmentReview`, within the AP-01
+fixed shell. New formed legs scroll into view without animation; selected editors
+reuse the same IDs. During plotting rows remain readable but disabled. Map tools
+provides the retained waypoint/map-center picker only while plotting; regular
+Cockpit tools are unchanged. Native editor and complete-value saving remain until
+AP-04/05. DEBUG `A-partial` extends fixture A with departure+Point 1, no rejoin or
+values, and the existing display-only 07:22 clock. It produces no operational
+route mutation. See the [AP-02 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-02-implementation.md).
+
 ## Code at the planning baseline
 
 | Area | Inspected interface and constraint |

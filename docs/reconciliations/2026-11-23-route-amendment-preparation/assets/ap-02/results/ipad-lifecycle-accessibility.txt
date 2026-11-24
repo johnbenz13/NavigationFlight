@@ -1,0 +1,38 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-24T12:20:12Z
+Total Results: 2
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testRouteAmendmentDraftCanPlotPauseResumeAndRecoverDeparture()
+TEST_DISPLAY_NAME: testRouteAmendmentDraftCanPlotPauseResumeAndRecoverDeparture()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 2895
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testRouteAmendmentExposesWaypointAndResumeControlsWithAccessibilityText()
+TEST_DISPLAY_NAME: testRouteAmendmentExposesWaypointAndResumeControlsWithAccessibilityText()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3612
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlightUITests/testRouteAmendmentExposesWaypointAndResumeControlsWithAccessibilityText(): Modifying state during view update, this will cause undefined behavior.
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

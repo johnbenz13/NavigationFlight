@@ -19,7 +19,7 @@ struct RouteAmendmentConsole: View {
 
     private let actionColor = Color(red: 0, green: 0.40, blue: 0.75)
 
-    @State private var isPointPickerPresented = false
+    @Binding var isPointPickerPresented: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,28 +44,33 @@ struct RouteAmendmentConsole: View {
 
     private var draftContent: some View {
         VStack(spacing: 0) {
-            if !dynamicTypeSize.isAccessibilitySize {
-                workspaceHeading
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            workspaceHeading
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 4) {
-                        if dynamicTypeSize.isAccessibilitySize { workspaceHeading }
                         if let message = draft.message, !draft.isInspecting {
                             Label(message, systemImage: "exclamationmark.circle")
                                 .font(.subheadline)
                                 .accessibilityIdentifier("amendment-feedback")
                         }
-                        // Retain the existing route commands until AP-02 replaces plotting.
-                        if isPlotting { pointInput }
+                        RouteAmendmentReview(draft: draft, route: route, compact: compact,
+                                             isPlotting: isPlotting, isReplacing: isReplacing, onIntent: onIntent)
+                            .allowsHitTesting(draft.legPanel == nil)
                         controls
                             .allowsHitTesting(draft.legPanel == nil)
-                        if draft.step == .drawing { drawingPrimaryAction }
-                        if draft.step == .review {
-                            backToDrawingButton
-                        } else if draft.step != .departure && draft.step != .drawing {
+                        if confirmationUnavailableWhileAmended {
+                            Text("You can keep editing this draft. Confirming another amendment on this revised route is unavailable.")
+                                .font(.subheadline)
+                                .foregroundStyle(PendingAmendmentPalette.secondary)
+                        }
+                        if isReplacing {
+                            Text("Review the replacement leg values before confirming.")
+                                .font(.subheadline)
+                                .foregroundStyle(PendingAmendmentPalette.secondary)
+                        }
+                        if draft.step != .departure && draft.step != .drawing && draft.step != .review {
                             footer
                         }
                     }
@@ -76,6 +81,9 @@ struct RouteAmendmentConsole: View {
                 .onChange(of: draft.editor?.id) { _, id in
                     if let id { proxy.scrollTo(id, anchor: .center) }
                 }
+                .onChange(of: draft.reviewLegs(on: route).last?.id) { _, id in
+                    if isPlotting, let id { proxy.scrollTo(id, anchor: .bottom) }
+                }
             }
             workspaceActions
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -83,29 +91,32 @@ struct RouteAmendmentConsole: View {
         }
     }
 
+    @ViewBuilder
     private var workspaceHeading: some View {
-        ViewThatFits(in: .horizontal) {
-            if dynamicTypeSize.isAccessibilitySize {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Amend").font(.headline)
-                        Text(draft.mode.title).font(.caption).foregroundStyle(.secondary)
-                    }
+        if dynamicTypeSize.isAccessibilitySize {
+            HStack(spacing: 8) {
+                Text("Amend")
+                    .font(.caption2.weight(.semibold))
+                    .accessibilityLabel("Amend route, \(draft.mode.title)")
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                plottingButton.font(.caption2)
+            }
+            .frame(minHeight: 44)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    workspaceTitle
                     Spacer(minLength: 0)
-                    plottingButton.font(.caption)
+                    plottingButton
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    workspaceTitle
+                    plottingButton
                 }
             }
-            HStack(spacing: 12) {
-                workspaceTitle
-                Spacer(minLength: 0)
-                plottingButton
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                workspaceTitle
-                plottingButton
-            }
+            .frame(minHeight: 44)
         }
-        .frame(minHeight: 44)
     }
 
     private var workspaceTitle: some View {
@@ -114,7 +125,7 @@ struct RouteAmendmentConsole: View {
                 .font(compact ? .title3.bold() : .title2.bold())
                 .accessibilityAddTraits(.isHeader)
             if !compact {
-                Text("\(draft.mode.title) · \(draft.reviewLegs(on: route).count) legs")
+                Text("\(draft.mode.title) · \(legCountText)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
@@ -125,13 +136,23 @@ struct RouteAmendmentConsole: View {
     }
 
     private var plottingButton: some View {
-        Button(isPlotting ? "Stop plotting" : "Plot points") { onIntent(.togglePlotting) }
+        Button { onIntent(.togglePlotting) } label: {
+            Text(isPlotting ? "Done plotting" : "Plot points")
+                .frame(minHeight: 32)
+        }
             .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)
             .frame(minHeight: 44)
             .disabled(draft.legPanel != nil)
             .accessibilityValue(isPlotting ? "On" : "Off")
+            .accessibilityHint(isPlotting ? "Map taps plot points. Map tools provides route waypoints and map center input." : "Enable map point placement")
             .accessibilityIdentifier("toggle-amendment-plotting")
+            .accessibilityAction(named: "Route waypoints") {
+                if isPlotting { isPointPickerPresented = true }
+            }
+            .accessibilityAction(named: "Use map center") {
+                if isPlotting { onPlaceAtMapCenter() }
+            }
     }
 
     @ViewBuilder
@@ -199,10 +220,15 @@ struct RouteAmendmentConsole: View {
 
     private func readiness(_ status: AmendmentLifecycleStatus) -> some View {
         Text(status == .ready
-             ? "\(dynamicTypeSize.isAccessibilitySize ? "Ready" : "Ready to arm") · \(draft.reviewLegs(on: route).count) legs"
-             : "Route and required values needed")
+             ? "\(dynamicTypeSize.isAccessibilitySize ? "Ready" : "Ready to arm") · \(legCountText)"
+             : "\(draft.hasContent ? (dynamicTypeSize.isAccessibilitySize ? "Incomplete" : "Route incomplete") : "No amendment yet") · \(legCountText)")
             .font(.caption.weight(.semibold))
             .accessibilityIdentifier("amendment-readiness")
+    }
+
+    private var legCountText: String {
+        let count = draft.reviewLegs(on: route).count
+        return count == 1 ? "1 leg" : "\(count) legs"
     }
 
     private struct AmendmentActionAvailability: ViewModifier {
@@ -299,22 +325,29 @@ struct RouteAmendmentConsole: View {
     private var controls: some View {
         switch draft.step {
         case .departure:
-            panel {
-                Text("Choose departure").font(.headline)
-                Text("Tap a waypoint or a point along the remaining route.")
+            VStack(alignment: .leading, spacing: 4) {
+                Text(isPlotting ? "Choose departure" : "Choose Plot points to begin.").font(.headline)
+                Text("Choose a departure on the remaining original route. Each new leg appears here as you draw.")
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
             if draft.departure != nil { button("Back to drawing", intent: .back) }
             if draft.departure == nil, draft.rejoin != nil {
                 button("Choose a different rejoin too", intent: .clearRejoin)
             }
-        case .drawing:
-            routeSequence
-            if let point = draft.points.first(where: { $0.id == draft.selectedPointID }) {
-                selectedPointRow(point)
+        case .drawing, .review:
+            if draft.rejoin == nil {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isPlotting ? "Add another point or rejoin the route." : "Route incomplete · choose a later return point.")
+                        .font(.subheadline.weight(.semibold))
+                    Text(isPlotting ? "Done plotting lets you enter values before the route is complete."
+                         : "Select a leg to enter values. Choose Plot points to continue.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
             }
         case .move, .rejoin:
             if case .move = draft.step { Text("Tap the new location for this point").font(.subheadline) }
-            routeSequence
+            else { Text("Choose a return point ahead of departure").font(.subheadline) }
             button("Back to drawing", intent: .back)
         case .confirmRejoin(let anchor):
             panel {
@@ -341,164 +374,7 @@ struct RouteAmendmentConsole: View {
                 Text("Your plotted points and rejoin are still in the draft.")
                     .foregroundStyle(.secondary)
             }
-        case .review:
-            RouteAmendmentReview(draft: draft, route: route, compact: compact, isReplacing: isReplacing, onIntent: onIntent)
-                .allowsHitTesting(draft.legPanel == nil)
-            if confirmationUnavailableWhileAmended {
-                Text("You can keep editing this draft. Confirming another amendment on this revised route is unavailable.")
-                    .font(.subheadline)
-                    .foregroundStyle(PendingAmendmentPalette.secondary)
-            }
-            if isReplacing {
-                Divider().padding(.vertical, 12)
-                Text("Review the replacement leg values before confirming.")
-                    .font(.subheadline)
-                    .foregroundStyle(PendingAmendmentPalette.secondary)
-            }
-
         }
-    }
-
-    private enum RouteItemID: Hashable {
-        case departure, point(UUID), rejoin
-    }
-
-    private struct RouteItem: Identifiable {
-        let id: RouteItemID
-        let name: String
-
-        var role: String {
-            switch id {
-            case .departure: "Departure"
-            case .point: "Via"
-            case .rejoin: "Return"
-            }
-        }
-
-        var accessibilityID: String {
-            switch id {
-            case .departure: "amendment-departure-point"
-            case .point: "amendment-draft-point"
-            case .rejoin: "amendment-return-point"
-            }
-        }
-
-        var intent: RouteAmendmentDraft.Intent {
-            switch id {
-            case .departure: .chooseDeparture
-            case .point(let id): .selectPoint(id)
-            case .rejoin: .chooseRejoin
-            }
-        }
-    }
-
-    private var backToDrawingButton: some View {
-        lightweightAction("Back to drawing", id: "back-to-amendment-drawing", symbol: "chevron.backward") {
-            onIntent(.back)
-        }
-        .allowsHitTesting(draft.legPanel == nil)
-    }
-
-    private func lightweightAction(
-        _ title: LocalizedStringKey, id: String, symbol: String? = nil, perform: @escaping () -> Void
-    ) -> some View {
-        Button(action: perform) {
-            HStack(spacing: 4) {
-                if let symbol { Image(systemName: symbol).font(.caption.weight(.semibold)) }
-                Text(title).font(.subheadline)
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(.rect)
-            .foregroundStyle(RouteAmendmentPanelStyle.action)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(id)
-    }
-
-    private var routeAccent: Color { Color(RouteAmendmentMapOverlay.proposedColor) }
-
-    private var routeItems: [RouteItem] {
-        var items: [RouteItem] = []
-        if let departure = draft.departure {
-            items.append(.init(id: .departure, name: route.name(for: departure)))
-        }
-        items += draft.points.map { .init(id: .point($0.id), name: pointName($0)) }
-        if let rejoin = draft.rejoin {
-            items.append(.init(id: .rejoin, name: route.name(for: rejoin)))
-        }
-        return items
-    }
-
-    private var routeSequence: some View {
-        let items = routeItems
-        return ScrollViewReader { proxy in
-            ScrollView(.horizontal) {
-                HStack(spacing: compact ? 4 : 8) {
-                    ForEach(items) { item in
-                        if item.id != items.first?.id {
-                            Image(systemName: "chevron.forward")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .accessibilityHidden(true)
-                        }
-                        routeChip(item)
-                            .id(item.id)
-                    }
-                }
-                .padding(.vertical, 1)
-            }
-            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-            .accessibilityIdentifier("amendment-route-sequence")
-            .onChange(of: draft.selectedPointID, initial: true) { _, selected in
-                if let selected { proxy.scrollTo(RouteItemID.point(selected)) }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func routeChip(_ item: RouteItem) -> some View {
-        let selected = draft.selectedPointID.map { item.id == .point($0) } == true
-        let label = VStack(alignment: .leading, spacing: 1) {
-            Text(item.name)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(selected ? routeAccent : .primary)
-            Text(item.role)
-                .font(.caption2)
-                .foregroundStyle(selected ? routeAccent : .secondary)
-        }
-        .padding(.horizontal, compact ? 7 : 10)
-        .padding(.vertical, 3)
-        .frame(minHeight: 44, alignment: .leading)
-        .fixedSize(horizontal: true, vertical: false)
-        .background(selected ? routeAccent.opacity(0.12) : Color(.secondarySystemBackground),
-                    in: RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            if selected { RoundedRectangle(cornerRadius: 8).strokeBorder(routeAccent, lineWidth: 1.5) }
-        }
-        .contentShape(.rect)
-
-        if draft.step == .drawing {
-            Button { onIntent(item.intent) } label: { label }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(item.name), \(item.role)")
-                .accessibilityAddTraits(selected ? .isSelected : [])
-                .accessibilityIdentifier(item.accessibilityID)
-        } else {
-            label
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier(item.accessibilityID)
-        }
-    }
-
-    private var pointInput: some View {
-        Button { isPointPickerPresented = true } label: {
-            Text("Pick a point")
-                .font(.subheadline.weight(.semibold))
-                .frame(minHeight: 44)
-                .contentShape(.rect)
-        }
-        .accessibilityHint("Choose a route waypoint or use the center of the map")
-        .accessibilityIdentifier("pick-amendment-point")
     }
 
     private var pointPicker: some View {
@@ -510,8 +386,15 @@ struct RouteAmendmentConsole: View {
                 }
                 if draft.step == .drawing {
                     Button("Change departure") { sendPickerIntent(.chooseDeparture) }
-                    if draft.rejoin != nil {
-                        Button("Change return point") { sendPickerIntent(.chooseRejoin) }
+                    Button(draft.rejoin == nil ? "Choose return point" : "Change return point") {
+                        sendPickerIntent(.chooseRejoin)
+                    }
+                    // Retain the existing correction commands until AP-06 replaces their presentation.
+                    if let selected = draft.points.first(where: { $0.id == draft.selectedPointID }) {
+                        Section(pointName(selected)) {
+                            Button("Move point") { sendPickerIntent(.movePoint(selected.id)) }
+                            Button("Remove point", role: .destructive) { sendPickerIntent(.removePoint(selected.id)) }
+                        }
                     }
                 }
                 Section("Route waypoints") {
@@ -529,7 +412,7 @@ struct RouteAmendmentConsole: View {
                     }
                 }
             }
-            .navigationTitle("Pick a point")
+            .navigationTitle("Route waypoints")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -546,20 +429,7 @@ struct RouteAmendmentConsole: View {
 
     @ViewBuilder
     private var footer: some View {
-        if draft.step == .drawing {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 2) {
-                    undoAction
-                    discardButton
-                    Spacer(minLength: 4)
-                    drawingPrimaryAction
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    drawingPrimaryAction
-                    HStack(spacing: 4) { undoAction; discardButton }
-                }
-            }
-        } else if case .confirmRejoin(let anchor) = draft.step {
+        if case .confirmRejoin(let anchor) = draft.step {
             ViewThatFits(in: .horizontal) {
                 HStack { rejoinActions(anchor) }
                 VStack(alignment: .leading, spacing: 6) { rejoinActions(anchor) }
@@ -597,60 +467,6 @@ struct RouteAmendmentConsole: View {
         filledAction("Undo", id: "undo-amendment-plot") { onIntent(.undo) }
             .accessibilityLabel("Undo last plot")
             .disabled(!draft.canUndo)
-    }
-
-    @ViewBuilder
-    private var drawingPrimaryAction: some View {
-        if canFinishHere, let last = draft.points.last {
-            let title = draft.selectedPointID == last.id ? "Finish here" : "Finish at \(pointName(last))"
-            filledAction(title, id: "finish-amendment-here", prominent: true) { onIntent(.finishHere) }
-        } else if draft.rejoin == nil {
-            filledAction("Pick a return point", id: "choose-amendment-rejoin", prominent: true) { onIntent(.chooseRejoin) }
-        } else {
-            filledAction("Review legs", id: "review-amendment-legs", prominent: true) { onIntent(.review) }
-                .disabled(!draft.canReview)
-        }
-    }
-
-    private var canFinishHere: Bool { !draft.finishCandidates(on: route).isEmpty }
-
-    private func selectedPointRow(_ point: RouteAmendmentDraft.Point) -> some View {
-        let name = pointName(point)
-        // Keep right-to-left waypoint names in place within the surrounding sentence.
-        let displayName = "\u{2068}\(name)\u{2069}"
-        let description: String
-        if draft.rejoin == nil, point.id == draft.points.last?.id, canFinishHere {
-            description = "\(displayName) is on the original route"
-        } else if draft.rejoin == nil, point.id == draft.points.last?.id, point.routeCandidates.isEmpty {
-            description = "\(displayName) is off the route"
-        } else {
-            description = "Editing \(name)"
-        }
-        let status = Text(description)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityLabel(name)
-            .accessibilityIdentifier("selected-amendment-point")
-        return ViewThatFits(in: .horizontal) {
-            HStack(spacing: compact ? 1 : 6) {
-                status
-                Spacer(minLength: 4)
-                pointActions(point.id)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                status
-                HStack(spacing: 4) { pointActions(point.id) }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private func pointActions(_ id: UUID) -> some View {
-        filledAction("Move", id: "move-amendment-point") { onIntent(.movePoint(id)) }
-            .accessibilityLabel("Move point")
-        filledAction("Remove", id: "remove-amendment-point") { onIntent(.removePoint(id)) }
-            .accessibilityLabel("Remove point")
     }
 
     private var discardButton: some View {

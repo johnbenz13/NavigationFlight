@@ -48,6 +48,7 @@ struct CockpitMapToolsPanel: View {
     let onShowCharts: () -> Void
     let onInspectFlightPlan: () -> Void
     let onClose: () -> Void
+    var onAmendmentPointInput: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -67,6 +68,11 @@ struct CockpitMapToolsPanel: View {
 
     private var options: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if let onAmendmentPointInput {
+                toolButton("Route waypoints and map center", identifier: "amendment-map-input", minimumHeight: 44, action: onAmendmentPointInput)
+                    .frame(minHeight: 44)
+                    .padding(.top, 16)
+            }
             Text("FRAMING")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -93,13 +99,14 @@ struct CockpitMapToolsPanel: View {
     private func toolButton(
         _ title: LocalizedStringKey,
         identifier: String,
+        minimumHeight: CGFloat = 40,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                .frame(maxWidth: .infinity, minHeight: minimumHeight, alignment: .leading)
                 .padding(.horizontal, 14)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
         }

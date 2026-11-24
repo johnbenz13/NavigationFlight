@@ -15,6 +15,15 @@ Use the existing [planning configuration](../../architecture/planning-configurat
 
 ## Latest design revision
 
+[D04 · Direct drawing and long-press correction](proposed/design-revision-d04.md)
+is **approved by John on 2026-11-24** following review of AP-03.
+It removes plotting/continuation buttons, permits value entry during drawing and
+proposes direct correction of all points. Owner resolved overlaps with an Edit /
+Rejoin chooser; anchor recovery and accessible actions were approved in the same review.
+D04 supersedes their conflicting preparation interactions; D03 geometry and
+unaffected D02 states remain approved;
+no application implementation is authorized by the D04 proposal.
+
 [D03 · Separate heading/time sections and stable console geometry](proposed/design-revision-d03.md)
 addresses John’s 2026-11-24 review. Prior previews remain historical; D03 is the
 approved layout revision, limited to amendment UI and regular-Cockpit pencil/status text.

@@ -6,6 +6,48 @@ Approved baseline · John · 2026-11-22. Shared operational Cockpit direction ap
 - Inspected NavigationFlight revision `258a42cd060195a24086908fecee9bb44312ff30`. Navigation Editor comparison revision `7abb0d1c5551af401ef5d403252bc864e3679040`.
 - Scope is a local Flight amendment, including confirmed-route recovery and export/debrief context. No implementation, build, simulator, or test run was performed.
 
+## D04 direct drawing · approved technical scope · 2026-11-24
+
+John explicitly approved D04 on 2026-11-24, including anchor recovery and accessible
+actions. Earlier dated approvals and delivery remain historical. Approved local
+docs await an authorized commit/push/merge and immutable approval permalink.
+
+[Approved product behavior and Figma review](../reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md)
+intentionally revise the preparation input contract; this section records future
+scope, not implementation or delivery. Earlier approved/delivered sections remain
+historical. John approved the D04 design; implementation authorization remains separate.
+
+- Replace the user-controlled plotting toggle with geometry-derived interaction:
+  missing departure selects departure; open replacement appends points; eligible
+  deliberate return closes drawing. Ordinary taps after rejoin never extend it.
+- Proposed-leg and row short taps share the value-editor intent before and after
+  rejoin. An eligible original/proposed overlap presents **Edit / Rejoin** and
+  revalidates the chosen intent against current progress before applying it. Offer
+  Rejoin only while drawing with a departure. After closure, proposed-leg taps
+  only edit and original/free-map taps preserve geometry; deleting rejoin is an
+  explicit correction that reopens drawing.
+- All points include departure/rejoin. Long-press drag moves; long-press release
+  without drag offers Delete. Anchor placement resolves eligible original-route
+  occurrences and strict forward order, including same-leg fractions. Reject an
+  invalid drop atomically with feedback; movement/crossing alone never rejoins.
+  Preserve map pan/pinch and require long press before moving a point.
+- **Approved recovery:** deletion of departure retains vias,
+  rejoin and unaffected values, awaiting eligible replacement departure; deletion
+  of rejoin explicitly restores open drawing from the last surviving point.
+  Preserve unaffected edge values/cues and complete Undo snapshots. Incomplete
+  anchors prevent readiness. These agent-origin recovery details were approved with D04; no new APIs are
+  claimed as implemented.
+- Keep state ownership/domain boundaries and Flight isolation. Nondestructive
+  pencil leave/resume restores geometry and entries; Map tools exposes accessible
+  typed equivalents without requiring precision or removed mode controls.
+  **Approved accessible presentation:** retain waypoint/map-center inputs and a
+  native Departure / Point N / Rejoin action list with Move / Delete; accessible
+  Move selects the next eligible-location tap under the same domain constraints.
+  No operational-route/event mutation or regular Cockpit redesign is introduced.
+
+Approved scoped issue-text updates were published to #227/#228/#231/#233. Relevant domain/UI tests, build and simulator checks belong to a
+later authorized implementation; none ran for this documentation/design revision.
+
 ## Preparation revision planning · 2026-11-24
 
 The [approved future preparation revision](../features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md#approved-future-preparation-revision--2026-11-24)

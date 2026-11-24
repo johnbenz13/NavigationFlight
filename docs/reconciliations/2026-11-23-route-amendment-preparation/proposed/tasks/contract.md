@@ -1,5 +1,17 @@
 # Shared contract for amendment-preparation tasks
 
+## D04 scoped approval · John · 2026-11-24
+
+[Approved D04 frame/notes](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=48-409)
+supersede conflicting plotting/continuation controls, plotting-off value gating and
+short-point correction only; D03 geometry/unaffected D02 and dated history remain.
+Full contract: canonical product spec and D04 reconciliation revision locally;
+approved immutable docs permalink awaits authorized commit/push/merge. Design and
+behavior approval does not authorize implementation or check acceptance criteria.
+
+The earlier descriptions below are retained as dated history where D04 supersedes them.
+
+
 **Approved breakdown contract · John · 2026-11-24.** Product/design approval is recorded in
 [D03](../design-revision-d03.md); John approved these technical contracts and ticket boundaries, including the
 time-wheel first-edit semantics and scoped recovery-error reuse. Publication is

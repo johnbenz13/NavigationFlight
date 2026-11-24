@@ -1,0 +1,26 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-24T08:59:44Z
+Total Results: 1
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/1
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceLargerTextKeepsActionsReachable()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceLargerTextKeepsActionsReachable()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlightUITests/testAmendmentWorkspaceLargerTextKeepsActionsReachable(): Modifying state during view update, this will cause undefined behavior.
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

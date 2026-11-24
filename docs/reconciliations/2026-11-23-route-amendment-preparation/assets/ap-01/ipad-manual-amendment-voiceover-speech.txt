@@ -1,0 +1,10 @@
+NavigationFlight PROPOSED LEG · MANUAL
+⁨שפיים⁩ → ⁨Point 1⁩ Heading
+Magnetic heading
+Decrease by 1 degree Button
+Magnetic heading ––– Text field Double tap to edit.
+Increase by 1 degree Button
+Flight time
+Decrease by 5 seconds Button
+Flight time minutes –– Text field Double tap to edit.
+Flight time seconds –– Text field Double tap to edit.

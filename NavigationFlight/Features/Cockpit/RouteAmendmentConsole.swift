@@ -5,15 +5,13 @@ struct RouteAmendmentConsole: View {
     let route: RouteAmendmentRoute
     let currentLegTiming: RouteAmendmentLegTiming?
     let compact: Bool
-    let inSideRail: Bool
+    var isPlotting = false
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
     let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
     var isReplacing = false
     var confirmationUnavailableWhileAmended = false
     let onConfirm: () -> Void
-    let onStartNow: () -> Void
-    let canStartNow: Bool
-    let canConfirmForLater: Bool
+    var canConfirmReplacement = false
     let onKeepEditing: () -> Void
     let onPlaceAtMapCenter: () -> Void
     let onDiscard: () -> Void
@@ -25,18 +23,17 @@ struct RouteAmendmentConsole: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if !isReplacing || draft.step != .review || saveStatus != nil {
-                RouteAmendmentCurrentLeg(timing: currentLegTiming, compact: compact)
-                    .padding(.top, compact ? 8 : 12)
-            }
+            RouteAmendmentCurrentLeg(timing: currentLegTiming, compact: compact)
+                .padding(.top, compact ? 4 : 0)
+                .fixedSize(horizontal: false, vertical: true)
             if let saveStatus {
                 savePanel(saveStatus)
             } else {
                 draftContent
             }
         }
-        .padding(.horizontal, compact ? 12 : 20)
-        .tint(actionColor)
+        .padding(.horizontal, compact ? 16 : 20)
+        .tint(.accentColor)
         .background(Color(.systemBackground))
         .sheet(isPresented: $isPointPickerPresented) {
             pointPicker
@@ -47,38 +44,165 @@ struct RouteAmendmentConsole: View {
 
     private var draftContent: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    draftHeading
-                    if let message = draft.message, !draft.isInspecting {
-                        Label(message, systemImage: "exclamationmark.circle")
-                            .font(.subheadline)
-                            .accessibilityIdentifier("amendment-feedback")
-                    }
-                    controls
-                        .allowsHitTesting(draft.legPanel == nil)
-                    if inSideRail, draft.step == .review {
-                        if isReplacing {
-                            reviewFooter.padding(.top, 14)
-                        } else {
-                            reviewConfirmationButtons.padding(.top, 12)
+            if !dynamicTypeSize.isAccessibilitySize {
+                workspaceHeading
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if dynamicTypeSize.isAccessibilitySize { workspaceHeading }
+                        if let message = draft.message, !draft.isInspecting {
+                            Label(message, systemImage: "exclamationmark.circle")
+                                .font(.subheadline)
+                                .accessibilityIdentifier("amendment-feedback")
+                        }
+                        // Retain the existing route commands until AP-02 replaces plotting.
+                        if isPlotting { pointInput }
+                        controls
+                            .allowsHitTesting(draft.legPanel == nil)
+                        if draft.step == .drawing { drawingPrimaryAction }
+                        if draft.step == .review {
+                            backToDrawingButton
+                        } else if draft.step != .departure && draft.step != .drawing {
+                            footer
                         }
                     }
-                    if showsFooter, actionsFollowEditor { footer }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .scrollBounceBehavior(.basedOnSize)
+                .accessibilityIdentifier("route-amendment-console")
+                .onChange(of: draft.editor?.id) { _, id in
+                    if let id { proxy.scrollTo(id, anchor: .center) }
+                }
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .accessibilityIdentifier("route-amendment-console")
-            if draft.step == .review, !(inSideRail && isReplacing) {
-                reviewFooter
-            } else if showsFooter, !actionsFollowEditor {
-                footer
-                    .allowsHitTesting(draft.legPanel == nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 4)
+            workspaceActions
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var workspaceHeading: some View {
+        ViewThatFits(in: .horizontal) {
+            if dynamicTypeSize.isAccessibilitySize {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Amend").font(.headline)
+                        Text(draft.mode.title).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    plottingButton.font(.caption)
+                }
+            }
+            HStack(spacing: 12) {
+                workspaceTitle
+                Spacer(minLength: 0)
+                plottingButton
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                workspaceTitle
+                plottingButton
             }
         }
+        .frame(minHeight: 44)
+    }
+
+    private var workspaceTitle: some View {
+        HStack(spacing: 12) {
+            Text(isReplacing ? "Review replacement" : compact ? "Amend · \(draft.mode.title)" : "Amend route")
+                .font(compact ? .title3.bold() : .title2.bold())
+                .accessibilityAddTraits(.isHeader)
+            if !compact {
+                Text("\(draft.mode.title) · \(draft.reviewLegs(on: route).count) legs")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 7))
+            }
+        }
+    }
+
+    private var plottingButton: some View {
+        Button(isPlotting ? "Stop plotting" : "Plot points") { onIntent(.togglePlotting) }
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
+            .frame(minHeight: 44)
+            .disabled(draft.legPanel != nil)
+            .accessibilityValue(isPlotting ? "On" : "Off")
+            .accessibilityIdentifier("toggle-amendment-plotting")
+    }
+
+    @ViewBuilder
+    private var workspaceActions: some View {
+        if isReplacing {
+            HStack(spacing: 8) {
+                Button("Keep saved route") { onIntent(.discard) }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("keep-saved-amendment")
+                Button("Confirm replacement", action: onConfirm)
+                    .buttonStyle(.borderedProminent)
+                    .frame(minHeight: 44)
+                    .disabled(!canConfirmReplacement || draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
+                    .accessibilityIdentifier("confirm-amendment-replacement")
+            }
+            .padding(.bottom, 4)
+        } else {
+            preparationActions
+        }
+    }
+
+    private var preparationActions: some View {
+        let status = AmendmentLifecycleStatus.project(flight: nil, draft: draft, route: route)
+        return VStack(alignment: .leading, spacing: 0) {
+            if compact { readiness(status) }
+            HStack(spacing: 8) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    Menu("Actions") { workspaceEditingActions }
+                        .frame(minWidth: 44, minHeight: 44)
+                    Spacer(minLength: 0)
+                } else {
+                    workspaceEditingActions
+                }
+                if !compact {
+                    Spacer(minLength: 0)
+                    readiness(status)
+                }
+                Button(compact ? "Arm" : "Arm amendment") {}
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .frame(minWidth: compact ? 80 : 154, minHeight: 44)
+                    .disabled(true)
+                    .accessibilityHint("Arming is not available yet")
+                    .accessibilityIdentifier("arm-amendment")
+            }
+            .buttonStyle(.borderless)
+            .frame(minHeight: 44)
+            .controlSize(.regular)
+        }
+        .font(dynamicTypeSize.isAccessibilitySize ? .caption : .subheadline)
+        .padding(.bottom, 4)
+    }
+
+    @ViewBuilder
+    private var workspaceEditingActions: some View {
+        Button("Undo") { onIntent(.undo) }
+            .frame(minWidth: 44, minHeight: 44)
+            .disabled(!draft.canUndo || draft.legPanel != nil)
+            .accessibilityIdentifier("undo-amendment-plot")
+        Button("Discard", role: .destructive, action: onDiscard)
+            .frame(minWidth: 44, minHeight: 44)
+            .accessibilityIdentifier("discard-amendment-draft")
+    }
+
+    private func readiness(_ status: AmendmentLifecycleStatus) -> some View {
+        Text(status == .ready
+             ? "\(dynamicTypeSize.isAccessibilitySize ? "Ready" : "Ready to arm") · \(draft.reviewLegs(on: route).count) legs"
+             : "Route and required values needed")
+            .font(.caption.weight(.semibold))
+            .accessibilityIdentifier("amendment-readiness")
     }
 
     private struct AmendmentActionAvailability: ViewModifier {
@@ -171,103 +295,12 @@ struct RouteAmendmentConsole: View {
         .accessibilityIdentifier(id)
     }
 
-    private var draftHeading: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .center, spacing: 10) {
-                draftTitle
-                Spacer(minLength: 0)
-                headingActions
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                draftTitle
-                headingActions
-            }
-        }
-        .frame(minHeight: 44)
-        .padding(.vertical, isReplacing && draft.step == .review ? 12 : 0)
-        .allowsHitTesting(draft.legPanel == nil)
-    }
-
-    @ViewBuilder
-    private var headingActions: some View {
-        if draft.step == .review {
-            if isReplacing, let timing = currentLegTiming {
-                TimelineView(.periodic(from: .now, by: 1)) { context in
-                    let elapsed = AviationMapSymbology.formatDuration(timing.elapsedSeconds(at: context.date))
-                    Text("\(draft.mode.title) · Active leg · \(elapsed)")
-                        .font(.subheadline)
-                        .foregroundStyle(PendingAmendmentPalette.secondary)
-                }
-            } else {
-                reviewLegCount
-                lightweightAction("Choose leg", id: "choose-amendment-leg") { onIntent(.chooseLeg) }
-            }
-        } else if draft.acceptsMapInput || draft.isInspecting {
-            pointInput
-            lightweightAction("Inspect leg", id: "inspect-amendment-leg") { onIntent(.inspectOriginal) }
-        }
-    }
-
-    private var draftTitle: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(isReplacing && draft.step == .review ? .title2.bold() : .title3.weight(.semibold))
-                .accessibilityAddTraits(.isHeader)
-            if isReplacing && draft.step == .review {
-                Text("The saved amendment remains pending until this replacement is confirmed.")
-                    .font(.subheadline)
-                    .foregroundStyle(PendingAmendmentPalette.secondary)
-            } else if draft.step != .drawing && draft.step != .review {
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private var actionsFollowEditor: Bool {
-        switch draft.step {
-        case .confirmRejoin, .crossing: true
-        default: inSideRail || dynamicTypeSize.isAccessibilitySize
-        }
-    }
-
-    private var showsFooter: Bool {
-        switch draft.step {
-        case .departure, .drawing, .crossing, .confirmRejoin, .staleDeparture: true
-        default: false
-        }
-    }
-
-    private var title: String {
-        switch draft.step {
-        case .departure, .drawing, .move: "Amend route"
-        case .rejoin, .confirmRejoin: "Pick a return point"
-        case .crossing(_, let purpose): purpose == .departure ? "Choose departure leg" : "Choose return leg"
-        case .staleDeparture: "Update departure"
-        case .review: isReplacing ? "Review replacement" : "Review legs"
-        }
-    }
-
-    private var subtitle: String {
-        switch draft.step {
-        case .departure: "Choose departure"
-        case .drawing: ""
-        case .move: "Tap the new location for this point"
-        case .rejoin: "Tap a waypoint or a point along the route ahead."
-        case .confirmRejoin: "Confirm where the amendment returns to the route."
-        case .crossing: "More than one leg passes through this location."
-        case .staleDeparture: "Your draft is still available."
-        case .review: ""
-        }
-    }
-
     @ViewBuilder
     private var controls: some View {
         switch draft.step {
         case .departure:
             panel {
+                Text("Choose departure").font(.headline)
                 Text("Tap a waypoint or a point along the remaining route.")
             }
             if draft.departure != nil { button("Back to drawing", intent: .back) }
@@ -280,6 +313,7 @@ struct RouteAmendmentConsole: View {
                 selectedPointRow(point)
             }
         case .move, .rejoin:
+            if case .move = draft.step { Text("Tap the new location for this point").font(.subheadline) }
             routeSequence
             button("Back to drawing", intent: .back)
         case .confirmRejoin(let anchor):
@@ -288,11 +322,14 @@ struct RouteAmendmentConsole: View {
                 Text(route.occurrence(for: anchor)).font(.caption).foregroundStyle(.secondary)
             }
             .accessibilityIdentifier("amendment-return-candidate")
-        case .crossing(let options, _):
+        case .crossing(let options, let purpose):
+            Text(purpose == .departure ? "Choose departure leg" : "Choose return leg")
+                .font(.headline)
             ForEach(options, id: \.self) { anchor in
                 occurrenceOption(anchor)
             }
         case .staleDeparture:
+            Text("Update departure").font(.headline)
             Label("Pilot-reported progress is past your departure. Choose a new departure on the remaining route.",
                   systemImage: "exclamationmark.triangle.fill")
                 .font(.subheadline)
@@ -355,100 +392,11 @@ struct RouteAmendmentConsole: View {
         }
     }
 
-    private var reviewFooter: some View {
-        VStack(spacing: 1) {
-            if isReplacing {
-                let layout = compact || dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
-                layout {
-                    Button { onIntent(.discard) } label: {
-                        Text("Keep saved route")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 18)
-                            .frame(maxWidth: compact ? .infinity : nil, minHeight: 54)
-                            .foregroundStyle(actionColor)
-                            .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("keep-saved-amendment")
-                    confirmForLaterButton
-                }
-            } else if compact || dynamicTypeSize.isAccessibilitySize {
-                HStack {
-                    backToDrawingButton
-                    Spacer()
-                    reviewPauseButton
-                }
-                if !inSideRail { reviewConfirmationButtons }
-            } else {
-                HStack(spacing: 12) {
-                    backToDrawingButton
-                    Spacer(minLength: 4)
-                    startNowButton
-                    confirmForLaterButton.frame(maxWidth: 556)
-                    reviewPauseButton
-                }
-            }
-        }
-        .padding(.bottom, 4)
-    }
-
     private var backToDrawingButton: some View {
         lightweightAction("Back to drawing", id: "back-to-amendment-drawing", symbol: "chevron.backward") {
             onIntent(.back)
         }
         .allowsHitTesting(draft.legPanel == nil)
-    }
-
-    private var reviewPauseButton: some View {
-        Button { onIntent(.pause) } label: {
-            Image(systemName: "pause")
-                .font(.subheadline.weight(.semibold))
-                .frame(width: 44, height: 44)
-                .contentShape(.rect)
-                .background(RouteAmendmentPanelStyle.neutral, in: .rect(cornerRadius: 12))
-                .foregroundStyle(.primary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Pause route amendment draft")
-        .accessibilityIdentifier("pause-amendment-review")
-    }
-
-    private var reviewConfirmationButtons: some View {
-        VStack(spacing: 8) {
-            confirmForLaterButton
-            startNowButton
-        }
-    }
-
-    @ViewBuilder
-    private var startNowButton: some View {
-        if canStartNow {
-            Button(action: onStartNow) {
-                Text("Start now")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(actionColor)
-                    .padding(.horizontal, 14)
-                    .frame(maxWidth: compact ? .infinity : nil, minHeight: 52)
-                    .background(actionColor.opacity(0.08), in: .rect(cornerRadius: 13))
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .modifier(AmendmentActionAvailability())
-            .disabled(draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
-            .accessibilityHint("Confirms departure at the selected point and starts timing the first amendment leg")
-            .accessibilityIdentifier("start-amendment-now")
-        }
-    }
-
-    private var confirmForLaterButton: some View {
-        confirmationButton(
-            isReplacing ? "Confirm replacement" : "Confirm for later",
-            id: isReplacing ? "confirm-amendment-replacement" : "confirm-amendment-for-later",
-            fullWidth: true, height: 54
-        )
-            .disabled(!canConfirmForLater || draft.legPanel != nil || draft.reviewLegs(on: route).contains { $0.values == nil })
     }
 
     private func lightweightAction(
@@ -465,14 +413,6 @@ struct RouteAmendmentConsole: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(id)
-    }
-
-    private var reviewLegCount: some View {
-        let count = draft.points.count + 1
-        let legs = count == 1 ? "1 leg" : "\(count) legs"
-        return Text("\(draft.mode.title) · \(legs)")
-            .font(.caption)
-            .foregroundStyle(.secondary)
     }
 
     private var routeAccent: Color { Color(RouteAmendmentMapOverlay.proposedColor) }
@@ -793,6 +733,11 @@ nonisolated struct RouteAmendmentLegTiming {
     let destination: String
     let etaSeconds: Int
     let isRevised: Bool
+    var origin = ""
+    var legPosition = ""
+    var plannedDurationSeconds: Int?
+    var displayDate: Date?
+    var legNumber: Int?
 
     func elapsedSeconds(at date: Date) -> Int {
         Int(max(0, date.timeIntervalSince(startedAt)))
@@ -806,150 +751,112 @@ nonisolated struct RouteAmendmentLegTiming {
 private struct RouteAmendmentCurrentLeg: View {
     let timing: RouteAmendmentLegTiming?
     let compact: Bool
-
-    private let secondaryInk = Color(red: 0.75, green: 0.82, blue: 0.89)
-    private let dueInk = Color(red: 1, green: 0.80, blue: 0.51)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
             if let timing {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    activeInstruments(timing, now: context.date)
+                    instruments(timing, now: timing.displayDate ?? context.date)
                 }
             } else {
-                VStack(alignment: .leading, spacing: 5) {
-                    currentLegLabel
-                    Text("Leg not started")
-                        .font(.headline)
-                }
-                .frame(maxWidth: .infinity, minHeight: compact ? 61 : 60, alignment: .leading)
+                Text("Current leg · not started")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
             }
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 9)
-        .background(Color(red: 0.06, green: 0.14, blue: 0.21), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, compact ? 10 : 16)
+        .padding(.vertical, 4)
+        .background(RouteAmendmentPanelStyle.quietTimingSurface, in: .rect(cornerRadius: 14))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("amendment-current-leg")
     }
 
-    private func activeInstruments(_ timing: RouteAmendmentLegTiming, now: Date) -> some View {
-        let elapsed = AviationMapSymbology.formatDuration(timing.elapsedSeconds(at: now))
-        let eta = AviationMapSymbology.formatDuration(timing.etaSeconds)
-        let passed = timing.hasPassedETA(at: now)
+    private func instruments(_ timing: RouteAmendmentLegTiming, now: Date) -> some View {
+        let duration = timing.plannedDurationSeconds ?? timing.etaSeconds
         return Group {
-            if compact {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        currentLegLabel
-                        Spacer(minLength: 4)
-                        destination(timing.destination)
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 20) {
+                        timer(timing, now: now)
+                        metric("Leg time · planned", value: AviationMapSymbology.formatDuration(duration),
+                               identifier: "amendment-leg-planned")
+                        if timing.elapsedSeconds(at: now) > duration { overPlanned }
+                        identity(timing)
                     }
-                    ViewThatFits(in: .horizontal) {
-                        HStack(alignment: .top, spacing: 10) {
-                            elapsedMetric(elapsed)
-                            timingDivider
-                            etaMetric(eta, revised: timing.isRevised, passed: passed)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            elapsedMetric(elapsed)
-                            etaMetric(eta, revised: timing.isRevised, passed: passed)
-                        }
+                    .fixedSize(horizontal: true, vertical: false)
+                }
+            } else if compact {
+                VStack(alignment: .leading, spacing: 2) {
+                    identity(timing)
+                    HStack(alignment: .top, spacing: 16) {
+                        timer(timing, now: now)
+                        planned(duration, now: now, timing: timing)
                     }
                 }
             } else {
-                HStack(alignment: .center, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        currentLegLabel
-                        destination(timing.destination)
-                    }
-                    .frame(width: 145, alignment: .leading)
-                    timingDivider
-                    elapsedMetric(elapsed)
-                    timingDivider
-                    etaMetric(eta, revised: timing.isRevised, passed: passed)
+                HStack(spacing: 20) {
+                    identity(timing)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Divider().frame(height: 40)
+                    timer(timing, now: now).frame(width: 128)
+                    Divider().frame(height: 40)
+                    planned(duration, now: now, timing: timing).frame(width: 240)
                 }
-                .frame(minHeight: 60)
+                .frame(minHeight: 52)
             }
         }
     }
 
-    private var currentLegLabel: some View {
-        Text("Current leg")
-            .font(.subheadline.weight(.semibold))
-            .accessibilityAddTraits(.isHeader)
+    private func identity(_ timing: RouteAmendmentLegTiming) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 0 : 4) {
+            if !compact {
+                Text("CURRENT LEG · \(timing.legPosition.uppercased())")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Text("\(compact ? timing.legNumber.map { "LEG \($0) · " } ?? "" : "")\(RouteAmendmentRoute.legName(from: timing.origin, to: timing.destination))")
+                .font(compact ? .caption.weight(.semibold) : .headline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
-    private func destination(_ name: String) -> some View {
-        Text("To \(name)")
-            .font(.caption)
-            .foregroundStyle(secondaryInk)
-            .lineLimit(1)
+    private func timer(_ timing: RouteAmendmentLegTiming, now: Date) -> some View {
+        metric("Timer", value: AviationMapSymbology.formatDuration(timing.elapsedSeconds(at: now)),
+               identifier: "amendment-leg-elapsed")
     }
 
-    private var timingDivider: some View {
-        Rectangle()
-            .fill(.white.opacity(0.28))
-            .frame(width: 1, height: 34)
-            .accessibilityHidden(true)
-    }
-
-    private func elapsedMetric(_ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            metricLabel("Leg timer")
-            metricValue(value)
-                .accessibilityIdentifier("amendment-leg-elapsed")
-                .accessibilityLabel("Leg timer, \(value)")
+    private func planned(_ seconds: Int, now: Date, timing: RouteAmendmentLegTiming) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Leg time · planned").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Text(AviationMapSymbology.formatDuration(seconds))
+                    .font(compact ? .title2.weight(.semibold).monospacedDigit() : .title.weight(.semibold).monospacedDigit())
+                    .accessibilityIdentifier("amendment-leg-planned")
+                if !compact, timing.elapsedSeconds(at: now) > seconds { overPlanned }
+            }
+            if compact, timing.elapsedSeconds(at: now) > seconds { overPlanned }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func etaMetric(_ value: String, revised: Bool, passed: Bool) -> some View {
-        let provenance = revised ? "Revised elapsed" : "Planned elapsed"
-        return VStack(alignment: .leading, spacing: 1) {
-            metricLabel("Next ETA")
-            if compact {
-                metricValue(value)
-                    .accessibilityIdentifier("amendment-leg-eta")
-                    .accessibilityLabel("Next ETA, \(value), \(provenance)")
-                if passed { etaPassed }
-            } else {
-                HStack(alignment: .center, spacing: 8) {
-                    metricValue(value)
-                        .accessibilityIdentifier("amendment-leg-eta")
-                        .accessibilityLabel("Next ETA, \(value), \(provenance)")
-                    if passed { etaPassed }
-                }
-            }
-            if !compact || !passed {
-                Text(provenance)
-                    .font(.caption2)
-                    .foregroundStyle(secondaryInk)
-            }
+    private func metric(_ title: String, value: String, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(value)
+                .font(compact ? .title2.weight(.semibold).monospacedDigit() : .title.weight(.semibold).monospacedDigit())
+                .accessibilityIdentifier(identifier)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func metricLabel(_ label: String) -> some View {
-        Text(label)
-            .font(.caption)
-            .foregroundStyle(secondaryInk)
-            .accessibilityHidden(true)
-    }
-
-    private func metricValue(_ value: String) -> some View {
-        Text(value)
-            .font(.title2.weight(.semibold).monospacedDigit())
-            .fixedSize()
-    }
-
-    private var etaPassed: some View {
-        Text("ETA passed")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(dueInk)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(dueInk.opacity(0.14), in: RoundedRectangle(cornerRadius: 5))
+    private var overPlanned: some View {
+        Text("Over planned")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(RouteAmendmentPanelStyle.overPlannedInk)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color.orange.opacity(0.12), in: .rect(cornerRadius: 7))
     }
 }
 
@@ -962,19 +869,31 @@ private struct RouteAmendmentDisabledOpacity: ViewModifier {
 }
 
 struct RouteAmendmentLegend: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 10) { retained; bypassed }
-                HStack(spacing: 10) { proposed; marks }
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 16) { retained; bypassed; proposed; marks }
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 10) { retained; bypassed }
+                        HStack(spacing: 10) { proposed; marks }
+                    }
+                    VStack(alignment: .leading, spacing: 4) { retained; bypassed; proposed; marks }
+                }
             }
-            VStack(alignment: .leading, spacing: 4) { retained; bypassed; proposed; marks }
         }
         .font(.caption.weight(.semibold))
         .padding(9)
         .background(Color(uiColor: .systemBackground), in: .rect(cornerRadius: 9))
         .accessibilityElement(children: .combine)
-        .allowsHitTesting(false)
+        .allowsHitTesting(dynamicTypeSize.isAccessibilitySize)
     }
 
     private var retained: some View {
@@ -992,7 +911,7 @@ struct RouteAmendmentLegend: View {
     private var marks: some View {
         Label("Original minute marks", systemImage: "line.diagonal")
             .foregroundStyle(.secondary)
-            .fixedSize(horizontal: true, vertical: false)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     private func entry(_ name: String, color: Color, dashed: Bool = false) -> some View {
@@ -1005,6 +924,6 @@ struct RouteAmendmentLegend: View {
             .frame(width: 19, height: 8)
             Text(name)
         }
-        .fixedSize(horizontal: true, vertical: false)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

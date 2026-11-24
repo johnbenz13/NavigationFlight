@@ -10,92 +10,66 @@ struct RouteAmendmentReview: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        VStack(spacing: isReplacing ? 8 : 3) {
-            ForEach(draft.reviewLegs(on: route)) { leg in
-                let layout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
-                    : AnyLayout(HStackLayout(spacing: 8))
-                layout {
-                    Button { onIntent(.editLeg(leg.id)) } label: {
-                        legRow(leg)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Proposed leg, \(leg.name)")
-                    .accessibilityValue("Heading \(heading(leg)), flight time \(duration(leg))")
-                    .accessibilityAddTraits(draft.editor?.id == leg.id ? .isSelected : [])
-                    .accessibilityIdentifier("edit-amendment-leg")
-
-                    Button { onIntent(.checkLeg(leg.id)) } label: {
-                        Text("Check")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, compact ? 10 : 24)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .foregroundStyle(isReplacing ? RouteAmendmentPanelStyle.action : .white)
-                            .background(isReplacing ? Color(.systemBackground) : RouteAmendmentPanelStyle.check,
-                                        in: .rect(cornerRadius: 10))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Check estimate for \(leg.name)")
-                    .accessibilityIdentifier("check-amendment-leg")
+        VStack(spacing: 4) {
+            ForEach(Array(draft.reviewLegs(on: route).enumerated()), id: \.element.id) { index, leg in
+                Button { onIntent(.editLeg(leg.id)) } label: {
+                    row(leg, number: index + 1)
                 }
-                .padding(.trailing, isReplacing ? 12 : 6)
-                .frame(minHeight: isReplacing ? 72 : nil)
-                .background(RouteAmendmentPanelStyle.card, in: .rect(cornerRadius: 8))
+                .buttonStyle(.plain)
+                .id(leg.id)
+                .accessibilityLabel("Proposed leg \(index + 1), \(leg.name)")
+                .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))")
+                .accessibilityAddTraits(draft.editor?.id == leg.id ? .isSelected : [])
+                .accessibilityIdentifier("edit-amendment-leg")
             }
         }
     }
 
-    private func legRow(_ leg: RouteAmendmentDraft.ReviewLeg) -> some View {
-        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
-            : AnyLayout(HStackLayout(spacing: 12))
-        return HStack(spacing: 8) {
-            layout {
-                Text(leg.name)
-                    .font(.subheadline.weight(.semibold))
+    private func row(_ leg: RouteAmendmentDraft.ReviewLeg, number: Int) -> some View {
+        let selected = draft.editor?.id == leg.id
+        return HStack(spacing: 12) {
+            if !compact {
+                Text("\(number)").font(.subheadline).foregroundStyle(.secondary).frame(width: 28)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(compact ? "\(number)  \(leg.name)" : leg.name)
+                    .font(.headline)
                     .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: compact ? 8 : 16) {
-                    if compact && !dynamicTypeSize.isAccessibilitySize {
-                        Text("\(heading(leg)) · \(duration(leg))")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    } else {
-                        metric("Heading", value: heading(leg))
-                        metric("Flight time", value: duration(leg))
-                    }
+                if compact {
+                    Text(dynamicTypeSize.isAccessibilitySize
+                         ? "\(heading(leg)) · \(duration(leg))  ›"
+                         : "Magnetic \(heading(leg)) · Leg time \(duration(leg))  ›")
+                        .font(dynamicTypeSize.isAccessibilitySize ? .caption.monospacedDigit() : .subheadline.monospacedDigit())
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Proposed replacement leg")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
-            if !isReplacing {
-                Image(systemName: "chevron.forward")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(RouteAmendmentPanelStyle.action)
-                    .padding(.horizontal, compact ? 2 : 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if !compact {
+                Text(heading(leg)).frame(width: 136, alignment: .leading)
+                Text(duration(leg)).frame(width: 136, alignment: .leading)
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, compact ? 4 : 0)
-        .frame(minHeight: 44)
-        .contentShape(.rect)
-    }
-
-    private func metric(_ title: LocalizedStringKey, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(isReplacing ? .title3.weight(.semibold).monospacedDigit() : .subheadline.weight(.semibold).monospacedDigit())
+        .font(.title3.weight(.semibold).monospacedDigit())
+        .padding(.horizontal, compact ? 10 : 16)
+        .padding(.vertical, 4)
+        .frame(minHeight: compact ? 60 : 50)
+        .background(selected ? Color(RouteAmendmentMapOverlay.proposedColor).opacity(0.1) : Color(.secondarySystemBackground),
+                    in: .rect(cornerRadius: 12))
+        .overlay {
+            if selected { RoundedRectangle(cornerRadius: 12).stroke(Color(RouteAmendmentMapOverlay.proposedColor), lineWidth: 1.5) }
         }
-        .padding(.horizontal, isReplacing ? 10 : 0)
-        .padding(.vertical, isReplacing ? 3 : 0)
-        .frame(minWidth: isReplacing && !compact ? 112 : nil, alignment: .leading)
-        .background(isReplacing ? Color(.systemBackground) : .clear, in: .rect(cornerRadius: 9))
-        .frame(minWidth: compact ? nil : 100, alignment: .leading)
     }
 
     private func heading(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
-        leg.values.map { "\($0.headingText)°" } ?? "—"
+        leg.values.map { "\($0.headingText)°" } ?? "Not set"
     }
 
     private func duration(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
-        leg.values.map { RouteAmendmentLegEntry.durationText($0.durationSeconds) } ?? "—"
+        leg.values.map { RouteAmendmentLegEntry.durationText($0.durationSeconds) } ?? "Not set"
     }
 }
 
@@ -106,6 +80,14 @@ extension RouteAmendmentDraft.ReviewLeg {
 }
 
 enum RouteAmendmentPanelStyle {
+    static let quietTimingSurface = Color(uiColor: .init { traits in
+        traits.userInterfaceStyle == .dark ? .secondarySystemBackground
+            : .init(red: 0.949, green: 0.969, blue: 0.980, alpha: 1)
+    })
+    static let overPlannedInk = Color(uiColor: .init { traits in
+        traits.userInterfaceStyle == .dark ? .systemOrange
+            : .init(red: 0.588, green: 0.322, blue: 0, alpha: 1)
+    })
     static let action = Color(uiColor: AviationMapVisualStyle.default.primaryActionColor)
     static let check = Color(uiColor: AviationMapVisualStyle.default.cockpitProgressionActionBackgroundColor)
     static let reference = Color(uiColor: RouteAmendmentMapOverlay.proposedColor)

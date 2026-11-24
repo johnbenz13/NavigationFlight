@@ -278,6 +278,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
 
     enum Intent {
         case open, pause, resume, discard
+        case toggleWorkspace, togglePlotting
         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
@@ -686,7 +687,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                 legPanel = inspecting ? .inspection : nil
             default: break
             }
-        case .open, .pause, .resume, .discard: break
+        case .open, .pause, .resume, .discard, .toggleWorkspace, .togglePlotting: break
         }
     }
 

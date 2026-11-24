@@ -27,6 +27,26 @@ remain unchanged. See the [approved published task breakdown](../reconciliations
 for approved implementation boundaries. Publication is complete under #224;
 implementation still needs a separate request.
 
+## AP-01 implementation scope · 2026-11-24
+
+The #225 implementation introduces the pencil toggle, separate transient plotting
+flag, in-memory draft/editor retention, light current-leg timing strip and fixed
+workspace actions under the shared Cockpit layout. Untouched exit removes the empty
+draft; edited exit preserves work and reentry turns plotting off. Lifecycle badges
+are derived independently from existing draft, pending and activated Flight facts.
+The first replacement leg remains grey while awaiting Manual Start leg.
+
+Owner clarification during implementation: **Arm is a disabled placeholder with no
+operational effect until AP-11**. The preparation workspace exposes neither Start now
+nor separate pause/resume controls. Existing domain confirmation, progression,
+recording and recovery operations retain their contracts. The staged route commands
+and existing field editor remain until AP-02 and AP-04/05 respectively; disk draft
+recovery remains AP-09 and Armed management remains AP-12. Activated amendment
+status is projected here; accepted-amendment inspection commands remain AP-12.
+
+Only this scope supersedes the earlier delivered preparation UI. Runtime visual
+acceptance remains separate; see [AP-01 evidence](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-01-implementation.md).
+
 ## Pilot outcome
 
 From Cockpit, the pilot can quickly prepare and confirm a different route for the current Flight when weather, a controller instruction, or a shortcut changes the route they intend to fly. They can use existing waypoints and map points, including a departure partway along a leg.

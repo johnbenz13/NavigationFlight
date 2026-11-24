@@ -6,6 +6,7 @@ struct RouteAmendmentChartPanel: View {
     let compact: Bool
     let landscape: Bool
     let camera: AviationMapCameraState?
+    var headerInset: CGFloat = 0
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
     @FocusState.Binding var swiftUIFocus: RouteAmendmentLegEntry.Field?
     @Binding var nativeFocus: RouteAmendmentLegEntry.Field?
@@ -104,10 +105,13 @@ struct RouteAmendmentChartPanel: View {
     }
 
     private func verticalInset(_ height: CGFloat, inspecting: Bool) -> CGFloat {
-        if focus != nil { return 6 }
-        if dynamicTypeSize.isAccessibilitySize { return 8 }
-        if compact { return min(75, height * 0.18) }
-        return min(inspecting ? 170 : 136, height * 0.25)
+        let preferred: CGFloat
+        if focus != nil { preferred = compact ? 75 : 84 }
+        else if dynamicTypeSize.isAccessibilitySize { preferred = 8 }
+        else if compact { preferred = min(75, height * 0.18) }
+        else { preferred = min(inspecting ? 170 : 136, height * 0.25) }
+        // The pencil remains reachable even when the header wraps at Larger Text.
+        return max(preferred, headerInset + 8)
     }
 
     @ViewBuilder

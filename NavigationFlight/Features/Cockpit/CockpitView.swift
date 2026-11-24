@@ -351,8 +351,10 @@ struct CockpitView: View {
             dismissTransientPresentations()
             onCancelPilotHeading()
         }
-        .onChange(of: replacementReviewFocus, initial: true) { previous, focus in
-            guard let focus, previous == nil || !isMapCameraUserControlled else { return }
+        .onChange(of: replacementReviewFocus, initial: true) { _, focus in
+            // Visibility and editor transitions can restore this value from nil. They
+            // are not explicit camera commands and must respect a manual pan/zoom.
+            guard let focus, !isMapCameraUserControlled else { return }
             focusMap(.replacementReview(focus))
         }
         .onChange(of: amendmentFocusAnchor) { _, rejoin in
@@ -823,6 +825,7 @@ struct CockpitView: View {
                 )
                 .id(mapIdentity)
                 .accessibilityIdentifier("aviation-map")
+                .cameraObservationForUITests(preservedMapCamera, isUserControlled: isMapCameraUserControlled)
                 .accessibilitySortPriority(90)
             }
             if shouldShowMapChrome, !isPilotETAEditing {
@@ -4312,5 +4315,25 @@ private struct CockpitTimeMetric: View {
 
     private func duration(_ seconds: Int) -> String {
         String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func cameraObservationForUITests(_ camera: AviationMapCameraState?, isUserControlled: Bool) -> some View {
+#if DEBUG
+        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_CAMERA"] == "1" {
+            // Read-only telemetry from the real MapLibre camera; no test-driven camera changes.
+            let values = camera.map {
+                [$0.center.latitude, $0.center.longitude, $0.zoomLevel, $0.direction, $0.pitch]
+                    .map { String($0) }.joined(separator: "|") + "|\(isUserControlled ? 1 : 0)"
+            } ?? "Camera not ready"
+            accessibilityValue(values)
+        } else {
+            self
+        }
+#else
+        self
+#endif
     }
 }

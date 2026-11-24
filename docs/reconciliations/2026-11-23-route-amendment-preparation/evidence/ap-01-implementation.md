@@ -160,3 +160,10 @@ assertion compares the deterministic chart edge 2 pt above the map boundary with
 the console edge 2 pt below in both modes (maximum RGB-channel difference > 12/255). This supplements,
 rather than replaces, exact map-frame equality assertions. `git diff --check` passed.
 Other outstanding acceptance limitations above remain unchanged.
+
+
+## Review follow-up
+
+[R1/R2 remediation record](ap-01-review-remediation.md): R1 is owner-deferred;
+R2's manual-camera preservation is corrected and verified on regular-text iPhone
+Pro and iPad portrait/landscape. Historical results above are retained as recorded.

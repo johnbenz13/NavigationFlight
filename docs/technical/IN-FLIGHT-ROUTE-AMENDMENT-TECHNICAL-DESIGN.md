@@ -33,7 +33,10 @@ Workspace highlight and failed-save indication remain independent of lifecycle.
 
 `CockpitView` reuses `CockpitRestingLayoutPolicy` and the same compact direct-Reach
 adjustment in both modes; amendment-specific console extents are removed. The map
-keeps its identity and camera bindings. Keyboard avoidance is scoped to the editor
+keeps its identity and camera bindings. Automatic replacement-review focus respects
+manual camera ownership even when visibility or editor presentation restores the
+focus projection from nil; those transitions are not explicit camera commands.
+Keyboard avoidance is scoped to the editor
 instead of resizing the underlying viewport. `RouteAmendmentConsole` fixes the light
 timing strip, title/plot control and actions around an internally scrolling region.
 The map overlay gates placement using the independent plotting flag. Existing

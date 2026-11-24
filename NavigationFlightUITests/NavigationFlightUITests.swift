@@ -2326,8 +2326,118 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testReplacementReviewPreservesManualCameraAcrossPresentationChanges() throws {
+        try verifyReplacementReviewCamera(landscape: false)
+    }
+
+    @MainActor
+    func testReplacementReviewPreservesManualCameraInIPadLandscape() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad landscape only")
+        try verifyReplacementReviewCamera(landscape: true)
+    }
+
+    @MainActor
+    private func verifyReplacementReviewCamera(landscape: Bool) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = try launchPendingAmendmentForManagement(landscape: landscape, captureCamera: true)
+        let pendingPencil = app.buttons["pending-amendment-pencil"]
+        func openReplacement() {
+            pendingPencil.tap()
+            let replace = app.buttons["replace-pending-amendment"]
+            XCTAssertTrue(replace.waitForExistence(timeout: 4))
+            replace.tap()
+            XCTAssertTrue(app.buttons["keep-saved-amendment"].waitForExistence(timeout: 4))
+        }
+        func captureCameraState(_ name: String, in app: XCUIApplication) {
+            // Device captures preserve the full rotated screen; app snapshots can crop
+            // a newly rotated iPad to its prior portrait bounds in Xcode 27.2.
+            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            attachment.name = name
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        openReplacement()
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let initial = try settledCameraValues(of: map)
+        // Reference iPad can start at the map's maximum zoom; zoom out in that case.
+        map.pinch(withScale: initial[2] >= 12 ? 0.7 : 1.4, velocity: initial[2] >= 12 ? -1 : 1)
+        map.rotate(.pi / 10, withVelocity: 1)
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.7))
+            .press(forDuration: 0.1, thenDragTo: map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)))
+        let manual = try settledCameraValues(of: map)
+        XCTAssertEqual(manual[5], 1, "Gestures must claim camera ownership")
+        XCTAssertNotEqual(initial[0], manual[0], "Pan must change the observed center")
+        XCTAssertNotEqual(initial[2], manual[2], "Pinch must change the observed zoom")
+        XCTAssertNotEqual(initial[3], manual[3], "Rotation must change the observed bearing")
+        captureCameraState("r2-manual-camera", in: app)
+
+        app.buttons["amend-route"].tap()
+        XCTAssertTrue(pendingPencil.waitForExistence(timeout: 4))
+        assertCamera(manual, remainsOn: map)
+        captureCameraState("r2-hidden-camera", in: app)
+        openReplacement()
+        assertCamera(manual, remainsOn: map)
+        captureCameraState("r2-reopened-camera", in: app)
+
+        app.buttons.matching(identifier: "edit-amendment-leg").firstMatch.tap()
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        assertCamera(manual, remainsOn: map)
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+            .press(forDuration: 0.1, thenDragTo: map.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.7)))
+        let editorCamera = try settledCameraValues(of: map)
+        XCTAssertNotEqual(manual[0], editorCamera[0], "Map remains pannable beside the editor")
+        captureCameraState("r2-editor-camera", in: app)
+        panel.buttons["Cancel"].tap()
+        XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
+        assertCamera(editorCamera, remainsOn: map)
+        captureCameraState("r2-editor-closed-camera", in: app)
+    }
+
+    @MainActor
+    private func cameraValues(of map: XCUIElement) throws -> [Double] {
+        let value = try XCTUnwrap(map.value as? String)
+        let components = value.split(separator: "|").compactMap { Double($0) }
+        XCTAssertEqual(components.count, 6, "Expected center latitude/longitude, zoom, bearing, pitch and ownership: \(value)")
+        guard components.count == 6 else { throw NSError(domain: "CameraFixture", code: 1) }
+        return components
+    }
+
+    @MainActor
+    private func settledCameraValues(of map: XCUIElement) throws -> [Double] {
+        var last = try cameraValues(of: map)
+        var stableSince = Date()
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let current = try? self.cameraValues(of: map) else { return false }
+            if zip(current, last).contains(where: { abs($0 - $1) > 0.000001 }) {
+                last = current
+                stableSince = Date()
+            }
+            return Date().timeIntervalSince(stableSince) >= 0.6
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 6), .completed, "Wait for actual gesture deceleration to finish")
+        return try cameraValues(of: map)
+    }
+
+    @MainActor
+    private func assertCamera(_ expected: [Double], remainsOn map: XCUIElement) {
+        // Observe beyond the next run-loop/layout pass so an asynchronously scheduled fit fails.
+        let deadline = Date().addingTimeInterval(1)
+        let stable = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let actual = try? self.cameraValues(of: map) else { return false }
+            for (a, b) in zip(actual, expected) { XCTAssertEqual(a, b, accuracy: 0.000001) }
+            return Date() >= deadline
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [stable], timeout: 4), .completed)
+        let attachment = XCTAttachment(string: "Expected camera: \(expected)\nObserved: \(map.value ?? "missing")")
+        attachment.name = "R2 retained MapLibre camera"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    @MainActor
     private func launchPendingAmendmentForManagement(
-        landscape: Bool = false, preferredContentSize: String? = nil
+        landscape: Bool = false, preferredContentSize: String? = nil, captureCamera: Bool = false
     ) throws -> XCUIApplication {
         let app = XCUIApplication()
         if let preferredContentSize {
@@ -2338,6 +2448,7 @@ final class NavigationFlightUITests: XCTestCase {
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] = "1"
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] = "armed"
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE"] = "1"
+        if captureCamera { app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_CAMERA"] = "1" }
         app.launch()
         let start = app.buttons["start-leg"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))

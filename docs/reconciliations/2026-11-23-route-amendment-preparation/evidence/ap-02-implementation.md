@@ -171,3 +171,25 @@ on adaptive maps; unexpanded lazy waypoint sheet. Each required a targeted rerun
 the repeated sheet failures triggered cause investigation before further code edits.
 One migrated map-center assertion incorrectly expected the name formerly supplied by Finish here; corrected to the unnamed partial point and reran only that test. Renamed test discovery required the already-planned final build. Application changes discovered by direct rendered checks required new affected runs.
 The passing 250-test regression result was reused throughout later UI-only work.
+
+## Owner spacing correction · 2026-11-24
+
+Owner's 14:25 screenshot identified Plot points touching the timing strip/list.
+The heading now has 4 pt top and bottom padding at normal text sizes. The 44 pt
+minimum target, fixed footer and shared map/console extents are retained. Maximum
+accessibility text keeps its previous spacing to preserve its constrained viewport.
+This is the owner's scoped refinement of D03, not a new console geometry policy.
+
+Acceptance trace: visible gap above/below Plot points → normal fixture A → direct
+portrait screenshot comparison plus existing stop/edit/resume and fixed-boundary
+UI checks. No domain change; previous domain and accessibility results reused.
+
+BuildProject passed at 14:27 (4.645 s). iPad portrait and landscape core tests
+passed at 14:27. iPhone portrait core passed at 14:31; its new capture is in
+`../assets/ap-02/spacing-iphone/` and was directly inspected. Direct device check measured Plot points 105×46 pt and observed
+the added separation. Implementer inspected the full-resolution portrait off/on
+and landscape growing-list captures in `../assets/ap-02/spacing-ipad/`; these
+supersede earlier normal-text spacing captures. Human visual approval is pending.
+
+Follow-up time approximately 1 min implementation, 4 min verification/waiting,
+1 min evidence/delivery. No failures or avoidable reruns in this correction.

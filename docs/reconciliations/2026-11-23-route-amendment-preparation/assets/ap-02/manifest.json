@@ -293,5 +293,85 @@
     "file": "results/ipad-lifecycle-accessibility.txt",
     "sha256": "2c6580d63fa8d07159720e698172955b161d04e6e7ab44603b54690262d3f63c",
     "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/RunSomeTests/D8DF76B0-343B-4422-B402-EF94A0ED9426.txt"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-partial-off-landscape.png",
+    "sha256": "918a72fe060d4c7ec509349fe81dbbe58e911ef3acae4172f0a883db8fae9971",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-partial-on-landscape.png",
+    "sha256": "946e3bc9dcd288bf037d61610832d84d8b94b948f30a3ea074ed67919b62953d",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-editor-landscape.png",
+    "sha256": "c93c20148da32d399a750f5bce8605c77cd450732bf356bc1d35c98d67b181cb",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-growing-list-landscape.png",
+    "sha256": "94e6b1b72442cb943016cd9f0519d51c7061208d84ba553f6bd4e6d1fc697e4a",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-partial-off-portrait.png",
+    "sha256": "8913dc00b027e2e6184f3752f47ea622fd93d4371f8b99990628b8dceacc89c3",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-partial-on-portrait.png",
+    "sha256": "77241591599059a532e485ab929f8182913f3c42986c1403b0b0564ff7515410",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-editor-portrait.png",
+    "sha256": "f2889dbb4f48da3b805357f0f7332fb4cea5e0e70dbc7809091892d2a369af54",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-ipad/Route-amendment---ap02-growing-list-portrait.png",
+    "sha256": "af6ae0f10dba2cbc453298690d3f6605c26760fc9c05b4dd2ef6b26e86b25b8c",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-27-42-+0200.xcresult"
+  },
+  {
+    "file": "spacing-iphone/Route-amendment---ap02-partial-off-portrait.png",
+    "sha256": "1750bc510aab0fd03e17a9b599754e2c04fb1890efe9a23b3ade5911d0600ff9",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-31-04-+0200.xcresult"
+  },
+  {
+    "file": "spacing-iphone/Route-amendment---ap02-partial-on-portrait.png",
+    "sha256": "54f0f422af6d22d4b15e455ae9d79e9a3323d6e6771ad0106ff463c9faf43f32",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-31-04-+0200.xcresult"
+  },
+  {
+    "file": "spacing-iphone/Route-amendment---ap02-editor-portrait.png",
+    "sha256": "e52b1c61b0c1cc13817acd9937be49d2e841571166d3fe2c8943acd1cc8b297d",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-31-04-+0200.xcresult"
+  },
+  {
+    "file": "spacing-iphone/Route-amendment---ap02-growing-list-portrait.png",
+    "sha256": "925e25b9dd9a0dca148eaea26c6a4cca0a5ca71ff0f0c448635195fdb8ff921a",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_14-31-04-+0200.xcresult"
+  },
+  {
+    "file": "results/spacing-ipad-tests.txt",
+    "sha256": "6fbea2a464036f9fad4431f54931076b1e6b393bb786f3eb28fe4ff54ffb2dbb",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/RunSomeTests/30767CDA-FA96-44C3-A4DF-87F38683C6EA.txt"
+  },
+  {
+    "file": "results/spacing-iphone-test.txt",
+    "sha256": "55f6bc00c1e0753a51836ccc1eaecbb5bb592afa72caa07e5131a6221512147f",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/RunSomeTests/FB5E1626-ECE3-4BF4-90B5-9AD8F9A0B80D.txt"
+  },
+  {
+    "file": "results/spacing-device.png",
+    "sha256": "98a6cd440e798985083f3ace46c435ff70d3c1c73b4bd1bbec3fb5c62b466924",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Heading Gap-14_30_44_353-screenshot.png"
+  },
+  {
+    "file": "results/spacing-device-hierarchy.txt",
+    "sha256": "cc43c437fd862f30ff1e9f599064ba732171b97218f8b85207a43e957b2aa2f3",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Heading Gap-14_30_44_353-hierarchy.txt"
   }
 ]

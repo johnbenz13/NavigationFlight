@@ -47,6 +47,7 @@ struct RouteAmendmentConsole: View {
             workspaceHeading
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? 0 : 4)
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 4) {

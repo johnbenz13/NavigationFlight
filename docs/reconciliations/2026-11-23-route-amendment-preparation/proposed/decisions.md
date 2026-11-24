@@ -1,5 +1,16 @@
 # Owner decisions and state vocabulary
 
+## D04 scoped approval · John · 2026-11-24
+
+[Approved D04 frame/notes](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=48-409)
+supersede conflicting plotting/continuation controls, plotting-off value gating and
+short-point correction only; D03 geometry/unaffected D02 and dated history remain.
+Approved [product contract](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) and [D04 revision](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md) are fixed at `5b934ef`; merge is pending. Design and
+behavior approval does not authorize implementation or check acceptance criteria.
+
+The earlier descriptions below are retained as dated history where D04 supersedes them.
+
+
 John approved Q1–Q27 and Q29–Q31 with “yes to all” over the conversation rounds
 on 2026-11-23. Q28 was approved with an additional request for a more elegant
 current-leg timing strip. These are behavioral decisions for a future iteration,

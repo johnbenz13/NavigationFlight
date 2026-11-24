@@ -1,5 +1,16 @@
 # Prepare the amendment in one workspace
 
+## D04 scoped approval · John · 2026-11-24
+
+[Approved D04 frame/notes](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=48-409)
+supersede conflicting plotting/continuation controls, plotting-off value gating and
+short-point correction only; D03 geometry/unaffected D02 and dated history remain.
+Approved [product contract](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) and [D04 revision](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md) are fixed at `5b934ef`; merge is pending. Design and
+behavior approval does not authorize implementation or check acceptance criteria.
+
+The earlier descriptions below are retained as dated history where D04 supersedes them.
+
+
 **Status:** behavioral direction approved by John, 2026-11-23, Q1–Q31;
 Q32–Q36 resolved on 2026-11-24, including removal of Start now.
 **Design:** [D01 main screen](design-proposal.md) was direction-approved by John on

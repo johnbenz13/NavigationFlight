@@ -4,6 +4,49 @@ Product approved by John · 2026-11-22. Shared operational Cockpit revision appr
 
 Planning baseline: NavigationFlight `258a42cd060195a24086908fecee9bb44312ff30` (local `origin/main` at checkout creation).
 
+## D04 direct drawing revision · approved · 2026-11-24
+
+John explicitly approved D04 on 2026-11-24, including anchor recovery and accessible
+actions. Earlier dated approvals and delivery remain historical. Approved
+[documentation baseline](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) is committed at `5b934ef`; merge is pending.
+
+John requested a bounded revision after reviewing AP-03. [D04 behavior, preview
+and exact Figma nodes](../reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md)
+are **approved by John on 2026-11-24**, without
+implementation authorization. Earlier approvals and delivered AP-01/AP-02 sections
+below remain historical; the following is the approved scoped supersession.
+
+1. Remove Plot points, Done plotting, Continue plotting and Change return point.
+   Opening the editable pencil workspace permits eligible short-route-tap departure
+   selection; subsequent short map taps add points/legs. A deliberate eligible
+   later-route tap rejoins automatically. Rejoin finishes drawing; further free-map
+   taps preserve it without extension or a new amendment.
+2. Short proposed-leg or row taps open values even during drawing. If a proposed
+   leg overlaps eligible original route, John's decision is an **Edit / Rejoin**
+   chooser while drawing with a departure. After rejoin, overlapping proposed-leg
+   taps only edit and original/free-map taps leave geometry unchanged; explicit
+   rejoin deletion reopens drawing. Closing values preserves geometry and entries.
+3. John's correction decision covers **all points including departure and rejoin**:
+   long press and drag moves directly; long press/release without dragging offers
+   Delete. Anchor drops must land on eligible original-route occurrences, with
+   departure strictly before rejoin, including same-leg fractions and current
+   progress. Invalid drops roll back atomically with feedback. Crossing alone never
+   rejoins. Pan/pinch remain available; movement starts only after long press.
+4. **Approved recovery:** deleting departure preserves vias/rejoin and
+   unaffected entries, leaving geometry incomplete; next eligible route tap replaces
+   departure. Deleting rejoin explicitly reopens drawing from the last surviving
+   point until eligible return, preserving the rest. Missing anchors block Arm.
+   This recovery originated as an agent proposal and was explicitly approved with D04.
+5. Preserve selective value invalidation, cues, Undo, independent geometry/value
+   readiness and nondestructive pencil leave/resume. **Approved accessible pattern:** Map tools reuses waypoint/map-center placement plus a native
+   named Departure / Point N / Rejoin action list with Move / Delete; accessible
+   Move uses the next eligible-location tap instead of dragging, without a toggle.
+   Armed/Flying read-only guards and operational Cockpit remain unchanged.
+
+D04 supersedes only plotting/continuation controls, plotting-off
+value-editor gating and short-point correction in G01–G03 and affected AP tasks.
+The linked D04 proposal records the approval boundary and issue patch drafts.
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

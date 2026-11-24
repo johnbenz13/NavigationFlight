@@ -56,8 +56,9 @@
   },
   {
     "file": "ipad-landscape/AP02-VoiceOver-missing-values.txt",
-    "sha256": "13077aaa6d3b75730a2883cd36f056cc523953b7537c14a8d3136b7025eb3191",
-    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_13-51-22-+0200.xcresult"
+    "sha256": "f729c8795c04f3c7f92bacda17013081b9cbaca05744afb747a71d4d6ad751e9",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_13-51-22-+0200.xcresult",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "iphone-portrait/Route-amendment---ap02-partial-off-portrait.png",
@@ -96,8 +97,9 @@
   },
   {
     "file": "iphone-inputs/AP02-VoiceOver-missing-values.txt",
-    "sha256": "a520d05a5ab51f46de61f0fd2ea4c73e4a8140bc2b1fbc8161186bc411eb3a00",
-    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_13-57-14-+0200.xcresult"
+    "sha256": "0583e97006340eeea8b947d923cade2fab7040df79cbca18d3a2c90d48896def",
+    "source": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.24_13-57-14-+0200.xcresult",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "iphone-larger/Route-amendment---ap02-partial-off-larger-portrait.png",
@@ -126,8 +128,9 @@
   },
   {
     "file": "device/reduce-motion-on-hierarchy.txt",
-    "sha256": "dc8b1b3009a67aecb3ef628dd1acd7299f32b7182392c13d83bae7d02a9a8b22",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_03_880-hierarchy.txt"
+    "sha256": "03054a604f1538cd96ec5b795bdd35d9db3262f23359291670b3c83ed2b3cac8",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_03_880-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/reduce-motion-appended-screenshot.png",
@@ -136,8 +139,9 @@
   },
   {
     "file": "device/reduce-motion-appended-hierarchy.txt",
-    "sha256": "834a211cdaf5dae7c1a31246c4fe4510d0d108f5f526ba52bc3ec3b736f084b6",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_10_080-hierarchy.txt"
+    "sha256": "e9c2759967862cf47d4451d7b0317aff31d4c9fd602fc873029e0d63c734d5cd",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_10_080-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/reduce-motion-reopened-screenshot.png",
@@ -146,8 +150,9 @@
   },
   {
     "file": "device/reduce-motion-reopened-hierarchy.txt",
-    "sha256": "b5bb24e5649b656959ab43b418afa1aec26562fbd13e6457440fe8db4cb93f2a",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_24_463-hierarchy.txt"
+    "sha256": "09247a6a17c4c116045dfa67a2f3020a540c21d7dff38aec2a6bd068c99bcdec",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_24_463-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/reduce-motion-restored-screenshot.png",
@@ -156,8 +161,9 @@
   },
   {
     "file": "device/reduce-motion-restored-hierarchy.txt",
-    "sha256": "2407f6a9df6bac0d490ef20573d2f3da7cf7cdd3c2288e811f2b65c605c798c9",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_30_516-hierarchy.txt"
+    "sha256": "d0f598dc872b292009f3aa1e81d90c5ca95d9b3cf59006dd30af3940bed2950c",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 iPhone Inspection-14_05_30_516-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/ipad-pan-zoom-screenshot.png",
@@ -166,8 +172,9 @@
   },
   {
     "file": "device/ipad-pan-zoom-hierarchy.txt",
-    "sha256": "79b2a42ab6ab0ecfa9f4f61e5d59782d72de3099a638cc5066179adc789099e6",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_46_401-hierarchy.txt"
+    "sha256": "08feb7b3fe704b95258926674a63986409fd06c2d70a8cdc11ad6817f7441630",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_46_401-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/ipad-off-tap-screenshot.png",
@@ -176,8 +183,9 @@
   },
   {
     "file": "device/ipad-off-tap-hierarchy.txt",
-    "sha256": "f0c16eff96da305f71510396dde0ecb92705f4adb1ab8f019cb0cb40c8cb1cf3",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_52_679-hierarchy.txt"
+    "sha256": "c9543102fe8f820e700c9672590394cf6a8461893e1165bb955cead16504d43b",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_52_679-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "device/ipad-editor-screenshot.png",
@@ -186,8 +194,9 @@
   },
   {
     "file": "device/ipad-editor-hierarchy.txt",
-    "sha256": "7f96aeeab7caa494a928fb50f288b745c0eb83c7338378007179e83e4966409b",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_53_362-hierarchy.txt"
+    "sha256": "ba50b010a394535bada9d8a0ea6a7cbf003cb92948aead8c221e79073c54f8bc",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/DeviceInteractionSynthesize/AP02 Portrait Review-13_47_53_362-hierarchy.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "results/ipad-domain-core.txt",
@@ -276,8 +285,9 @@
   },
   {
     "file": "results/final-build.txt",
-    "sha256": "aec8c5c433f6cada07bed7cfcd18a4c3f7ac680d6738dbd08454ecdfb504197f",
-    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/BuildProject/BuildProject-Log-20261124-141751.txt"
+    "sha256": "828f537d4f5c022889f777a276a2ec9f74c3e379ad7390eba8f40c4de10a2fd7",
+    "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/B4CDBB61-6570-4B9D-A564-27F90D453B0F/BuildProject/BuildProject-Log-20261124-141751.txt",
+    "normalization": "Trailing whitespace stripped; content retained."
   },
   {
     "file": "results/ipad-lifecycle-accessibility.txt",

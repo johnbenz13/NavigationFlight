@@ -47,6 +47,25 @@ status is projected here; accepted-amendment inspection commands remain AP-12.
 Only this scope supersedes the earlier delivered preparation UI. Runtime visual
 acceptance remains separate; see [AP-01 evidence](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-01-implementation.md).
 
+## AP-02 implementation scope · 2026-11-24
+
+Issue #226 projects every formed adjacent segment before a rejoin, with stable
+plotted-point/route-occurrence identities. Plot points and Done plotting control
+placement independently from leg selection. The vertical list remains visible
+while plotting; stopping permits the existing leg editor before rejoin. Plotting
+map taps cannot open the value editor, and plotting-off taps cannot add points.
+The removed horizontal chips and Finish here/Review legs workspace gates are
+superseded by the continuous list. Existing accessible waypoint, map-center and
+explicit return/occurrence inputs are retained under Map tools while plotting.
+
+Owner scope clarification: heading and leg time have separate Not set displays,
+but saving still requires complete valid values until AP-04. Automatic rejoin
+completion remains AP-03; point correction, wheels, Assisted defaults, persistence
+and arming remain their dedicated tasks. Final-route validation still requires a
+valid later rejoin and preserves the original destination. Preparation does not
+change Flight timing, route or recording events. Runtime evidence and pending
+human acceptance are tracked in the [AP-02 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-02-implementation.md).
+
 ## Pilot outcome
 
 From Cockpit, the pilot can quickly prepare and confirm a different route for the current Flight when weather, a controller instruction, or a shortcut changes the route they intend to fly. They can use existing waypoints and map points, including a departure partway along a leg.

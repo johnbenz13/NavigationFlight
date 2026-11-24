@@ -108,8 +108,12 @@ struct CockpitFeatureState: Equatable, Sendable {
             guard isAmendmentWorkspaceVisible, amendmentSave == nil,
                   routeAmendmentDraft?.legPanel == nil else { return }
             isAmendmentPlotting.toggle()
-            if isAmendmentPlotting, routeAmendmentDraft?.step == .review, let route = routeForAmendment {
-                routeAmendmentDraft?.update(.back, route: route)
+            if let route = routeForAmendment {
+                if isAmendmentPlotting, routeAmendmentDraft?.step == .review {
+                    routeAmendmentDraft?.update(.back, route: route)
+                } else if !isAmendmentPlotting {
+                    routeAmendmentDraft?.update(.stopPlotting, route: route)
+                }
             }
             return
         }
@@ -150,9 +154,19 @@ struct CockpitFeatureState: Equatable, Sendable {
         case .open, .resume:
             isAmendmentWorkspaceVisible = true
             isAmendmentPlotting = false
-        case .plot:
-            guard isAmendmentWorkspaceVisible,
-                  isAmendmentPlotting || routeAmendmentDraft?.acceptsLegTap == true else { return }
+        case .plot(let input):
+            guard isAmendmentWorkspaceVisible else { return }
+            if isAmendmentPlotting {
+                // Placement has no leg-selection semantics, even if a caller supplies hits.
+                var placement = input
+                placement.legHits = nil
+                routeAmendmentDraft?.update(.plot(placement), route: route)
+            } else if input.legHits != nil, routeAmendmentDraft?.acceptsLegTap == true {
+                routeAmendmentDraft?.update(.plot(input), route: route)
+            }
+            return
+        case .editLeg, .checkLeg, .chooseLeg:
+            guard isAmendmentWorkspaceVisible, !isAmendmentPlotting else { return }
         case .movePoint, .chooseDeparture, .chooseRejoin:
             guard isAmendmentWorkspaceVisible else { return }
             isAmendmentPlotting = true
@@ -171,6 +185,12 @@ struct CockpitFeatureState: Equatable, Sendable {
                 defaultWind: flightPlan.operationalContext.defaultWind
             )
         )
+        if case .open = intent, !isAmendmentPlotting {
+            routeAmendmentDraft?.update(.stopPlotting, route: route)
+        }
+        if case .resume = intent, !isAmendmentPlotting {
+            routeAmendmentDraft?.update(.stopPlotting, route: route)
+        }
         if routeAmendmentDraft?.step == .review { isAmendmentPlotting = false }
     }
 
@@ -734,7 +754,8 @@ extension CockpitFeatureState {
         includesAdvisoryValues: Bool = false,
         isFutureDeparture: Bool = false,
         rejoinFixture: String? = nil,
-        workspaceFixture: Bool = false
+        workspaceFixture: Bool = false,
+        partialWorkspaceFixture: Bool = false
     ) {
         guard let route = routeForAmendment else { return }
         let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
@@ -752,6 +773,11 @@ extension CockpitFeatureState {
                                   longitudeDegrees: position.longitudeDegrees + 0.02)
         updateRouteAmendment(.chooseAnchor(departure))
         updateRouteAmendment(.plot(.init(position: via)))
+        if partialWorkspaceFixture {
+            updateRouteAmendment(.togglePlotting)
+            updateRouteAmendment(.pause)
+            return
+        }
         if workspaceFixture {
             updateRouteAmendment(.plot(.init(position: .init(
                 latitudeDegrees: via.latitudeDegrees + 0.02, longitudeDegrees: via.longitudeDegrees - 0.01))))

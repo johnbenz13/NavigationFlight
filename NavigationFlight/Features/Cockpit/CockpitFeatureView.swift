@@ -306,7 +306,7 @@ struct CockpitFeatureView: View {
 
     private var amendmentDisplayDate: Date? {
 #if DEBUG
-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] == "A",
+        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]?.hasPrefix("A") == true,
            let start = state.flight?.legStartedAt {
             return start.addingTimeInterval(442)
         }
@@ -337,9 +337,10 @@ struct CockpitFeatureView: View {
                 state.installCockpitContext(transition.cockpitContext)
 #if DEBUG
                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
-                if ["A", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                if ["A", "A-partial", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
                    state.flight?.activatedRouteAmendment == nil {
-                    state.prepareAmendmentConfirmationFixture(workspaceFixture: true)
+                    state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
+                                                              partialWorkspaceFixture: workspaceFixture == "A-partial")
                     state.updateRouteAmendment(.pause)
                     if workspaceFixture == "armed" { confirmAmendment(startNow: false) }
                 }

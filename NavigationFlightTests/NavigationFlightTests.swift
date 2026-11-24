@@ -14,6 +14,141 @@ private final class FixtureLocator {}
 
 struct NavigationFlightTests {
     @MainActor
+    @Test func partialAmendmentProjectsAdjacentLegsWithStableIdentities() throws {
+        let plan = try twoLegFlight()
+        let route = RouteAmendmentRoute(legs: plan.legs,
+                                       firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.46)), route: route)
+        #expect(draft.reviewLegs(on: route).isEmpty)
+        let firstPosition = WGS84Coordinate(latitudeDegrees: 32.5, longitudeDegrees: 35)
+        draft.update(.plot(.init(position: firstPosition)), route: route)
+        let first = try #require(draft.reviewLegs(on: route).first)
+        #expect(first.values == nil)
+        #expect(first.to == firstPosition)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.6, longitudeDegrees: 35.1))), route: route)
+        let legs = draft.reviewLegs(on: route)
+        #expect(legs.count == 2)
+        #expect(legs[0].id == first.id)
+        #expect(legs[0].to == legs[1].from)
+        #expect(draft.rejoin == nil)
+        #expect(Set(legs.map(\.id)).count == 2)
+        draft.update(.undo, route: route)
+        #expect(draft.reviewLegs(on: route) == [first])
+    }
+
+    @MainActor
+    @Test func partialAmendmentStopsEditsAndResumesWithoutFlightEffects() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.46)))
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
+        let leg = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        state.updateRouteAmendment(.editLeg(leg.id))
+        #expect(state.routeAmendmentDraft?.editor == nil)
+        state.updateRouteAmendment(.togglePlotting)
+        #expect(!state.isAmendmentPlotting)
+        state.updateRouteAmendment(.editLeg(leg.id))
+        #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
+        state.updateRouteAmendment(.editLegField(.heading, "087"))
+        state.updateRouteAmendment(.saveLegValues)
+        #expect(state.routeAmendmentDraft?.editor?.showValidation == true)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first?.values == nil)
+        state.updateRouteAmendment(.editLegField(.minutes, "03"))
+        state.updateRouteAmendment(.editLegField(.seconds, "20"))
+        state.updateRouteAmendment(.saveLegValues)
+        let draft = try #require(state.routeAmendmentDraft)
+        #expect(draft.editor == nil)
+        #expect(draft.reviewLegs(on: route).first?.values?.headingMagnetic == 87)
+        #expect(draft.reviewLegs(on: route).first?.values?.durationSeconds == 200)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: draft, route: route) == .incomplete)
+        #expect(throws: PendingRouteAmendment.Validation.invalidGeometry) {
+            try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        }
+        state.updateRouteAmendment(.togglePlotting)
+        #expect(state.isAmendmentPlotting)
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.6, longitudeDegrees: 35.1))))
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).count == 2)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first?.id == leg.id)
+        #expect(state.flight == flight)
+        #expect(state.flightPlan == plan)
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
+    @Test func amendmentRoutesPlottingAndSelectionInputsSeparately() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.chooseAnchor(route.firstAvailable))
+        let position = WGS84Coordinate(latitudeDegrees: 32.5, longitudeDegrees: 35)
+        state.updateRouteAmendment(.plot(.init(position: position, legHits: [.original(plan.legs[0].id)])))
+        let leg = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        #expect(state.routeAmendmentDraft?.legPanel == nil)
+        state.updateRouteAmendment(.plot(.init(position: position)))
+        #expect(state.routeAmendmentDraft?.points.count == 1)
+        #expect(state.routeAmendmentDraft?.message == "Consecutive points must be at different locations.")
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 1, longitudeDegrees: 1))))
+        #expect(state.routeAmendmentDraft?.points.count == 1)
+        state.updateRouteAmendment(.plot(.init(position: position, legHits: [.proposed(leg.id)])))
+        #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
+        #expect(state.routeAmendmentDraft?.points.count == 1)
+    }
+
+    @MainActor
+    @Test func movedPointKeepsLegIdentityWhileGeometryInvalidatesValues() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        state.prepareAmendmentConfirmationFixture(workspaceFixture: true)
+        let route = try #require(state.routeForAmendment)
+        var draft = try #require(state.routeAmendmentDraft)
+        let before = draft.reviewLegs(on: route)
+        try #require(before.count == 3)
+        let point = try #require(draft.points.first)
+        draft.update(.back, route: route)
+        draft.update(.movePoint(point.id), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.7, longitudeDegrees: 35.3))), route: route)
+        let moved = draft.reviewLegs(on: route)
+        #expect(moved.map(\.id) == before.map(\.id))
+        #expect(moved[0].values == nil)
+        #expect(moved[1].values == nil)
+        #expect(moved[2].values == before[2].values)
+        draft.update(.undo, route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+    }
+
+    @MainActor
+    @Test func stoppingPlottingCancelsOccurrenceOrReturnChoiceWithoutLosingPartialLegs() throws {
+        let plan = try twoLegFlight()
+        let route = RouteAmendmentRoute(legs: plan.legs,
+                                       firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.firstAvailable), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let legs = draft.reviewLegs(on: route)
+        draft.update(.chooseRejoin, route: route)
+        draft.update(.stopPlotting, route: route)
+        #expect(draft.step == .review)
+        #expect(draft.reviewLegs(on: route) == legs)
+        #expect(draft.rejoin == nil)
+        draft.update(.editLeg(try #require(legs.first?.id)), route: route)
+        #expect(draft.legPanel == .editor)
+    }
+
+    @MainActor
     @Test func amendmentWorkspaceUntouchedExitHasNoDraftOrFlightEffects() throws {
         let plan = try twoLegFlight()
         var state = CockpitFeatureState()

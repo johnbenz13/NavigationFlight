@@ -278,7 +278,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
 
     enum Intent {
         case open, pause, resume, discard
-        case toggleWorkspace, togglePlotting
+        case toggleWorkspace, togglePlotting, stopPlotting
         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
@@ -305,7 +305,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     struct ReviewLeg: Identifiable, Equatable, Sendable {
         enum Endpoint: Hashable, Sendable {
             case anchor(RouteAmendmentAnchor)
-            case point(UUID, latitude: Double, longitude: Double)
+            case point(UUID)
         }
 
         struct ID: Hashable, Sendable {
@@ -319,6 +319,20 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let from: WGS84Coordinate
         let to: WGS84Coordinate
         let values: RouteAmendmentLegValues?
+
+        // Geometry validates saved values separately from the leg's logical identity.
+        fileprivate var geometry: LegGeometry {
+            .init(id: id, fromLatitude: from.latitudeDegrees, fromLongitude: from.longitudeDegrees,
+                  toLatitude: to.latitudeDegrees, toLongitude: to.longitudeDegrees)
+        }
+    }
+
+    fileprivate struct LegGeometry: Hashable, Sendable {
+        let id: ReviewLeg.ID
+        let fromLatitude: Double
+        let fromLongitude: Double
+        let toLatitude: Double
+        let toLongitude: Double
     }
 
     enum LegChoice: Hashable, Sendable {
@@ -370,7 +384,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     var acceptsLegTap: Bool {
-        !isPaused && (isInspecting || (step == .review && legPanel == nil))
+        !isPaused && (isInspecting || ((step == .drawing || step == .review) && legPanel == nil))
     }
 
     func legChoices(on route: RouteAmendmentRoute, originalsOnly: Bool) -> [LegChoice] {
@@ -414,7 +428,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
 
-    private var legValues: [ReviewLeg.ID: RouteAmendmentLegValues] = [:]
+    private var legValues: [LegGeometry: RouteAmendmentLegValues] = [:]
 
     init(flightID: UUID, mode: RouteAmendmentMode = .manual) {
         self.flightID = flightID
@@ -430,7 +444,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
         step = .review
         for (review, saved) in zip(reviewLegs(on: route), amendment.replacementLegs) {
-            legValues[review.id] = RouteAmendmentLegValues(
+            legValues[review.geometry] = RouteAmendmentLegValues(
                 headingMagnetic: saved.headingMagnetic, durationSeconds: saved.durationSeconds,
                 altitude: saved.altitudeFeet.map(AltitudeFeet.init(value:)),
                 frequency: saved.frequencyMHz.map(FrequencyMHz.init(value:)),
@@ -441,20 +455,23 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     func reviewLegs(on route: RouteAmendmentRoute) -> [ReviewLeg] {
-        guard let departure, let rejoin else { return [] }
+        guard let departure else { return [] }
         typealias Stop = (id: ReviewLeg.Endpoint, name: String, position: WGS84Coordinate)
         func stop(_ anchor: RouteAmendmentAnchor) -> Stop {
             (.anchor(anchor), route.name(for: anchor), route.coordinate(at: anchor))
         }
         let via: [Stop] = points.enumerated().map { index, point in
-            (.point(point.id, latitude: point.position.latitudeDegrees, longitude: point.position.longitudeDegrees),
+            (.point(point.id),
              point.name ?? "Point \(index + 1)", point.position)
         }
-        let stops = [stop(departure)] + via + [stop(rejoin)]
+        let stops = [stop(departure)] + via + (rejoin.map { [stop($0)] } ?? [])
         return zip(stops, stops.dropFirst()).map { from, to in
             let id = ReviewLeg.ID(from: from.id, to: to.id)
+            let geometry = LegGeometry(id: id, fromLatitude: from.position.latitudeDegrees,
+                                       fromLongitude: from.position.longitudeDegrees,
+                                       toLatitude: to.position.latitudeDegrees, toLongitude: to.position.longitudeDegrees)
             return ReviewLeg(id: id, departureName: from.name, arrivalName: to.name,
-                             from: from.position, to: to.position, values: legValues[id])
+                             from: from.position, to: to.position, values: legValues[geometry])
         }
     }
     private var sketch = Sketch()
@@ -520,6 +537,9 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
         message = nil
         switch intent {
+        case .stopPlotting:
+            guard step != .staleDeparture else { return }
+            step = departure == nil ? .departure : reviewLegs(on: route).isEmpty ? .drawing : .review
         case .plot(let input):
             if let hits = input.legHits, acceptsLegTap {
                 let eligible = legChoices(on: route, originalsOnly: isInspecting)
@@ -646,7 +666,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             let result = editor.estimate == nil ? estimate(for: leg, inputs: estimateInputs) : nil
             self.editor?.estimate = result
         case .saveLegValues:
-            guard legPanel == .editor, let editor else { return }
+            guard legPanel == .editor, let editor,
+                  let leg = reviewLegs(on: route).first(where: { $0.id == editor.id }) else { return }
             guard let values = editor.entry.values else {
                 self.editor?.showValidation = true
                 if editor.entry.invalidFields.contains(.altitude) || editor.entry.invalidFields.contains(.frequency) {
@@ -654,7 +675,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                 }
                 return
             }
-            legValues[editor.id] = values
+            legValues[leg.geometry] = values
             self.editor = nil
             legPanel = nil
         case .backToLegReview:
@@ -695,7 +716,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         _ id: ReviewLeg.ID, on route: RouteAmendmentRoute,
         check: Bool = false, inputs: RouteAmendmentEstimator.Inputs? = nil
     ) {
-        guard legPanel == nil, step == .review,
+        guard legPanel == nil, step == .drawing || step == .review,
               let leg = reviewLegs(on: route).first(where: { $0.id == id }) else { return }
         let entry = RouteAmendmentLegEntry(values: leg.values)
         editor = Editor(id: id, entry: entry, estimate: check ? estimate(for: leg, inputs: inputs) : nil)

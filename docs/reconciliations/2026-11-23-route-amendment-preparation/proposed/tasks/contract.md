@@ -1,8 +1,9 @@
 # Shared contract for amendment-preparation tasks
 
-**Draft for breakdown approval.** Product/design approval is recorded in
-[D03](../design-revision-d03.md); these proposed technical contracts and ticket
-boundaries still require review. They authorize neither publication nor code.
+**Approved breakdown contract · John · 2026-11-24.** Product/design approval is recorded in
+[D03](../design-revision-d03.md); John approved these technical contracts and ticket boundaries, including the
+time-wheel first-edit semantics and scoped recovery-error reuse. Publication is
+authorized; implementation remains separately requested.
 
 ## Authority and implementation gate
 

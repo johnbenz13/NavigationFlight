@@ -1,9 +1,9 @@
 # Amendment preparation · Draft task breakdown
 
-**Status:** enriched draft contracts for owner review, 2026-11-24. No GitHub
-issues published and no implementation started. John approved D03 with the
-regular-Cockpit boundary; granularity, proposed interfaces and blocking edges
-below still need approval. Implementation is requested one small task at a time.
+**Status:** approved by John · 2026-11-24, reviewing checkpoint cd6aa2b.
+Approval covers the 12 slices, interfaces, time-wheel first-edit semantics,
+recovery-error reuse and dependencies. GitHub publication is authorized;
+implementation remains separately requested one small task at a time.
 
 Read the [shared contract](contract.md), [approved behavior](../preparing-an-amendment.md)
 and [D03 scope/approval](../design-revision-d03.md). Each task includes behavior,
@@ -75,7 +75,7 @@ One wheel detail is explicit for review: the first deliberate minute/second edit
 sets the other component to zero; merely opening does not set a duration. AP-05
 will not infer a different behavior silently. AP-09 also proposes reusing D02-F10's
 scoped recovery-error presentation for corrupt/unsupported draft data. These
-details remain proposals until this enriched breakdown is approved.
+details were approved by John with this enriched breakdown.
 
 ## Existing tracker treatment and publication plan
 
@@ -107,7 +107,6 @@ ready-for-agent. Record real issue numbers here, read back bodies/relationships
 and check this coverage map before reporting publication complete. Do not merge
 the planning PR, close legacy issues or start implementation as part of publishing.
 
-**Owner review requested:** approve/split/merge the numbered tasks, proposed
-interfaces, first-edit time semantics and blocking edges. Publication waits for
-this approval as required by the plan-feature-tickets workflow. No further
-feature or flying-amendment scope is introduced by the breakdown.
+**Owner approval recorded:** John approved the numbered tasks, interfaces,
+first-edit time semantics and blocking edges. No further feature or flying scope
+is introduced. Publication records follow below.

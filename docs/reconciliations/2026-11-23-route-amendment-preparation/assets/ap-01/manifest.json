@@ -39,54 +39,6 @@
     "configurationName": "Test Scheme Action",
     "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
     "deviceName": "AP01-iPad-11-Reference",
-    "exportedFileName": "5D776138-2028-4B39-9D4C-D355E9DA6B90.png",
-    "isAssociatedWithFailure": false,
-    "suggestedHumanReadableName": "Route amendment - ap01-closed-portrait_0_1FE23127-8071-44C9-A698-08C8E91F686C.png",
-    "timestamp": 1795509910.631,
-    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
-    "retainedFileName": "ipad-ap01-closed-portrait.png",
-    "sha256": "92c4276eca8830b3d030bce5e14281054a830c38966fa3d2df0a521b6daf15af"
-  },
-  {
-    "configurationName": "Test Scheme Action",
-    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
-    "deviceName": "AP01-iPad-11-Reference",
-    "exportedFileName": "F62635D6-F780-4A98-8775-CE31DD7AC21E.png",
-    "isAssociatedWithFailure": false,
-    "suggestedHumanReadableName": "Route amendment - ap01-editor-portrait_0_F79175CA-065B-4B4A-93B9-5B83B42632AB.png",
-    "timestamp": 1795509908.734,
-    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
-    "retainedFileName": "ipad-ap01-editor-portrait.png",
-    "sha256": "d18d8639050b83644704aef4b8c5a8400204cc152666f8ff8320494121c15372"
-  },
-  {
-    "configurationName": "Test Scheme Action",
-    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
-    "deviceName": "AP01-iPad-11-Reference",
-    "exportedFileName": "68F01966-DEBA-4B15-90F0-4956A620C2AA.png",
-    "isAssociatedWithFailure": false,
-    "suggestedHumanReadableName": "Route amendment - ap01-open-portrait_0_A45D2FBF-CCAA-4C92-9AEE-2051BB6735DB.png",
-    "timestamp": 1795509905.931,
-    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
-    "retainedFileName": "ipad-ap01-open-portrait.png",
-    "sha256": "a0238f2773f69f329b860858e88169e7c3f68683cfa9b4f65c7eda4160d64ad3"
-  },
-  {
-    "configurationName": "Test Scheme Action",
-    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
-    "deviceName": "AP01-iPad-11-Reference",
-    "exportedFileName": "CC7A744D-1F7F-442A-A79D-636C89619565.png",
-    "isAssociatedWithFailure": false,
-    "suggestedHumanReadableName": "Route amendment - ap01-before-portrait_0_9AD6FC0A-15EC-4A4A-AABF-4968437C8BAF.png",
-    "timestamp": 1795509903.974,
-    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
-    "retainedFileName": "ipad-ap01-before-portrait.png",
-    "sha256": "93d0ee270747c95e33b1846b9f08a8005b349435fb30dc65618f38ad75576fe3"
-  },
-  {
-    "configurationName": "Test Scheme Action",
-    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
-    "deviceName": "AP01-iPad-11-Reference",
     "exportedFileName": "ED1A7963-57DE-4115-8112-36C59A1086D0.png",
     "isAssociatedWithFailure": false,
     "suggestedHumanReadableName": "Route amendment - ap01-incomplete-closed_0_263866E8-674F-482E-8A99-03FC6BDF0548.png",
@@ -358,5 +310,53 @@
     "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceLargerTextKeepsActionsReachable()",
     "retainedFileName": "ipad-larger-text-ap01-before-portrait.png",
     "sha256": "9a2f93ae7ecb647aff2de683f22e031a54dd00ed71cbbfbaf0c0fcf2dd59c4a2"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "D0D75995-B0A9-4BCD-A486-1C887548CB92.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap01-closed-portrait_0_6BA6C32D-E5D2-4F59-B521-DB2DE01E3C6C.png",
+    "timestamp": 1795512721.069,
+    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
+    "retainedFileName": "ipad-ap01-closed-portrait.png",
+    "sha256": "a5447d4064822aa72c082d368170498c2c6dc23a5ea59a29ecec286220e61ecc"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "6CD04CCE-0F75-4A2C-B855-73377156176B.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap01-editor-portrait_0_7139EE05-00CB-436F-A6DE-92A4A638A00E.png",
+    "timestamp": 1795512719.155,
+    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
+    "retainedFileName": "ipad-ap01-editor-portrait.png",
+    "sha256": "b0e59a93a35733577873eeccd7590ce22dd340f74094e4c4be375429bbf69784"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "F537ECBD-661D-4FCE-8D7F-A4222C183FA1.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap01-open-portrait_0_66B2398D-5533-4038-BD6F-66F1DD0BDE34.png",
+    "timestamp": 1795512716.323,
+    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
+    "retainedFileName": "ipad-ap01-open-portrait.png",
+    "sha256": "ee0300059fffc10983a71930688345ef34d342ebb714be3ba970fdcfcc437a7d"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "69EE8946-9151-40F1-BFA8-1A4BF85CDD92.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap01-before-portrait_0_3CF100D2-6A51-431E-8F68-FF3FB3F7B907.png",
+    "timestamp": 1795512714.336,
+    "testIdentifier": "NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()",
+    "retainedFileName": "ipad-ap01-before-portrait.png",
+    "sha256": "3ce0bc271ed733c78ba312dc24ffa40a0ab4afd2891589316b8160ae3149dd73"
   }
 ]

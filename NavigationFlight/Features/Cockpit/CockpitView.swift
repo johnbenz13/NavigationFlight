@@ -716,6 +716,9 @@ struct CockpitView: View {
                     portraitControlPanel
                         .frame(height: layout.consoleExtent)
                         .frame(maxWidth: .infinity)
+                        // Intrinsic content can exceed the resting extent slightly. Keep its
+                        // background inside the console instead of painting over the map.
+                        .clipped()
                 }
             }
         }

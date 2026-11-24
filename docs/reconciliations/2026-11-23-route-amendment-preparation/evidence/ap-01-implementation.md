@@ -129,3 +129,34 @@ separate scope/owner direction.
 All five issue acceptance criteria remain unchecked pending human visual approval;
 Reduce Motion and the noted Larger Text concerns also block acceptance. PR creation
 is a review handoff, not issue closure. No merge or closure is requested here.
+
+
+## Follow-up: visible portrait boundary (owner screenshots, 2026-11-24)
+
+The earlier map-frame equality checks missed regular-console background overflow.
+The regular portrait panel's intrinsic content is slightly taller than its fixed
+288 pt allocation; its background painted above that allocation while the amendment
+panel stayed inside it. The map itself did not resize. This produced a visible
+8.5 pt shift on the reference iPad and invalidated the earlier visual-boundary claim.
+
+`CockpitView` now clips the regular portrait console to its existing allocation.
+Control geometry, spacing and resting-layout policy are unchanged; the background
+can no longer cover the bottom of the map. This is scoped containment of the shared
+boundary, not a redesign of regular Cockpit.
+
+Measured raw 1668 × 2388 captures at x = 5 px: before the fix, the ordinary white
+console started at y = 1755 px while amendment started at y = 1772 px. After the
+fix both start at y = 1772 px (886 pt, delta 0). The old render is retained as
+[before containment](../assets/ap-01/ipad-before-background-containment-fix.png).
+The portrait before/open/editor/closed links above now point to corrected captures
+from the 11:31 run; their manifest provenance and hashes were refreshed. The
+implementing agent inspected the corrected ordinary/open pair directly against the
+D03 shared-boundary rule (29:883 plus the existing-Cockpit preservation rule).
+
+Xcode build including tests passed at 11:31. The focused iPad workspace-toggle UI
+test passed, then passed again with an added rendered-pixel regression at 11:39:
+[summary](../assets/ap-01/ipad-rendered-boundary-regression-summary.txt). The new
+assertion compares the deterministic chart edge 2 pt above the map boundary with
+the console edge 2 pt below in both modes (maximum RGB-channel difference > 12/255). This supplements,
+rather than replaces, exact map-frame equality assertions. `git diff --check` passed.
+Other outstanding acceptance limitations above remain unchanged.

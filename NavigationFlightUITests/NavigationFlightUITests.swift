@@ -3183,6 +3183,9 @@ final class NavigationFlightUITests: XCTestCase {
         let map = app.descendants(matching: .any)["aviation-map"].firstMatch
         let before = map.frame
         captureAmendmentState("ap01-before-\(landscape ? "landscape" : "portrait")", in: app)
+        if UIDevice.current.userInterfaceIdiom == .pad && !landscape && !largerText {
+            assertPortraitConsoleRenderedBoundary(mapFrame: before, in: app)
+        }
         pencil.tap()
         let arm = app.buttons["arm-amendment"]
         XCTAssertTrue(arm.waitForExistence(timeout: 8))
@@ -3193,6 +3196,9 @@ final class NavigationFlightUITests: XCTestCase {
         let plot = app.buttons["toggle-amendment-plotting"]
         XCTAssertEqual(plot.value as? String, "Off")
         captureAmendmentState("ap01-open-\(landscape ? "landscape" : "portrait")", in: app)
+        if UIDevice.current.userInterfaceIdiom == .pad && !landscape && !largerText {
+            assertPortraitConsoleRenderedBoundary(mapFrame: before, in: app)
+        }
         let leg = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
         XCTAssertTrue(leg.waitForExistence(timeout: 5))
         leg.tap()
@@ -3214,6 +3220,46 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertEqual(plot.value as? String, "Off")
         XCTAssertEqual(map.frame, before)
         XCTAssertTrue(app.descendants(matching: .any)["amendment-chart-panel"].firstMatch.exists)
+    }
+
+    /// The map frame alone cannot detect a console background painting outside its frame.
+    /// This disposable chart fixture has a distinct left edge above the console.
+    @MainActor
+    private func assertPortraitConsoleRenderedBoundary(mapFrame: CGRect, in app: XCUIApplication) {
+        let screenshot = app.screenshot().image
+        guard let image = screenshot.cgImage else {
+            XCTFail("Missing screenshot pixels")
+            return
+        }
+        let bytesPerRow = image.width * 4
+        var pixels = [UInt8](repeating: 0, count: bytesPerRow * image.height)
+        let rendered = pixels.withUnsafeMutableBytes { bytes in
+            guard let context = CGContext(
+                data: bytes.baseAddress, width: image.width, height: image.height,
+                bitsPerComponent: 8, bytesPerRow: bytesPerRow,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+            ) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+            return true
+        }
+        XCTAssertTrue(rendered)
+        guard rendered else { return }
+        let scaleX = CGFloat(image.width) / app.frame.width
+        let scaleY = CGFloat(image.height) / app.frame.height
+        let x = Int(2 * scaleX)
+        func rgb(at screenY: CGFloat) -> [Int]? {
+            let y = Int((screenY - app.frame.minY) * scaleY)
+            guard (0..<image.height).contains(y), (0..<image.width).contains(x) else { return nil }
+            let offset = y * bytesPerRow + x * 4
+            return pixels[offset..<(offset + 3)].map(Int.init)
+        }
+        guard let above = rgb(at: mapFrame.maxY - 2), let below = rgb(at: mapFrame.maxY + 2) else {
+            XCTFail("Console boundary must be inside the screenshot")
+            return
+        }
+        let difference = zip(above, below).map { abs($0 - $1) }.max() ?? 0
+        XCTAssertGreaterThan(difference, 12, "The fixture chart must remain visible above the console background")
     }
 
     @MainActor

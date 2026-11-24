@@ -5,13 +5,19 @@ additional request to improve the current-leg timing strip. On 2026-11-24 John
 approved Q33–Q36 and explicitly removed Start now from the proposed flow (Q32).
 Preparation ends at **Arm → return to Cockpit**; immediate departure will be
 reconsidered only during the flying-amendment reconciliation. **D01 was direction-approved by John
-on 2026-11-24. D02 detailed coverage is in review. Implementation is not authorized by this reconciliation.**
+on 2026-11-24. D02 received two owner corrections; [D03](proposed/design-revision-d03.md) is in review. Implementation is not authorized by this reconciliation.**
 
 **Baseline:** local `main`, `cffba65f08cd8898294c941a4a3291b2fdb7df38`.
 **Branch:** `feature/route-amendment-preparation` (renamed at John’s request on 2026-11-24).
 This is a separate, bounded review of amendment preparation after flight use,
 not an expansion of the earlier [whole-app review](../2026-11-14-app/README.md).
 Use the existing [planning configuration](../../architecture/planning-configuration.md).
+
+## Latest design revision
+
+[D03 · Separate heading/time sections and stable console geometry](proposed/design-revision-d03.md)
+addresses John’s 2026-11-24 review. Prior previews remain historical; D03 is the
+current layout candidate and awaits renewed direction approval.
 
 ## Read the experience
 
@@ -69,9 +75,9 @@ created in Navigation Flight project `676737789` on 2026-11-24.
 Review [D01 main-screen proposal and preview](proposed/design-proposal.md) or open
 [the exact Figma frame](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=3-2).
 It shows iPad Pro 11-inch portrait, plotted legs with missing values, plotting off,
-and the lighter timing strip. **John approved D01 on 2026-11-24.** Expand its direction across the
-remaining states, iPad landscape and iPhone portrait in D02; detailed design
-approval remains separate.
+and the lighter timing strip. **John approved D01 on 2026-11-24.** D02 expanded its states and responsive layouts. John requested two corrections;
+[D03](proposed/design-revision-d03.md) is the current layout revision in review.
+Detailed design approval remains separate.
 iPhone landscape remains excluded.
 
 ## Review gates and limits

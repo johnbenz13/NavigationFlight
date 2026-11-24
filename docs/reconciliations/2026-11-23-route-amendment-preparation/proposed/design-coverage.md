@@ -2,7 +2,9 @@
 
 D01 direction approved by John on 2026-11-24, reviewing node 3:2 at repository
 checkpoint 95f03bf. D02 extends that direction; detailed design approval and
-implementation remain separate. Detailed design is **in review**. Each exact node below extends the approved
+implementation remain separate. D02 status: **changes requested** following owner review.
+[D03](design-revision-d03.md) supersedes console geometry and wheel grouping;
+other D02 state content remains the reference. D03 is in review. Each exact node below extends the approved
 direction. Static design inspection does not establish simulator behavior.
 
 | Review view | Coverage | Contract |

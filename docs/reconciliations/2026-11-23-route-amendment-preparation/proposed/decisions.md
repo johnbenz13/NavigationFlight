@@ -110,3 +110,12 @@ These are unresolved details, not permission to invent implementation behavior.
 The product choices raised in Q32–Q36 are resolved. Design and technical-contract
 details above remain to be completed before implementation-ready tickets; they
 do not reopen the agreed preparation direction.
+
+## Owner design review · 2026-11-24
+
+John is globally satisfied with D02, subject to two corrections: clearly
+separate the Heading wheel from the minutes/seconds group, and keep the console
+from jumping in height when switching between amendment and regular Cockpit.
+[D03](design-revision-d03.md) applies these changes for review. It reuses the
+existing resting-layout extents and scrolls the leg list internally. D03 approval
+and implementation authorization remain separate.

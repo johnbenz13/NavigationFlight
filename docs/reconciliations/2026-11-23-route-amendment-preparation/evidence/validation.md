@@ -74,3 +74,27 @@ font families and mixed native font runs resolve to SF Pro. All 11 image-filled
 nodes are named chart backgrounds. All 16 candidate nodes and the index resolve.
 Repository checks: 98 local links/anchors resolve; all 37 PNG signatures and
 SHA-256 entries verified; git diff --check passed.
+
+## D03 owner corrections · 2026-11-24
+
+John was globally satisfied with D02 and requested separated Heading/Leg time
+sections and a stable console extent across pencil toggles. Preserved prior
+iterations and created six D03 candidates plus an index. D03 remains in review.
+
+Read CockpitRestingLayoutPolicy and the resting/amendment layout in CockpitView:
+regular iPad portrait uses 288 pt, compact uses 278 pt, and landscape uses a
+370 pt rail. D03 adopts those shared extents. Structural read-back confirms
+A/B/C maps are 834 × 810 and consoles are 834 × 288 with the same screen-relative
+boundary y = 906. Compact maps are 402 × 439 above 278 pt consoles; the landscape
+map is 824 × 738 beside a 370 pt rail. The implementation contract must also
+share operational-state, safe-area and accessibility adjustments between modes.
+
+Inspected six candidate renders and the review index, including post-fix leg
+counts and all final retained previews. Heading and time now occupy separate
+stacked sections with a divider. Timing/actions remain fixed and leg rows scroll.
+Figma audit: 300 editable text nodes, all SF Pro; six chart-only image fills.
+Verified 115 local links/anchors, 44 PNG signatures and SHA-256 manifest entries.
+Whitespace checks passed. No app source/configuration/runtime resources changed;
+no build or test run is required for this documentation/design checkpoint.
+Runtime scrolling, camera preservation, accessibility and native picker behavior
+remain unverified until implementation.

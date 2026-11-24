@@ -3,7 +3,7 @@
 **Status:** behavioral direction approved by John, 2026-11-23, Q1–Q31;
 Q32–Q36 resolved on 2026-11-24, including removal of Start now.
 **Design:** [D01 main screen](design-proposal.md) was direction-approved by John on
-2026-11-24. D02 now expands the other states for separate review. Historical previews below are not
+2026-11-24. D02 received two owner corrections. [D03](design-revision-d03.md) is the current layout candidate in review. Historical previews below are not
 the new target.
 Historical Figma references retain their earlier approval dates and are shown
 only to explain what this iteration changes. Implementation remains separate.
@@ -109,6 +109,8 @@ opens a modal on the map associated with that leg. The selected geometry and
 row remain identifiable. Modal placement and compact adaptations require design.
 
 - Magnetic heading uses a wheel labelled in degrees, **001°–360°**.
+  Give heading its own labelled section, visually separated from the Leg time
+  section containing the minutes and seconds wheels (owner review, 2026-11-24).
 - **Leg time** means planned duration, not clock time or the existing revised ETA
   workflow. Use minute and second wheels: 00–60 minutes, 00–59 seconds, total
   capped at 60:00. 00:00 is invalid.
@@ -215,6 +217,13 @@ remain distinguishable through patterns/labels as well as colour. Show only
 amendment legs in the lower list, while the current operational leg retains a
 visible timing strip. Closing the workspace hides unarmed geometry. Armed
 geometry stays visible because it affects navigation.
+
+Opening/hiding amendment mode and its leg editor must retain the regular
+Cockpit map/console boundary for the same Flight and environment. Preserve map
+camera and zoom. Scroll the leg list within the shared console extent; keep
+timing and actions fixed. Apply the existing shared resting-layout policy,
+including safe areas and operational/accessibility adjustments, consistently
+in both modes. See [D03 sizing and comparison](design-revision-d03.md).
 
 John's final direction adds a presentation change: replace the heavy dark/black
 timing block with a more elegant, still distinctive treatment. Preserve readable

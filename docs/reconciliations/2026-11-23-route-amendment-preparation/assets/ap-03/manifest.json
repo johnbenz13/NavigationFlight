@@ -1,0 +1,20 @@
+[
+  {
+    "file": "Route amendment - ap03-continued-rejoined-portrait.png",
+    "source": "/tmp/ap03-ipad/Route amendment - ap03-continued-rejoined-portrait.png",
+    "sha256": "e0aac13a2464bdf3799a9380126a83351394fcb61a2c4d3e13a66868878b2c1e",
+    "status": "preliminary presentation discrepancy; not accepted"
+  },
+  {
+    "file": "Route amendment - ap03-rejoined-portrait.png",
+    "source": "/tmp/ap03-ipad/Route amendment - ap03-rejoined-portrait.png",
+    "sha256": "1ac02d9f0c14ec8ee8bb20c45f9dac00903115730bf3a20e8e194d424783678c",
+    "status": "preliminary presentation discrepancy; not accepted"
+  },
+  {
+    "file": "Route amendment - ap03-changed-return-portrait.png",
+    "source": "/tmp/ap03-ipad/Route amendment - ap03-changed-return-portrait.png",
+    "sha256": "2cb9a02291dcf4c65edce22418f0a447c6d96c495220b4cde5d7249f04cef933",
+    "status": "preliminary presentation discrepancy; not accepted"
+  }
+]

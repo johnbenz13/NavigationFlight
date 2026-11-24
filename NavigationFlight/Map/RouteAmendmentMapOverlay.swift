@@ -121,11 +121,7 @@ final class RouteAmendmentMapOverlay: UIView {
         let coordinate = map.convert(tap, toCoordinateFrom: map)
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
-        if presentation.draft.acceptsLegTap, !presentation.isPlotting, !placingAtCenter {
-            return .init(position: position, legHits: legHits(at: tap, on: map, presentation: presentation))
-        }
-        guard presentation.isPlotting else { return nil }
-        guard presentation.draft.acceptsMapInput else { return nil }
+        guard presentation.draft.acceptsMapInput || presentation.draft.acceptsLegTap else { return nil }
         let isChoosingAnchor = presentation.draft.step == .departure || presentation.draft.step == .rejoin
         let retainsCenterPosition = placingAtCenter && !isChoosingAnchor
 
@@ -180,7 +176,9 @@ final class RouteAmendmentMapOverlay: UIView {
                 plotPosition = snapped
             }
         }
-        return .init(position: plotPosition, anchors: anchors, waypoint: waypoint, pointID: pointID)
+        return .init(position: plotPosition, anchors: anchors, waypoint: waypoint, pointID: pointID,
+                     legHits: placingAtCenter ? nil : legHits(at: tap, on: map, presentation: presentation),
+                     isRouteTap: !retainsCenterPosition && !anchors.isEmpty)
     }
 
     override func draw(_ rect: CGRect) {

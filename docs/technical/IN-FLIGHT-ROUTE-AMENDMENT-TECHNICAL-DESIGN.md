@@ -48,6 +48,27 @@ historical. John approved the D04 design; implementation authorization remains s
 Approved scoped issue-text updates were published to #227/#228/#231/#233. Relevant domain/UI tests, build and simulator checks belong to a
 later authorized implementation; none ran for this documentation/design revision.
 
+### AP-03 implementation checkpoint · D04 · 2026-11-24
+
+`RouteAmendmentDraft` owns typed overlap resolution and validates original-route
+occurrences on selection. Map input carries both hit-tested proposed legs and
+original anchors; the feature forwards the same intent without a plotting-mode
+gate. After rejoin, proposed hits edit while other short taps preserve geometry.
+The console renders Drawing/Rejoined status; rows reuse the existing value editor
+and map panel. At compact accessibility sizes, new Edit / Rejoin and proposed-leg
+choice use a persistent native confirmation dialog followed, when needed, by a
+scrollable native sheet/list so the protected operational header cannot
+leave their actions in a sub-44pt chart viewport. This is an adaptive native
+presentation under the approved reachability rule, not revised approved geometry.
+Presentation dismissal changes visibility; typed Edit/Rejoin/Cancel intents own
+the draft transition, preventing native dismissal from cancelling a successor.
+Existing AP-01/AP-02 shell, stable geometry identities, atomic plot
+history and Flight isolation remain. Disposable DEBUG fixtures exercise completed
+first-leg progress and coincident-route input through the existing preparation helper.
+No AP-07 gesture/anchor-correction, AP-04 wheel/partial-save or AP-11 arming behavior
+is claimed. [Verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-03-implementation.md)
+contains scoped acceptance and remaining human approval.
+
 ## Preparation revision planning · 2026-11-24
 
 The [approved future preparation revision](../features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md#approved-future-preparation-revision--2026-11-24)

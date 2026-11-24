@@ -337,10 +337,15 @@ struct CockpitFeatureView: View {
                 state.installCockpitContext(transition.cockpitContext)
 #if DEBUG
                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
-                if ["A", "A-partial", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                if ["A", "A-progress", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
                    state.flight?.activatedRouteAmendment == nil {
                     state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
-                                                              partialWorkspaceFixture: workspaceFixture == "A-partial")
+                                                              partialWorkspaceFixture: ["A-partial", "A-progress-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
+                                                              overlapWorkspaceFixture: ["B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
+                                                              completedFirstLegFixture: workspaceFixture?.hasPrefix("A-progress") == true,
+                                                              overlapChoiceFixture: ["B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
+                                                              multipleOverlapFixture: workspaceFixture == "B-multiple-choice",
+                                                              overlapOccurrencesFixture: workspaceFixture == "B-overlap-occurrences")
                     state.updateRouteAmendment(.pause)
                     if workspaceFixture == "armed" { confirmAmendment(startNow: false) }
                 }

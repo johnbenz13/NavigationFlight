@@ -14,6 +14,139 @@ private final class FixtureLocator {}
 
 struct NavigationFlightTests {
     @MainActor
+    @Test(arguments: [false, true])
+    func directDrawingOverlapResolvesEditOrRejoin(_ rejoin: Bool) throws {
+        let plan = try twoLegFlight()
+        let route = RouteAmendmentRoute(legs: plan.legs, firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let leg = try #require(draft.reviewLegs(on: route).first)
+        let anchor = route.anchor(at: 0, fraction: 0.8)
+        draft.update(.plot(.init(position: route.coordinate(at: anchor), anchors: [anchor], legHits: [.proposed(leg.id)], isRouteTap: true)), route: route)
+        #expect(draft.legPanel == .drawingOverlap([.proposed(leg.id)], [anchor]))
+        let points = draft.points
+        draft.update(.resolveDrawingOverlap(rejoin: rejoin), route: route)
+        #expect(draft.points == points)
+        #expect(rejoin ? draft.rejoin == anchor : draft.editor?.id == leg.id)
+        if rejoin {
+            draft.update(.plot(.init(position: leg.from, legHits: [.proposed(leg.id)])), route: route)
+            #expect(draft.editor?.id == leg.id)
+        }
+    }
+
+
+    @MainActor
+    @Test(arguments: [(0, 0.8, true), (0, 0.3, false), (0, 0.2, false), (1, 0.5, true)])
+    func deliberateRejoinValidatesRouteOrder(_ index: Int, _ fraction: Double, _ valid: Bool) throws {
+        let plan = try twoLegFlight()
+        let route = RouteAmendmentRoute(legs: plan.legs,
+                                       firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let before = draft.reviewLegs(on: route)
+        let anchor = route.anchor(at: index, fraction: fraction)
+        draft.update(.plot(.init(position: route.coordinate(at: anchor), anchors: [anchor])), route: route)
+        #expect(draft.rejoin == (valid ? anchor : nil))
+        #expect(draft.reviewLegs(on: route).first == before.first)
+        #expect(draft.points.count == 1)
+        #expect(valid ? draft.step == .review : draft.message != nil)
+    }
+
+    @MainActor
+    @Test func deliberateRejoinClosesDrawingAndRetainsGeometryAndValues() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = state.flight
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)))
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
+        let partial = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        let anchor = route.anchor(at: 0, fraction: 0.8)
+        state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: anchor), anchors: [anchor])))
+        #expect(!state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first == partial)
+        let last = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).last)
+        state.updateRouteAmendment(.editLeg(last.id))
+        state.updateRouteAmendment(.editLegField(.heading, "087"))
+        state.updateRouteAmendment(.editLegField(.minutes, "03"))
+        state.updateRouteAmendment(.editLegField(.seconds, "20"))
+        state.updateRouteAmendment(.saveLegValues)
+        let saved = state.routeAmendmentDraft?.reviewLegs(on: route).last?.values
+        state.updateRouteAmendment(.togglePlotting)
+        #expect(!state.isAmendmentPlotting)
+        let closed = try #require(state.routeAmendmentDraft)
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.6, longitudeDegrees: 35.1))))
+        state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: route.firstAvailable), anchors: [route.firstAvailable])))
+        #expect(state.routeAmendmentDraft == closed)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).last?.values == saved)
+        #expect(state.flight == flight)
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
+    @Test func deliberateRejoinChoiceRevalidatesProgress() throws {
+        let plan = try twoLegFlight()
+        let leg = plan.legs[0]
+        let reverse = NavigationLeg(id: UUID(), departure: leg.arrival, arrival: leg.departure,
+                                    windOverride: nil, remark: nil)
+        let route = RouteAmendmentRoute(legs: [leg, reverse],
+                                       firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        let first = route.anchor(at: 0, fraction: 0.8)
+        let later = route.anchor(at: 1, fraction: 0.2)
+        let input = RouteAmendmentDraft.MapInput(position: route.coordinate(at: first), anchors: [later, first, first])
+        draft.update(.plot(input), route: route)
+        #expect(draft.step == .crossing([first, later], .rejoin))
+        #expect(draft.points.isEmpty)
+        #expect(draft.rejoin == nil)
+        let originalChoice = draft
+        let progressed = RouteAmendmentRoute(legs: route.legs,
+                                             firstAvailable: route.anchor(at: 1, fraction: 0.4))
+        draft.update(.chooseAnchor(first), route: progressed)
+        #expect(draft.step == .staleDeparture)
+        #expect(draft.rejoin == nil)
+        var eligible = originalChoice
+        eligible.update(.chooseAnchor(later), route: route)
+        #expect(eligible.rejoin == later)
+        #expect(eligible.points.isEmpty)
+
+    }
+
+    @MainActor
+    @Test func changingReturnRetainsIntermediateIdentitiesAndRejectsCompletedTap() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        state.prepareAmendmentConfirmationFixture(workspaceFixture: true)
+        let route = try #require(state.routeForAmendment)
+        let before = try #require(state.routeAmendmentDraft)
+        state.updateRouteAmendment(.chooseRejoin)
+        #expect(state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft?.rejoin == nil)
+        #expect(state.routeAmendmentDraft?.points == before.points)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == Array(before.reviewLegs(on: route).dropLast()))
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 1, fraction: 0.8)))
+        #expect(!state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft?.rejoin == route.anchor(at: 1, fraction: 0.8))
+        let progressed = RouteAmendmentRoute(legs: route.legs, firstAvailable: route.anchor(at: 0, fraction: 0.4))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.5)), route: progressed)
+        let completed = route.anchor(at: 0, fraction: 0.2)
+        draft.update(.plot(.init(position: route.coordinate(at: completed), anchors: [completed])), route: progressed)
+        #expect(draft.points.isEmpty)
+        #expect(draft.rejoin == nil)
+        #expect(draft.message != nil)
+    }
+
+    @MainActor
     @Test func partialAmendmentProjectsAdjacentLegsWithStableIdentities() throws {
         let plan = try twoLegFlight()
         let route = RouteAmendmentRoute(legs: plan.legs,
@@ -51,9 +184,9 @@ struct NavigationFlightTests {
         state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
         let leg = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
         state.updateRouteAmendment(.editLeg(leg.id))
-        #expect(state.routeAmendmentDraft?.editor == nil)
+        #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
         state.updateRouteAmendment(.togglePlotting)
-        #expect(!state.isAmendmentPlotting)
+        #expect(state.isAmendmentPlotting)
         state.updateRouteAmendment(.editLeg(leg.id))
         #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
         state.updateRouteAmendment(.editLegField(.heading, "087"))
@@ -99,7 +232,6 @@ struct NavigationFlightTests {
         #expect(state.routeAmendmentDraft?.points.count == 1)
         #expect(state.routeAmendmentDraft?.message == "Consecutive points must be at different locations.")
         state.updateRouteAmendment(.togglePlotting)
-        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 1, longitudeDegrees: 1))))
         #expect(state.routeAmendmentDraft?.points.count == 1)
         state.updateRouteAmendment(.plot(.init(position: position, legHits: [.proposed(leg.id)])))
         #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
@@ -157,7 +289,7 @@ struct NavigationFlightTests {
         let flight = state.flight
         state.updateRouteAmendment(.toggleWorkspace)
         #expect(state.isAmendmentWorkspaceVisible)
-        #expect(!state.isAmendmentPlotting)
+        #expect(state.isAmendmentPlotting)
         #expect(AmendmentLifecycleStatus.project(flight: state.flight, draft: state.routeAmendmentDraft,
                                                route: state.routeForAmendment) == .none)
         state.updateRouteAmendment(.togglePlotting)
@@ -169,7 +301,7 @@ struct NavigationFlightTests {
     }
 
     @MainActor
-    @Test func amendmentPlottingRequiresItsOwnSwitchAndStopsOnExit() throws {
+    @Test func amendmentDrawingStartsAtPencilAndStopsOnExit() throws {
         let plan = try twoLegFlight()
         var state = CockpitFeatureState()
         try state.accept(plan)
@@ -179,14 +311,10 @@ struct NavigationFlightTests {
         let tap = RouteAmendmentDraft.MapInput(position: route.coordinate(at: departure), anchors: [departure])
         state.updateRouteAmendment(.toggleWorkspace)
         state.updateRouteAmendment(.plot(tap))
-        #expect(state.routeAmendmentDraft?.departure == nil)
-        state.updateRouteAmendment(.togglePlotting)
-        state.updateRouteAmendment(.plot(tap))
         #expect(state.routeAmendmentDraft?.departure == departure)
         #expect(state.isAmendmentWorkspaceVisible)
         #expect(AmendmentLifecycleStatus.project(flight: state.flight, draft: state.routeAmendmentDraft,
                                                route: route) == .incomplete)
-        state.updateRouteAmendment(.toggleWorkspace)
         state.updateRouteAmendment(.toggleWorkspace)
         #expect(!state.isAmendmentPlotting)
         let draft = state.routeAmendmentDraft
@@ -1518,9 +1646,8 @@ struct NavigationFlightTests {
 
         state.updateRouteAmendment(.backToLegReview)
         state.updateRouteAmendment(.plot(.init(position: via, legHits: [original, .proposed(leg.id)])))
-        #expect(state.routeAmendmentDraft?.legPanel == .chooser([original, .proposed(leg.id)],
-                                                                inspecting: false, overlap: true))
-        state.updateRouteAmendment(.closeLegPanel)
+        #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
+        state.updateRouteAmendment(.backToLegReview)
         #expect(state.routeAmendmentDraft?.step == .review)
         #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == saved)
 
@@ -1576,7 +1703,7 @@ struct NavigationFlightTests {
         #expect(segments[1].to == segments[2].from)
     }
 
-    @Test func drawingNearAnAnchorDoesNotOfferFinishForADifferentLocation() throws {
+    @Test func drawingNearAnAnchorKeepsTheFreeLocationUntilAnExactRouteTap() throws {
         let plan = try twoLegFlight()
         let leg = try #require(plan.legs.first)
         let route = RouteAmendmentRoute(legs: [leg], firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
@@ -1594,13 +1721,13 @@ struct NavigationFlightTests {
         draft.update(.undo, route: route)
 
         draft.update(.plot(.init(position: onRoute, anchors: [returnAnchor])), route: route)
-        #expect(draft.finishCandidates(on: route) == [returnAnchor])
+        #expect(draft.rejoin == returnAnchor)
         draft.update(.finishHere, route: route)
         #expect(draft.step == .review)
         #expect(draft.segments(on: route).last?.to == onRoute)
     }
 
-    @Test func anExactCenterWaypointDoesNotOfferTheSameLegTwice() throws {
+    @Test func anExactWaypointCanonicalizesTheSameLegBeforeAutomaticRejoin() throws {
         let plan = try twoLegFlight()
         let leg = try #require(plan.legs.first)
         let route = RouteAmendmentRoute(legs: plan.legs, firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
@@ -1609,7 +1736,8 @@ struct NavigationFlightTests {
         var draft = RouteAmendmentDraft(flightID: UUID())
         draft.update(.chooseAnchor(route.firstAvailable), route: route)
         draft.update(.plot(.init(position: leg.arrival.position, anchors: [almostWaypoint, waypoint])), route: route)
-        #expect(draft.finishCandidates(on: route) == [waypoint])
+        #expect(draft.rejoin == waypoint)
+        #expect(draft.step == .review)
         draft.update(.finishHere, route: route)
         #expect(draft.step == .review)
         #expect(draft.rejoin == waypoint)
@@ -1633,7 +1761,7 @@ struct NavigationFlightTests {
     }
 
     @MainActor
-    @Test func finishHerePromotesOnlyTheLastWaypointAndCanBeUndone() throws {
+    @Test func automaticRejoinRetainsIntermediatePointsAndCanBeUndone() throws {
         let plan = try twoLegFlight()
         var state = CockpitFeatureState()
         try state.accept(plan)
@@ -1653,9 +1781,8 @@ struct NavigationFlightTests {
         let before = try #require(state.routeAmendmentDraft)
         let first = try #require(before.points.first)
 
-        state.updateRouteAmendment(.selectPoint(first.id))
-        #expect(state.routeAmendmentDraft?.finishCandidates(on: route) == [anchor])
-        state.updateRouteAmendment(.finishHere)
+        #expect(state.routeAmendmentDraft?.rejoin == anchor)
+        #expect(!state.isAmendmentPlotting)
         let finished = try #require(state.routeAmendmentDraft)
         #expect(finished.step == .review)
         #expect(finished.rejoin == anchor)
@@ -1670,7 +1797,7 @@ struct NavigationFlightTests {
         #expect(state.routeAmendmentDraft?.rejoin == nil)
     }
 
-    @Test func finishHereDisambiguatesOverlappingLegsAndDropsEligibilityAfterMovingOffRoute() throws {
+    @Test func automaticRejoinDisambiguatesOverlappingLegsAndKeepsFreePointCorrection() throws {
         let plan = try twoLegFlight()
         let leg = try #require(plan.legs.first)
         let reverse = NavigationLeg(id: UUID(), departure: leg.arrival, arrival: leg.departure,
@@ -1687,14 +1814,15 @@ struct NavigationFlightTests {
         draft.update(.chooseAnchor(departure), route: route)
         draft.update(.plot(.init(position: location, anchors: [later, first, first])), route: route)
         draft.update(.finishHere, route: route)
-        #expect(draft.step == .crossing([first, later], .finish))
+        #expect(draft.step == .crossing([first, later], .rejoin))
         #expect(draft.rejoin == nil)
         draft.update(.chooseAnchor(later), route: route)
         #expect(draft.step == .review)
         #expect(draft.rejoin == later)
 
+        draft.update(.chooseRejoin, route: route)
         draft.update(.back, route: route)
-        draft.update(.undo, route: route)
+        draft.update(.plot(.init(position: route.coordinate(at: later))), route: route)
         let endpoint = try #require(draft.points.last)
         draft.update(.movePoint(endpoint.id), route: route)
         draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
@@ -1725,8 +1853,8 @@ struct NavigationFlightTests {
         state.updateRouteAmendment(.plot(.init(position: via)))
         state.updateRouteAmendment(.chooseRejoin)
         state.updateRouteAmendment(.chooseAnchor(rejoin))
-        #expect(state.routeAmendmentDraft?.rejoin == nil)
-        state.updateRouteAmendment(.confirmRejoin)
+        #expect(state.routeAmendmentDraft?.rejoin == rejoin)
+        #expect(!state.isAmendmentPlotting)
         state.updateRouteAmendment(.review)
         state.updateRouteAmendment(.pause)
         state.prepareForSectionDeparture()
@@ -1783,9 +1911,8 @@ struct NavigationFlightTests {
         #expect(draft.step == .rejoin)
         #expect(draft.message != nil)
         draft.update(.chooseAnchor(end), route: route)
-        #expect(draft.step == .confirmRejoin(end))
-        #expect(draft.segments(on: route).allSatisfy { $0.role != .bypassed })
-        draft.update(.confirmRejoin, route: route)
+        #expect(draft.step == .review)
+        #expect(draft.rejoin == end)
         let segments = draft.segments(on: route)
         #expect(segments.filter { $0.role == .bypassed } == [
             .init(from: route.coordinate(at: start), to: route.coordinate(at: end), role: .bypassed)

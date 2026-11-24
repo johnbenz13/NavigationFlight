@@ -1,0 +1,20 @@
+NavigationFlight ACTIVE
+·
+LEG 1 OF 25
+·
+From Kadima to Ramat
+Hide amendment workspace Incomplete draft Button
+Map tools Button
+Compass south-southwest Button Rotates the map to face due north
+Original retained , Original bypassed , Proposed , Original minute marks
+CURRENT LEG · LEG 1 OF 25
+Timer
+Leg time · planned
+⁨Kadima⁩ → ⁨Ramat⁩
+07:22
+04:17
+Over planned
+Amend route Heading
+Manual · 1 leg
+Drawing
+Proposed leg 1, ⁨Leg 1 · 46%⁩ → ⁨Point 1⁩ Magnetic heading Not set, leg time Not set Button

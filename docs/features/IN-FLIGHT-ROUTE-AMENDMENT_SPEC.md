@@ -47,6 +47,17 @@ D04 supersedes only plotting/continuation controls, plotting-off
 value-editor gating and short-point correction in G01–G03 and affected AP tasks.
 The linked D04 proposal records the approval boundary and issue patch drafts.
 
+### AP-03 implementation checkpoint · D04 · 2026-11-24
+
+Working-tree implementation for #227 now uses direct pencil drawing and automatic
+forward rejoin. Proposed-leg/row values remain available before and after closure;
+open proposed/original overlap offers Edit / Rejoin, with occurrence revalidation.
+Closed original/free-map taps preserve geometry. Plot/Done/Continue/Change-return
+controls are removed. The existing Arm placeholder remains disabled until AP-11.
+All-point long-press correction remains AP-07; partial values/wheels remain AP-04.
+[Acceptance trace, verification and exact artifacts](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-03-implementation.md)
+record the current evidence; human visual acceptance and merge remain separate.
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

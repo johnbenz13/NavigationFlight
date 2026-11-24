@@ -16,6 +16,38 @@ preparation only; the remaining operational decisions below are retained. Reuse 
 flying/rejoin/recovery evidence contracts. Each implementing task updates only
 its delivered technical section after the approved planning baseline lands.
 
+## AP-01 workspace ownership · 2026-11-24
+
+`CockpitFeatureState` owns `isAmendmentWorkspaceVisible` and
+`isAmendmentPlotting`, separately from its Flight-keyed `routeAmendmentDraft`.
+The toggle commands only change presentation/draft state. The existing draft pause
+flag is a compatibility adapter for the retained route/value commands. Empty exit
+clears the draft; edited exit keeps selection and the current unfinished editor.
+Opening/resuming always resets plotting. Failed-save presentation can be reopened
+without resubmitting a navigation command.
+
+`AmendmentLifecycleStatus` projects None/Incomplete/Ready/Armed/Awaiting Start leg/
+Flying from existing facts. A first replacement leg timing record is required for
+Flying; merely activating the route into a Manual Ready leg does not turn it green.
+Workspace highlight and failed-save indication remain independent of lifecycle.
+
+`CockpitView` reuses `CockpitRestingLayoutPolicy` and the same compact direct-Reach
+adjustment in both modes; amendment-specific console extents are removed. The map
+keeps its identity and camera bindings. Automatic replacement-review focus respects
+manual camera ownership even when visibility or editor presentation restores the
+focus projection from nil; those transitions are not explicit camera commands.
+Keyboard avoidance is scoped to the editor
+instead of resizing the underlying viewport. `RouteAmendmentConsole` fixes the light
+timing strip, title/plot control and actions around an internally scrolling region.
+The map overlay gates placement using the independent plotting flag. Existing
+route/value operations remain behind that shell until their dedicated AP tasks.
+
+Arm is disabled by explicit owner direction until AP-11; no callback or recording
+operation is wired to it. Existing engine/storage transactions are unchanged. The
+DEBUG workspace fixture seeds a hidden three-leg draft and injects a display date
+(07:22) without changing operational timestamps. The fixture uses disposable Flight
+data; it is not a second navigation clock.
+
 ## Code at the planning baseline
 
 | Area | Inspected interface and constraint |

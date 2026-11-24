@@ -60,6 +60,8 @@ struct CockpitFeatureState: Equatable, Sendable {
     private var navigationGeneration: UUID?
     private(set) var pendingReachUndo: PendingReachUndo?
     private(set) var routeAmendmentDraft: RouteAmendmentDraft?
+    private(set) var isAmendmentWorkspaceVisible = false
+    private(set) var isAmendmentPlotting = false
     var amendmentSave: RouteAmendmentSave?
     private(set) var replacingPendingAmendmentID: UUID?
     var pendingAmendmentManagementSave: PendingAmendmentManagementSave?
@@ -97,6 +99,42 @@ struct CockpitFeatureState: Equatable, Sendable {
     mutating func updateRouteAmendment(
         _ intent: RouteAmendmentDraft.Intent, mode: RouteAmendmentMode = .manual
     ) {
+        // Presentation commands never invoke a Flight transition or recording operation.
+        if case .toggleWorkspace = intent {
+            updateRouteAmendment(isAmendmentWorkspaceVisible ? .pause : .open, mode: mode)
+            return
+        }
+        if case .togglePlotting = intent {
+            guard isAmendmentWorkspaceVisible, amendmentSave == nil,
+                  routeAmendmentDraft?.legPanel == nil else { return }
+            isAmendmentPlotting.toggle()
+            if isAmendmentPlotting, routeAmendmentDraft?.step == .review, let route = routeForAmendment {
+                routeAmendmentDraft?.update(.back, route: route)
+            }
+            return
+        }
+        if case .pause = intent {
+            isAmendmentWorkspaceVisible = false
+            isAmendmentPlotting = false
+            if routeAmendmentDraft?.hasContent == false {
+                clearAmendmentDraft()
+            } else if let route = routeForAmendment {
+                routeAmendmentDraft?.update(.pause, route: route)
+            }
+            return
+        }
+        if amendmentSave != nil {
+            switch intent {
+            case .open, .resume:
+                if let route = routeForAmendment, routeAmendmentDraft != nil {
+                    isAmendmentWorkspaceVisible = true
+                    isAmendmentPlotting = false
+                    routeAmendmentDraft?.update(.resume, route: route)
+                }
+            default: break
+            }
+            return
+        }
         guard amendmentSave == nil, pendingAmendmentManagementSave == nil,
               flight?.pendingRouteAmendment?.id == replacingPendingAmendmentID else { return }
         if case .discard = intent {
@@ -108,6 +146,22 @@ struct CockpitFeatureState: Equatable, Sendable {
             routeAmendmentDraft = RouteAmendmentDraft(flightID: flight.id, mode: mode)
         }
         guard routeAmendmentDraft?.flightID == flight.id else { return }
+        switch intent {
+        case .open, .resume:
+            isAmendmentWorkspaceVisible = true
+            isAmendmentPlotting = false
+        case .plot:
+            guard isAmendmentWorkspaceVisible,
+                  isAmendmentPlotting || routeAmendmentDraft?.acceptsLegTap == true else { return }
+        case .movePoint, .chooseDeparture, .chooseRejoin:
+            guard isAmendmentWorkspaceVisible else { return }
+            isAmendmentPlotting = true
+        case .undo:
+            if routeAmendmentDraft?.step == .review, routeAmendmentDraft?.legPanel == nil {
+                routeAmendmentDraft?.update(.back, route: route)
+            }
+        default: break
+        }
         routeAmendmentDraft?.update(
             intent, route: route,
             estimateInputs: .init(
@@ -117,6 +171,7 @@ struct CockpitFeatureState: Equatable, Sendable {
                 defaultWind: flightPlan.operationalContext.defaultWind
             )
         )
+        if routeAmendmentDraft?.step == .review { isAmendmentPlotting = false }
     }
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
@@ -242,6 +297,8 @@ struct CockpitFeatureState: Equatable, Sendable {
     }
 
     mutating func clearAmendmentDraft() {
+        isAmendmentWorkspaceVisible = false
+        isAmendmentPlotting = false
         replacingPendingAmendmentID = nil
         amendmentSave = nil
         routeAmendmentDraft = nil
@@ -255,6 +312,8 @@ struct CockpitFeatureState: Equatable, Sendable {
         } else {
             replacingPendingAmendmentID = pendingID
             routeAmendmentDraft = RouteAmendmentDraft(replacing: pending, on: route)
+            isAmendmentWorkspaceVisible = true
+            isAmendmentPlotting = false
         }
     }
 
@@ -674,13 +733,15 @@ extension CockpitFeatureState {
     mutating func prepareAmendmentConfirmationFixture(
         includesAdvisoryValues: Bool = false,
         isFutureDeparture: Bool = false,
-        rejoinFixture: String? = nil
+        rejoinFixture: String? = nil,
+        workspaceFixture: Bool = false
     ) {
         guard let route = routeForAmendment else { return }
         let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
         guard route.legs.indices.contains(departureIndex + 1) else { return }
         updateRouteAmendment(.open)
-        let departure = route.anchor(at: departureIndex, fraction: rejoinFixture == "partway" ? 0.25 : 0.5)
+        updateRouteAmendment(.togglePlotting)
+        let departure = route.anchor(at: departureIndex, fraction: workspaceFixture ? 0.46 : rejoinFixture == "partway" ? 0.25 : 0.5)
         let rejoin: RouteAmendmentAnchor = switch rejoinFixture {
         case "partway": route.anchor(at: departureIndex, fraction: 0.5)
         case "final": route.anchor(at: route.legs.count - 1, fraction: 1)
@@ -691,6 +752,10 @@ extension CockpitFeatureState {
                                   longitudeDegrees: position.longitudeDegrees + 0.02)
         updateRouteAmendment(.chooseAnchor(departure))
         updateRouteAmendment(.plot(.init(position: via)))
+        if workspaceFixture {
+            updateRouteAmendment(.plot(.init(position: .init(
+                latitudeDegrees: via.latitudeDegrees + 0.02, longitudeDegrees: via.longitudeDegrees - 0.01))))
+        }
         updateRouteAmendment(.chooseRejoin)
         updateRouteAmendment(.chooseAnchor(rejoin))
         updateRouteAmendment(.confirmRejoin)
@@ -705,8 +770,18 @@ extension CockpitFeatureState {
                 updateRouteAmendment(.editLegField(.altitude, "2500"))
                 updateRouteAmendment(.editLegField(.frequency, "123.50"))
             }
+            if workspaceFixture {
+                let headings = ["087", "176", "024"]
+                let minutes = ["03", "02", "04"]
+                let seconds = ["20", "15", "10"]
+                updateRouteAmendment(.editLegField(.heading, headings[index]))
+                updateRouteAmendment(.editLegField(.minutes, minutes[index]))
+                updateRouteAmendment(.editLegField(.seconds, seconds[index]))
+            }
             updateRouteAmendment(.saveLegValues)
         }
+        updateRouteAmendment(.pause)
+        updateRouteAmendment(.resume)
     }
 }
 #endif

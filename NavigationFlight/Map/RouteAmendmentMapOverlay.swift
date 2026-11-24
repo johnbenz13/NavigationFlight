@@ -9,6 +9,7 @@ final class RouteAmendmentMapOverlay: UIView {
     struct Presentation: Equatable {
         let draft: RouteAmendmentDraft
         let route: RouteAmendmentRoute
+        let isPlotting: Bool
     }
 
     struct Pending: Equatable {
@@ -120,9 +121,10 @@ final class RouteAmendmentMapOverlay: UIView {
         let coordinate = map.convert(tap, toCoordinateFrom: map)
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         let position = WGS84Coordinate(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude)
-        if presentation.draft.acceptsLegTap, !placingAtCenter {
+        if presentation.draft.acceptsLegTap, !presentation.isPlotting, !placingAtCenter {
             return .init(position: position, legHits: legHits(at: tap, on: map, presentation: presentation))
         }
+        guard presentation.isPlotting else { return nil }
         guard presentation.draft.acceptsMapInput else { return nil }
         let isChoosingAnchor = presentation.draft.step == .departure || presentation.draft.step == .rejoin
         let retainsCenterPosition = placingAtCenter && !isChoosingAnchor

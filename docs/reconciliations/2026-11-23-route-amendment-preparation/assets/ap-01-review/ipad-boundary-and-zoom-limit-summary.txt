@@ -1,0 +1,38 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-24T10:33:45Z
+Total Results: 2
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testReplacementReviewPreservesManualCameraAcrossPresentationChanges()
+TEST_DISPLAY_NAME: testReplacementReviewPreservesManualCameraAcrossPresentationChanges()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 2328
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:2349 NavigationFlightUITests/testReplacementReviewPreservesManualCameraAcrossPresentationChanges(): XCTAssertNotEqual failed: ("13.0") is equal to ("13.0") - Pinch must change the observed zoom
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/2
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3223
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

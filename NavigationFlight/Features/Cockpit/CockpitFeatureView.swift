@@ -218,6 +218,9 @@ struct CockpitFeatureView: View {
                         onPositionCheckMapRestored: positionCheckCoordinator.acknowledgeMapRestoration,
                         routeForAmendment: state.routeForAmendment,
                         routeAmendmentDraft: state.routeAmendmentDraft,
+                        isAmendmentWorkspaceVisible: state.isAmendmentWorkspaceVisible,
+                        isAmendmentPlotting: state.isAmendmentPlotting,
+                        amendmentDisplayDate: amendmentDisplayDate,
                         isReplacingPendingAmendment: state.replacingPendingAmendmentID != nil,
                         pendingAmendmentManagement: state.pendingAmendmentManagement,
                         pendingManagementSave: state.pendingAmendmentManagementSave,
@@ -301,6 +304,16 @@ struct CockpitFeatureView: View {
         }
     }
 
+    private var amendmentDisplayDate: Date? {
+#if DEBUG
+        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] == "A",
+           let start = state.flight?.legStartedAt {
+            return start.addingTimeInterval(442)
+        }
+#endif
+        return nil
+    }
+
     private func startLeg() {
         guard let flight = state.flight, let flightPlan = state.flightPlan else { return }
         let selection = checklistSelection()
@@ -322,6 +335,15 @@ struct CockpitFeatureView: View {
                 )
                 state.installCommittedFlight(transition.flight)
                 state.installCockpitContext(transition.cockpitContext)
+#if DEBUG
+                let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
+                if ["A", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                   state.flight?.activatedRouteAmendment == nil {
+                    state.prepareAmendmentConfirmationFixture(workspaceFixture: true)
+                    state.updateRouteAmendment(.pause)
+                    if workspaceFixture == "armed" { confirmAmendment(startNow: false) }
+                }
+#endif
                 if shouldSimulateRecordingDegradation {
                     try? await recordingCoordinator.recordStorageDegradation(
                         .trackWriteFailed,
@@ -364,7 +386,8 @@ struct CockpitFeatureView: View {
 #if DEBUG
         let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"]
         let rejoinFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_REJOIN"]
-        if case .open = intent,
+        if isOpeningAmendmentWorkspace(intent),
+           state.routeAmendmentDraft?.hasContent == false,
            ["1", "2", "3"].contains(fixture ?? "") || rejoinFixture != nil,
            state.flight != nil {
             if state.flight?.activatedRouteAmendment != nil { return }
@@ -375,6 +398,13 @@ struct CockpitFeatureView: View {
             )
         }
 #endif
+    }
+
+    private func isOpeningAmendmentWorkspace(_ intent: RouteAmendmentDraft.Intent) -> Bool {
+        switch intent {
+        case .open, .toggleWorkspace: state.isAmendmentWorkspaceVisible
+        default: false
+        }
     }
 
     private func canConfirmAmendment(startNow: Bool) -> Bool {

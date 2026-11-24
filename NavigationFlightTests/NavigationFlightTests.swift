@@ -13,6 +13,145 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @MainActor
+    @Test func amendmentWorkspaceUntouchedExitHasNoDraftOrFlightEffects() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = state.flight
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.isAmendmentWorkspaceVisible)
+        #expect(!state.isAmendmentPlotting)
+        #expect(AmendmentLifecycleStatus.project(flight: state.flight, draft: state.routeAmendmentDraft,
+                                               route: state.routeForAmendment) == .none)
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(!state.isAmendmentWorkspaceVisible)
+        #expect(!state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft == nil)
+        #expect(state.flight == flight)
+    }
+
+    @MainActor
+    @Test func amendmentPlottingRequiresItsOwnSwitchAndStopsOnExit() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let route = try #require(state.routeForAmendment)
+        let departure = route.anchor(at: 0, fraction: 0.46)
+        let tap = RouteAmendmentDraft.MapInput(position: route.coordinate(at: departure), anchors: [departure])
+        state.updateRouteAmendment(.toggleWorkspace)
+        state.updateRouteAmendment(.plot(tap))
+        #expect(state.routeAmendmentDraft?.departure == nil)
+        state.updateRouteAmendment(.togglePlotting)
+        state.updateRouteAmendment(.plot(tap))
+        #expect(state.routeAmendmentDraft?.departure == departure)
+        #expect(state.isAmendmentWorkspaceVisible)
+        #expect(AmendmentLifecycleStatus.project(flight: state.flight, draft: state.routeAmendmentDraft,
+                                               route: route) == .incomplete)
+        state.updateRouteAmendment(.toggleWorkspace)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(!state.isAmendmentPlotting)
+        let draft = state.routeAmendmentDraft
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 1, longitudeDegrees: 1))))
+        #expect(state.routeAmendmentDraft == draft)
+    }
+
+    @MainActor
+    @Test func amendmentWorkspaceRetainsSelectionAndUnfinishedEntriesWithPlottingOffOnReturn() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        state.prepareAmendmentConfirmationFixture()
+        let route = try #require(state.routeForAmendment)
+        let flight = state.flight
+        let leg = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        state.updateRouteAmendment(.editLeg(leg.id))
+        state.updateRouteAmendment(.editLegField(.heading, "12"))
+        state.updateRouteAmendment(.editLegField(.minutes, ""))
+        let editor = state.routeAmendmentDraft?.editor
+        let selection = state.routeAmendmentDraft?.selectedPointID
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.routeAmendmentDraft?.editor == editor)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.isAmendmentWorkspaceVisible)
+        #expect(!state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft?.editor == editor)
+        #expect(state.routeAmendmentDraft?.selectedPointID == selection)
+        #expect(state.flight == flight)
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
+    @Test func amendmentWorkspaceReusesGeometryUndoFromReviewWithoutAFlightTransition() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        state.prepareAmendmentConfirmationFixture()
+        let flight = state.flight
+        #expect(state.routeAmendmentDraft?.step == .review)
+        state.updateRouteAmendment(.undo)
+        #expect(state.routeAmendmentDraft?.rejoin == nil)
+        #expect(state.routeAmendmentDraft?.step == .drawing)
+        #expect(state.flight == flight)
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
+    @Test func amendmentFailedSaveCanBeHiddenAndReopenedWithoutAFlightCommand() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        let start = Date(timeIntervalSince1970: 100)
+        try state.startLeg(at: start)
+        state.prepareAmendmentConfirmationFixture()
+        let route = try #require(state.routeForAmendment)
+        let draft = try #require(state.routeAmendmentDraft)
+        let flight = try #require(state.flight)
+        let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        state.amendmentSave = .init(amendment: amendment, replacingPendingID: nil, timestamp: start,
+                                   elapsed: .zero, status: .failed(canEdit: true))
+        let save = state.amendmentSave
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(!state.isAmendmentWorkspaceVisible)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.isAmendmentWorkspaceVisible)
+        #expect(!state.isAmendmentPlotting)
+        #expect(state.routeAmendmentDraft?.isPaused == false)
+        #expect(state.amendmentSave == save)
+        #expect(state.flight == flight)
+        #expect(AmendmentLifecycleStatus.project(flight: state.flight, draft: state.routeAmendmentDraft,
+                                               route: route) == .ready)
+    }
+
+    @MainActor
+    @Test func amendmentLifecycleUsesFlightTimingRatherThanWorkspaceOrLegReadiness() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState(progressionPolicy: .manualNextLeg)
+        try state.accept(plan)
+        let start = Date(timeIntervalSince1970: 100)
+        try state.startLeg(at: start)
+        state.prepareAmendmentConfirmationFixture()
+        let route = try #require(state.routeForAmendment)
+        let draft = try #require(state.routeAmendmentDraft)
+        var flight = try #require(state.flight)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: draft, route: route) == .ready)
+        let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        try flight.installPendingAmendment(amendment, in: plan)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: nil, route: route) == .armed)
+        let first = try #require(amendment.replacementLegs.first)
+        _ = try flight.activateAmendment(id: amendment.id, expectedLegID: flight.activeLegID,
+                                        targetID: first.from.id, at: start.addingTimeInterval(60))
+        #expect(flight.legState == .ready)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: nil, route: route) == .awaitingStartLeg)
+        try flight.startLeg(at: start.addingTimeInterval(70))
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: nil, route: route) == .flying)
+    }
+
     @Test func flightsHaveDistinctIdentityAndShareTheirSourceFlightPlanIdentity() throws {
         let flightPlan = try FPLNavDecoder().decode(try representativeData())
         let firstFlightID = try #require(UUID(uuidString: "11111111-1111-1111-1111-111111111111"))
@@ -1169,6 +1308,7 @@ struct NavigationFlightTests {
         let end = route.anchor(at: 1, fraction: 1)
         let via = WGS84Coordinate(latitudeDegrees: 32.5, longitudeDegrees: 35)
         state.updateRouteAmendment(.open, mode: .manual)
+        state.updateRouteAmendment(.togglePlotting)
         state.updateRouteAmendment(.chooseAnchor(route.firstAvailable))
         state.updateRouteAmendment(.plot(.init(position: via)))
         state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: end), anchors: [end])))
@@ -1251,6 +1391,7 @@ struct NavigationFlightTests {
 
         state.updateRouteAmendment(.discard)
         state.updateRouteAmendment(.open, mode: .assisted)
+        state.updateRouteAmendment(.togglePlotting)
         #expect(state.routeAmendmentDraft?.mode == .assisted)
     }
 
@@ -1369,6 +1510,7 @@ struct NavigationFlightTests {
         let stop = try #require(route.stops.first { $0.id == anchor })
         let via = WGS84Coordinate(latitudeDegrees: 32.5, longitudeDegrees: 35)
         state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.togglePlotting)
         state.updateRouteAmendment(.chooseAnchor(departure))
         state.updateRouteAmendment(.plot(.init(position: via)))
         #expect(state.routeAmendmentDraft?.finishCandidates(on: route).isEmpty == true)
@@ -1442,6 +1584,8 @@ struct NavigationFlightTests {
         let via = WGS84Coordinate(latitudeDegrees: 32.25, longitudeDegrees: 35)
 
         state.updateRouteAmendment(.open)
+
+        state.updateRouteAmendment(.togglePlotting)
         state.updateRouteAmendment(.chooseAnchor(departure))
         state.updateRouteAmendment(.plot(.init(position: via)))
         state.updateRouteAmendment(.chooseRejoin)
@@ -1476,6 +1620,7 @@ struct NavigationFlightTests {
         state.restore(flightPlan: plan, flight: progressed, sourceData: nil)
         #expect(state.routeAmendmentDraft == nil)
         state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.togglePlotting)
         #expect(state.routeAmendmentDraft?.flightID == progressed.id)
         try state.accept(plan)
         #expect(state.routeAmendmentDraft == nil)

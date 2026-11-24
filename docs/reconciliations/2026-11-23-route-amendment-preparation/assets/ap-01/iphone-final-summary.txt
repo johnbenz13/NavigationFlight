@@ -1,0 +1,47 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-24T08:59:09Z
+Total Results: 3
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/3
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceKeepsBoundaryAcrossUntouchedAndEditedToggles()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3133
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/3
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceLargerTextKeepsActionsReachable()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceLargerTextKeepsActionsReachable()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/3
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceReducedMotionKeepsBoundary()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceReducedMotionKeepsBoundary()
+TEST_STATE: Skipped
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3149
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

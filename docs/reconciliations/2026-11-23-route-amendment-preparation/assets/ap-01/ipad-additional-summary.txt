@@ -1,0 +1,98 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-24T08:54:56Z
+Total Results: 7
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder()
+TEST_DISPLAY_NAME: testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 2359
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testRouteAmendmentDraftCanPlotPauseResumeAndRecoverDeparture()
+TEST_DISPLAY_NAME: testRouteAmendmentDraftCanPlotPauseResumeAndRecoverDeparture()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 2783
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentUnsavedIndicatorIsIndependentFromReadyAndVisibility()
+TEST_DISPLAY_NAME: testAmendmentUnsavedIndicatorIsIndependentFromReadyAndVisibility()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3247
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentIncompletePencilRetainsDraftWithoutDiscardDialog()
+TEST_DISPLAY_NAME: testAmendmentIncompletePencilRetainsDraftWithoutDiscardDialog()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3275
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 5/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceUntouchedExitAndPlottingSwitch()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceUntouchedExitAndPlottingSwitch()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3295
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 6/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceReducedMotionKeepsBoundary()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceReducedMotionKeepsBoundary()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3149
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:3151 NavigationFlightUITests/testAmendmentWorkspaceReducedMotionKeepsBoundary(): XCTAssertTrue failed - Enable Reduce Motion on the disposable simulator before this check
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 7/7
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAmendmentWorkspaceKeepsBoundaryInLandscape()
+TEST_DISPLAY_NAME: testAmendmentWorkspaceKeepsBoundaryInLandscape()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 3138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

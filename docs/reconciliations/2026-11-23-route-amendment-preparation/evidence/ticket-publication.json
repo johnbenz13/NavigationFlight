@@ -1,0 +1,184 @@
+{
+  "approved_on": "2026-11-24",
+  "approved_source": "cd6aa2bad87423c8f7d097e68692d62f6be83638",
+  "parent": {
+    "number": 224,
+    "id": 6576767708,
+    "html_url": "https://github.com/johnbenz13/NavigationFlight/issues/224"
+  },
+  "tasks": [
+    {
+      "task": "AP-01",
+      "number": 225,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/225",
+      "body_sha256": "01fdceb3641aed40dfca15474e9345dbca6f2f007228b7a7b016fa4df8b21f96",
+      "criteria_verified": 5,
+      "blocked_by": [],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-02",
+      "number": 226,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/226",
+      "body_sha256": "d8994b41d975a653778575c61af15b0209650ab75a231fe1687659cdabdbee0c",
+      "criteria_verified": 5,
+      "blocked_by": [
+        225
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-03",
+      "number": 227,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/227",
+      "body_sha256": "233347451da162c7f77e202de5afc4b8a7815de81ab7936f2dc6a432770a433c",
+      "criteria_verified": 5,
+      "blocked_by": [
+        226
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-04",
+      "number": 228,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/228",
+      "body_sha256": "d920458d982e9e0e604bd0f63461bf77585f64cb88236f3884dd19529766ad19",
+      "criteria_verified": 6,
+      "blocked_by": [
+        226
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-05",
+      "number": 229,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/229",
+      "body_sha256": "53f8b71937f666157858d8a5785a9dd630d6775b9c53d2c0b2709e529dd534b1",
+      "criteria_verified": 5,
+      "blocked_by": [
+        228
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-06",
+      "number": 230,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/230",
+      "body_sha256": "6deaf718f4a1849d1d4fc24d5973325dc18dbd3741c810f358423183cbde5d22",
+      "criteria_verified": 5,
+      "blocked_by": [
+        228
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-07",
+      "number": 231,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/231",
+      "body_sha256": "12afffeda5b78ed8876addb29a3a79437e883ac53ef9b704642b18eab85d6109",
+      "criteria_verified": 5,
+      "blocked_by": [
+        229
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-08",
+      "number": 232,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/232",
+      "body_sha256": "f75aba7a8aadea10362bdb42d8473612bed90f8e54cea80869ac77ff62762fc3",
+      "criteria_verified": 5,
+      "blocked_by": [
+        231
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-09",
+      "number": 233,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/233",
+      "body_sha256": "2191ab8c87bfe4747314ee990bfbeff1d09f1f5ca74692b277ba5ebfcc6dde53",
+      "criteria_verified": 6,
+      "blocked_by": [
+        231
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-10",
+      "number": 234,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/234",
+      "body_sha256": "08344faadfe7b9abb6a98af767596cb2d18ca7e298fe51cc4d742183db99b664",
+      "criteria_verified": 5,
+      "blocked_by": [
+        231
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-11",
+      "number": 235,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/235",
+      "body_sha256": "618d21e74d743b31a123b28da8c2d534746100973b1fae29e21f1a628bf29a1a",
+      "criteria_verified": 6,
+      "blocked_by": [
+        227,
+        233,
+        234
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    },
+    {
+      "task": "AP-12",
+      "number": 236,
+      "url": "https://github.com/johnbenz13/NavigationFlight/issues/236",
+      "body_sha256": "8295800510763b5123a57f8cd93663f063725621bf8f6d011f89167481ab0fbe",
+      "criteria_verified": 5,
+      "blocked_by": [
+        235
+      ],
+      "parent_verified": true,
+      "labels": [
+        "enhancement"
+      ]
+    }
+  ],
+  "legacy_211": {
+    "state": "open",
+    "preparation_overlap_issue": 232,
+    "original_requirements_preserved": true
+  }
+}

@@ -23,9 +23,9 @@ revision takes precedence where it conflicts with the rows below:
 | Preparation layout | G06/D03: stable shared Cockpit extent, fixed timing/actions and scrolling leg list. Contextual node 29:989 approves only pencil/status text; all other regular Cockpit UI remains its existing approved design. |
 
 Other flying, rejoin, Flight Undo, recording/history and Debrief requirements
-remain unchanged. See the [draft task breakdown](../reconciliations/2026-11-23-route-amendment-preparation/proposed/tasks/README.md)
-for proposed implementation boundaries; task publication and implementation need
-separate authorization.
+remain unchanged. See the [approved published task breakdown](../reconciliations/2026-11-23-route-amendment-preparation/proposed/tasks/README.md)
+for approved implementation boundaries. Publication is complete under #224;
+implementation still needs a separate request.
 
 ## Pilot outcome
 

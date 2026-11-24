@@ -62,7 +62,7 @@ were made during planning. Reinspect the merged main head when implementing.
 
 ## Proposed interfaces and invariants
 
-These are implementation contracts for approval, not claims that types exist.
+These are approved implementation contracts, not claims that types exist.
 
 - Keep workspace visibility, plotting and lifecycle separate. Derive readiness
   from route eligibility and required values, not editor step. Unsaved status
@@ -80,7 +80,7 @@ These are implementation contracts for approval, not claims that types exist.
   interaction: the first deliberate minute/second change explicitly creates a
   duration with the other component at zero; opening alone creates nothing.
   Clearing either component preserves the other; clearing both leaves Not set.
-  This detail is included for owner approval with AP-05.
+  This detail was approved with AP-05.
 - Preserve existing off-step/out-of-range cue values unchanged in a custom-value
   presentation until deliberately changed or cleared. New edits must use the
   agreed range/channel set. No implicit rounding. Use integer kHz channel IDs
@@ -98,7 +98,7 @@ These are implementation contracts for approval, not claims that types exist.
 - Unsupported/corrupt draft data never activates anything or silently overwrites
   the saved bytes. Preserve it, keep ordinary Cockpit usable and show a scoped
   recovery failure using the D02-F10 error pattern. This pattern reuse and draft
-  storage proposal require breakdown approval. Existing armed recording recovery
+  storage design were approved with the breakdown. Existing armed recording recovery
   remains authoritative and wins over any stale unarmed draft snapshot.
 - Arm revalidates the Flight generation/route and uses the existing scheduled
   transaction, operation ID and retry reconciliation. Never use startsImmediately.
@@ -150,6 +150,6 @@ until John approves; missing evidence remains unverified. Update feature/technic
 docs and scoped supersessions as each behavior lands. Never rewrite completed
 issue acceptance or close issues before their implementation PR merges.
 
-This planning phase does not authorize application builds, test runs, simulator
-sessions, issue publication or implementation. Documentation links/whitespace
+Publication was authorized and completed. This planning phase does not authorize
+application builds, test runs, simulator sessions or implementation. Documentation links/whitespace
 checks are checkpoint hygiene, not implementation validation.

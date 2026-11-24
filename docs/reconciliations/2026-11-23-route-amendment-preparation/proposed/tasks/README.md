@@ -1,4 +1,4 @@
-# Amendment preparation · Draft task breakdown
+# Amendment preparation · Approved and published tasks
 
 **Status:** approved by John · 2026-11-24, reviewing checkpoint cd6aa2b.
 Approval covers the 12 slices, interfaces, time-wheel first-edit semantics,
@@ -10,7 +10,7 @@ and [D03 scope/approval](../design-revision-d03.md). Each task includes behavior
 source ownership, exact design targets, deterministic fixtures and acceptance/
 test contracts; all inherit the shared preservation and verification rules.
 
-## Proposed slices and real blocking edges
+## Approved slices and blocking edges
 
 | Task | Independently reviewable outcome | Blocked by |
 | --- | --- | --- |
@@ -57,14 +57,14 @@ contract; node 29:989 is never its general visual target.
 | G03/G06 Manual/Assisted capture, missing estimates, provenance/aids | AP-08, AP-09 | D02 11:591/12:503 | Estimator parity, exact minute fractions, independent drift toggle and recovery |
 | G04 derived readiness, explicit/durable Arm, failures, no Start now | AP-11 | D03 29:883; D02 13:806/13:639 | Readiness matrix; pre/post-write failure/retry and one event; timer continuity |
 | G04/G05 armed read-only/disarm/discard | AP-12 | D02 11:959/13:806 under D03 | Cancellation and draft-store failure boundaries; recoverable edit/discard UI paths |
-| G05 per-Flight restart, unsaved status, corruption/version safety | AP-09 | D02 13:806/13:639; shared error-pattern proposal | Injected storage/revisions; cold reopen, other Flight and legacy recording compatibility |
+| G05 per-Flight restart, unsaved status, corruption/version safety | AP-09 | D02 13:806/13:639; approved shared error pattern | Injected storage/revisions; cold reopen, other Flight and legacy recording compatibility |
 | G05 overtaken departure warning, Later/Update, no GPS/time heuristic | AP-10 | D02 13:806/13:595 | Controlled reported-progress tests; once-per-invalidation alert and persistent warning |
 | G06 completed/retained/bypassed/proposed roles; no operational draft effects | AP-01–AP-03, AP-07–AP-08 | D03 map/legend rule; D02 route state nodes | Map projection, role patterns/labels and unchanged Flight/event assertions |
 | G06 stable geometry and protected regular Cockpit | Every UI task, owned initially by AP-01 | D03 geometry rules; regular current approved patterns; 29:989 pencil/text only | Same-state viewport/camera and unchanged instruments/actions/clock checks |
 | G07 grey awaiting Start leg, green Flying read-only | AP-01, AP-12 | D02 13:639 plus read-only D02-F09 pattern | Existing progression-policy fixtures and rejection of edit intents |
 | Accessibility/platform constraints | Every affected task | D03 adaptive/native rules; D02 20:1165 accessibility study | 44 pt controls, wrapping/scrolling, VoiceOver meaning/order, Reduce Motion and exact-node screenshots |
 
-## Technical details included for breakdown approval
+## Approved technical details
 
 The [shared contract](contract.md#proposed-interfaces-and-invariants) proposes
 stable logical edges plus geometry signatures, complete Undo snapshots, a
@@ -79,13 +79,10 @@ details were approved by John with this enriched breakdown.
 
 ## Existing tracker treatment and publication plan
 
-After approval, create one preparation tracking issue and publish these 12 tasks
-as its sub-issues in dependency order. Add native blocking relationships, or
-explicit blocker links if unsupported, and read every created body/relationship
-back before recording its issue number here. Use `enhancement`; apply the existing
-readiness labels only when their requirements actually pass. Publishing is not
-implementation authorization. No tracker mutation is performed in this draft.
-
+Published parent #224 and 12 sub-issues #225–#236 in dependency order, using
+native parent/blocker relationships and the enhancement label. All retain the
+baseline PR gate and are not labelled ready-for-agent. Publication does not
+authorize implementation.
 
 Read full bodies/comments of #204–#212 on 2026-11-24. #204–#209 are closed:
 retain their delivery history, reuse their operational code and do not reopen
@@ -97,16 +94,31 @@ them. This is a preparation refinement, not a reimplementation of flying.
 | #206/#209 confirmation and pending management | Reuse durable operations in AP-11/AP-12; preserve existing armed missed-departure behavior. |
 | #207/#208 flying and rejoin | Regression boundary only; no new flying/rejoin UX in these tasks. |
 | #210 Flight Undo | Remains deferred/out of scope; preparation Undo in AP-07 is a different operation. |
-| #211 Assisted preparation + flying | AP-08 covers only preparation; after publication approval, link that overlap explicitly and retain the flying remainder for later reconciliation. Do not close #211. |
+| #211 Assisted preparation + flying | AP-08/#232 covers only preparation; #211 links that overlap and retains its flying remainder for later reconciliation. It remains open. |
 | #212 History/Debrief | Remains deferred/out of scope; no changes to replay/export semantics. |
 
-After approval, publish one preparation tracking issue and these 12 sub-issues
-in dependency order. Use native blockers, falling back to explicit issue links.
-Use existing enhancement/triage vocabulary; do not mark a blocked ticket
-ready-for-agent. Record real issue numbers here, read back bodies/relationships
-and check this coverage map before reporting publication complete. Do not merge
-the planning PR, close legacy issues or start implementation as part of publishing.
+Read back published bodies and native relationships before recording publication
+complete. Planning PR merge and implementation remain separate decisions.
 
 **Owner approval recorded:** John approved the numbered tasks, interfaces,
 first-edit time semantics and blocking edges. No further feature or flying scope
 is introduced. Publication records follow below.
+
+## Publication record
+
+Parent: [#224](https://github.com/johnbenz13/NavigationFlight/issues/224).
+
+| Task | GitHub issue | Native blockers |
+| --- | --- | --- |
+| AP-01 | [#225](https://github.com/johnbenz13/NavigationFlight/issues/225) | None; baseline PR gate applies |
+| AP-02 | [#226](https://github.com/johnbenz13/NavigationFlight/issues/226) | #225 |
+| AP-03 | [#227](https://github.com/johnbenz13/NavigationFlight/issues/227) | #226 |
+| AP-04 | [#228](https://github.com/johnbenz13/NavigationFlight/issues/228) | #226 |
+| AP-05 | [#229](https://github.com/johnbenz13/NavigationFlight/issues/229) | #228 |
+| AP-06 | [#230](https://github.com/johnbenz13/NavigationFlight/issues/230) | #228 |
+| AP-07 | [#231](https://github.com/johnbenz13/NavigationFlight/issues/231) | #229 |
+| AP-08 | [#232](https://github.com/johnbenz13/NavigationFlight/issues/232) | #231 |
+| AP-09 | [#233](https://github.com/johnbenz13/NavigationFlight/issues/233) | #231 |
+| AP-10 | [#234](https://github.com/johnbenz13/NavigationFlight/issues/234) | #231 |
+| AP-11 | [#235](https://github.com/johnbenz13/NavigationFlight/issues/235) | #227, #233, #234 |
+| AP-12 | [#236](https://github.com/johnbenz13/NavigationFlight/issues/236) | #235 |

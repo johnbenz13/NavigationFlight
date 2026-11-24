@@ -121,3 +121,19 @@ implementation tests and visual comparisons remain future acceptance work.
 Breakdown checkpoint: 197 local links/anchors and 44 image signatures/hash
 entries passed. All 12 contracts contain required sections/acceptance criteria;
 the blocking graph is acyclic. No issues published.
+
+## Approved ticket publication · 2026-11-24
+
+John approved the enriched 12-task breakdown and publication. Published parent
+#224 and AP-01–AP-12 as #225–#236 with enhancement labels, native sub-issue and
+blocking relationships. Linked AP-08/#232 as preparation-only overlap in #211,
+preserving its original requirements, open state and flying remainder. No legacy
+issue was closed, no planning PR merged and no implementation started.
+
+Published body/acceptance and relationship read-back is retained in
+evidence/ticket-publication.json. All tasks retain the PR #223/main baseline
+gate; no task is labelled ready-for-agent. Draft interfaces/time semantics are
+approved, while implementation is separately requested one small task at a time.
+
+Publication checkpoint: 197 local documentation links/anchors and working/staged
+whitespace checks passed. No app build or tests ran for this publication.

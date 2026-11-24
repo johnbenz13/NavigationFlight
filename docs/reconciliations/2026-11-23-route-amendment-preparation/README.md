@@ -88,9 +88,11 @@ iPhone landscape remains excluded.
   complete interactive/device coverage is not implied.
 - D03 and retained D02 state content: approved by John on 2026-11-24 with
   the explicit regular-Cockpit boundary.
-- [Task breakdown](proposed/tasks/README.md): draft contracts for owner review.
-  Publication and implementation authorization remain separate.
+- [Task breakdown](proposed/tasks/README.md): approved and published as
+  [#224](https://github.com/johnbenz13/NavigationFlight/issues/224) with 12 sub-issues.
+  Implementation remains separately requested.
 - Canonical product/technical docs link the approved-future preparation scope.
-  Historical acceptance, glossary, delivery plan and GitHub issues remain unchanged.
+  Historical acceptance, glossary and delivery plan remain unchanged. #211 now
+  links its preparation-only overlap to #232 without closing its flying remainder.
 - John authorized commits, pushing this feature branch and PR #223 in the conversation.
-  Ticket publication, merge and issue closure remain separate decisions.
+  Publication was approved and completed; merge and issue closure remain separate decisions.

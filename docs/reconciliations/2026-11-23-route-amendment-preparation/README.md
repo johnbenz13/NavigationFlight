@@ -4,8 +4,8 @@ John approved the behavioral direction through Q1–Q31 on 2026-11-23, with an
 additional request to improve the current-leg timing strip. On 2026-11-24 John
 approved Q33–Q36 and explicitly removed Start now from the proposed flow (Q32).
 Preparation ends at **Arm → return to Cockpit**; immediate departure will be
-reconsidered only during the flying-amendment reconciliation. **D01 is in direction review
-(2026-11-24). Implementation is not authorized by this reconciliation.**
+reconsidered only during the flying-amendment reconciliation. **D01 was direction-approved by John
+on 2026-11-24. D02 detailed coverage is in review. Implementation is not authorized by this reconciliation.**
 
 **Baseline:** local `main`, `cffba65f08cd8898294c941a4a3291b2fdb7df38`.
 **Branch:** `feature/route-amendment-preparation` (renamed at John’s request on 2026-11-24).
@@ -21,10 +21,11 @@ Use the existing [planning configuration](../../architecture/planning-configurat
 2. [The agreed preparation experience](proposed/preparing-an-amendment.md):
    one workspace for plotting and entering values, followed by explicit arming.
 3. [First design direction](proposed/design-proposal.md), with its editable Figma
-   frame and inspected preview, awaiting owner review.
+   frame and inspected preview, approved by John.
 4. [Decisions and terminology](proposed/decisions.md), including the complete
    interview record and distinctions between ready, armed and flying.
-4. [Sources, existing tickets and contract changes](evidence/source-crosswalk.md).
+5. [Detailed state coverage](proposed/design-coverage.md), including exact Figma nodes and preview evidence.
+6. [Sources, existing tickets and contract changes](evidence/source-crosswalk.md).
 
 ## Story tree
 
@@ -68,8 +69,9 @@ created in Navigation Flight project `676737789` on 2026-11-24.
 Review [D01 main-screen proposal and preview](proposed/design-proposal.md) or open
 [the exact Figma frame](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=3-2).
 It shows iPad Pro 11-inch portrait, plotted legs with missing values, plotting off,
-and the lighter timing strip. **Direction approval is pending.** Expand to the
-remaining states, iPad landscape and iPhone portrait only after that approval.
+and the lighter timing strip. **John approved D01 on 2026-11-24.** Expand its direction across the
+remaining states, iPad landscape and iPhone portrait in D02; detailed design
+approval remains separate.
 iPhone landscape remains excluded.
 
 ## Review gates and limits
@@ -78,8 +80,9 @@ iPhone landscape remains excluded.
   treatment added with the final answer. Exact visual treatments await design.
 - Current-map accuracy: the attached images are inspected owner evidence;
   complete interactive/device coverage is not implied.
-- New design approval, paired contract approval, ticket breakdown/publication
+- Detailed design approval, paired contract approval, ticket breakdown/publication
   and implementation authorization: pending separate stages.
 - Existing specs, glossary, delivery plan and GitHub issues remain unchanged.
   Proposed supersessions are mapped in the supporting crosswalk.
-- No commit, push, PR, ticket publication or issue closure is authorized here.
+- John authorized commits, pushing this feature branch and PR #223 in the conversation.
+  Ticket publication, merge and issue closure remain separate decisions.

@@ -1,6 +1,9 @@
 # D01 · Amendment workspace direction
 
-**Status:** direction review · 2026-11-24. Human direction approval pending.
+**Status:** direction approved by John · 2026-11-24.
+Approval: “I approve the main-screen direction”, reviewing D01 at checkpoint
+[95f03bf](https://github.com/johnbenz13/NavigationFlight/commit/95f03bfa7a336eea94e8d2658c0b924da5e95582).
+This approval covers the main-screen direction, not detailed states or implementation.
 **Primary target:** iPad Pro 11-inch portrait, 834 × 1194.
 **Behavioral baseline:** [owner-approved preparation proposal at 740a8b7](https://github.com/johnbenz13/NavigationFlight/blob/740a8b7/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md).
 **Implementation:** none. This is a proposed design, not a running application.
@@ -10,9 +13,9 @@
 - Stable reconciliation file: [NavigationFlight · Amendment preparation](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw).
 - [D01 · Main screen, 3:2](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=3-2).
 - [Review brief and baseline link, 4:707](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=4-707).
-- Named iteration: **D01 · Amendment workspace · iPad portrait · Direction review**.
+- Named iteration: **D01 · Amendment workspace · Direction approved by John · 2026-11-24**.
 - Created with project destination `676737789`, Navigation Flight, using the owner's sole Figma team plan. Creation returned file key `JCyQhDDzCPfrrbv6SBcwKw`.
-- Approver and approval date: pending. No earlier approval applies to this iteration.
+- Approver: John. Approval date: 2026-11-24. The approved visual frame remains node 3:2.
 
 ## The screen to review
 
@@ -41,15 +44,15 @@ route geometry, labels, controls and all UI text are editable Figma nodes.
 | Arming | Disabled Arm amendment is accompanied by the two exact missing fields. No Start now action. | G04; Q32 |
 | Correction and exit | Undo and Discard remain in the footer. A short hint explains map/row entry. Detailed discard confirmation follows direction approval. | G02, G05 |
 
-## What this direction does not yet cover
+## D02 · Detailed states · in review
 
-Wheel editor and Check, plotting-on, point movement and overlap/rejoin choices,
+[Detailed coverage, exact Figma nodes and previews](design-coverage.md) extends D01 with
+wheel editor and Check, plotting-on, point movement and overlap/rejoin choices,
 Ready/Armed/Flying badges, disarm/discard dialogs, saved/unsaved/recovered drafts,
-save failure, stale departure, and read-only flying inspection are deferred until
-the owner approves this main-screen direction. This is not approval to implement.
+save failure, stale departure, and read-only flying inspection are represented in D02 following this direction approval.
+The direction approval does not authorize implementation.
 
-Then expand the same direction to iPad landscape and iPhone 16 Pro portrait and
-review Dynamic Type, VoiceOver, Reduce Motion, interaction target sizes and
+D02 also adapts the direction to iPad landscape and iPhone 16 Pro portrait and records Dynamic Type, VoiceOver, Reduce Motion, interaction target sizes and
 native material behavior. No iPhone landscape design is included. Static Figma
 geometry does not establish runtime behavior or accessibility compliance.
 

@@ -2,8 +2,8 @@
 
 **Status:** behavioral direction approved by John, 2026-11-23, Q1–Q31;
 Q32–Q36 resolved on 2026-11-24, including removal of Start now.
-**Design:** [D01 main screen](design-proposal.md) is in direction review as of
-2026-11-24. Other new states still need design. Historical previews below are not
+**Design:** [D01 main screen](design-proposal.md) was direction-approved by John on
+2026-11-24. D02 now expands the other states for separate review. Historical previews below are not
 the new target.
 Historical Figma references retain their earlier approval dates and are shown
 only to explain what this iteration changes. Implementation remains separate.

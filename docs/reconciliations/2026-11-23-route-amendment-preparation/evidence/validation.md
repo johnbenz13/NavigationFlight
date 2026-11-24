@@ -46,6 +46,31 @@ preview after targeted badge contrast and app-name fixes. The main screen is
 node 3:2 in file JCyQhDDzCPfrrbv6SBcwKw; all text uses SF Pro and the sole raster
 inside the screen is the discrete chart background. Detailed node counts, reuse
 and coverage limits are recorded in proposed/design-proposal.md. This is design
-inspection, not simulator verification of the future UX. Human direction approval
-is pending. Subsequent repository changes are documentation/assets only; no new
+inspection, not simulator verification of the future UX. John approved the D01 main-screen direction on 2026-11-24; the approval
+was recorded in the next design checkpoint. Subsequent repository changes are documentation/assets only; no new
 build or tests were run for them.
+
+## D02 detailed design · 2026-11-24
+
+Recorded John’s explicit main-screen direction approval at D01 checkpoint 95f03bf.
+D01 node 3:2 remains visually unchanged. Created D02 frames F00–F15, index/flow,
+reusable pencil lifecycle variants and wheel columns in the same Figma file.
+Exact nodes and retained previews are mapped in proposed/design-coverage.md.
+
+Inspected all 16 views, correcting map coordinate offsets, missing-value styling,
+pencil statuses, alert action labels, duration-based Assisted marks, compact map
+labels, Larger Text timing clipping, and reachable compact Undo/Discard. Used
+smaller inline Figma renders when high-resolution preview calls intermittently
+failed. Retained previews match the inspected final design states; they have
+different export scales and are not simulator screenshots.
+
+D02 remains in review. Flying execution, simulator accessibility compliance,
+keyboard avoidance, native wheel feel and implementation acceptance are unverified.
+No source/configuration/runtime-resource changes; no application build or tests
+were run for this documentation/design checkpoint.
+
+Structural Figma audit: 406 editable text nodes across the detailed page; all
+font families and mixed native font runs resolve to SF Pro. All 11 image-filled
+nodes are named chart backgrounds. All 16 candidate nodes and the index resolve.
+Repository checks: 98 local links/anchors resolve; all 37 PNG signatures and
+SHA-256 entries verified; git diff --check passed.

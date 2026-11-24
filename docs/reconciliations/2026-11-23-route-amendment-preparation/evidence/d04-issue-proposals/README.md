@@ -4,7 +4,7 @@ John approved the prepared patches, anchor recovery and accessible pattern on
 2026-11-24. Scoped updates published to #227/#228/#231/#233; unchecked acceptance
 criteria remain unchecked. The original patch draft below is retained as review
 history, including its formerly pending language. No implementation is authorized.
-Local documentation awaits authorized commit/push and immutable approval permalink.
+Approved documentation is fixed at [checkpoint 5b934ef](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md); merge is pending.
 
 # D04 issue contract patches · not published
 

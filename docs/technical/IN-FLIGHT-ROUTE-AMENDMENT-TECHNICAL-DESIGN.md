@@ -9,8 +9,8 @@ Approved baseline · John · 2026-11-22. Shared operational Cockpit direction ap
 ## D04 direct drawing · approved technical scope · 2026-11-24
 
 John explicitly approved D04 on 2026-11-24, including anchor recovery and accessible
-actions. Earlier dated approvals and delivery remain historical. Approved local
-docs await an authorized commit/push/merge and immutable approval permalink.
+actions. Earlier dated approvals and delivery remain historical. Approved
+[documentation baseline](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) is committed at `5b934ef`; merge is pending.
 
 [Approved product behavior and Figma review](../reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md)
 intentionally revise the preparation input contract; this section records future

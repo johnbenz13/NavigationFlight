@@ -101,4 +101,4 @@ this checkpoint changes documentation and design only. Design/behavior approval 
 implementation authorization, implementation acceptance and issue closure remain
 separate decisions.
 
-Approved local docs await an authorized commit/push; the immutable approval-document permalink remains a checkpoint dependency. No commit or push is implied.
+Approved documentation checkpoint: [product spec](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) and [D04 revision](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md) at `5b934ef`. Merge is pending.

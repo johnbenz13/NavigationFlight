@@ -7,8 +7,8 @@ Planning baseline: NavigationFlight `258a42cd060195a24086908fecee9bb44312ff30` (
 ## D04 direct drawing revision · approved · 2026-11-24
 
 John explicitly approved D04 on 2026-11-24, including anchor recovery and accessible
-actions. Earlier dated approvals and delivery remain historical. Approved local
-docs await an authorized commit/push/merge and immutable approval permalink.
+actions. Earlier dated approvals and delivery remain historical. Approved
+[documentation baseline](https://github.com/johnbenz13/NavigationFlight/blob/5b934ef47c70366d5078995657af2373c675e015/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md) is committed at `5b934ef`; merge is pending.
 
 John requested a bounded revision after reviewing AP-03. [D04 behavior, preview
 and exact Figma nodes](../reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d04.md)

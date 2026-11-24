@@ -44,11 +44,11 @@ route geometry, labels, controls and all UI text are editable Figma nodes.
 | Arming | Disabled Arm amendment is accompanied by the two exact missing fields. No Start now action. | G04; Q32 |
 | Correction and exit | Undo and Discard remain in the footer. A short hint explains map/row entry. Detailed discard confirmation follows direction approval. | G02, G05 |
 
-## D03 · Current revision · in review
+## D03 · Current revision · approved
 
 [Separate heading/time sections and stable console geometry](design-revision-d03.md)
 addresses John’s review of D02. This revision changes the original console-height
-direction; D01 approval is historical and D03 awaits renewed approval.
+direction; D01 approval is historical; John approved D03 with the explicit regular-Cockpit limitation.
 
 ## D02 · Detailed states · changes requested
 

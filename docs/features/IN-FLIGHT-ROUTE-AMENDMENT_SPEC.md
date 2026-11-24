@@ -4,6 +4,29 @@ Product approved by John · 2026-11-22. Shared operational Cockpit revision appr
 
 Planning baseline: NavigationFlight `258a42cd060195a24086908fecee9bb44312ff30` (local `origin/main` at checkout creation).
 
+## Approved future preparation revision · 2026-11-24
+
+John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)
+and [D03 plus retained D02 states](../reconciliations/2026-11-23-route-amendment-preparation/proposed/design-revision-d03.md),
+reviewing checkpoint [46967c5](https://github.com/johnbenz13/NavigationFlight/commit/46967c5d8bb3f15e27e00835572d7300c491364e).
+This is approved future behavior, not a claim of delivery. The earlier contract
+and completed acceptance remain historical evidence. The scoped preparation
+revision takes precedence where it conflicts with the rows below:
+
+| Earlier scope | Approved preparation replacement |
+| --- | --- |
+| RA-01/RA-19 entry and pause/play | G01/G02: pencil toggles a single workspace; plotting is explicit and off on return. No separate pause/play or staged Finish here/review gate. |
+| RA-03/RA-10/RA-11 field presentation | G03: separate heading and leg-time wheel sections, partial independent values and bounded cue wheels; Check never overwrites entries. |
+| RA-05 preparation confirmation | G04: readiness is derived; explicit Arm commits via existing scheduled confirmation. Start now is removed from preparation and armed inspection. Existing flying execution contracts remain outside this revision. |
+| RA-12 pending indicator/edit entry | G01/G04/G07: status badges, read-only Armed/Flying inspection and explicit disarm before pending edits. Creating another amendment while already flying is deferred from this slice. |
+| RA-13 unconfirmed recovery | G05: persist unfinished per-Flight work, recover unarmed into regular Cockpit, preserve partial entries and warn on stale departure. |
+| Preparation layout | G06/D03: stable shared Cockpit extent, fixed timing/actions and scrolling leg list. Contextual node 29:989 approves only pencil/status text; all other regular Cockpit UI remains its existing approved design. |
+
+Other flying, rejoin, Flight Undo, recording/history and Debrief requirements
+remain unchanged. See the [draft task breakdown](../reconciliations/2026-11-23-route-amendment-preparation/proposed/tasks/README.md)
+for proposed implementation boundaries; task publication and implementation need
+separate authorization.
+
 ## Pilot outcome
 
 From Cockpit, the pilot can quickly prepare and confirm a different route for the current Flight when weather, a controller instruction, or a shortcut changes the route they intend to fly. They can use existing waypoints and map points, including a departure partway along a leg.

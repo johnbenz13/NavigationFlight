@@ -98,3 +98,26 @@ Whitespace checks passed. No app source/configuration/runtime resources changed;
 no build or test run is required for this documentation/design checkpoint.
 Runtime scrolling, camera preservation, accessibility and native picker behavior
 remain unverified until implementation.
+
+## Breakdown draft and approval record · 2026-11-24
+
+Recorded John’s D03 approval (“Now it looks good”) with the explicit condition
+that normal Cockpit node 29:989 supplies only pencil/status text. Updated the
+Figma index, inspected the approval annotation and retained its preview. Added
+scoped approved-future pointers to the canonical product and technical documents
+without rewriting the delivered/flying contracts or closed issue history.
+
+Prepared AP-01–AP-12 with shared proposed interfaces, exact design/state mappings,
+synthetic reproduction fixtures, acceptance/test contracts, genuine dependencies
+and requirement coverage. Retrieved full #204–#212 bodies/comments and inspected
+the relevant current draft/value/layout/confirmation/recovery/test seams at
+46967c5. Closed issue history and open #210/#211/#212 remain unchanged.
+
+Breakdown/interfaces and publication are pending owner review. No GitHub issues,
+application code, build, tests or simulator sessions were created/run in this
+phase. Documentation/image checks and whitespace validation passed; detailed
+implementation tests and visual comparisons remain future acceptance work.
+
+Breakdown checkpoint: 197 local links/anchors and 44 image signatures/hash
+entries passed. All 12 contracts contain required sections/acceptance criteria;
+the blocking graph is acyclic. No issues published.

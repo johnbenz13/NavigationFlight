@@ -1,8 +1,8 @@
 # D03 · Separate fields and a stable console
 
-**Status:** in review. John was globally satisfied with D02 and requested these
-two corrections on 2026-11-24. This does not record approval of the revised D03
-direction or authorize implementation. D01 and D02 remain historical evidence.
+**Status:** approved by John · 2026-11-24, reviewing D03 at [46967c5](https://github.com/johnbenz13/NavigationFlight/commit/46967c5d8bb3f15e27e00835572d7300c491364e).
+Approval: “Now it looks good”, with the regular-Cockpit limitation below.
+Implementation and ticket publication remain separate. D01/D02 remain historical evidence.
 
 [D03 review index](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=32-408)
 extends the [preparation baseline at a74f04c](https://github.com/johnbenz13/NavigationFlight/blob/a74f04c/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)
@@ -73,5 +73,18 @@ the shared accessibility layout. iPhone landscape remains excluded.
 All six candidate views and the index were visually inspected. These editable
 Figma designs use chart-only raster backgrounds; geographic values are
 illustrative. No simulator behavior, native wheel feel or runtime accessibility
-compliance is claimed. D03 needs explicit renewed direction approval before
-further detailed design or implementation planning.
+compliance is claimed. John approved the D03 revision with the regular-Cockpit limitation below.
+The approved pair is this preparation proposal plus D03 geometry/editor rules
+and retained D02 state content. Runtime implementation acceptance is separate.
+
+## Regular Cockpit boundary · owner-approved
+
+Node 29:989 is **contextual only**, and is not the current approved regular
+Cockpit design. Only its pencil and small amendment draft/status text are targets
+for this feature. Do not copy its other instruments, wording, buttons, colours,
+spacing or arrangement into the application. Preserve the existing approved
+regular Cockpit, Ready/Active/Destination Identified states and all flight actions.
+
+Use the existing resting-layout policy to keep the map/console boundary stable
+when toggling. Preserve map position/zoom, timers and pilot-reported progression.
+This is a preservation contract, not permission to restyle the regular console.

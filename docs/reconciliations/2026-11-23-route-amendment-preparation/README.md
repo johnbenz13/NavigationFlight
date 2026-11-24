@@ -5,7 +5,7 @@ additional request to improve the current-leg timing strip. On 2026-11-24 John
 approved Q33–Q36 and explicitly removed Start now from the proposed flow (Q32).
 Preparation ends at **Arm → return to Cockpit**; immediate departure will be
 reconsidered only during the flying-amendment reconciliation. **D01 was direction-approved by John
-on 2026-11-24. D02 received two owner corrections; [D03](proposed/design-revision-d03.md) is in review. Implementation is not authorized by this reconciliation.**
+on 2026-11-24. D02 received two owner corrections; [D03](proposed/design-revision-d03.md) is approved with the regular-Cockpit boundary. Implementation is not authorized by this reconciliation.**
 
 **Baseline:** local `main`, `cffba65f08cd8898294c941a4a3291b2fdb7df38`.
 **Branch:** `feature/route-amendment-preparation` (renamed at John’s request on 2026-11-24).
@@ -17,7 +17,7 @@ Use the existing [planning configuration](../../architecture/planning-configurat
 
 [D03 · Separate heading/time sections and stable console geometry](proposed/design-revision-d03.md)
 addresses John’s 2026-11-24 review. Prior previews remain historical; D03 is the
-current layout candidate and awaits renewed direction approval.
+approved layout revision, limited to amendment UI and regular-Cockpit pencil/status text.
 
 ## Read the experience
 
@@ -76,19 +76,21 @@ Review [D01 main-screen proposal and preview](proposed/design-proposal.md) or op
 [the exact Figma frame](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=3-2).
 It shows iPad Pro 11-inch portrait, plotted legs with missing values, plotting off,
 and the lighter timing strip. **John approved D01 on 2026-11-24.** D02 expanded its states and responsive layouts. John requested two corrections;
-[D03](proposed/design-revision-d03.md) is the current layout revision in review.
-Detailed design approval remains separate.
+[D03](proposed/design-revision-d03.md) is the approved layout revision with the regular-Cockpit limitation.
+Implementation acceptance remains separate.
 iPhone landscape remains excluded.
 
 ## Review gates and limits
 
 - Behavioral direction: approved by John in this conversation, Q1–Q31; timing
-  treatment added with the final answer. Exact visual treatments await design.
+  treatment added with the final answer. D03 and retained D02 state presentation are approved with the regular-Cockpit boundary.
 - Current-map accuracy: the attached images are inspected owner evidence;
   complete interactive/device coverage is not implied.
-- Detailed design approval, paired contract approval, ticket breakdown/publication
-  and implementation authorization: pending separate stages.
-- Existing specs, glossary, delivery plan and GitHub issues remain unchanged.
-  Proposed supersessions are mapped in the supporting crosswalk.
+- D03 and retained D02 state content: approved by John on 2026-11-24 with
+  the explicit regular-Cockpit boundary.
+- [Task breakdown](proposed/tasks/README.md): draft contracts for owner review.
+  Publication and implementation authorization remain separate.
+- Canonical product/technical docs link the approved-future preparation scope.
+  Historical acceptance, glossary, delivery plan and GitHub issues remain unchanged.
 - John authorized commits, pushing this feature branch and PR #223 in the conversation.
   Ticket publication, merge and issue closure remain separate decisions.

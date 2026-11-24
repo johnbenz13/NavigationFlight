@@ -3,7 +3,9 @@
 **Status:** behavioral direction approved by John, 2026-11-23, Q1–Q31;
 Q32–Q36 resolved on 2026-11-24, including removal of Start now.
 **Design:** [D01 main screen](design-proposal.md) was direction-approved by John on
-2026-11-24. D02 received two owner corrections. [D03](design-revision-d03.md) is the current layout candidate in review. Historical previews below are not
+2026-11-24. D02 received two owner corrections. [D03](design-revision-d03.md) was approved by John
+on 2026-11-24 with the explicit regular-Cockpit boundary; retained D02 states
+inherit D03 geometry. Historical previews below are not
 the new target.
 Historical Figma references retain their earlier approval dates and are shown
 only to explain what this iteration changes. Implementation remains separate.
@@ -38,8 +40,8 @@ Under Manual progression, awaiting the first replacement leg’s Start leg keeps
 the grey Armed indicator and explains “Awaiting Start leg”. Green begins when
 that leg starts.
 
-Do not encode the meaning with colour alone. Exact badges, contrast, size and
-accessible wording require design review. An invalid armed state is not a normal
+Do not encode the meaning with colour alone. Use the approved D02-F07 status variants and D03 layout rules; runtime
+contrast, target sizing and spoken wording still require implementation evidence. An invalid armed state is not a normal
 allowed state; readiness and route eligibility are rechecked before arming.
 
 **Historical reference, not the new design:**
@@ -106,7 +108,7 @@ show the separate drawing console that this proposal replaces.
 
 **Wanted outcome:** Selecting a proposed leg on the map or in its console row
 opens a modal on the map associated with that leg. The selected geometry and
-row remain identifiable. Modal placement and compact adaptations require design.
+row remain identifiable. D03-C/F define the approved placement and separated wheel sections.
 
 - Magnetic heading uses a wheel labelled in degrees, **001°–360°**.
   Give heading its own labelled section, visually separated from the Leg time
@@ -203,9 +205,9 @@ needs design coverage.
 returns to Cockpit. On an armed amendment explicitly say **Disarm and discard**;
 save the operational reversal successfully before reporting completion.
 
-**Design needed:** recovery, save error, stale departure, discard and armed
-disarm states have no new approved previews. Earlier recovery contracts remain
-references; persistent unarmed drafts are a newly agreed capability.
+**Approved design:** D02-F10 recovery, save error, stale departure, discard and
+disarm states, with D03 geometry. Earlier recovery contracts remain references;
+persistent unarmed drafts are a newly agreed capability.
 
 ## G06 · Read the map and current-leg context
 
@@ -231,11 +233,12 @@ current-leg identity, elapsed **Timer**, planned **Leg time** and relevant overd
 status. Final labels and hierarchy must make planned duration and elapsed time
 unambiguous. This is a design requirement, not approval of a particular colour,
 material or replacement panel. Scope the first proposal to amendment preparation;
-do not silently redesign the regular flying console.
+do not silently redesign the regular flying console. Node 29:989 is contextual only: implement only its
+pencil/status text. All other regular Cockpit presentation and behavior follow
+the existing approved design, not this reconciliation’s contextual frame.
 
-**Design needed:** current-leg strip, route-role legend, dense leg rows and
-empty/partial workspace. Review the iPad portrait direction first; then validate
-landscape, compact layout, text scaling, VoiceOver and Reduce Motion.
+**Approved design:** D03 strip/rows/adaptations and retained D02 empty/partial
+states. Runtime text scaling, VoiceOver and Reduce Motion remain to be verified.
 
 ## G07 · Inspect without redesigning flight execution
 
@@ -247,6 +250,17 @@ Changing or replacing an already flown amendment is deferred from this slice.
 This is a scoped change to the editing entry point; existing flight controls,
 timers, heading/ETA revisions, departure/rejoin and history retain their behavior.
 
-**Design needed:** read-only inspection and clear Flying status. It must not
-suggest the existing flight has paused. Amendment Ready/Armed are also separate
+**Approved design:** D02-F07 Flying status and D02-F09 read-only pattern under
+D03 geometry. They must not suggest the existing flight has paused. Amendment Ready/Armed are also separate
 from the regular Cockpit's Ready/Active leg states.
+
+## Figma
+
+- **Status:** approved · D03 plus retained D02 state content.
+- **Approver/date:** John · 2026-11-24, after reviewing revision 46967c5.
+- [Approved D03 index and layout rules](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=32-408).
+- [Exact D03 views and scope limitation](design-revision-d03.md) and
+  [D02 state coverage](design-coverage.md).
+- Regular Cockpit node 29:989 approves only pencil/status text; its remaining
+  UI is contextual and must not drive changes to the regular Cockpit.
+- Proposed behavior remains unimplemented until separately authorized and verified.

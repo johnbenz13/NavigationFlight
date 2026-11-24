@@ -4,7 +4,8 @@ D01 direction approved by John on 2026-11-24, reviewing node 3:2 at repository
 checkpoint 95f03bf. D02 extends that direction; detailed design approval and
 implementation remain separate. D02 status: **changes requested** following owner review.
 [D03](design-revision-d03.md) supersedes console geometry and wheel grouping;
-other D02 state content remains the reference. D03 is in review. Each exact node below extends the approved
+other D02 state content remains the reference. D03 is approved with the regular-Cockpit boundary. D02 state content remains
+approved under D03 layout rules. Each exact node below extends the approved
 direction. Static design inspection does not establish simulator behavior.
 
 | Review view | Coverage | Contract |
@@ -36,7 +37,8 @@ boundaries only, not a redesign of flying.
 [Reusable pencil states](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=13-804) and
 [wheel column](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=12-458).
 
-D02 is a candidate set, not an approved implementation contract. D01 node 3:2
+D02 state content is approved under D03 geometry and the regular-Cockpit boundary.
+These static designs do not establish runtime implementation acceptance. D01 node 3:2
 remains the approved main-screen direction. Product baseline: [95f03bf preparation
 proposal](https://github.com/johnbenz13/NavigationFlight/blob/95f03bf/docs/reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md).
 
@@ -86,7 +88,8 @@ redesign of Flight progression. No Start now action is introduced.
 
 ## Review boundaries
 
-- Detailed layout, wheel feel and alert presentation await John’s approval.
+- Detailed design was approved by John with the D03/regular-Cockpit limitation;
+  native wheel feel and runtime alert behavior still need implementation evidence.
 - VoiceOver sequence: current identity, Timer, planned leg time, workspace
   actions, each leg with magnetic heading and leg time, readiness, Arm. Status
   has a shape and spoken meaning; colour alone conveys no state.

@@ -6,6 +6,16 @@ Approved baseline · John · 2026-11-22. Shared operational Cockpit direction ap
 - Inspected NavigationFlight revision `258a42cd060195a24086908fecee9bb44312ff30`. Navigation Editor comparison revision `7abb0d1c5551af401ef5d403252bc864e3679040`.
 - Scope is a local Flight amendment, including confirmed-route recovery and export/debrief context. No implementation, build, simulator, or test run was performed.
 
+## Preparation revision planning · 2026-11-24
+
+The [approved future preparation revision](../features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md#approved-future-preparation-revision--2026-11-24)
+supersedes conflicting preparation behavior only. Its [draft task contracts](../reconciliations/2026-11-23-route-amendment-preparation/proposed/tasks/README.md)
+and [proposed shared interfaces](../reconciliations/2026-11-23-route-amendment-preparation/proposed/tasks/contract.md)
+are awaiting breakdown approval; they are not approved replacements for the
+technical decisions below. Reuse existing operational transactions and preserve
+flying/rejoin/recovery evidence contracts. Each implementing task updates only
+its delivered technical section after the approved planning baseline lands.
+
 ## Code at the planning baseline
 
 | Area | Inspected interface and constraint |

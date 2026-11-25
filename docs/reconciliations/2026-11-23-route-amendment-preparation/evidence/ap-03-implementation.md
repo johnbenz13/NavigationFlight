@@ -1,5 +1,77 @@
 # AP-03 implementation and verification ledger
 
+## Review R1 · cancel automatic rejoin · 2026-11-25
+
+Origin: [P2 review](https://github.com/johnbenz13/NavigationFlight/pull/240#issuecomment-7146569986),
+reviewed/current starting revision `5efab638d79deb6d45ff1e5bfbaa502e6905225b`.
+Authority retrieved and inspected: D04 notes `48:565`, especially `48:569–570`:
+open drawing accepts free points and proposed-leg value editing; no return-mode toggle.
+No geometry/style/assets change is proposed. Existing Drawing console, growing rows,
+native occurrence controls and editor remain the visual contract. The review's
+iPad reproduction is the pre-fix rendered baseline; new domain regression reproduces
+both entry paths and all three reported symptoms (2 failures, 07:15:25).
+
+| Criterion | Observable result | Fixture | Verification |
+| --- | --- | --- | --- |
+| Cancel automatic rejoin | Exact pre-choice draft restored, including drawing step | Forward/reverse overlap, direct and Edit/Rejoin paths | Domain parameterized regression |
+| Continue plotting | Free tap adds point/leg, existing identity retained, no rejoin | Same domain fixture; rendered B-overlap-occurrences | Domain assertions + actual chart interaction/rows |
+| Edit proposed leg | Short chart hit opens existing editor after cancellation | Same fixtures | Domain typed hit + rendered map hit/editor/Cancel |
+| Preserve departure choice | Back from departure occurrence remains departure selection | Crossing departure fixture | Existing/focused domain boundary |
+| Usable cancellation presentation | Single Back to map restores Drawing; obsolete return prompts absent | iPad portrait first; iPhone portrait and iPad landscape | UI regression/screenshots inspected; D04 behavior comparison |
+
+Failure classification: application state-transition defect, not fixture or tooling.
+Earlier passing checks remain retained except this newly covered cancellation path.
+
+**Disposition: fixed and verified.** `RouteAmendmentDraft.update(.back)` now returns
+rejoin occurrence cancellation to `.drawing`; departure occurrence cancellation
+still returns to `.departure`. No presentation, fixture or map adapter source changed.
+
+| Run · 2026-11-25 local time | Result | Retained provenance |
+| --- | --- | --- |
+| 07:15:25 | New two-case regression red: exact draft recovery, point append and chart editor all fail | Original DerivedData `Test-NavigationFlight-2026.11.25_07-15-25-+0200.xcresult` |
+| 07:17:12 | 5 domain cases + iPad portrait UI passed | `r1/ipad-portrait/manifest.json` |
+| 07:17:57 | iPad landscape interactions passed; screenshot capture rejected | Replaced by 07:20:16 evidence |
+| 07:18:37 | iPhone portrait UI passed | `r1/iphone-portrait/manifest.json` |
+| 07:20:16 | iPad landscape UI + corrected full-screen capture passed | `r1/ipad-landscape/manifest.json` |
+
+Final BuildProject (including test targets) passed at 07:20:15 (2.859s),
+changed domain-file diagnostics: zero. Final diff and local evidence links checked.
+Tests use actual map taps after cancellation, not an injected map-input override.
+Domain cases cover both direct-anchor and overlap-chooser entries, unchanged draft
+and first-leg identity, free append and proposed-leg editor, plus departure and
+current-progress boundaries. Existing broader passes remain valid; this change
+adds no controls and preserves prior Larger Text/VoiceOver/Reduce Motion coverage.
+
+The implementing agent directly inspected all retained R1 captures. D04 `48:569`
+interaction rule matches the restored Drawing prompt, actual editor and appended
+Point 2/second row. This is a bounded behavior comparison, not a new quantitative
+visual approval of the inherited shell. Full-resolution captures:
+
+- [iPad Drawing](<../assets/ap-03/r1/ipad-portrait/Route amendment - r1-back-to-drawing.png>),
+  [chart editor](<../assets/ap-03/r1/ipad-portrait/Route amendment - r1-map-values-after-back.png>),
+  [free point](<../assets/ap-03/r1/ipad-portrait/Route amendment - r1-free-point-after-back.png>).
+- [iPhone Drawing](<../assets/ap-03/r1/iphone-portrait/Route amendment - r1-back-to-drawing.png>),
+  [chart editor](<../assets/ap-03/r1/iphone-portrait/Route amendment - r1-map-values-after-back.png>),
+  [free point](<../assets/ap-03/r1/iphone-portrait/Route amendment - r1-free-point-after-back.png>).
+- [Landscape Drawing](<../assets/ap-03/r1/ipad-landscape/Route amendment - r1-back-to-drawing-landscape.png>),
+  [chart editor](<../assets/ap-03/r1/ipad-landscape/Route amendment - r1-map-values-after-back-landscape.png>),
+  [free point](<../assets/ap-03/r1/ipad-landscape/Route amendment - r1-free-point-after-back-landscape.png>).
+
+Human visual acceptance remains pending. Existing scrollable-console behavior
+can clip below-viewport prompt/Back content until scrolled; the UI test uses the
+established scroll helper to activate Back. This fix does not redesign that layout.
+
+Approximate effort: exploration/spec/review 4min; implementation/tests 3min;
+test/tool repair 2min; verification/comparison 4min; delivery 2min.
+Avoidable reruns: one test build used an incorrect helper name (test defect), and
+one landscape evidence run used app rather than full-screen screenshot (test
+capture defect, corrected using existing helper convention). No application edits
+followed either failure; the production change remained one line. The independent
+device helper's optional cold-launch check was blocked by CoreSimulatorService
+permissions (tooling); its ordinary persisted-app screen is not R1 evidence and
+no independent live pass is claimed. Xcode-driven UI passes above remain valid;
+no broad/evidence-only rerun was performed. Helper session closed.
+
 Issue #227; branch `feature/deliberate-forward-route-tap`.
 Baseline `bfe4b068064d075fdef0644cb003af68ad9b7fd3`: #226 closed through
 PR #238, merged to main; fetched ancestry, clean tree and synchronized main

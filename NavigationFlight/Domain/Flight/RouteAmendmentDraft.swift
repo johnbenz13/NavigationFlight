@@ -656,7 +656,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             case .crossing(_, let purpose):
                 switch purpose {
                 case .departure: step = .departure
-                case .rejoin: step = .rejoin
+                case .rejoin: step = .drawing
                 case .finish: step = .drawing
                 }
             case .departure where departure != nil: step = .drawing

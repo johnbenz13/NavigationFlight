@@ -13,6 +13,55 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @Test func cancellingDepartureOccurrencesStillRequiresDeparture() throws {
+        let plan = try twoLegFlight()
+        let leg = plan.legs[0]
+        let reverse = NavigationLeg(id: UUID(), departure: leg.arrival, arrival: leg.departure,
+                                    windOverride: nil, remark: nil)
+        let route = RouteAmendmentRoute(legs: [leg, reverse],
+                                       firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        let anchors = [route.anchor(at: 0, fraction: 0.2), route.anchor(at: 1, fraction: 0.8)]
+        draft.update(.plot(.init(position: route.coordinate(at: anchors[0]), anchors: anchors)), route: route)
+        #expect(draft.step == .crossing(anchors, .departure))
+        draft.update(.back, route: route)
+        #expect(draft.step == .departure)
+        #expect(draft.departure == nil)
+        #expect(draft.points.isEmpty)
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func cancellingAutomaticRejoinResumesFreeDrawingAndLegEditing(_ throughOverlap: Bool) throws {
+        let plan = try twoLegFlight()
+        let leg = plan.legs[0]
+        let reverse = NavigationLeg(id: UUID(), departure: leg.arrival, arrival: leg.departure,
+                                    windOverride: nil, remark: nil)
+        let route = RouteAmendmentRoute(legs: [leg, reverse],
+                                       firstAvailable: .init(legIndex: 0, legID: leg.id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let existing = try #require(draft.reviewLegs(on: route).first)
+        let anchors = [route.anchor(at: 0, fraction: 0.8), route.anchor(at: 1, fraction: 0.2)]
+        let before = draft
+        draft.update(.plot(.init(position: route.coordinate(at: anchors[0]), anchors: anchors,
+                                 legHits: throughOverlap ? [.proposed(existing.id)] : nil,
+                                 isRouteTap: true)), route: route)
+        if throughOverlap { draft.update(.resolveDrawingOverlap(rejoin: true), route: route) }
+        #expect(draft.step == .crossing(anchors, .rejoin))
+        draft.update(.back, route: route)
+        #expect(draft == before)
+
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.6, longitudeDegrees: 35.1))), route: route)
+        #expect(draft.points.count == 2)
+        #expect(draft.rejoin == nil)
+        #expect(draft.reviewLegs(on: route).first == existing)
+        draft.update(.plot(.init(position: existing.from, legHits: [.proposed(existing.id)])), route: route)
+        #expect(draft.editor?.id == existing.id)
+        #expect(draft.legPanel == .editor)
+    }
+
     @MainActor
     @Test(arguments: [false, true])
     func directDrawingOverlapResolvesEditOrRejoin(_ rejoin: Bool) throws {

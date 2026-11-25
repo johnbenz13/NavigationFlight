@@ -3297,6 +3297,56 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testCancellingRejoinOccurrencesResumesDirectMapInput() throws {
+        try verifyCancelledRejoinOccurrences()
+    }
+
+    @MainActor
+    func testCancellingRejoinOccurrencesInLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
+        try verifyCancelledRejoinOccurrences(landscape: true)
+    }
+
+    @MainActor
+    private func verifyCancelledRejoinOccurrences(landscape: Bool = false) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = try launchPartialAmendment(fixture: "B-overlap-occurrences")
+        if landscape { XCUIDevice.shared.orientation = .landscapeLeft }
+        app.buttons["amend-route"].tap()
+        let suffix = landscape ? "-landscape" : "-portrait"
+        app.buttons["amendment-overlap-rejoin"].firstMatch.tap()
+        let occurrences = app.buttons.matching(identifier: "amendment-leg-occurrence")
+        XCTAssertTrue(occurrences.firstMatch.waitForExistence(timeout: 4))
+        XCTAssertEqual(occurrences.count, 2)
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        let before = rows.allElementsBoundByIndex.map(\.label)
+        captureAmendmentState("r1-rejoin-occurrences" + suffix, in: app)
+        let back = app.buttons["back-from-amendment-crossing"]
+        tapAmendmentControl(back, in: app.descendants(matching: .any)["route-amendment-console"].firstMatch)
+        XCTAssertTrue(back.waitForNonExistence(timeout: 3))
+        XCTAssertEqual(app.staticTexts["amendment-drawing-status"].label, "Drawing")
+        XCTAssertFalse(app.buttons["back-from-amendment-rejoin"].exists)
+        XCTAssertFalse(app.staticTexts["Choose a return point ahead of departure."].exists)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map(\.label), before)
+        captureAmendmentState("r1-back-to-drawing" + suffix, in: app)
+
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let edit = app.buttons["amendment-overlap-edit"].firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 4))
+        edit.tap()
+        let cancel = app.buttons["back-to-amendment-review"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
+        captureAmendmentState("r1-map-values-after-back" + suffix, in: app)
+        cancel.tap()
+        map.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.45)).tap()
+        XCTAssertEqual(rows.count, before.count + 1)
+        XCTAssertEqual(rows.firstMatch.label, before.first)
+        XCTAssertEqual(app.staticTexts["amendment-drawing-status"].label, "Drawing")
+        captureAmendmentState("r1-free-point-after-back" + suffix, in: app)
+    }
+
+    @MainActor
     func testDirectDrawingOverlapOffersEditThenRejoin() throws {
         let app = try launchPartialAmendment(fixture: "B-open-overlap")
         app.buttons["amend-route"].tap()

@@ -1,0 +1,80 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "3310CFCF-2939-4E2C-9CDC-509B08441E73.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "R2 retained MapLibre camera_0_A2D98FAC-91C0-488F-BCAF-E2DF2589C916.txt",
+        "timestamp" : 1795610605.142
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "8DE091F8-AA73-4C7F-B7F4-CFFAEEC17F9B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-cleared-landscape_0_C2CAA809-C21B-49EF-9501-BDE5A851CAF1.png",
+        "timestamp" : 1795610601.7
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "71A0F92A-9EA0-435D-B597-5D1D329B9B83.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-partial-landscape_0_B3DB2153-5380-4C77-A571-19383835B1A7.png",
+        "timestamp" : 1795610594.094
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "A128BDE6-2012-445E-A35F-429A09716DC5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-ceiling-landscape_0_4355E03D-D6B9-4F71-88D9-C416CFC774FB.png",
+        "timestamp" : 1795610584.004
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "9325101B-B7F0-426D-8DBA-D1453D2B2819.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-59-59-landscape_0_58E98740-DC6A-48DB-B5E4-66893684B165.png",
+        "timestamp" : 1795610580.828
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "3BFB46A4-A67D-47CE-8845-09D80659617A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-one-second-landscape_0_A8F20619-F2C0-45E0-8716-EE00AE324A05.png",
+        "timestamp" : 1795610572.855
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "BF553E49-DDE8-44D9-8517-3B43D461E1D1.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-zero-landscape_0_F34D7639-B11D-444D-B10F-6C365E131AA3.png",
+        "timestamp" : 1795610569.605
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "76A3FCB3-6AF8-4EC2-A7AE-B2C77615BBC5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-untouched-landscape_0_ED7FD11B-55AD-4483-9CD7-4BAA7A841836.png",
+        "timestamp" : 1795610561.914
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testLegTimeWheelsInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testLegTimeWheelsInLandscape"
+  }
+]

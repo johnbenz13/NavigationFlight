@@ -1,0 +1,103 @@
+{
+  "exportedAt": "2026-11-25T12:53:34.305200+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_14-50-09-+0200.xcresult",
+  "resultInfoSHA256": "93a66182fcdd42afc82496a76a7dc2e7f13f5a0fa74f36971f40b7ec0370eeee",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+          "deviceName": "UIEvidence-iPad",
+          "modelName": "iPad Pro 11-inch (M5)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 2,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795611164.22,
+    "passedTests": 2,
+    "result": "Passed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795611009.527,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 2
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "4c106bb37d0f420706a23f5725cc4bc6150ef0ca",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nA  NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testLegTimeWheelsWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "A958645F-BA3E-4422-B963-05A77B70E9D7.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-untouched-larger-portrait_0_8C6E5295-7A68-4AC1-8ECF-8311A79ACFBB.png",
+        "timestamp": 1795611056.148
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "c389e25cf541ad9150c4c81f7ecc19a463f876d5d9b05fd57d2df7ae5731c359"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testLegTimeWheelsWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "8802918F-1F1B-4A8C-8076-2BE0A9D7F11C.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-zero-larger-portrait_0_6BA15078-B60E-4CFC-BC33-7FFCCFE550BE.png",
+        "timestamp": 1795611073.978
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "babfb64b9860e4f14b2aac626bbb476f56628586b24d3b357f0d139d45c24485"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testLegTimeWheelsWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "4B857E1C-E254-4856-A601-0A4DE5AF4EFE.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-ceiling-larger-portrait_0_442D1A9E-E93C-4EA2-852C-7EC5A9A012F6.png",
+        "timestamp": 1795611098.284
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "b6841a9c0916d90b88215678f7ed168b7083f1d7db6f9ef7934de877fd768f4d"
+    }
+  ]
+}

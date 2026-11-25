@@ -292,61 +292,9 @@ struct RouteAmendmentChartPanel: View {
             RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
             Divider().padding(.vertical, 8)
         }
-        if focused == nil || focused == .minutes || focused == .seconds {
-            if focused == nil {
-                Text("Leg time").font(.headline).accessibilityAddTraits(.isHeader)
-            }
-            stepper(minus: "−5s", plus: "+5s", unit: "seconds", invalid: invalid.contains(.duration),
-                    adjust: { onIntent(.adjustFlightTime($0)) }, step: 5) {
-                let layout = dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(spacing: 2)) : AnyLayout(HStackLayout(spacing: 3))
-                layout {
-                    input(.minutes, placeholder: "––", entry: editor.entry, large: true)
-                    if !dynamicTypeSize.isAccessibilitySize { Text(":").accessibilityHidden(true) }
-                    input(.seconds, placeholder: "––", entry: editor.entry, large: true)
-                }
-            }
-            if invalid.contains(.duration), focused == nil {
-                error(editor.entry.duration.isEmpty ? "Enter a flight time." : "Enter a positive time with seconds below 60.",
-                      id: "amendment-error-duration")
-            }
+        if focused == nil {
+            RouteAmendmentTimeSection(entry: editor.entry, onIntent: onIntent)
         }
-    }
-
-    private func stepper<Content: View>(
-        minus: String, plus: String, unit: String, invalid: Bool, adjust: @escaping (Int) -> Void,
-        step: Int, @ViewBuilder content: () -> Content
-    ) -> some View {
-        let layout = dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(spacing: 2)) : AnyLayout(HStackLayout(spacing: 3))
-        return layout {
-            if !dynamicTypeSize.isAccessibilitySize { stepButton(minus, label: "Decrease by \(step) \(unit)") { adjust(-step) } }
-            content()
-            if dynamicTypeSize.isAccessibilitySize {
-                HStack {
-                    stepButton(minus, label: "Decrease by \(step) \(unit)") { adjust(-step) }
-                    stepButton(plus, label: "Increase by \(step) \(unit)") { adjust(step) }
-                }
-            } else {
-                stepButton(plus, label: "Increase by \(step) \(unit)") { adjust(step) }
-            }
-        }
-        .padding(5)
-        .background(invalid ? Color.red.opacity(0.10) : Style.action.opacity(0.10), in: .rect(cornerRadius: 11))
-        .overlay {
-            RoundedRectangle(cornerRadius: 11).strokeBorder(invalid ? .red.opacity(0.62) : Style.action.opacity(0.16))
-        }
-    }
-
-    private func stepButton(_ title: String, label: String, perform: @escaping () -> Void) -> some View {
-        RepeatingActionButton(action: perform) {
-            Text(title).font(.subheadline.weight(.semibold))
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(.rect)
-                .foregroundStyle(Style.action)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
     }
 
     private func input(

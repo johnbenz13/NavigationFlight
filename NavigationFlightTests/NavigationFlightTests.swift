@@ -13,6 +13,114 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @Test(arguments: ["", "00:00", "00:01", "59:59", "60:00", "60:01", "61:00"])
+    func legTimeBoundaryValidation(_ duration: String) {
+        var entry = RouteAmendmentLegEntry()
+        entry[.heading] = "087"
+        entry[.duration] = duration
+        let expected: Int? = switch duration {
+        case "00:01": 1
+        case "59:59": 3599
+        case "60:00": 3600
+        default: nil
+        }
+        #expect(entry.durationSeconds == expected)
+        #expect(entry.values?.durationSeconds == expected)
+        #expect(entry.invalidFields.contains(.duration) == (expected == nil))
+        #expect(entry.invalidEnteredFields.contains(.duration) == (expected == nil && !duration.isEmpty))
+    }
+
+    @Test(arguments: RouteAmendmentLegEntry.TimeComponent.allCases)
+    func deliberateTimeSelectionAndIndependentClearing(_ first: RouteAmendmentLegEntry.TimeComponent) {
+        var entry = RouteAmendmentLegEntry()
+        #expect(entry.timeSelection(.minutes) == nil)
+        #expect(entry.timeSelection(.seconds) == nil)
+        #expect(entry.durationSeconds == nil)
+        entry.selectTime(first, value: 0)
+        #expect(entry.minutes == "00" && entry.seconds == "00")
+        #expect(entry.durationSeconds == nil)
+        entry.selectTime(.seconds, value: 1)
+        #expect(entry.durationSeconds == 1)
+        entry.selectTime(.minutes, value: 59)
+        entry.selectTime(.seconds, value: 59)
+        #expect(entry.durationSeconds == 3599)
+        entry.selectTime(.minutes, value: 60)
+        #expect(entry.duration == "60:00")
+        #expect(entry.durationSeconds == 3600)
+        entry.selectTime(.seconds, value: 1)
+        #expect(entry.duration == "60:00")
+        entry.selectTime(.minutes, value: 61)
+        #expect(entry.duration == "60:00")
+        entry.selectTime(.minutes, value: nil)
+        #expect(entry.minutes.isEmpty && entry.seconds == "00")
+        #expect(entry.durationSeconds == nil)
+        entry.selectTime(.seconds, value: nil)
+        #expect(entry.duration.isEmpty)
+        entry.selectTime(.seconds, value: 1)
+        #expect(entry.duration == "00:01")
+        entry.selectTime(.seconds, value: nil)
+        #expect(entry.minutes == "00" && entry.seconds.isEmpty)
+    }
+
+    @Test(arguments: [3600, 3601, 5400])
+    func acceptedLegTimeIsLosslessUntilDeliberatelyEdited(_ duration: Int) throws {
+        let values = RouteAmendmentLegValues(headingMagnetic: 87, durationSeconds: duration,
+                                            altitude: .init(value: 2517), frequency: .init(value: 122.525),
+                                            visualReference: " Junction ")
+        var entry = RouteAmendmentLegEntry(values: values)
+        #expect(entry.values == values)
+        #expect(entry.durationSeconds == duration)
+        entry[.heading] = "088"
+        #expect(entry.durationSeconds == duration)
+        entry.selectTime(.minutes, value: 60)
+        #expect(entry.durationSeconds == 3600)
+        let edited = try #require(entry.values)
+        #expect(edited.headingMagnetic == 88)
+        #expect(edited.altitude == values.altitude)
+        #expect(edited.frequency == values.frequency)
+        #expect(edited.visualReference == values.visualReference)
+        entry[.duration] = "60:01"
+        #expect(entry.durationSeconds == nil)
+    }
+
+    @MainActor
+    @Test(arguments: ["", "00:00", "00:01", "59:59", "60:00", "60:01"])
+    func timeReadinessAndPartialExitUseSharedValidation(_ duration: String) throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        state.prepareAmendmentConfirmationFixture()
+        let route = try #require(state.routeForAmendment)
+        let flight = try #require(state.flight)
+        let leg = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        state.updateRouteAmendment(.editLeg(leg.id))
+        state.updateRouteAmendment(.editLegField(.duration, duration))
+        let before = try #require(state.routeAmendmentDraft?.editor?.entry)
+        state.updateRouteAmendment(.saveLegValues)
+        state.updateRouteAmendment(.editLeg(leg.id))
+        #expect(state.routeAmendmentDraft?.editor?.entry == before)
+        state.updateRouteAmendment(.toggleWorkspace)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.routeAmendmentDraft?.editor?.entry == before)
+        state.updateRouteAmendment(.saveLegValues)
+        let draft = try #require(state.routeAmendmentDraft)
+        let row = try #require(draft.reviewLegs(on: route).first)
+        #expect(row.entry == before)
+        #expect(row.entry.heading == leg.entry.heading)
+        #expect(row.entry.altitude == leg.entry.altitude)
+        #expect(row.entry.frequency == leg.entry.frequency)
+        #expect(row.entry.visualReference == leg.entry.visualReference)
+        if before.durationSeconds != nil {
+            _ = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        } else {
+            #expect(throws: PendingRouteAmendment.Validation.incompleteLegs) {
+                try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+            }
+        }
+        #expect(state.flight == flight)
+    }
+
     @MainActor
     @Test(arguments: ["", "001", "087", "360"], ["", "02:15"])
     func partialHeadingAndTimeSurviveDoneClearAndPencil(_ heading: String, _ duration: String) throws {

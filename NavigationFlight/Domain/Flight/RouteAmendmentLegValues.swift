@@ -18,6 +18,10 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
 }
 
 nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+    enum TimeComponent: String, CaseIterable, Sendable {
+        case minutes, seconds
+    }
+
     enum Field: String, Sendable {
         case heading, duration, minutes, seconds, altitude, frequency, visualReference
     }
@@ -44,6 +48,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     var visualReference = ""
     // Preserve accepted boundary values exactly, including legacy cue precision/spacing.
     private var acceptedValues: RouteAmendmentLegValues?
+    private var durationWasEdited = false
 
     init(values: RouteAmendmentLegValues? = nil) {
         acceptedValues = values
@@ -71,9 +76,15 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
             guard allowsInput(newValue, for: field) else { return }
             switch field {
             case .heading: heading = newValue
-            case .duration: duration = newValue
-            case .minutes: minutes = newValue
-            case .seconds: seconds = newValue
+            case .duration:
+                durationWasEdited = true
+                duration = newValue
+            case .minutes:
+                durationWasEdited = true
+                minutes = newValue
+            case .seconds:
+                durationWasEdited = true
+                seconds = newValue
             case .altitude: altitude = newValue
             case .frequency: frequency = newValue
             case .visualReference: visualReference = newValue
@@ -124,7 +135,40 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
               let seconds = seconds.isEmpty ? 0 : integer(seconds),
               (0..<60).contains(seconds), minutes <= (Int.max - seconds) / 60 else { return nil }
         let total = minutes * 60 + seconds
-        return total > 0 ? total : nil
+        guard total > 0 else { return nil }
+        return total <= 3600 || preservesAcceptedDuration ? total : nil
+    }
+
+    /// Only an unchanged accepted value can cross the new preparation boundary.
+    var preservesAcceptedDuration: Bool {
+        guard !durationWasEdited, let acceptedValues else { return false }
+        return duration == Self.durationText(acceptedValues.durationSeconds)
+    }
+
+    func timeSelection(_ component: TimeComponent) -> Int? {
+        let text = component == .minutes ? minutes : seconds
+        return text.isEmpty ? nil : integer(text)
+    }
+
+    func timeOptions(_ component: TimeComponent) -> ClosedRange<Int> {
+        component == .minutes ? 0...60 : 0...(timeSelection(.minutes) == 60 ? 0 : 59)
+    }
+
+    /// Opening sends no intent. A deliberate first choice initializes the other
+    /// component to zero; later clears preserve the independently edited component.
+    mutating func selectTime(_ component: TimeComponent, value: Int?) {
+        if let value, !timeOptions(component).contains(value) { return }
+        let untouched = minutes.isEmpty && seconds.isEmpty
+        durationWasEdited = true
+        let text = value.map { String(format: "%02d", $0) } ?? ""
+        switch component {
+        case .minutes:
+            minutes = text
+            if value == 60 || (untouched && value != nil) { seconds = "00" }
+        case .seconds:
+            seconds = text
+            if untouched && value != nil { minutes = "00" }
+        }
     }
 
     mutating func adjustHeading(by delta: Int) {
@@ -137,7 +181,8 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     mutating func adjustFlightTime(by delta: Int) {
         guard delta == 5 || delta == -5 else { return }
         let adjustment = (durationSeconds ?? 0).addingReportingOverflow(delta)
-        guard !adjustment.overflow, adjustment.partialValue > 0 else { return }
+        guard !adjustment.overflow, (1...3600).contains(adjustment.partialValue) else { return }
+        durationWasEdited = true
         duration = Self.durationText(adjustment.partialValue)
     }
 

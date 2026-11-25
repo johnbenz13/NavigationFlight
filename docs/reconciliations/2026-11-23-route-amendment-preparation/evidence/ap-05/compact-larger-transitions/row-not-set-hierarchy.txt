@@ -1,0 +1,100 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 23581, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            StaticText, {{36.0, 91.7}, {105.3, 116.7}}, identifier: 'leg-status', label: 'ACTIVE', hitPoint: {88.7, 150.0}
+            Button, {{164.0, 94.7}, {48.0, 48.0}}, identifier: 'amend-route', label: 'Hide amendment workspace', value: Incomplete draft, hitPoint: {188.0, 118.7}
+             Image, {{166.3, 97.0}, {43.7, 43.3}}, identifier: 'pencil', label: 'Edit', hitPoint: {188.2, 118.7}
+             Image, {{202.7, 132.0}, {7.3, 7.3}}, identifier: 'circle.fill', label: 'Circle', hitPoint: {206.3, 135.7}
+            Button, {{220.0, 88.0}, {146.0, 125.3}}, label: 'Map tools', hitPoint: {293.0, 150.7}
+             StaticText, {{220.0, 88.0}, {146.0, 125.3}}, label: 'Map tools', hitPoint: {293.0, 150.7}
+             Image, {{226.7, 94.0}, {54.0, 51.3}}, identifier: 'map', label: 'Show Map', hitPoint: {253.7, 119.7}
+            StaticText, {{36.0, 217.3}, {273.3, 58.7}}, label: 'LEG 2 OF 25', hitPoint: {172.7, 246.7}
+            StaticText, {{36.0, 280.0}, {317.3, 63.3}}, label: 'From Kadima to Ramat', hitPoint: {194.7, 311.7}
+            Other, {{0.0, 62.0}, {402.0, 342.7}}, identifier: 'aviation-map', label: 'Map', value: 32.16043046393439|..., hitPoint: {201.0, 233.3}
+             Button, {{354.0, 70.0}, {40.0, 40.0}}, label: 'Compass', value: north, hitPoint: {374.0, 90.0}
+             Button, {{314.3, 317.0}, {79.7, 79.7}}, label: 'About this map', hitPoint: {354.2, 356.8}
+            Other, {{12.0, 335.3}, {390.0, 69.3}}, label: 'Original retained, Original bypassed, Proposed, Original minute marks', hitPoint: {207.0, 370.0}
+             ScrollView, {{21.0, 344.3}, {372.0, 51.3}}, hitPoint: {207.0, 370.0}
+              Other, {{21.0, 344.3}, {1444.0, 51.3}}, hitPoint: {211.5, 370.0}
+              Other, {{21.0, 367.0}, {372.0, 25.7}}, label: 'Horizontal scroll bar, 4 pages', value: 0%, hitPoint: {207.0, 379.8}
+               Other, {{383.0, 389.7}, {7.0, 3.0}}, hitPoint: {386.5, 391.2}
+              Other, {{21.0, 367.0}, {372.0, 25.7}}, label: 'Horizontal scroll bar, 4 pages', value: 0%, hitPoint: {207.0, 379.8}
+               Other, {{383.0, 389.7}, {7.0, 3.0}}, hitPoint: {386.5, 391.2}
+            ScrollView, {{26.0, 412.7}, {350.0, 120.3}}, identifier: 'amendment-current-leg', hitPoint: {201.0, 472.8}
+             Other, {{26.0, 412.7}, {1293.3, 120.3}}, hitPoint: {214.0, 472.8}
+              StaticText, {{26.0, 412.7}, {104.7, 51.3}}, label: 'Timer', hitPoint: {78.3, 438.3}
+              StaticText, {{202.0, 412.7}, {333.3, 51.3}}, label: 'Leg time · planned', hitPoint: {302.0, 438.3}
+              StaticText, {{26.0, 466.0}, {156.0, 67.0}}, identifier: 'amendment-leg-elapsed', label: '07:22', hitPoint: {104.0, 499.5}
+              StaticText, {{202.0, 466.0}, {156.0, 67.0}}, identifier: 'amendment-leg-planned', label: '04:23', hitPoint: {280.0, 499.5}
+             Other, {{26.0, 500.0}, {350.0, 30.0}}, label: 'Horizontal scroll bar, 4 pages', value: 0%, hitPoint: {201.0, 515.0}
+              Other, {{366.0, 527.0}, {7.0, 3.0}}, hitPoint: {369.5, 528.5}
+             Other, {{26.0, 500.0}, {350.0, 30.0}}, label: 'Horizontal scroll bar, 4 pages', value: 0%, hitPoint: {201.0, 515.0}
+              Other, {{366.0, 527.0}, {7.0, 3.0}}, hitPoint: {369.5, 528.5}
+            StaticText, {{16.0, 542.3}, {129.7, 48.0}}, label: 'Amend route, Manual', hitPoint: {80.8, 566.3}
+            StaticText, {{194.3, 537.0}, {191.7, 58.7}}, identifier: 'amendment-drawing-status', label: 'Rejoined', hitPoint: {290.2, 566.3}
+            ScrollView, {{16.0, 595.7}, {370.0, 74.7}}, identifier: 'route-amendment-console', hitPoint: {201.0, 633.0}
+             Other, {{16.0, 486.3}, {370.0, 887.0}}, hitPoint: {201.0, 680.2}
+              Button, {{16.0, 486.3}, {370.0, 293.0}}, identifier: 'edit-amendment-leg', label: 'Proposed leg 1, ⁨Leg 2 · 46%⁩ → ⁨Point 1⁩', value: Magnetic heading 0..., hitPoint: {201.0, 632.8}
+               StaticText, {{26.0, 490.3}, {336.7, 125.3}}, label: '1  ⁨Leg 2 · 46%⁩ → ⁨Point 1⁩', hitPoint: {194.3, 553.0}
+               StaticText, {{26.0, 618.7}, {254.3, 102.3}}, label: 'Magnetic heading 087°', hitPoint: {153.2, 669.8}
+               StaticText, {{26.0, 724.0}, {299.0, 51.3}}, label: 'Leg time Not set', hitPoint: {175.5, 749.7}
+              Button, {{16.0, 783.3}, {370.0, 293.0}}, identifier: 'edit-amendment-leg', label: 'Proposed leg 2, ⁨Point 1⁩ → ⁨Point 2⁩', value: Magnetic heading N..., hitPoint: {201.0, 828.7}
+               StaticText, {{26.0, 787.3}, {282.3, 125.3}}, label: '2  ⁨Point 1⁩ → ⁨Point 2⁩', hitPoint: {167.2, 830.7}
+             Other, {{353.0, 595.7}, {30.0, 74.7}}, label: 'Vertical scroll bar, 12 pages', value: 13%, hitPoint: {368.0, 633.0}
+              Other, {{380.0, 603.0}, {3.0, 36.0}}, hitPoint: {381.5, 621.0}
+             Other, {{353.0, 595.7}, {30.0, 74.7}}, label: 'Vertical scroll bar, 12 pages', value: 13%, hitPoint: {368.0, 633.0}
+              Other, {{380.0, 603.0}, {3.0, 36.0}}, hitPoint: {381.5, 621.0}
+            StaticText, {{16.0, 670.3}, {361.0, 51.3}}, identifier: 'amendment-readiness', label: 'Incomplete · 3 legs', hitPoint: {196.5, 696.0}
+            Button, {{16.0, 728.7}, {138.3, 51.3}}, label: 'Actions', hitPoint: {85.2, 754.3}
+             Button, {{16.0, 728.7}, {138.3, 51.3}}, hitPoint: {85.2, 754.3}
+              StaticText, {{16.0, 728.7}, {138.3, 51.3}}, label: 'Actions', hitPoint: {85.2, 754.3}
+            Button, {{265.7, 721.7}, {120.3, 65.3}}, identifier: 'arm-amendment', label: 'Arm', Disabled, hitPoint: {325.8, 754.3}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {82.8, 54.0}}, hitPoint: {62.4, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {82.8, 54.0}}, identifier: 'cockpit-tab', label: 'Cockpit, recording warning', Selected, hitPoint: {66.4, 822.0}
+              Image, {{52.0, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {66.5, 814.8}
+             Button, {{87.8, 795.0}, {101.0, 54.0}}, identifier: 'folder', label: 'Flight Plans', hitPoint: {138.2, 822.0}
+              Image, {{122.1, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {138.1, 814.8}
+             Button, {{168.7, 795.0}, {82.8, 54.0}}, identifier: 'clock.arrow.circlepath', label: 'Flights', hitPoint: {210.1, 822.0}
+              Image, {{196.1, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {209.9, 815.0}
+             Button, {{231.5, 795.0}, {82.8, 54.0}}, identifier: 'document', label: 'Charts', hitPoint: {272.9, 822.0}
+              Image, {{260.1, 800.7}, {25.3, 28.7}}, identifier: 'document.fill', label: 'Document page, filled', hitPoint: {272.8, 815.0}
+             Button, {{294.2, 795.0}, {82.8, 54.0}}, identifier: 'ellipsis', label: 'More', hitPoint: {335.6, 822.0}
+              Image, {{323.2, 810.7}, {25.0, 8.7}}, identifier: 'ellipsis', label: 'More', hitPoint: {335.7, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{25.0, 795.0}, {82.8, 54.0}}, hitPoint: {66.4, 822.0}
+             Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+              Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+              Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+               Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                 Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+               Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

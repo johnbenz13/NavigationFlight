@@ -1,0 +1,187 @@
+{
+  "exportedAt": "2026-11-25T12:39:44.222478+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_14-37-08-+0200.xcresult",
+  "resultInfoSHA256": "b0bf4f958017594d8937e4fcd3a01f3328eca06a61fc2d6c42328efd609bb9ee",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+          "deviceName": "UIEvidence-iPad",
+          "modelName": "iPad Pro 11-inch (M5)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 6,
+        "passedTests": 13,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795610306.764,
+    "passedTests": 4,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795610228.11,
+    "statistics": [
+      {
+        "subtitle": "18 test runs",
+        "title": "4 tests ran with dynamic parameters"
+      }
+    ],
+    "testFailures": [
+      {
+        "failureText": "Expectation failed: expected error \".incompleteLegs\" of type Validation, but \".invalidGeometry\" of type Validation was thrown instead: PendingRouteAmendment.Validation.incompleteLegs\nPendingRouteAmendment.Validation \u2192 <not evaluated>\nincompleteLegs \u2192 <not evaluated>",
+        "targetName": "NavigationFlightTests",
+        "testIdentifier": 2,
+        "testIdentifierString": "NavigationFlightTests/timeReadinessAndPartialExitUseSharedValidation(_:)",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightTests/NavigationFlightTests/timeReadinessAndPartialExitUseSharedValidation(_:)",
+        "testName": "timeReadinessAndPartialExitUseSharedValidation(_:)"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [
+      {
+        "category": "Common Failures",
+        "impact": "100% of failures",
+        "text": "3 runs of 1 test failed with Expectation failed: expected error \".incompleteLegs\" of type Validation, but \".invalidGeometry\" of type Validation was thrown instead: PendingRouteAmendment.Validation.incompleteLegs"
+      },
+      {
+        "category": "Common Failures",
+        "impact": "100% of failures",
+        "text": "3 runs of 1 test failed with Caught error: .invalidGeometry"
+      }
+    ],
+    "totalTestCount": 5
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "4c106bb37d0f420706a23f5725cc4bc6150ef0ca",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nA  docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "DC2FA4EB-3054-4B13-81F3-F97A513C1DF5.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-untouched-portrait_0_B637F0B0-7D92-42C9-AF28-718126C82163.png",
+        "timestamp": 1795610251.202
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "e88213126c0fd9399bb71e29782ef319a1345587d6eecbefc191578c64363b20"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "3CF5330C-70AB-4108-B4A8-22CD94A85884.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-zero-portrait_0_404AE6F0-CE70-4888-8BB0-CB7E007542D1.png",
+        "timestamp": 1795610260.265
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "db97e4ddb5fb628442b6c9ea5dce3608852458c23bba98b698b96d70d974063e"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "17CF8FAD-AEE5-4B12-BC85-133A24A1BD0F.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-one-second-portrait_0_B96BD44E-DB8C-4A60-B9D2-C8FCF525594D.png",
+        "timestamp": 1795610263.673
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "4c74f96711da279b77c80b40c0fc49364ef751819e1364be242e01c7bfea6be6"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "866A89AA-EB63-4BD6-96F2-B81DDAB9BD6C.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-59-59-portrait_0_D04AC9E6-3ACF-4488-87DB-57E3B29AF160.png",
+        "timestamp": 1795610273.114
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "36fef26bed8f1cf0c76bb719db94866df821cc51b1d2272fb6aaa82deb848d0a"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "8EAFCB28-900E-4356-9159-BDB52BCAD0BA.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-ceiling-portrait_0_0FDA0BFF-833A-438C-8E66-61C0A1251750.png",
+        "timestamp": 1795610276.896
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "3f3bef153f196baf2543593ccbfa24bd1c549d0d53e4ab6ae65008541df43a99"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "5D55D1B6-D434-42A5-B83C-79833927B814.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-partial-portrait_0_D51E3E67-D631-46B1-8CC5-64BFF4AD9A2B.png",
+        "timestamp": 1795610289.363
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "18bfa2a56d3235993d74f5ec7406ce54715af23be71cb1c4c673d3fd788e816a"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "7A4A5BAA-0C35-4487-8364-923884AA2E4F.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-cleared-portrait_0_151EEB20-D921-43E3-A076-09AC9B2B3B85.png",
+        "timestamp": 1795610297.68
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "3e3340c74c15c05080f1d74e4cc6b0d6405fa0ef1e8c02ef709c367f88e8ef11"
+    }
+  ]
+}

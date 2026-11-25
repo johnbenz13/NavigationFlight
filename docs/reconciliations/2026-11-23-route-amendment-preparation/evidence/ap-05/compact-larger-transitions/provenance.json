@@ -1,0 +1,10 @@
+{
+  "sourceDirectory": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize",
+  "session": "AP05 Compact Accessibility Acceptance",
+  "source": "final uncommitted production candidate, unchanged since15:04",
+  "device": "iPhone16Pro iOS27.2",
+  "fixture": "disposable A-progress-heading",
+  "settings": "maximum Larger Text; preceding direct checks established VoiceOver/Reduce Motion off",
+  "method": "exclusive direct device interaction; all transitions by real controls",
+  "limitations": "59:59\u219260:00 not repeated in this compact maximum-text session; zero warning offscreen not inspected here; automated compact maximum-text Start failure unresolved"
+}

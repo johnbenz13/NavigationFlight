@@ -100,6 +100,26 @@ The existing AP-01 layout/camera helpers validate preservation. DEBUG
 `A-progress-heading` extends fixture A with heading-only and duration-only legs.
 See the [AP-04 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md).
 
+## AP-05 leg duration wheels · 2026-11-25
+
+`RouteAmendmentTimeSection` renders native optional-integer wheel selections,
+labelled with duration units and independent Clear actions. It sends typed
+`selectLegTime` intents to the draft; `RouteAmendmentLegEntry.selectTime` owns
+first-edit/clear semantics and the 60-minute seconds limit. Existing partial
+strings remain lossless draft state, while `durationSeconds` supplies validated
+integer seconds to rows, complete-value adaptation and readiness. New entries
+must be 1…3600 seconds. Unchanged complete accepted duration values retain their
+compatibility boundary; a deliberate duration edit ends that exception without
+altering heading or original cue precision. Custom existing wheel values have
+explicit tags and remain visible without opening-time normalization.
+
+The section reuses AP-04's scrollable map editor and pinned footer. Dynamic Type
+can stack the time columns within their section; native pickers supply adjustable
+accessibility with explicit minute/second labels. No operational clock, estimator,
+recording schema or draft store changes. The old time controls described in the
+AP-04 checkpoint are superseded within preparation only. See the
+[AP-05 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md).
+
 ## AP-01 workspace ownership · 2026-11-24
 
 `CockpitFeatureState` owns `isAmendmentWorkspaceVisible` and

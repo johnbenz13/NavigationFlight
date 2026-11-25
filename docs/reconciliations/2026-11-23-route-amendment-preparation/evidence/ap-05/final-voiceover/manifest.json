@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "B0403BD4-34FB-438B-AB90-D63E037A956E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap04-voiceover-heading_0_67A6F84E-CE60-4F43-B2F4-AE42E29EF601.png",
+        "timestamp" : 1795612653.265
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "C82ED12E-C8DB-448F-9650-77EBB09EE8A9.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Manual amendment VoiceOver speech_0_09334357-C022-4CA3-82F8-8475D8A763F2.txt",
+        "timestamp" : 1795612651.934
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder"
+  }
+]

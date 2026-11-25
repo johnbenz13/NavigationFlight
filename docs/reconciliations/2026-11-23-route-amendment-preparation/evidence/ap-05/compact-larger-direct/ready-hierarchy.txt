@@ -1,0 +1,89 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 18119, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+  Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+   Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+    Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+     Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+      Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+           Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+            StaticText, {{36.0, 91.7}, {160.0, 58.7}}, identifier: 'leg-status', label: 'READY', hitPoint: {116.0, 121.0}
+            Button, {{220.0, 88.0}, {146.0, 125.3}}, label: 'Map tools', hitPoint: {293.0, 150.7}
+             StaticText, {{220.0, 88.0}, {146.0, 125.3}}, label: 'Map tools', hitPoint: {293.0, 150.7}
+             Image, {{226.7, 94.0}, {54.0, 51.3}}, identifier: 'map', label: 'Show Map', hitPoint: {253.7, 119.7}
+            StaticText, {{36.0, 217.3}, {267.3, 58.7}}, label: 'LEG 1 OF 25', hitPoint: {169.7, 246.7}
+            StaticText, {{36.0, 280.0}, {296.7, 63.3}}, label: 'From Completed departure to Kadima', hitPoint: {184.3, 311.7}
+            Other, {{0.0, 62.0}, {402.0, 342.7}}, identifier: 'aviation-map', label: 'Map', value: 32.16043523112766|..., hitPoint: {201.0, 233.3}
+             Button, {{354.0, 70.0}, {40.0, 40.0}}, label: 'Compass', value: north, hitPoint: {374.0, 90.0}
+             Button, {{153.7, 159.0}, {419.3, 50.7}}, hitPoint: {277.8, 184.3}
+             Button, {{154.0, 194.7}, {39.0, 20.0}}, hitPoint: {173.5, 204.7}
+             Button, {{146.3, 219.7}, {52.0, 25.0}}, hitPoint: {172.3, 232.2}
+             Button, {{131.3, 208.7}, {189.0, 38.0}}, identifier: 'destination-eta-target', label: 'Kadima, arrival ETA target', hitPoint: {225.8, 227.7}
+             Button, {{314.3, 317.0}, {79.7, 79.7}}, label: 'About this map', hitPoint: {354.2, 356.8}
+            ScrollView, {{0.0, 326.0}, {402.0, 66.7}}, identifier: 'cockpit-disclosure-strip', hitPoint: {201.0, 359.3}
+             Other, {{0.0, 326.0}, {559.3, 66.7}}, hitPoint: {201.0, 359.3}
+              Button, {{11.5, 329.5}, {536.3, 59.7}}, identifier: 'next-leg-preview', label: 'Next · Kadima–Ramat', hitPoint: {206.8, 359.3}
+               StaticText, {{24.0, 330.0}, {469.7, 58.7}}, label: 'Next · Kadima–Ramat', hitPoint: {213.0, 359.3}
+            ScrollView, {{0.0, 404.7}, {402.0, 469.3}}, identifier: 'compact-cockpit-console', hitPoint: {201.0, 639.3}
+             Other, {{0.0, 404.7}, {402.0, 469.3}}, hitPoint: {201.0, 639.3}
+              Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+             Other, {{0.0, 404.7}, {402.0, 469.3}}, hitPoint: {201.0, 639.3}
+              Other, {{0.0, 741.0}, {402.0, 133.0}}, hitPoint: {201.0, 807.5}
+             Other, {{0.0, 404.7}, {402.0, 1772.0}}, hitPoint: {201.0, 639.3}
+              StaticText, {{12.0, 413.7}, {374.3, 51.3}}, label: 'Destination · Kadima', hitPoint: {199.2, 439.3}
+              Button, {{12.0, 473.0}, {378.0, 63.3}}, identifier: 'start-leg', label: 'Start leg', hitPoint: {201.0, 504.7}
+              Button, {{12.0, 544.3}, {267.0, 125.3}}, identifier: 'choose-starting-leg', label: 'Choose starting leg', hitPoint: {145.5, 607.0}
+              StaticText, {{12.0, 677.7}, {288.0, 96.0}}, label: 'ACTIVE LEG INSTRUMENTS', hitPoint: {156.0, 725.7}
+              Button, {{19.7, 779.7}, {310.0, 51.3}}, identifier: 'recording-status', label: 'Prepared · Sensing', hitPoint: {174.7, 805.3}
+               Image, {{19.7, 783.3}, {44.0, 44.0}}, identifier: 'location.circle', label: 'Orient To Phone', hitPoint: {41.7, 805.3}
+               StaticText, {{72.3, 779.7}, {213.3, 51.3}}, label: 'PREPARED', hitPoint: {179.0, 805.3}
+               Image, {{295.7, 795.7}, {34.0, 19.3}}, identifier: 'chevron.down', label: 'Go Down', hitPoint: {312.7, 805.3}
+              StaticText, {{11.0, 838.0}, {380.0, 243.0}}, identifier: 'cockpit-time', label: 'LEG TIMER, –:––, Starts when Start Leg is pressed', hitPoint: {201.0, 856.0}
+               StaticText, {{22.0, 849.0}, {202.7, 48.0}}, label: 'LEG TIMER', hitPoint: {123.3, 861.5}
+             Other, {{369.0, 404.7}, {30.0, 386.3}}, label: 'Vertical scroll bar, 5 pages', value: 0%, hitPoint: {384.0, 597.8}
+              Other, {{396.0, 407.7}, {3.0, 96.3}}, hitPoint: {397.5, 455.8}
+             Other, {{369.0, 404.7}, {30.0, 386.3}}, label: 'Vertical scroll bar, 5 pages', value: 0%, hitPoint: {384.0, 597.8}
+              Other, {{396.0, 407.7}, {3.0, 96.3}}, hitPoint: {397.5, 455.8}
+       Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+        Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+         Other, {{0.0, 0.0}, {402.0, 874.0}}, hitPoint: {201.0, 437.0}
+          TabBar, {{0.0, 791.0}, {402.0, 83.0}}, label: 'Tab Bar', hitPoint: {201.0, 832.5}
+           Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{21.0, 791.0}, {82.8, 54.0}}, hitPoint: {62.4, 818.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+             Button, {{25.0, 795.0}, {82.8, 54.0}}, label: 'Cockpit', Selected, hitPoint: {66.4, 822.0}
+              Image, {{52.0, 801.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {66.5, 814.8}
+             Button, {{87.8, 795.0}, {101.0, 54.0}}, label: 'Flight Plans', hitPoint: {138.2, 822.0}
+              Image, {{122.1, 802.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {138.1, 814.8}
+             Button, {{168.7, 795.0}, {82.8, 54.0}}, label: 'Flights', hitPoint: {210.1, 822.0}
+              Image, {{196.1, 801.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {209.9, 815.0}
+             Button, {{231.5, 795.0}, {82.8, 54.0}}, label: 'Charts', hitPoint: {272.9, 822.0}
+              Image, {{260.1, 800.7}, {25.3, 28.7}}, identifier: 'document.fill', label: 'Document page, filled', hitPoint: {272.8, 815.0}
+             Button, {{294.2, 795.0}, {82.8, 54.0}}, label: 'More', hitPoint: {335.6, 822.0}
+              Image, {{323.2, 810.7}, {25.0, 8.7}}, identifier: 'ellipsis', label: 'More', hitPoint: {335.7, 815.0}
+            Other, {{21.0, 791.0}, {360.0, 62.0}}, hitPoint: {201.0, 822.0}
+            Other, {{25.0, 795.0}, {82.8, 54.0}}, hitPoint: {66.4, 822.0}
+             Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+              Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+              Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+               Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                 Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+                Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+               Other, {{25.0, 795.0}, {82.7, 54.0}}, hitPoint: {66.3, 822.0}
+         Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+          Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+           Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+              Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+            Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}
+             Other, {{0.0, 791.0}, {402.0, 83.0}}, hitPoint: {201.0, 832.5}

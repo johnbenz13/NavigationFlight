@@ -74,6 +74,22 @@ superseded only within editable preparation. Existing flight execution is unchan
 [AP-04 verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md)
 records validation and the separate pending human visual acceptance gate.
 
+### AP-05 implementation checkpoint · 2026-11-25
+
+Issue #229 replaces preparation's time text fields and adjustment buttons with
+separate native Minutes and Seconds wheels under Leg time. Opening accepts no
+default. The first deliberate selection initializes the other component to 00;
+later clearing either component preserves the other, and clearing both restores
+Not set. New duration entries must be positive and at most 60:00. Selecting 60
+minutes explicitly limits seconds to 00; seconds above 00 cannot be selected at 60.
+00:00 remains retainable but invalid for readiness. Done/pencil preserve partial
+state independently of heading and optional cues. Existing accepted durations
+remain exact until a deliberate duration edit, including values above 60:00.
+This supersedes AP-04's retained time controls only; clock ETA, flight timers,
+Assisted prefill, cue wheels and durable unarmed-draft recovery remain outside
+this checkpoint. [AP-05 evidence](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md)
+records verification and pending owner acceptance separately.
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

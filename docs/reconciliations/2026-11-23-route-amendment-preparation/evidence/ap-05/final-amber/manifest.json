@@ -1,0 +1,80 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "D3BB6798-EEE5-444D-85E7-EF909271813C.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "R2 retained MapLibre camera_0_B373747D-F176-4E87-B114-282F28BC70D1.txt",
+        "timestamp" : 1795612402.972
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "C5C68812-3E19-4B9C-A7EE-3D75ED02B862.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-cleared-portrait_0_9CB5E445-1AB7-4B19-9EAB-6164D36EA1DC.png",
+        "timestamp" : 1795612399.199
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "F943A3FD-121C-443F-B742-095432BFA3E6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-partial-portrait_0_2DE78020-4C84-4B5C-B4E5-708716BF6746.png",
+        "timestamp" : 1795612389.708
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "5018579D-EDA3-4B17-A082-83624DF2E205.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-ceiling-portrait_0_56649CF5-C265-45AD-AF03-403787603FA7.png",
+        "timestamp" : 1795612377.631
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "CEE8FE72-1916-49A4-A88B-77F6824210F9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-59-59-portrait_0_E0A095ED-8C32-42BB-BF4F-FDB22D3AE5FA.png",
+        "timestamp" : 1795612374.518
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "8CB03200-90D1-4E8F-A7B9-DB73DF262241.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-one-second-portrait_0_EDDA1321-CADD-4E03-B6D4-BE88284F6372.png",
+        "timestamp" : 1795612365.882
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "58AAB8CD-63F2-46F0-9801-8A667BED2AB2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-zero-portrait_0_05C570E2-2B91-487B-A90F-7DAFF4ECD4A0.png",
+        "timestamp" : 1795612362.347
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "205E889A-0A24-4757-8AAB-BE5F412D7E86.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-untouched-portrait_0_ABB3CE98-1246-4077-B5F1-27C86D2CA3F1.png",
+        "timestamp" : 1795612352.693
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange"
+  }
+]

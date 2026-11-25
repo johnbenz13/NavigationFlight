@@ -283,6 +283,14 @@ Use the smallest relevant set of skills available in the current environment:
 Skill availability and instructions may change. Resolve current skill names and
 read their complete instructions at the start of the relevant phase.
 
+If a Figma skill is absent from the local skill catalog, discover the connected
+Figma MCP resources and read its `skill://figma/<skill-name>/SKILL.md` resource
+with the MCP resource reader. Implementation uses
+`skill://figma/figma-design-to-code/SKILL.md` and
+`skill://figma/figma-swiftui/SKILL.md`; load only the references required by their
+instructions. Check the connected server's resource listing before reporting a
+skill unavailable; these URIs are MCP resources, not filesystem paths.
+
 ## Review Prompts
 
 Use these prompts to keep iterations bounded:

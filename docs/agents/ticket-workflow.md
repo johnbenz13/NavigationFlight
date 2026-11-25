@@ -79,6 +79,8 @@ For every UI-affecting ticket:
 
 1. Load `figma:figma-design-to-code` before reading design context and use
    `figma:figma-swiftui` for the SwiftUI translation.
+   See [Skill Routing](../workflows/PRODUCT-SPEC-FIGMA-WORKFLOW.md#skill-routing)
+   for discovering these skills through Figma MCP resources.
 2. Derive the affected UI states from each acceptance criterion, the governing
    product-spec sections and invariants, and every conditional UI branch touched
    by the transition. Reconcile those states with both the issue's **Design
@@ -131,6 +133,16 @@ implemented. A passing state transition with a legacy UI branch is incomplete.
 ## 6. Validate behavior and design
 
 Follow the validation matrix in `AGENTS.md`. For SwiftUI work:
+
+- For cockpit fixture launch, amendment readiness, adaptive controls, and lazy
+  waypoint selection, read [UI test helpers](../../scripts/UI-TEST-HELPERS.md)
+  before adding setup or interaction code.
+- For full-screen captures, orientation checks, and exporting retained test
+  attachments with provenance, read [UI evidence](../../scripts/UI-EVIDENCE.md).
+  Recover exports from the original result bundle using that command before
+  considering another test run.
+
+Then:
 
 1. run focused deterministic tests;
 2. refresh compiler diagnostics for changed Swift files;

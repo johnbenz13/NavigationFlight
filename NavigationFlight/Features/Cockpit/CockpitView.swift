@@ -216,6 +216,7 @@ struct CockpitView: View {
     @State private var nativeAmendmentField: RouteAmendmentLegEntry.Field?
     private var isEditingAmendmentField: Bool { amendmentField != nil || nativeAmendmentField != nil }
     @State private var restingLayoutSize: CGSize?
+    @State private var amendmentMapWidth: CGFloat = 0
     var onRouteAmendment: (RouteAmendmentDraft.Intent) -> Void = { _ in }
     var onPositionCheckAction: (PositionCheckControlAction, CockpitRestoration) async -> Void = { _, _ in }
     var onEndRecording: () -> Void = {}
@@ -626,6 +627,13 @@ struct CockpitView: View {
                         activeHeadingState?.isEditing == true
                             || cockpitPresentationState.isFrequencyPlanPresented
                     )
+                if let presentation = amendmentMapPresentation, presentation.draft.legPanel == .editor {
+                    // The editor may cover the console without resizing it (D03-F).
+                    // This leaves a usable scroll viewport at accessibility text sizes.
+                    amendmentChartPanel(presentation, landscape: geometry.size.width > geometry.size.height)
+                        .frame(width: amendmentMapWidth > 0 ? amendmentMapWidth : geometry.size.width)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                }
                 if isPilotETAEditing {
                     etaConsoleDismissBackdrop(in: geometry.size)
                 }
@@ -850,19 +858,9 @@ struct CockpitView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity,
                            alignment: dynamicTypeSize.isAccessibilitySize ? .bottomLeading : .topLeading)
             }
-            if let amendmentMapPresentation, amendmentMapPresentation.draft.legPanel != nil {
-                RouteAmendmentChartPanel(
-                    draft: amendmentMapPresentation.draft,
-                    route: amendmentMapPresentation.route,
-                    compact: horizontalSizeClass == .compact,
-                    landscape: isLandscape,
-                    camera: preservedMapCamera,
-                    headerInset: mapHeaderHeight,
-                    onIntent: onRouteAmendment,
-                    swiftUIFocus: $amendmentField,
-                    nativeFocus: $nativeAmendmentField
-                )
-                .accessibilitySortPriority(110)
+            if let amendmentMapPresentation, amendmentMapPresentation.draft.legPanel != nil,
+               amendmentMapPresentation.draft.legPanel != .editor {
+                amendmentChartPanel(amendmentMapPresentation, landscape: isLandscape)
             }
             if !isEditingRouteAmendment, cockpitPresentationState.areQuickFocusControlsVisible {
                 MapQuickFocusControls(
@@ -948,6 +946,22 @@ struct CockpitView: View {
             }
         }
         .clipped()
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { amendmentMapWidth = $0 }
+    }
+
+    private func amendmentChartPanel(_ presentation: RouteAmendmentMapOverlay.Presentation, landscape: Bool) -> some View {
+        RouteAmendmentChartPanel(
+            draft: presentation.draft,
+            route: presentation.route,
+            compact: horizontalSizeClass == .compact,
+            landscape: landscape,
+            camera: preservedMapCamera,
+            headerInset: mapHeaderHeight,
+            onIntent: onRouteAmendment,
+            swiftUIFocus: $amendmentField,
+            nativeFocus: $nativeAmendmentField
+        )
+        .accessibilitySortPriority(110)
     }
 
     private var shouldShowMapChrome: Bool {

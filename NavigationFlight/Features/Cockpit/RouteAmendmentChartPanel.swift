@@ -32,21 +32,25 @@ struct RouteAmendmentChartPanel: View {
                         .padding(.leading, 20)
                         .padding(.top, verticalInset(geometry.size.height, inspecting: true))
                 }
+                let cornerRadius: CGFloat = panel == .editor ? 18 : 16
                 let inspecting = panel == .inspection
-                let leading = inspecting || (landscape && prefersLeadingPanel)
+                let leading = panel == .editor || inspecting || (landscape && prefersLeadingPanel)
                 let inset = horizontalInset(leading: leading, width: geometry.size.width)
-                let width = min(geometry.size.width - 2 * inset, inspecting ? 406 : 338)
+                let width = min(geometry.size.width - 2 * inset, panel == .editor ? 390 : inspecting ? 406 : 338)
                 let top = verticalInset(geometry.size.height, inspecting: inspecting)
-                let pinnedActions = compact && panel == .editor && focus == nil
+                let pinnedActions = panel == .editor && focus == nil
                 let viewportHeight = max(1, geometry.size.height - top - 8)
                 VStack(spacing: 0) {
                     ScrollView {
                         panelContent(panel)
                             .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { contentHeight = $0 }
                     }
+                    .id(draft.editor?.estimate != nil)
                     .scrollBounceBehavior(.basedOnSize)
-                    .frame(height: max(1, min(contentHeight == 0 ? viewportHeight : contentHeight,
-                                              viewportHeight - (pinnedActions ? footerHeight : 0))))
+                    .frame(height: panel == .editor && focus == nil
+                           ? max(1, min(664, viewportHeight) - footerHeight)
+                           : max(1, min(contentHeight == 0 ? viewportHeight : contentHeight,
+                                        viewportHeight - (pinnedActions ? footerHeight : 0))))
                     if pinnedActions {
                         Divider()
                         saveActions
@@ -57,17 +61,17 @@ struct RouteAmendmentChartPanel: View {
                 }
                 .frame(width: max(1, width))
                 .background {
-                    RoundedRectangle(cornerRadius: 16).fill(Color(uiColor: .systemBackground))
+                    RoundedRectangle(cornerRadius: cornerRadius).fill(Color(uiColor: .systemBackground))
                         .overlay {
-                            if inspecting { RoundedRectangle(cornerRadius: 16).fill(Style.reference.opacity(0.10)) }
+                            if inspecting { RoundedRectangle(cornerRadius: cornerRadius).fill(Style.reference.opacity(0.10)) }
                         }
                 }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 16).strokeBorder(.primary.opacity(0.12))
+                    RoundedRectangle(cornerRadius: cornerRadius).strokeBorder(.primary.opacity(0.12))
                         .allowsHitTesting(false)
                 }
-                .clipShape(.rect(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.22), radius: 12, y: 5)
+                .clipShape(.rect(cornerRadius: cornerRadius))
+                .shadow(color: .black.opacity(panel == .editor ? 0.18 : 0.22), radius: panel == .editor ? 8 : 12, y: panel == .editor ? 4 : 5)
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("amendment-chart-panel")
                 .frame(maxWidth: .infinity, maxHeight: viewportHeight,
@@ -140,7 +144,7 @@ struct RouteAmendmentChartPanel: View {
     }
 
     private func horizontalInset(leading: Bool, width: CGFloat) -> CGFloat {
-        if compact { return 12 }
+        if compact { return draft.legPanel == .editor ? 8 : 12 }
         if landscape || leading || focus != nil { return 20 }
         return min(50, max(20, (width - 338) / 2))
     }
@@ -163,6 +167,7 @@ struct RouteAmendmentChartPanel: View {
         let preferred: CGFloat
         if focus != nil { preferred = compact ? 75 : 84 }
         else if dynamicTypeSize.isAccessibilitySize { preferred = 8 }
+        else if draft.legPanel == .editor { preferred = compact ? 50 : 98 }
         else if compact { preferred = min(75, height * 0.18) }
         else { preferred = min(inspecting ? 170 : 136, height * 0.25) }
         // The pencil remains reachable even when the header wraps at Larger Text.
@@ -201,26 +206,28 @@ struct RouteAmendmentChartPanel: View {
                 }
             }
         }
-        .padding(19)
+        .padding(draft.legPanel == .editor ? 16 : 19)
         .frame(maxWidth: .infinity, alignment: .leading)
         .tint(Style.action)
     }
 
     @ViewBuilder
     private func editorContent(_ editor: RouteAmendmentDraft.Editor, leg: RouteAmendmentDraft.ReviewLeg) -> some View {
-        let invalid = editor.showValidation ? editor.entry.invalidFields : []
+        let invalid = editor.entry.invalidEnteredFields
         if focus == nil {
-            Text("PROPOSED LEG · \(draft.mode.title.uppercased())")
-                .font(.caption2.weight(.bold)).foregroundStyle(Style.action)
+            let number = (draft.reviewLegs(on: route).firstIndex(where: { $0.id == leg.id }) ?? 0) + 1
+            Text("\(draft.mode.title.uppercased()) · LEG \(number) · MAGNETIC")
+                .font(.caption.weight(.semibold)).foregroundStyle(Style.reference)
         }
         Text(leg.name).font(.title3.bold()).accessibilityAddTraits(.isHeader)
         if let focus {
             Text(fieldTitle(focus)).font(.caption.weight(.semibold))
-        } else {
-            Divider()
-
         }
-        entryFields(editor, invalid: invalid, focused: focus)
+        if let estimate = editor.estimate, focus == nil {
+            comparison(editor.entry, estimate: estimate)
+        } else {
+            entryFields(editor, invalid: invalid, focused: focus)
+        }
         if focus == nil {
             if let id = editor.referenceID, let reference = route.originalLeg(id) {
                 referenceSummary(reference)
@@ -231,6 +238,11 @@ struct RouteAmendmentChartPanel: View {
                     onIntent(.toggleCues)
                 }
             }
+        }
+        if focus == nil, dynamicTypeSize.isAccessibilitySize {
+            Text("Done keeps each entry, even if a field is missing.")
+                .font(.caption2).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         if editor.showsCues {
             cue(.altitude, placeholder: "ft MSL", entry: editor.entry, invalid: invalid, focused: focus)
@@ -243,20 +255,30 @@ struct RouteAmendmentChartPanel: View {
                 nativeFocus = nil
             }
             .keyboardShortcut(.return, modifiers: [])
-        } else {
-            if let estimate = editor.estimate { comparison(editor.entry, estimate: estimate) }
-            if !compact { saveActions }
-            action(editor.estimate == nil ? "Check" : "Hide Check", id: "check-working-amendment-leg",
-                   fill: editor.estimate == nil ? Style.check : Style.check.opacity(0.12),
-                   ink: editor.estimate == nil ? .white : Style.check) { onIntent(.toggleCheck) }
         }
     }
 
     private var saveActions: some View {
-        adaptiveActions {
-            action("Cancel", id: "back-to-amendment-review") { onIntent(.backToLegReview) }
-            action("Save leg values", id: "save-amendment-leg-values", fill: Style.action, ink: .white) {
-                onIntent(.saveLegValues)
+        VStack(alignment: .leading, spacing: 8) {
+            adaptiveActions {
+                Button { onIntent(.toggleCheck) } label: {
+                    Text(draft.editor?.estimate == nil ? "Check" : "Back to values")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .tint(Style.action)
+                .accessibilityIdentifier("check-working-amendment-leg")
+                Button { onIntent(.saveLegValues) } label: {
+                    Text("Done").frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Style.action)
+                .accessibilityIdentifier("save-amendment-leg-values")
+            }
+            if !dynamicTypeSize.isAccessibilitySize {
+                Text("Done keeps each entry, even if a field is missing.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -266,22 +288,14 @@ struct RouteAmendmentChartPanel: View {
         _ editor: RouteAmendmentDraft.Editor, invalid: Set<RouteAmendmentLegEntry.Field>,
         focused: RouteAmendmentLegEntry.Field?
     ) -> some View {
-        if focused == nil || focused == .heading {
-            if focused == nil { fieldCaption("Magnetic heading") }
-            stepper(minus: "−1°", plus: "+1°", unit: "degree", invalid: invalid.contains(.heading),
-                    adjust: { onIntent(.adjustHeading($0)) }, step: 1) {
-                HStack(spacing: 2) {
-                    input(.heading, placeholder: "–––", entry: editor.entry, large: true)
-                    Text("°").font(.caption).accessibilityHidden(true)
-                }
-            }
-            if invalid.contains(.heading), focused == nil {
-                error(editor.entry.heading.isEmpty ? "Enter a magnetic heading." : "Enter a heading from 001 to 360.",
-                      id: "amendment-error-heading")
-            }
+        if focused == nil {
+            RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
+            Divider().padding(.vertical, 8)
         }
         if focused == nil || focused == .minutes || focused == .seconds {
-            if focused == nil { fieldCaption("Flight time") }
+            if focused == nil {
+                Text("Leg time").font(.headline).accessibilityAddTraits(.isHeader)
+            }
             stepper(minus: "−5s", plus: "+5s", unit: "seconds", invalid: invalid.contains(.duration),
                     adjust: { onIntent(.adjustFlightTime($0)) }, step: 5) {
                 let layout = dynamicTypeSize.isAccessibilitySize
@@ -525,29 +539,39 @@ struct RouteAmendmentChartPanel: View {
             infoCard(caution: true) {
                 Text("App estimate unavailable").font(.subheadline.weight(.semibold))
                     .accessibilityIdentifier("amendment-estimate-unavailable")
-                Text("Pilot heading · \(entry.magneticHeading.map { angle($0) } ?? "Not entered")")
-                Text("Pilot flight time · \(entry.durationSeconds.map { time($0) } ?? "Not entered")")
+                Text("The app cannot calculate a reference estimate for this leg with the current planning inputs. Keep entering your own values.")
+                    .accessibilityIdentifier("amendment-estimate-unavailable-guidance")
+                Text("Pilot heading · \(entry.magneticHeading.map { angle($0) } ?? "Not set")")
+                Text("Pilot leg time · \(entry.durationSeconds.map { time($0) } ?? "Not set")")
             }
             .font(.caption)
             .foregroundStyle(.primary)
         } else if case .available(let direction, let duration, let provenance) = estimate {
-            adaptiveActions {
+            VStack(alignment: .leading, spacing: 8) {
                 infoCard {
-                    Text("Pilot entries").font(.caption.weight(.bold))
-                    metric("Magnetic heading", value: entry.magneticHeading.map { angle($0) } ?? "Not entered")
-                    metric("Flight time", value: entry.durationSeconds.map { time($0) } ?? "Not entered")
+                    Text("Your entries").font(.headline)
+                    metric("Magnetic heading", value: entry.magneticHeading.map { angle($0) } ?? "Not set")
+                    metric("Leg time", value: entry.durationSeconds.map { time($0) } ?? "Not set")
                 }
                 .accessibilityIdentifier("amendment-pilot-entries")
-                infoCard {
+                infoCard(reference: true) {
                     Text("App estimate").font(.caption.weight(.bold))
                     metric(directionLabel(provenance == .noWind ? .noWind : .wind),
                            value: angle(Int(direction.value.rounded()) % 360))
-                    metric("Estimated flight time", value: time(duration))
+                    metric("Leg time", value: time(duration))
                     Text(provenance == .noWind ? "No wind" : "Planned wind")
                         .font(.caption2.weight(.semibold)).foregroundStyle(Style.reference)
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("amendment-reference-estimate")
+                Text("Your entries stay unchanged.").font(.subheadline.weight(.semibold))
+                if provenance == .noWind {
+                    Text("No-wind magnetic course is reference only; it does not replace your magnetic heading.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("amendment-estimate-course-guidance")
+                }
+                Text("Manual legs show no minute marks or drift lines after Check.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
     }
@@ -556,18 +580,27 @@ struct RouteAmendmentChartPanel: View {
     private func time(_ seconds: Int?) -> String { seconds.map(RouteAmendmentLegEntry.durationText) ?? "Unavailable" }
     private func directionLabel(_ mode: NavigationMode) -> String { mode == .wind ? "Magnetic heading" : "Magnetic course" }
 
-    private func infoCard<Content: View>(caution: Bool = false, @ViewBuilder content: () -> Content) -> some View {
+    private func infoCard<Content: View>(caution: Bool = false, reference: Bool = false, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 4, content: content)
             .padding(8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(caution ? .orange.opacity(0.14) : Style.card, in: .rect(cornerRadius: 8))
+            .background(caution ? .orange.opacity(0.14) : reference ? Style.reference.opacity(0.10) : Style.card, in: .rect(cornerRadius: 8))
     }
 
     private func metric(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(title).fixedSize()
+                Spacer(minLength: 0)
+                Text(value).monospacedDigit().fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                Text(value).monospacedDigit()
+            }
         }
+        .font(.headline)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func adaptiveActions<Content: View>(@ViewBuilder content: () -> Content) -> some View {

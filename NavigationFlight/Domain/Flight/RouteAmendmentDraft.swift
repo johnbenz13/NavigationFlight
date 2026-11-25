@@ -321,7 +321,10 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let arrivalName: String
         let from: WGS84Coordinate
         let to: WGS84Coordinate
-        let values: RouteAmendmentLegValues?
+        let entry: RouteAmendmentLegEntry
+
+        // Complete values remain the compatibility boundary for final route validation.
+        var values: RouteAmendmentLegValues? { entry.values }
 
         // Geometry validates saved values separately from the leg's logical identity.
         fileprivate var geometry: LegGeometry {
@@ -357,7 +360,6 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     struct Editor: Equatable, Sendable {
         let id: ReviewLeg.ID
         var entry: RouteAmendmentLegEntry
-        var showValidation = false
         var showsCues = false
         var estimate: RouteAmendmentEstimator.Result?
         var referenceID: UUID?
@@ -432,7 +434,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
 
-    private var legValues: [LegGeometry: RouteAmendmentLegValues] = [:]
+    private var legEntries: [LegGeometry: RouteAmendmentLegEntry] = [:]
 
     init(flightID: UUID, mode: RouteAmendmentMode = .manual) {
         self.flightID = flightID
@@ -448,12 +450,12 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
         step = .review
         for (review, saved) in zip(reviewLegs(on: route), amendment.replacementLegs) {
-            legValues[review.geometry] = RouteAmendmentLegValues(
+            legEntries[review.geometry] = RouteAmendmentLegEntry(values: RouteAmendmentLegValues(
                 headingMagnetic: saved.headingMagnetic, durationSeconds: saved.durationSeconds,
                 altitude: saved.altitudeFeet.map(AltitudeFeet.init(value:)),
                 frequency: saved.frequencyMHz.map(FrequencyMHz.init(value:)),
                 visualReference: saved.visualReference
-            )
+            ))
         }
         validateDeparture(on: route)
     }
@@ -475,7 +477,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                                        fromLongitude: from.position.longitudeDegrees,
                                        toLatitude: to.position.latitudeDegrees, toLongitude: to.position.longitudeDegrees)
             return ReviewLeg(id: id, departureName: from.name, arrivalName: to.name,
-                             from: from.position, to: to.position, values: legValues[geometry])
+                             from: from.position, to: to.position, entry: legEntries[geometry] ?? .init())
         }
     }
     private var sketch = Sketch()
@@ -686,12 +688,15 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .editLegField(let field, let text):
             guard legPanel == .editor else { return }
             editor?.entry[field] = text
+            retainEditorEntry(on: route)
         case .adjustHeading(let delta):
             guard legPanel == .editor else { return }
             editor?.entry.adjustHeading(by: delta)
+            retainEditorEntry(on: route)
         case .adjustFlightTime(let delta):
             guard legPanel == .editor else { return }
             editor?.entry.adjustFlightTime(by: delta)
+            retainEditorEntry(on: route)
         case .toggleCues:
             guard legPanel == .editor else { return }
             editor?.showsCues.toggle()
@@ -703,14 +708,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .saveLegValues:
             guard legPanel == .editor, let editor,
                   let leg = reviewLegs(on: route).first(where: { $0.id == editor.id }) else { return }
-            guard let values = editor.entry.values else {
-                self.editor?.showValidation = true
-                if editor.entry.invalidFields.contains(.altitude) || editor.entry.invalidFields.contains(.frequency) {
-                    self.editor?.showsCues = true
-                }
-                return
-            }
-            legValues[leg.geometry] = values
+            // Exit preserves unfinished fields; only final-route validation requires completeness.
+            legEntries[leg.geometry] = editor.entry
             self.editor = nil
             legPanel = nil
         case .backToLegReview:
@@ -749,14 +748,21 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
 
+    private mutating func retainEditorEntry(on route: RouteAmendmentRoute) {
+        guard let editor, let leg = reviewLegs(on: route).first(where: { $0.id == editor.id }) else { return }
+        legEntries[leg.geometry] = editor.entry
+    }
+
     private mutating func openEditor(
         _ id: ReviewLeg.ID, on route: RouteAmendmentRoute,
         check: Bool = false, inputs: RouteAmendmentEstimator.Inputs? = nil
     ) {
         guard legPanel == nil, step == .drawing || step == .review,
               let leg = reviewLegs(on: route).first(where: { $0.id == id }) else { return }
-        let entry = RouteAmendmentLegEntry(values: leg.values)
-        editor = Editor(id: id, entry: entry, estimate: check ? estimate(for: leg, inputs: inputs) : nil)
+        let entry = leg.entry
+        editor = Editor(id: id, entry: entry,
+                        showsCues: !entry.invalidEnteredFields.isDisjoint(with: [.altitude, .frequency]),
+                        estimate: check ? estimate(for: leg, inputs: inputs) : nil)
         legPanel = .editor
     }
 

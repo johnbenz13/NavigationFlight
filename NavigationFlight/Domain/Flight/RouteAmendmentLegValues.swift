@@ -42,8 +42,11 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     var altitude = ""
     var frequency = ""
     var visualReference = ""
+    // Preserve accepted boundary values exactly, including legacy cue precision/spacing.
+    private var acceptedValues: RouteAmendmentLegValues?
 
     init(values: RouteAmendmentLegValues? = nil) {
+        acceptedValues = values
         guard let values else { return }
         heading = values.headingText
         duration = Self.durationText(values.durationSeconds)
@@ -87,15 +90,21 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         return invalid
     }
 
+    /// Missing required fields are permitted in a partial draft; malformed entries still need feedback.
+    var invalidEnteredFields: Set<Field> {
+        invalidFields.filter { !trimmed(self[$0]).isEmpty }
+    }
+
     var values: RouteAmendmentLegValues? {
         guard let magneticHeading, let durationSeconds, invalidFields.isEmpty else { return nil }
+        let original = acceptedValues.map { Self(values: $0) }
         let note = trimmed(visualReference)
         return .init(
             headingMagnetic: magneticHeading,
             durationSeconds: durationSeconds,
-            altitude: decimal(altitude).map(AltitudeFeet.init(value:)),
-            frequency: frequencyMHz.map(FrequencyMHz.init(value:)),
-            visualReference: note.isEmpty ? nil : note
+            altitude: altitude == original?.altitude ? acceptedValues?.altitude : decimal(altitude).map(AltitudeFeet.init(value:)),
+            frequency: frequency == original?.frequency ? acceptedValues?.frequency : frequencyMHz.map(FrequencyMHz.init(value:)),
+            visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note
         )
     }
 

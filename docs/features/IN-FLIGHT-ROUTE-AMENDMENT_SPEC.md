@@ -58,6 +58,22 @@ All-point long-press correction remains AP-07; partial values/wheels remain AP-0
 [Acceptance trace, verification and exact artifacts](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-03-implementation.md)
 record the current evidence; human visual acceptance and merge remain separate.
 
+### AP-04 implementation checkpoint · 2026-11-25
+
+Issue #228 stores each leg's partial heading, time and cue entry independently.
+Short proposed-map-leg and row taps retain the D04 shared selection/overlap rules.
+The map-associated editor separates a native magnetic-heading wheel (Not set,
+001°–360°, explicit Clear) from the retained time controls. Done and pencil exit
+preserve partial entries; missing required values block final-route validation,
+not exit. Legacy complete accepted values remain the compatibility boundary.
+Check is confined to the modal and presents separate pilot/reference values;
+available and unavailable results never write into entries or change Manual aids.
+AP-05 time wheels/cap, AP-06 cue wheels, AP-09 persistence and AP-11 Arm remain
+outside this checkpoint. Earlier all-or-nothing editor/save descriptions are
+superseded only within editable preparation. Existing flight execution is unchanged.
+[AP-04 verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md)
+records validation and the separate pending human visual acceptance gate.
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

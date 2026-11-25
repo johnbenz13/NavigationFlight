@@ -79,6 +79,27 @@ preparation only; the remaining operational decisions below are retained. Reuse 
 flying/rejoin/recovery evidence contracts. Each implementing task updates only
 its delivered technical section after the approved planning baseline lands.
 
+## AP-04 partial values and heading editor · 2026-11-25
+
+`RouteAmendmentDraft` stores `RouteAmendmentLegEntry` by the existing leg geometry
+signature, independently of the complete-value adapter. Typed field/adjustment
+intents retain raw partial strings immediately; closing the modal and pencil
+preserve them. `ReviewLeg.entry` projects independently missing heading/time;
+`ReviewLeg.values` adapts only valid complete entries for unchanged pending-route
+validation. Recovered complete pending values retain original cue precision and
+note spacing until those fields change. Geometry identity/invalidation stays
+within the existing domain seam; complete geometry/value Undo remains AP-07.
+
+`RouteAmendmentHeadingSection` binds an optional integer selection to typed field
+intents, with nil represented as an explicit Not set wheel item. Presentation
+alone cannot accept a heading. The chart panel supplies separate heading/time
+sections, native Clear, Check/Back to values and Done. The native wheel supplies
+adjustability; system geometry/text adapt to Dynamic Type. Check results remain
+editor-only references, with no write into leg entries or operational Flight.
+The existing AP-01 layout/camera helpers validate preservation. DEBUG
+`A-progress-heading` extends fixture A with heading-only and duration-only legs.
+See the [AP-04 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md).
+
 ## AP-01 workspace ownership · 2026-11-24
 
 `CockpitFeatureState` owns `isAmendmentWorkspaceVisible` and

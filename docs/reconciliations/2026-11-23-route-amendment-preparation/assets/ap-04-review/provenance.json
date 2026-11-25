@@ -1,0 +1,122 @@
+[
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "7D0CCB9D-8428-4BCF-A538-49325E23FB4A.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - r1-invalid-frequency-reopened_0_55FECEEC-E443-4E8B-9938-0C9B5DA621E7.png",
+    "timestamp": 1795597367.653,
+    "retainedFileName": "ipad-invalid-frequency.png",
+    "sha256": "6bb68b463210c9aca5d3a06ac9dd64c0eed41bda59449a5129c6943b21f831bb",
+    "sourceManifest": "/tmp/ap04-remediation-ipad/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "A19B9901-1E7F-414E-9BEA-C132356EF4B7.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - r1-invalid-altitude-reopened_0_62ACD7A7-5E54-4A0F-87D2-BCF2D01C3D8D.png",
+    "timestamp": 1795597378.935,
+    "retainedFileName": "ipad-invalid-altitude.png",
+    "sha256": "aad599dc505f0077e78ba8299d523917ce8e25962a093905e9827dc0e6c61dbb",
+    "sourceManifest": "/tmp/ap04-remediation-ipad/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "87E040FD-40AD-4E96-A3AB-DE47BC8C2E43.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - d04-overlap-choice_0_E2886CBE-1757-4BE4-9E84-93B72C1A2CD8.png",
+    "timestamp": 1795597312.763,
+    "retainedFileName": "ipad-overlap-choice.png",
+    "sha256": "c344ea690ce77d34c407dc36b4ecb1c76bdbc3d8d7422c579fa9575b430af7a5",
+    "sourceManifest": "/tmp/ap04-remediation-ipad/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "C8F7FC56-6923-48D3-ADAD-A9C301442B70.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - d04-closed-map-editor_0_ACBBF8E6-5E17-49CB-86D6-40F0AEC0C2CE.png",
+    "timestamp": 1795597323.232,
+    "retainedFileName": "ipad-post-rejoin-editor.png",
+    "sha256": "7f3d81ad4d9bbb58adceae433bd43462ed0304cd422827127e10c9cb1c13e8d0",
+    "sourceManifest": "/tmp/ap04-remediation-ipad/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "859029EA-FCEE-4033-B8AA-CCC64E9011E0.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - manual-check-unavailable_0_2CC49A3C-2FC6-4299-973D-C772E8BA01C7.png",
+    "timestamp": 1795597538.06,
+    "retainedFileName": "ipad-check-unavailable.png",
+    "sha256": "63bc03bee5c39af6b35c598249b83194f490ae459abf94ddfaf2963744a1a50e",
+    "sourceManifest": "/tmp/ap04-remediation-ipad/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+    "deviceName": "AP01-iPhone-16-Pro",
+    "exportedFileName": "E5A50A2E-0CA9-4837-8939-BEE9ADD0736B.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - r1-invalid-frequency-reopened_0_2E3AF0E3-AB41-4742-B2CF-F7CC54D881F7.png",
+    "timestamp": 1795597655.898,
+    "retainedFileName": "iphone-invalid-frequency.png",
+    "sha256": "4f0919bd29af9d93faa62c90cfcaddbf3d1b935b84b673abbb5493c42e64afc6",
+    "sourceManifest": "/tmp/ap04-remediation-iphone/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+    "deviceName": "AP01-iPhone-16-Pro",
+    "exportedFileName": "9B132B13-50ED-44D1-9BAB-63202C97F40E.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - manual-check-unavailable_0_F4A80B8E-D631-4516-A480-57CEA39E99DF.png",
+    "timestamp": 1795597711.716,
+    "retainedFileName": "iphone-check-unavailable.png",
+    "sha256": "52f88fb2615a6ef78291666b25d22e161114192976d927ccd96895dfa9d265fd",
+    "sourceManifest": "/tmp/ap04-remediation-iphone/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+    "deviceName": "AP01-iPhone-16-Pro",
+    "exportedFileName": "C4B10A38-1AF3-4EA3-829E-B45420C7B4C3.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap04-check-portrait_0_E54B13E6-0C04-4626-97B7-22C9B0DBF831.png",
+    "timestamp": 1795597747.77,
+    "retainedFileName": "iphone-check-available.png",
+    "sha256": "454841ed84af8dba254c04eea5d1d117c4931f9b46fdcdf23b24ca5bb45f4e0e",
+    "sourceManifest": "/tmp/ap04-remediation-iphone-final/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "38C37395-C31C-4043-9A5A-11853263B068.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap04-check-portrait_0_2186FAD4-7ECB-4123-AA02-00ABAD1F77AA.png",
+    "timestamp": 1795597911.04,
+    "retainedFileName": "ipad-check-available.png",
+    "sha256": "3fa77770077047e2f28f1206dc1290ada2f2c97a5d552b5d22c6ce4d61a19d10",
+    "sourceManifest": "/tmp/ap04-remediation-ipad-final/manifest.json"
+  },
+  {
+    "configurationName": "Test Scheme Action",
+    "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+    "deviceName": "AP01-iPad-11-Reference",
+    "exportedFileName": "5810A12E-6726-4EC7-B849-F8B24394E0DD.png",
+    "isAssociatedWithFailure": false,
+    "suggestedHumanReadableName": "Route amendment - ap04-check-landscape_0_3ACDB04E-7DF7-46AD-97CB-E246EE66A4C5.png",
+    "timestamp": 1795597875.343,
+    "retainedFileName": "ipad-landscape-check.png",
+    "sha256": "2d51200809b97435d3913cf5732e620d8ac1b51cbf1d72fd485eda42f05e9057",
+    "sourceManifest": "/tmp/ap04-remediation-ipad-final/manifest.json"
+  }
+]

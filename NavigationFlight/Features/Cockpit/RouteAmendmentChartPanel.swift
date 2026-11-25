@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct RouteAmendmentChartPanel: View {
     let draft: RouteAmendmentDraft
@@ -16,6 +17,7 @@ struct RouteAmendmentChartPanel: View {
     @State private var contentHeight: CGFloat = 0
     @State private var footerHeight: CGFloat = 0
     @State private var presentsNativeChoice = false
+    @State private var keyboardSafeHeight: CGFloat?
 
     private typealias Style = RouteAmendmentPanelStyle
 
@@ -39,7 +41,12 @@ struct RouteAmendmentChartPanel: View {
                 let width = min(geometry.size.width - 2 * inset, panel == .editor ? 390 : inspecting ? 406 : 338)
                 let top = verticalInset(geometry.size.height, inspecting: inspecting)
                 let pinnedActions = panel == .editor && focus == nil
-                let viewportHeight = max(1, geometry.size.height - top - 8)
+                // A large resting cockpit can expand the overlay's proposal.
+                // Measure the native keyboard boundary instead of subtracting
+                // safe-area insets that a smaller proposal may already exclude.
+                let availableHeight = focus == nil ? geometry.size.height
+                    : min(geometry.size.height, keyboardSafeHeight ?? geometry.size.height)
+                let viewportHeight = max(1, availableHeight - top - 8)
                 VStack(spacing: 0) {
                     ScrollView {
                         panelContent(panel)
@@ -47,10 +54,12 @@ struct RouteAmendmentChartPanel: View {
                     }
                     .id(draft.editor?.estimate != nil)
                     .scrollBounceBehavior(.basedOnSize)
+                    .scrollDismissesKeyboard(focus == nil ? .automatic : .never)
                     .frame(height: panel == .editor && focus == nil
                            ? max(1, min(664, viewportHeight) - footerHeight)
                            : max(1, min(contentHeight == 0 ? viewportHeight : contentHeight,
                                         viewportHeight - (pinnedActions ? footerHeight : 0))))
+                    .clipped()
                     if pinnedActions {
                         Divider()
                         saveActions
@@ -81,6 +90,12 @@ struct RouteAmendmentChartPanel: View {
             }
             nativeChoice
 
+        }
+        .background {
+            RouteAmendmentKeyboardViewport { keyboardSafeHeight = $0 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .onChange(of: draft.legPanel, initial: true) { _, _ in
             presentsNativeChoice = usesNativeChoice
@@ -245,9 +260,17 @@ struct RouteAmendmentChartPanel: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         if editor.showsCues {
-            cue(.altitude, placeholder: "ft MSL", entry: editor.entry, invalid: invalid, focused: focus)
-            cue(.frequency, placeholder: "MHz", entry: editor.entry, invalid: invalid, focused: focus)
+            if focus == nil {
+                RouteAmendmentCueSection(entry: editor.entry, onIntent: onIntent)
+            }
             cue(.visualReference, placeholder: "Landmark note", entry: editor.entry, invalid: invalid, focused: focus)
+            if focus == nil {
+                Text("Cues are advisory leg-start references.")
+                    .font(.caption).foregroundStyle(.secondary)
+                link("Clear note", id: "clear-amendment-note") {
+                    onIntent(.editLegField(.visualReference, ""))
+                }
+            }
         }
         if focus != nil {
             action("Done", id: "amendment-keyboard-done", fill: Style.action, ink: .white) {
@@ -297,46 +320,6 @@ struct RouteAmendmentChartPanel: View {
         }
     }
 
-    private func input(
-        _ field: RouteAmendmentLegEntry.Field, placeholder: String, entry: RouteAmendmentLegEntry, large: Bool = false
-    ) -> some View {
-        let text = Binding(get: { entry[field] }, set: { value in
-            onIntent(.editLegField(field, value))
-        })
-        let keyboard: UIKeyboardType = switch field {
-        case .heading, .minutes, .seconds: UIDevice.current.userInterfaceIdiom == .pad ? .numbersAndPunctuation : .numberPad
-        case .altitude: .numbersAndPunctuation
-        case .frequency: UIDevice.current.userInterfaceIdiom == .pad ? .numbersAndPunctuation : .decimalPad
-        default: .default
-        }
-        return HStack(spacing: 2) {
-            if field == .heading || field == .seconds {
-                RouteAmendmentBoundedField(
-                    label: fieldTitle(field),
-                    placeholder: placeholder,
-                    keyboard: keyboard,
-                    field: field,
-                    focus: $nativeFocus,
-                    text: text,
-                    accepts: { entry.allowsInput($0, for: field) }
-                )
-                .frame(maxWidth: .infinity, minHeight: 44)
-            } else {
-                textField(field, placeholder: placeholder, text: text, keyboard: keyboard, large: large)
-            }
-            if field == .minutes || field == .seconds {
-                Text(field == .minutes ? "min" : "sec")
-                    .font(.caption2).foregroundStyle(.secondary).accessibilityHidden(true)
-            }
-        }
-        .padding(.horizontal, 5)
-        .frame(maxWidth: .infinity, minHeight: 44)
-        .background(Color(uiColor: .systemBackground).opacity(0.75), in: .rect(cornerRadius: 7))
-        .overlay {
-            if large { RoundedRectangle(cornerRadius: 7).strokeBorder(Style.action.opacity(0.22)) }
-        }
-    }
-
     private func textField(
         _ field: RouteAmendmentLegEntry.Field, placeholder: String, text: Binding<String>,
         keyboard: UIKeyboardType, large: Bool
@@ -359,17 +342,17 @@ struct RouteAmendmentChartPanel: View {
         invalid: Set<RouteAmendmentLegEntry.Field>, focused: RouteAmendmentLegEntry.Field?
     ) -> some View {
         if focused == nil || focused == field {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 8) {
                 if focused == nil {
-                    Text(fieldTitle(field)).font(.caption2).foregroundStyle(.secondary)
+                    Text("Visual reference · optional").font(.subheadline.weight(.semibold))
                 }
-                input(field, placeholder: placeholder, entry: entry)
-                if invalid.contains(field), focused == nil {
-                    error("Enter a valid \(fieldTitle(field).lowercased()).", id: "amendment-error-\(field.rawValue)")
-                }
+                textField(field, placeholder: placeholder,
+                          text: Binding(get: { entry[field] }, set: { onIntent(.editLegField(field, $0)) }),
+                          keyboard: .default, large: false)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, minHeight: 86, alignment: .topLeading)
+                    .background(Style.card, in: .rect(cornerRadius: 10))
             }
-            .padding(6)
-            .background(Style.card, in: .rect(cornerRadius: 8))
         }
     }
 
@@ -579,5 +562,70 @@ struct RouteAmendmentChartPanel: View {
 
     private func link(_ title: LocalizedStringKey, id: String, perform: @escaping () -> Void) -> some View {
         action(title, id: id, fill: .clear, ink: Style.action, perform: perform)
+    }
+}
+
+/// Bridges native keyboard frames without global screen-size assumptions or Combine.
+private struct RouteAmendmentKeyboardViewport: UIViewRepresentable {
+    let onHeightChange: (CGFloat) -> Void
+
+    func makeUIView(context: Context) -> MeasurementView { MeasurementView() }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: MeasurementView, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
+    func updateUIView(_ view: MeasurementView, context: Context) {
+        view.onHeightChange = onHeightChange
+        view.setNeedsLayout()
+    }
+
+    final class MeasurementView: UIView {
+        var onHeightChange: ((CGFloat) -> Void)?
+        private var keyboardFrame: CGRect?
+        private weak var keyboardScreen: UIScreen?
+        private var reportedHeight: CGFloat?
+
+        init() {
+            super.init(frame: .zero)
+            isUserInteractionEnabled = false
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(keyboardFrameChanged(_:)),
+                name: UIResponder.keyboardWillChangeFrameNotification, object: nil
+            )
+        }
+
+        required init?(coder: NSCoder) { nil }
+
+        deinit { NotificationCenter.default.removeObserver(self) }
+
+        @objc private func keyboardFrameChanged(_ notification: Notification) {
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+                  let screen = notification.object as? UIScreen else { return }
+            keyboardFrame = frame.cgRectValue
+            keyboardScreen = screen
+            setNeedsLayout()
+        }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            guard let window, bounds.height > 0 else { return }
+            var height = bounds.height
+            if let keyboardFrame, let keyboardScreen,
+               keyboardScreen === window.windowScene?.screen {
+                // UIKit supplies screen coordinates, including keyboard accessories.
+                // Convert through the posting screen for Split View/window correctness.
+                let localFrame = keyboardScreen.coordinateSpace.convert(keyboardFrame, to: self)
+                let overlap = bounds.intersection(localFrame)
+                if !overlap.isNull, !overlap.isEmpty { height = max(0, overlap.minY) }
+            }
+            guard reportedHeight.map({ abs($0 - height) > 0.5 }) ?? true else { return }
+            reportedHeight = height
+            // Defer the SwiftUI state update until UIKit's layout callback ends.
+            Task { @MainActor [weak self] in
+                guard let self, self.window != nil, self.reportedHeight == height else { return }
+                self.onHeightChange?(height)
+            }
+        }
     }
 }

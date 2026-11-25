@@ -22,6 +22,18 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         case minutes, seconds
     }
 
+    enum CueComponent: String, CaseIterable, Sendable {
+        case altitude, frequencyMHz, frequencyFraction
+    }
+
+    enum CueChoice: Hashable, Sendable {
+        case notSet, custom, value(Int)
+    }
+
+    static let altitudeOptions = Array(stride(from: -1500, through: 20000, by: 100))
+    static let radioMHzOptions = Array(118...136)
+    static let radioFractionOptions = Array(stride(from: 0, through: 975, by: 25))
+
     enum Field: String, Sendable {
         case heading, duration, minutes, seconds, altitude, frequency, visualReference
     }
@@ -49,6 +61,8 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     // Preserve accepted boundary values exactly, including legacy cue precision/spacing.
     private var acceptedValues: RouteAmendmentLegValues?
     private var durationWasEdited = false
+    private var altitudeWasEdited = false
+    private var frequencyWasEdited = false
 
     init(values: RouteAmendmentLegValues? = nil) {
         acceptedValues = values
@@ -113,8 +127,8 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         return .init(
             headingMagnetic: magneticHeading,
             durationSeconds: durationSeconds,
-            altitude: altitude == original?.altitude ? acceptedValues?.altitude : decimal(altitude).map(AltitudeFeet.init(value:)),
-            frequency: frequency == original?.frequency ? acceptedValues?.frequency : frequencyMHz.map(FrequencyMHz.init(value:)),
+            altitude: !altitudeWasEdited && altitude == original?.altitude ? acceptedValues?.altitude : decimal(altitude).map(AltitudeFeet.init(value:)),
+            frequency: !frequencyWasEdited && frequency == original?.frequency ? acceptedValues?.frequency : frequencyMHz.map(FrequencyMHz.init(value:)),
             visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note
         )
     }
@@ -168,6 +182,86 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         case .seconds:
             seconds = text
             if untouched && value != nil { minutes = "00" }
+        }
+    }
+
+    /// Integer kHz identifies a 25 kHz channel; conversion never rounds custom input.
+    var radioChannelKHz: Int? {
+        guard let value = originalCueValue(.frequencyMHz) ?? decimal(frequency) else { return nil }
+        let scaled = value * 1000
+        guard (118000...136975).contains(scaled),
+              Double(Int(scaled.rounded())) / 1000 == value else { return nil }
+        let channel = Int(scaled.rounded())
+        return channel % 25 == 0 ? channel : nil
+    }
+
+    func cueOptions(_ component: CueComponent) -> [Int] {
+        switch component {
+        case .altitude: Self.altitudeOptions
+        case .frequencyMHz: Self.radioMHzOptions
+        case .frequencyFraction: Self.radioFractionOptions
+        }
+    }
+
+    func cueSelection(_ component: CueComponent) -> CueChoice {
+        switch component {
+        case .altitude:
+            guard !trimmed(altitude).isEmpty else { return .notSet }
+            guard let value = originalCueValue(.altitude) ?? decimal(altitude), Self.altitudeOptions.contains(where: { Double($0) == value }) else {
+                return .custom
+            }
+            return .value(Int(value))
+        case .frequencyMHz, .frequencyFraction:
+            guard !trimmed(frequency).isEmpty else { return .notSet }
+            guard let channel = radioChannelKHz else { return .custom }
+            return .value(component == .frequencyMHz ? channel / 1000 : channel % 1000)
+        }
+    }
+
+    /// The legacy text adapter may format fewer digits than the accepted Double.
+    /// Classification and custom presentation must consult the original value too.
+    func cueDisplayText(_ component: CueComponent) -> String {
+        originalCueValue(component).map { String($0) }
+            ?? (component == .altitude ? altitude : frequency)
+    }
+
+    private func originalCueValue(_ component: CueComponent) -> Double? {
+        guard let acceptedValues else { return nil }
+        let original = Self(values: acceptedValues)
+        if component == .altitude {
+            guard !altitudeWasEdited else { return nil }
+            return altitude == original.altitude ? acceptedValues.altitude?.value : nil
+        }
+        guard !frequencyWasEdited else { return nil }
+        return frequency == original.frequency ? acceptedValues.frequency?.value : nil
+    }
+
+    mutating func selectCue(_ component: CueComponent, choice: CueChoice) {
+        switch choice {
+        case .custom: return
+        case .notSet:
+            if component == .altitude {
+                altitudeWasEdited = true
+                altitude = ""
+            } else {
+                frequencyWasEdited = true
+                frequency = ""
+            }
+        case .value(let value):
+            guard cueOptions(component).contains(value) else { return }
+            if component == .altitude {
+                altitudeWasEdited = true
+                altitude = String(value)
+            } else {
+                // A deliberate edit of a custom/unset radio starts a valid channel;
+                // the other wheel contributes zero fractional kHz or the lower MHz endpoint.
+                let previous = radioChannelKHz ?? 118000
+                let channel = component == .frequencyMHz
+                    ? value * 1000 + previous % 1000
+                    : previous / 1000 * 1000 + value
+                frequencyWasEdited = true
+                frequency = String(format: "%d.%03d", channel / 1000, channel % 1000)
+            }
         }
     }
 

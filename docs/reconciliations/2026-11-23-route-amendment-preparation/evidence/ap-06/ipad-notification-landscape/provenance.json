@@ -1,0 +1,91 @@
+{
+  "exportedAt": "2026-11-25T17:54:10.675645+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_19-42-07-+0200.xcresult",
+  "resultInfoSHA256": "dd3c89ea55652a0b4e1c1919985ee0e825c328a8e9a03e83cedf54090c4aae28",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 4,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795629225.121,
+    "passedTests": 4,
+    "result": "Passed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      },
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795628527.151,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 4
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightTests/RouteAmendmentEstimateTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsInLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "5071B221-5C15-4C2C-AC76-3FA892A6D442.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-note-keyboard-landscape_0_99A83F61-F1DC-43AF-A9E8-5F4441D9E7A5.png",
+        "timestamp": 1795628573.165
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "266534646cb4d96269ef860ded5f3453f734b2dc73c43488aa1ee2b29bd81e05"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsInLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "AE7D8356-3A48-4AFC-B74F-BAC2105017D2.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-cue-wheels-landscape_0_61139FBB-73BD-4874-AE26-84F552555B00.png",
+        "timestamp": 1795628562.843
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "7e9bd639dc2e93cf3b278da9dbf001d17160d3cb4a0b8264e13b0b614be8f713"
+    }
+  ]
+}

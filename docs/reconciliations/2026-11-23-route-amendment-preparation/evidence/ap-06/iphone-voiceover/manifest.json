@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "1DAEA89E-407C-4CF4-819D-402B3C635342.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-voiceover-cues_0_B6493301-ACEF-400B-BB10-8299DDD5CF05.png",
+        "timestamp" : 1795622549.053
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "7211A40A-540C-457D-9A0E-0803DB5567D4.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "AP06 actual VoiceOver cue speech_0_3AFCB3C6-C1EA-4D03-8A25-FD02638A4AEF.txt",
+        "timestamp" : 1795622547.836
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions"
+  }
+]

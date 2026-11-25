@@ -2689,8 +2689,9 @@ final class NavigationFlightUITests: XCTestCase {
 
         if iPad {
             tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
-            type("2500", in: "altitude")
-            type("123.50", in: "frequency")
+            selectCueWheel("altitude", value: "2,500", in: app, panel: panel)
+            selectCueWheel("frequencyMHz", value: "123", in: app, panel: panel)
+            selectCueWheel("frequencyFraction", value: ".500", in: app, panel: panel)
             type("Road junction", in: "visualReference")
 
             tapChartPanelControl(app.buttons["inspect-amendment-original"], in: panel)
@@ -2754,12 +2755,23 @@ final class NavigationFlightUITests: XCTestCase {
     ) {
         let nestedViewport = panel.scrollViews.firstMatch
         let viewport = nestedViewport.exists ? nestedViewport : panel
+        let app = XCUIApplication()
+        let keyboard = app.keyboards.firstMatch
+        var visibleFrame = viewport.frame
+        if keyboard.exists {
+            // Native AX can include clipped scroll bounds behind the keyboard.
+            // Use the measured keyboard/accessory boundary for real touch input.
+            let accessory = app.otherElements["CenterPageView"].firstMatch
+            let keyboardTop = min(keyboard.frame.minY, accessory.exists ? accessory.frame.minY : keyboard.frame.minY)
+            visibleFrame.size.height = max(1, min(visibleFrame.maxY, keyboardTop) - visibleFrame.minY)
+        }
         func scroll(down: Bool, distance: CGFloat? = nil) {
             // Large flicks overshoot controls in the compact accessibility viewport.
             // Move toward the measured target and hold briefly to avoid deceleration.
-            let points = min(130, viewport.frame.height * 0.4, max(32, distance ?? 130))
+            let points = min(130, visibleFrame.height * 0.4, max(32, distance ?? 130))
             let fraction = points / max(1, viewport.frame.height)
-            let startY: CGFloat = down ? 0.2 : 0.8
+            let visibleStartY = visibleFrame.minY + visibleFrame.height * (down ? 0.2 : 0.8)
+            let startY = (visibleStartY - viewport.frame.minY) / max(1, viewport.frame.height)
             let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY))
             let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY + (down ? fraction : -fraction)))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
@@ -2771,7 +2783,10 @@ final class NavigationFlightUITests: XCTestCase {
                 continue
             }
             let frame = element.frame
-            let visible = viewport.frame.insetBy(dx: 0, dy: 3).contains(CGPoint(x: frame.midX, y: frame.midY))
+            let visibleBounds = visibleFrame.insetBy(dx: 0, dy: 3)
+            let visible = element.identifier == "amendment-keyboard-done"
+                ? visibleBounds.contains(frame)
+                : visibleBounds.contains(CGPoint(x: frame.midX, y: frame.midY))
             let isPinnedAction = ["save-amendment-leg-values", "check-working-amendment-leg"].contains(element.identifier)
             let inFooter = isPinnedAction && frame.minY >= viewport.frame.maxY && frame.maxY <= panel.frame.maxY
             if inFooter, !frame.isEmpty {
@@ -2787,7 +2802,7 @@ final class NavigationFlightUITests: XCTestCase {
                 return
             }
             if element.elementType == .button, element.isEnabled, !frame.isEmpty,
-               viewport.frame.insetBy(dx: 0, dy: 3).contains(frame) {
+               visibleFrame.insetBy(dx: 0, dy: 3).contains(frame) {
                 // Native AX can report visible scroll-content buttons unhittable.
                 // Direct device checks verified this measured-center path; callers
                 // still assert the action's resulting state.
@@ -2795,9 +2810,9 @@ final class NavigationFlightUITests: XCTestCase {
                 if performTap { element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
                 return
             }
-            let down = element.exists && element.frame.midY < viewport.frame.midY
+            let down = element.exists && element.frame.midY < visibleFrame.midY
             // Scroll beside the wheel, so revealing it never selects a heading.
-            scroll(down: down, distance: abs(frame.midY - viewport.frame.midY))
+            scroll(down: down, distance: abs(frame.midY - visibleFrame.midY))
         }
         let hierarchy = XCTAttachment(string: panel.debugDescription)
         hierarchy.name = "Chart panel reveal failure hierarchy"
@@ -2898,52 +2913,192 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    func testInvalidAmendmentCuesRemainVisibleAfterDone() throws {
-        let app = try launchManualAmendmentReview()
+    func testInheritedAmendmentCuesRemainVisibleAfterDone() throws {
+        // Native wheels replace malformed text entry. Inherited custom values remain
+        // visible and lossless until a deliberate replacement, covered below.
+        try verifyOptionalCues(custom: true)
+    }
+
+    @MainActor
+    func testOptionalCueWheelsRetainAndClearIndependently() throws {
+        try verifyOptionalCues()
+    }
+
+    @MainActor
+    func testOptionalCueWheelsInLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
+        try verifyOptionalCues(landscape: true)
+    }
+
+    @MainActor
+    func testOptionalCueWheelsWithLargerText() throws {
+        try verifyOptionalCues(largerText: true)
+    }
+
+    @MainActor
+    func testOptionalNoteKeyboardWithLargerText() throws {
+        try verifyOptionalCues(largerText: true, noteOnly: true)
+    }
+
+    @MainActor
+    func testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions() throws {
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        let wasEnabled = voiceOver.isEnabled
+        let originalContinueAfterFailure = continueAfterFailure
+        if wasEnabled { try voiceOver.disable() }
+        defer {
+            continueAfterFailure = originalContinueAfterFailure
+            if !wasEnabled && voiceOver.isEnabled { try? voiceOver.disable() }
+            if wasEnabled && !voiceOver.isEnabled { try? voiceOver.enable() }
+        }
+        let app = try launchPartialAmendment(fixture: "A-progress")
+        app.buttons["amend-route"].tap()
         let console = app.descendants(matching: .any)["route-amendment-console"]
         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
-        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
-        tapAmendmentControl(row, in: console)
-        let wheel = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
-        wheel.adjust(toPickerWheelValue: "001°")
-        func replace(_ name: String, with text: String) {
-            if name == "minutes" || name == "seconds" {
-                selectAmendmentWheel(name, value: text, in: app, panel: panel)
-                return
-            }
-            let field = app.textFields["amendment-field-\(name)"]
-            tapChartPanelControl(field, in: panel)
-            let previous = field.value as? String ?? ""
-            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count) + text)
-            app.buttons["amendment-keyboard-done"].tap()
-        }
-        replace("minutes", with: "02")
-        replace("seconds", with: "15")
+        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").firstMatch, in: console)
         tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
-        replace("frequency", with: "0")
+        let altitude = app.pickers["amendment-field-altitude"].pickerWheels.firstMatch
+        tapChartPanelControl(altitude, in: panel, performTap: false)
+        // Keep assertion failures in Swift control flow so the defer restores
+        // the device setting before the next test's ordinary taps.
+        continueAfterFailure = true
+        try voiceOver.enable()
+        var speech: [String] = []
+        if let current = try? voiceOver.currentSpeech().utterance { speech.append(current) }
+        for _ in 0..<90 {
+            speech.append(try voiceOver.moveForward().utterance)
+            let spoken = speech.joined(separator: " ")
+            if spoken.contains("Clear frequency") && spoken.contains("Clear altitude") && spoken.contains("Visual-reference note") { break }
+        }
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "AP06 actual VoiceOver cue speech"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        let spoken = speech.joined(separator: " ").lowercased()
+        XCTAssertTrue(spoken.contains("feet msl"))
+        XCTAssertTrue(spoken.contains("megahertz"))
+        XCTAssertTrue(spoken.contains("adjustable"))
+        XCTAssertTrue(spoken.contains("clear altitude"))
+        XCTAssertTrue(spoken.contains("clear frequency"))
+        XCTAssertTrue(spoken.contains("visual-reference note"))
+        captureAmendmentState("ap06-voiceover-cues", in: app)
+    }
+
+    @MainActor
+    private func selectCueWheel(_ name: String, value: String, in app: XCUIApplication, panel: XCUIElement) {
+        let wheel = app.pickers["amendment-field-\(name)"].pickerWheels.firstMatch
+        tapChartPanelControl(wheel, in: panel, performTap: false)
+        XCTAssertTrue(wheel.exists)
+        let spoken = cueWheelValue(name, value)
+        wheel.adjust(toPickerWheelValue: spoken)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", spoken), object: wheel)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 4), .completed)
+        XCTAssertEqual(wheel.value as? String, spoken)
+    }
+
+    private func cueWheelValue(_ name: String, _ value: String) -> String {
+        if value == "Not set" {
+            switch name {
+            case "altitude": return "Altitude, feet MSL, Not set"
+            case "frequencyMHz": return "Frequency, whole megahertz, Not set"
+            default: return "Frequency, fractional megahertz, Not set"
+            }
+        }
+        switch name {
+        case "altitude": return value + " feet MSL"
+        case "frequencyMHz": return value + " megahertz"
+        default: return value + " megahertz fractional channel"
+        }
+    }
+
+    @MainActor
+    private func verifyOptionalCues(
+        landscape: Bool = false, largerText: Bool = false, custom: Bool = false, noteOnly: Bool = false
+    ) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = try launchPartialAmendment(largerText: largerText, fixture: custom ? "A-progress-cues" : "A-progress")
+        if landscape { XCUIDevice.shared.orientation = .landscapeLeft }
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let requiredValues = row.value as? String
+        let elapsed = app.staticTexts["amendment-leg-elapsed"].label
+        tapAmendmentControl(row, in: console)
+        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        if custom {
+            let inherited = app.descendants(matching: .any)["amendment-custom-altitude"]
+            tapChartPanelControl(inherited, in: panel, performTap: false)
+            XCTAssertTrue(inherited.label.contains("2550"))
+            let radio = app.descendants(matching: .any)["amendment-custom-frequency"]
+            tapChartPanelControl(radio, in: panel, performTap: false)
+            XCTAssertTrue(radio.label.contains("122.123456789"))
+            captureAmendmentState("ap06-custom-values", in: app)
+            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+            tapAmendmentControl(row, in: console)
+            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+            tapChartPanelControl(radio, in: panel, performTap: false)
+            XCTAssertTrue(radio.exists)
+            XCTAssertTrue(radio.label.contains("122.123456789"))
+        }
+        if !noteOnly {
+            selectCueWheel("altitude", value: "2,500", in: app, panel: panel)
+            selectCueWheel("frequencyMHz", value: "122", in: app, panel: panel)
+            selectCueWheel("frequencyFraction", value: ".525", in: app, panel: panel)
+        }
+        let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
+        if !noteOnly { captureAmendmentState("ap06-cue-wheels-" + suffix, in: app) }
+        let note = app.textFields["amendment-field-visualReference"]
+        tapChartPanelControl(note, in: panel)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        note.typeText("Road junction")
+        XCTAssertEqual(note.value as? String, "Road junction")
+        let keyboardDone = app.buttons["amendment-keyboard-done"]
+        tapChartPanelControl(keyboardDone, in: panel, performTap: false)
+        XCTAssertGreaterThanOrEqual(keyboardDone.frame.height, 44)
+        captureAmendmentState("ap06-note-keyboard-" + suffix, in: app)
+        tapChartPanelControl(keyboardDone, in: panel)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 4))
+        if noteOnly {
+            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+            XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
+            XCTAssertEqual(row.value as? String, requiredValues)
+            return
+        }
+        if !largerText {
+            // At maximum text this section cannot fit in one capture. Its
+            // controls and keyboard already have their own retained evidence.
+            tapChartPanelControl(app.buttons["clear-amendment-note"], in: panel, performTap: false)
+            captureAmendmentState("ap06-complete-cues-" + suffix, in: app)
+        }
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
+        XCTAssertEqual(row.value as? String, requiredValues)
+        tapAmendmentControl(row, in: console)
+        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        let altitude = app.pickers["amendment-field-altitude"].pickerWheels.firstMatch
+        tapChartPanelControl(altitude, in: panel, performTap: false)
+        XCTAssertEqual(altitude.value as? String, "2,500 feet MSL")
+        let fraction = app.pickers["amendment-field-frequencyFraction"].pickerWheels.firstMatch
+        tapChartPanelControl(fraction, in: panel, performTap: false)
+        XCTAssertEqual(fraction.value as? String, ".525 megahertz fractional channel")
+        tapChartPanelControl(app.buttons["clear-amendment-altitude"], in: panel)
+        XCTAssertEqual(altitude.value as? String, cueWheelValue("altitude", "Not set"))
+        XCTAssertEqual(fraction.value as? String, ".525 megahertz fractional channel")
+        tapChartPanelControl(app.buttons["clear-amendment-frequency"], in: panel)
+        XCTAssertEqual(fraction.value as? String, cueWheelValue("frequencyFraction", "Not set"))
+        XCTAssertEqual(note.value as? String, "Road junction")
+        tapChartPanelControl(app.buttons["clear-amendment-note"], in: panel)
+        XCTAssertEqual(note.value as? String, "Landmark note")
         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
         tapAmendmentControl(row, in: console)
-        let frequencyError = app.staticTexts["amendment-error-frequency"]
-        tapChartPanelControl(frequencyError, in: panel, performTap: false)
-        XCTAssertTrue(frequencyError.exists)
-        XCTAssertEqual(app.textFields["amendment-field-frequency"].value as? String, "0")
-        captureAmendmentState("r1-invalid-frequency-reopened", in: app)
-        replace("frequency", with: "122.525")
-        XCTAssertFalse(frequencyError.exists)
-        replace("altitude", with: "-.")
+        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        tapChartPanelControl(altitude, in: panel, performTap: false)
+        XCTAssertEqual(altitude.value as? String, cueWheelValue("altitude", "Not set"))
         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
-        tapAmendmentControl(row, in: console)
-        let altitudeError = app.staticTexts["amendment-error-altitude"]
-        tapChartPanelControl(altitudeError, in: panel, performTap: false)
-        XCTAssertTrue(altitudeError.exists)
-        captureAmendmentState("r1-invalid-altitude-reopened", in: app)
-        replace("altitude", with: "2500")
-        XCTAssertFalse(altitudeError.exists)
-        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
-        tapAmendmentControl(row, in: console)
-        XCTAssertFalse(frequencyError.exists)
-        XCTAssertFalse(altitudeError.exists)
-        captureAmendmentState("r1-cues-corrected", in: app)
+        XCTAssertEqual(row.value as? String, requiredValues)
+        XCTAssertEqual(app.staticTexts["amendment-leg-elapsed"].label, elapsed)
+        captureAmendmentState("ap06-cleared-" + suffix, in: app)
     }
 
     @MainActor
@@ -4739,6 +4894,18 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func startAmendmentFixture(in app: XCUIApplication) {
+        // XCTest worker clones can retain VoiceOver independently of the visible
+        // simulator. Ordinary bootstrap taps require it off; speech tests enable
+        // it explicitly after setup. Do not change the owner's simulator defaults.
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        if voiceOver.isEnabled {
+            do { try voiceOver.disable() }
+            catch {
+                XCTFail("Could not disable inherited VoiceOver for fixture bootstrap: \(error)")
+                return
+            }
+            XCTAssertFalse(voiceOver.isEnabled)
+        }
         // iPad's system sidebar can survive a prior landscape run as a modal
         // overlay. Its scrim intercepts Start even when AX reports it hittable.
         let hideSidebar = app.buttons["ToggleSidebar"]

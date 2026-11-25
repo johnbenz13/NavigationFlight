@@ -1,0 +1,66 @@
+{
+  "exportedAt": "2026-11-25T15:13:08.008580+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/RunSomeTests/Test-NavigationFlight-2026.11.25_17-09-50-+0200.xcresult",
+  "resultInfoSHA256": "a2a989efc5629b95b37e57545f1729bac42406f6a9328134d15331fd753d74ff",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+          "deviceName": "UIEvidence-iPad",
+          "modelName": "iPad Pro 11-inch (M5)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795619559.036,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795619390.329,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+    "status": "?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentEntersCuesAndChecksWithoutChangingPilotValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "E38B5838-0C14-47F5-A5F5-45CFD5DE5DE3.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - manual-restored-editor_0_9C355671-DBB4-4B34-B565-FF154A859D34.png",
+        "timestamp": 1795619530.775
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "171b1fabf85487fd33db04a2a9a3e496cdb6f831fcaebf5fcf19e6e7b6d0ac84"
+    }
+  ]
+}

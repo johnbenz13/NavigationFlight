@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "4264B2C7-C260-4CB2-A887-CE6CDDFEA1BE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-landscape_0_C85BD1C5-0C8D-4FDB-BE6D-9A95440EAB17.png",
+        "timestamp" : 1795628644.806
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "CBF59806-3949-4BCA-B67D-5705C96A9565.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-complete-cues-landscape_0_072345FB-F208-4EB2-A9FF-0A2710ED9EDC.png",
+        "timestamp" : 1795628599.641
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "5071B221-5C15-4C2C-AC76-3FA892A6D442.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-landscape_0_99A83F61-F1DC-43AF-A9E8-5F4441D9E7A5.png",
+        "timestamp" : 1795628573.165
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "AE7D8356-3A48-4AFC-B74F-BAC2105017D2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-landscape_0_61139FBB-73BD-4874-AE26-84F552555B00.png",
+        "timestamp" : 1795628562.843
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsInLandscape"
+  }
+]

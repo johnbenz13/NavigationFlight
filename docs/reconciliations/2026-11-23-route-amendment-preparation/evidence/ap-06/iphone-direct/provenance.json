@@ -1,0 +1,72 @@
+{
+  "device": "AP01-iPhone-16-Pro",
+  "udid": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+  "fixture": "A-progress",
+  "library": "disposable AP06 Phone Corrected Viewport",
+  "contentSize": "UICTContentSizeCategoryAccessibilityXXXL",
+  "sourceHead": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+  "sourceState": "AP06 uncommitted implementation; temporary geometry logging was present, subsequently removed without behavior changes",
+  "settings": "actual native Reduce Motion OFF -> ON -> OFF; keyboard visible during keyboard.png; actual Done tap confirmed dismissal",
+  "artifacts": [
+    {
+      "file": "keyboard.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_22_43_101-screenshot.png",
+      "sha256": "4545a9c8f44c453ce8c9cb8d540df43f0675fe589a67b3497e2ccfc345602bf7"
+    },
+    {
+      "file": "keyboard.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_22_43_101-hierarchy.txt",
+      "sha256": "8b1c00cfb45556d1aceaaf944163dd65121c28cdcd1587f2e9441c37f24d48e1"
+    },
+    {
+      "file": "dismissed.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_22_48_465-screenshot.png",
+      "sha256": "10a14509b07a0c0d267e060eb104fee914f9cbf7f057c359b44b82e019ba7c24"
+    },
+    {
+      "file": "dismissed.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_22_48_465-hierarchy.txt",
+      "sha256": "b80b602af155d744e28bffd9a394299a9f71fdd3e71f3e1d16eb4b22740ea6cb"
+    },
+    {
+      "file": "motion-on.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_12_572-screenshot.png",
+      "sha256": "4e1ab4062edfe54f62418d775d9b6ac92c7795f1d17e72c89ab1c509173fced1"
+    },
+    {
+      "file": "motion-on.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_12_572-hierarchy.txt",
+      "sha256": "3f7bfb1c0e7f91fb2926d532d07d09ccd9ec0c893bf3a25d67ce10cd6d37a0f1"
+    },
+    {
+      "file": "cues-closed.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_42_447-screenshot.png",
+      "sha256": "dc92edd8f5307c6a499f327332ce422a3e8f2ae9472e7bb3ff9e2f7b82a3699b"
+    },
+    {
+      "file": "cues-closed.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_42_447-hierarchy.txt",
+      "sha256": "af242eb3cb8c13349e8b15ad05acb47fbd1fd42c9bac5e2b2c087ce12158f0a1"
+    },
+    {
+      "file": "cues-reopened.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_49_760-screenshot.png",
+      "sha256": "ef0277e12ee865d4a0d9162756eb033038695ef885349b5e83179c9eebc15928"
+    },
+    {
+      "file": "cues-reopened.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_23_49_760-hierarchy.txt",
+      "sha256": "e5a9b1d5e29a9ea6c9a77e6446d646df18b28fbbcde07a56dad29c42ac912b34"
+    },
+    {
+      "file": "motion-restored.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_24_01_008-screenshot.png",
+      "sha256": "a126f9ea8eb1dd7284b9958c4c911023ac597158ce9004c9629f3720b6d0f2b2"
+    },
+    {
+      "file": "motion-restored.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize/AP06 Phone Corrected Viewport-18_24_01_008-hierarchy.txt",
+      "sha256": "98024a8452f3167863c183e0074ce8627d45d70bea1ff2cc8bc0d3a8b28a9d80"
+    }
+  ]
+}

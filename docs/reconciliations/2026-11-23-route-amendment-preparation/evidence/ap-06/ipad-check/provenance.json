@@ -1,0 +1,87 @@
+{
+  "exportedAt": "2026-11-25T16:00:23.855733+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_17-50-40-+0200.xcresult",
+  "resultInfoSHA256": "cd6dfab8e8e46bcb31dddd8e112383b356e8db343fa0548ba73293180e5bc142",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 4,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795622315.53,
+    "passedTests": 4,
+    "result": "Passed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795621840.721,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 4
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightTests/RouteAmendmentEstimateTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentEntersCuesAndChecksWithoutChangingPilotValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "100D03D3-2A0D-4995-BE7E-2CEBE020FE75.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - manual-restored-editor_0_AE11AFF3-CA0D-4AF2-90A7-1C8E5101B4E6.png",
+        "timestamp": 1795621969.23
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "479b44d9cebf45c07eef4adeb3883232d145fd2c8be3cf54b18c53cf4a379fb0"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentEntersCuesAndChecksWithoutChangingPilotValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "A08F4B25-24BA-4FA5-819F-A276A1D76DCD.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - manual-check-portrait_0_C9CEF7F8-0CBA-4149-A7F7-D35F29979863.png",
+        "timestamp": 1795621977.259
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "0db87269380846d0d285b8db3fd5c051076adedcde0e51ccd5d117bb9cc32d70"
+    }
+  ]
+}

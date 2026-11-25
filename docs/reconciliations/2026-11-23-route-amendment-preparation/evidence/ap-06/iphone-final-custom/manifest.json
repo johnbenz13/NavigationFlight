@@ -1,0 +1,53 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "3F9F6552-F478-458B-97FA-BF1573EB633E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-portrait_0_16F51897-784E-45C2-A0E5-1E8609E9A9CA.png",
+        "timestamp" : 1795626914.305
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "6EE700F4-1255-4165-9652-1322C416BA00.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-complete-cues-portrait_0_4A39E5D8-FB01-4433-9CD7-49A67C43BBBE.png",
+        "timestamp" : 1795626860.685
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "45086A8F-ADB7-4096-8FC9-5477F65F4DAD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-portrait_0_61CBF12D-6584-4F84-AB30-09233F2902FC.png",
+        "timestamp" : 1795626829.633
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "374900FA-0ADF-413D-AA6D-AE51ED4F29A9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-portrait_0_D52AAD46-812C-445D-8EBE-A09809C87B68.png",
+        "timestamp" : 1795626806.272
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "4D4A0171-3D2F-459B-80CF-5ED2672943D7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-custom-values_0_B0D849ED-CA0C-434F-8B68-110A95AB928C.png",
+        "timestamp" : 1795626762.292
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone"
+  }
+]

@@ -337,7 +337,7 @@ struct CockpitFeatureView: View {
                 state.installCockpitContext(transition.cockpitContext)
 #if DEBUG
                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
-                if ["A", "A-progress", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                if ["A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
                    state.flight?.activatedRouteAmendment == nil {
                     state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
                                                               partialWorkspaceFixture: ["A-partial", "A-progress-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),

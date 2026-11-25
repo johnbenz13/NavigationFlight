@@ -1,0 +1,99 @@
+{
+  "exportedAt": "2026-11-25T17:12:34.261518+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_18-24-27-+0200.xcresult",
+  "resultInfoSHA256": "7fa10535dab342f5bee67ead1f7d0fb427963065e524600ca147581a9daad9fe",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+          "deviceName": "AP01-iPhone-16-Pro",
+          "modelName": "iPhone 16 Pro",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 2,
+        "passedTests": 0,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 2,
+    "finishTime": 1795626517.133,
+    "passedTests": 0,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795623867.427,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertEqual failed: (\"Optional(\"\")\") is not equal to (\"Optional(\".525 megahertz fractional channel\")\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 1,
+        "testIdentifierString": "NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone",
+        "testName": "testInheritedAmendmentCuesRemainVisibleAfterDone()"
+      },
+      {
+        "failureText": "Testing was canceled",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 2,
+        "testIdentifierString": "NavigationFlightUITests/testOptionalCueWheelsWithLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsWithLargerText",
+        "testName": "testOptionalCueWheelsWithLargerText()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 2
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightTests/RouteAmendmentEstimateTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "D2C162D6-E021-4A4B-A24C-42D53384ADB3.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-note-keyboard-larger-portrait_0_21A1DDA1-BA1F-45E9-86D9-D9A1DD453BEF.png",
+        "timestamp": 1795624083.738
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "72fa4df8a635d90849d5aa3779770fadcb1b3f540654ec07e0a0d74fe926d836"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "22FC9B07-E5F5-4708-B4DC-A8299DE6A293.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-cue-wheels-larger-portrait_0_C685F1DC-57F8-4F1B-8338-4202DA98EF75.png",
+        "timestamp": 1795624052.915
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "eeb3ce57d15a2a6495c23d4ec54c1836c81619c4b5e87f3d2678fdbe474c3f32"
+    }
+  ]
+}

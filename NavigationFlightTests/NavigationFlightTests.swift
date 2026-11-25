@@ -170,6 +170,44 @@ struct NavigationFlightTests {
     }
 
     @MainActor
+    @Test func optionalCueWheelsNeverChangeReadinessOrOperationalFlight() throws {
+        var state = CockpitFeatureState()
+        try state.accept(try twoLegFlight())
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)))
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
+        let end = route.anchor(at: 1, fraction: 1)
+        state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: end), anchors: [end])))
+        let legs = try #require(state.routeAmendmentDraft?.reviewLegs(on: route))
+        for leg in legs {
+            state.updateRouteAmendment(.editLeg(leg.id))
+            state.updateRouteAmendment(.editLegField(.heading, "087"))
+            state.updateRouteAmendment(.editLegField(.duration, "02:15"))
+            state.updateRouteAmendment(.saveLegValues)
+        }
+        let blank = try #require(state.routeAmendmentDraft)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: blank, route: route) == .ready)
+        _ = try PendingRouteAmendment(id: UUID(), draft: blank, flight: flight, route: route)
+        state.updateRouteAmendment(.editLeg(try #require(legs.first).id))
+        state.updateRouteAmendment(.selectLegCue(.altitude, .value(-1500)))
+        state.updateRouteAmendment(.selectLegCue(.frequencyMHz, .value(122)))
+        state.updateRouteAmendment(.selectLegCue(.frequencyFraction, .value(525)))
+        state.updateRouteAmendment(.editLegField(.visualReference, "Road junction"))
+        state.updateRouteAmendment(.saveLegValues)
+        let populated = try #require(state.routeAmendmentDraft)
+        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: populated, route: route) == .ready)
+        let pending = try PendingRouteAmendment(id: UUID(), draft: populated, flight: flight, route: route)
+        #expect(pending.replacementLegs.count == legs.count)
+        #expect(populated.reviewLegs(on: route).first?.entry.magneticHeading == 87)
+        #expect(populated.reviewLegs(on: route).first?.entry.durationSeconds == 135)
+        #expect(state.flight == flight, "Preparation cannot create navigation/timer events or identification targets")
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
     @Test(arguments: [RouteAmendmentLegEntry.Field.frequency, .altitude])
     func invalidEnteredCuesRemainVisibleUntilCorrected(_ field: RouteAmendmentLegEntry.Field) throws {
         let plan = try twoLegFlight()

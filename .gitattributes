@@ -1,1 +1,4 @@
 *.pmtiles filter=lfs diff=lfs merge=lfs -text
+
+# Retain exact unified-diff context in AP-06 source provenance.
+docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/**/source.patch whitespace=-blank-at-eol

@@ -100,6 +100,40 @@ The existing AP-01 layout/camera helpers validate preservation. DEBUG
 `A-progress-heading` extends fixture A with heading-only and duration-only legs.
 See the [AP-04 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md).
 
+## AP-06 optional cue wheels · 2026-11-25
+
+`RouteAmendmentLegEntry` owns typed cue choices and bounds. Radio channels use
+integer kHz identities with an exact check at the existing `FrequencyMHz`
+boundary; custom values never round into a channel on presentation. Classification
+and custom labels consult an unchanged accepted Double rather than the legacy
+adapter's potentially rounded display string. DEBUG custom-cue fixtures reuse
+the existing accepted-archive restoration helper. Typed
+`selectLegCue` intents reuse the draft's existing leg-entry retention seam,
+without indexing cues by display row. Deliberately selecting one radio wheel
+preserves the other component of a valid channel; an unset/custom radio begins
+at 118 MHz or zero fractional kHz for the unselected component. Clear removes
+the entire optional radio value. No view computes eligibility or operational
+navigation effects.
+
+`RouteAmendmentCueSection` supplies native optional wheel controls, explicit
+spoken units, separate custom-value text and 44 pt clear actions, stacking at
+accessibility text sizes. The existing chart panel retains native note entry,
+keyboard Done and its pinned editor footer. Accepted complete values retain
+their original cue precision/spacing through the existing lossless adapter.
+Explicit cue-choice tracking distinguishes a deliberate replacement from an
+untouched accepted value even when legacy display strings are identical.
+While a field is focused, a small `UIViewRepresentable` observes native
+keyboard-frame notifications and converts the posting screen’s coordinates into
+the chart panel’s local bounds. The parent keeps its existing
+workspace/map sizing; the panel neither guesses keyboard height nor subtracts
+a safe-area inset twice. Its deferred, deduplicated callback stays on the main
+actor. Focused scrolling keeps the keyboard open so note and Done remain reachable
+at normal and maximum Larger Text.
+The operational cue projector, recording schema, map geometry and Flight engine
+are unchanged. This supersedes preparation altitude/frequency text inputs from
+the earlier checkpoints; source observations and historical approvals remain.
+See the [AP-06 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md).
+
 ## AP-05 leg duration wheels · 2026-11-25
 
 `RouteAmendmentTimeSection` renders native optional-integer wheel selections,

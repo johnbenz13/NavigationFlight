@@ -1,0 +1,25 @@
+NavigationFlight 087° Picker Item adjustable 88 of 361 Swipe up or down with one finger to adjust the value.
+Clear magnetic heading Button
+Leg time Heading
+Minutes
+Seconds
+Leg time minutes, 3 minutes Picker Item adjustable 5 of 62 Swipe up or down with one finger to adjust the value.
+Leg time seconds, 20 seconds Picker Item adjustable 22 of 61 Swipe up or down with one finger to adjust the value.
+Clear leg time minutes Button
+Clear leg time seconds Button
+Leg time up to 60:00. At 60 minutes, seconds are limited to 00.
+Inspect original leg Button
+Optional cues ▾ Button
+Optional cues Heading
+Altitude · ft MSL
+Altitude, feet MSL, Not set Picker Item adjustable 1 of 217 Swipe up or down with one finger to adjust the value.
+100 ft steps
+−1,500 to 20,000 ft MSL
+Clear altitude Button
+Frequency · MHz
+Frequency, whole megahertz, Not set Picker Item adjustable 1 of 20 Swipe up or down with one finger to adjust the value.
+Frequency, fractional megahertz, Not set Picker Item adjustable 1 of 41 Swipe up or down with one finger to adjust the value.
+Clear frequency Button
+118.000–136.975 MHz · valid 25 kHz channels
+Visual reference · optional
+Visual-reference note Landmark note Text field Double tap to edit. Use the rotor to access Misspelled Words

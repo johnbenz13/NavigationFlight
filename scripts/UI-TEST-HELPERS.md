@@ -3,12 +3,21 @@
 The helpers live in `NavigationFlightUITests/NavigationFlightUITests.swift`.
 Keep UI automation in XCUITest; these helpers do not change production behavior.
 
+Chart-panel reveal uses the measured keyboard and native accessory boundary
+while typing: native AX can report clipped scroll bounds behind the keyboard.
+Keep scroll gestures inside the uncovered viewport and assert the resulting
+action (including actual keyboard dismissal), rather than relying only on
+`isHittable` for native scroll-content buttons.
+
 - `launchCockpit` installs a supplied plan in a new UUID-scoped disposable library.
   Pass content size and existing fixture switches through its named options and
   `fixtureEnvironment`; configure them before launch, not by relaunching into a
   partially initialized state. Additional switches should not override the library
   ID or plan. The helper waits for the ready cockpit's Start control.
-- `startAmendmentFixture` starts the leg and waits for Start to disappear, then
+- `startAmendmentFixture` explicitly disables inherited VoiceOver on the XCTest
+  worker before ordinary touch setup. Worker clones can retain accessibility
+  settings independently of the visible simulator; speech tests enable VoiceOver
+  after bootstrap. It starts the leg and waits for Start to disappear, then
   dismisses the checklist when present. Progress fixtures can advance beyond the
   first checklist; readiness accepts the operational amendment control too.
   It explicitly closes an identified system sidebar overlay before Start: after

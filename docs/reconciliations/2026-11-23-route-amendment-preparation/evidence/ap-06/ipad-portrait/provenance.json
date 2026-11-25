@@ -1,0 +1,103 @@
+{
+  "exportedAt": "2026-11-25T16:00:23.023914+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_17-50-40-+0200.xcresult",
+  "resultInfoSHA256": "cd6dfab8e8e46bcb31dddd8e112383b356e8db343fa0548ba73293180e5bc142",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 4,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795622315.53,
+    "passedTests": 4,
+    "result": "Passed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795621840.721,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 4
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightTests/RouteAmendmentEstimateTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "6D9ED0D3-AE78-48B0-BD04-A88FDECF784D.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-cue-wheels-portrait_0_55CB5B9C-0390-4BD2-8DE1-711DB04F7654.png",
+        "timestamp": 1795622108.623
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "3650edf99dcb711f596148bfb05fae0e09a2091b91d1949f0d9951434ad07f36"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "14D7F777-8E7A-4E7F-AA65-4EBCF367033C.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-note-keyboard-portrait_0_A27FDD8A-B121-4BE2-8007-D70E1E4CB5D3.png",
+        "timestamp": 1795622118.643
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "6fbd1e586f143d16870ec24879c7f208e90599cc598f3980275acb6e2a289132"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "8D307B56-F386-4809-8512-F4555E6AB183.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap06-cleared-portrait_0_B2827C08-50F8-4F23-AFD2-C8329A08F628.png",
+        "timestamp": 1795622167.006
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "a07361e2a47609b73418cfddb1248e1462bf35435bae3497591d06f4e35d18e4"
+    }
+  ]
+}

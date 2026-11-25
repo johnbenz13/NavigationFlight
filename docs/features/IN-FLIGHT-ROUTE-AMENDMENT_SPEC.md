@@ -74,6 +74,20 @@ superseded only within editable preparation. Existing flight execution is unchan
 [AP-04 verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md)
 records validation and the separate pending human visual acceptance gate.
 
+### AP-06 implementation checkpoint · 2026-11-25
+
+Issue #230 adds optional native altitude and radio wheel controls within the
+existing leg editor. Altitude spans −1,500…20,000 ft MSL in 100 ft steps;
+radio uses MHz/fractional wheels that construct only 118.000…136.975 MHz
+25 kHz channels. Both have Not set/clear. Existing custom values remain visible
+and unchanged until deliberately replaced or cleared. Visual-reference notes
+retain native keyboard entry and independent clear. Cues remain advisory;
+required heading/time, readiness and operational Flight events are unchanged.
+This supersedes earlier preparation cue text inputs only. Radio tuning, 8.33 kHz,
+new timed targets and durable draft storage remain excluded. Runtime evidence
+and pending human acceptance are recorded in the
+[AP-06 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md).
+
 ### AP-05 implementation checkpoint · 2026-11-25
 
 Issue #229 replaces preparation's time text fields and adjustment buttons with

@@ -213,7 +213,7 @@ struct RouteAmendmentChartPanel: View {
 
     @ViewBuilder
     private func editorContent(_ editor: RouteAmendmentDraft.Editor, leg: RouteAmendmentDraft.ReviewLeg) -> some View {
-        let invalid = editor.showValidation ? editor.entry.invalidFields : []
+        let invalid = editor.entry.invalidEnteredFields
         if focus == nil {
             let number = (draft.reviewLegs(on: route).firstIndex(where: { $0.id == leg.id }) ?? 0) + 1
             Text("\(draft.mode.title.uppercased()) · LEG \(number) · MAGNETIC")
@@ -539,6 +539,8 @@ struct RouteAmendmentChartPanel: View {
             infoCard(caution: true) {
                 Text("App estimate unavailable").font(.subheadline.weight(.semibold))
                     .accessibilityIdentifier("amendment-estimate-unavailable")
+                Text("The app cannot calculate a reference estimate for this leg with the current planning inputs. Keep entering your own values.")
+                    .accessibilityIdentifier("amendment-estimate-unavailable-guidance")
                 Text("Pilot heading · \(entry.magneticHeading.map { angle($0) } ?? "Not set")")
                 Text("Pilot leg time · \(entry.durationSeconds.map { time($0) } ?? "Not set")")
             }
@@ -563,6 +565,11 @@ struct RouteAmendmentChartPanel: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("amendment-reference-estimate")
                 Text("Your entries stay unchanged.").font(.subheadline.weight(.semibold))
+                if provenance == .noWind {
+                    Text("No-wind magnetic course is reference only; it does not replace your magnetic heading.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("amendment-estimate-course-guidance")
+                }
                 Text("Manual legs show no minute marks or drift lines after Check.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -581,10 +588,19 @@ struct RouteAmendmentChartPanel: View {
     }
 
     private func metric(_ title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(title).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.subheadline.weight(.semibold).monospacedDigit())
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(title).fixedSize()
+                Spacer(minLength: 0)
+                Text(value).monospacedDigit().fixedSize()
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                Text(value).monospacedDigit()
+            }
         }
+        .font(.headline)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func adaptiveActions<Content: View>(@ViewBuilder content: () -> Content) -> some View {

@@ -2556,6 +2556,7 @@ final class NavigationFlightUITests: XCTestCase {
         openAmendmentCheck(in: app, console: console)
         let estimate = app.descendants(matching: .any)["amendment-reference-estimate"]
         XCTAssertTrue(estimate.waitForExistence(timeout: 4))
+        XCTAssertTrue(app.staticTexts["amendment-estimate-course-guidance"].exists)
         XCTAssertTrue(app.staticTexts["Not set"].firstMatch.exists)
         captureAmendmentState("manual-blank-check", in: app)
         tapChartPanelControl(cancel, in: panel)
@@ -2781,12 +2782,58 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testInvalidAmendmentCuesRemainVisibleAfterDone() throws {
+        let app = try launchManualAmendmentReview()
+        let console = app.descendants(matching: .any)["route-amendment-console"]
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+        tapAmendmentControl(row, in: console)
+        let wheel = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
+        wheel.adjust(toPickerWheelValue: "001°")
+        func replace(_ name: String, with text: String) {
+            let field = app.textFields["amendment-field-\(name)"]
+            tapChartPanelControl(field, in: panel)
+            let previous = field.value as? String ?? ""
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count) + text)
+            app.buttons["amendment-keyboard-done"].tap()
+        }
+        replace("minutes", with: "02")
+        replace("seconds", with: "15")
+        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        replace("frequency", with: "0")
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        tapAmendmentControl(row, in: console)
+        let frequencyError = app.staticTexts["amendment-error-frequency"]
+        tapChartPanelControl(frequencyError, in: panel, performTap: false)
+        XCTAssertTrue(frequencyError.exists)
+        XCTAssertEqual(app.textFields["amendment-field-frequency"].value as? String, "0")
+        captureAmendmentState("r1-invalid-frequency-reopened", in: app)
+        replace("frequency", with: "122.525")
+        XCTAssertFalse(frequencyError.exists)
+        replace("altitude", with: "-.")
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        tapAmendmentControl(row, in: console)
+        let altitudeError = app.staticTexts["amendment-error-altitude"]
+        tapChartPanelControl(altitudeError, in: panel, performTap: false)
+        XCTAssertTrue(altitudeError.exists)
+        captureAmendmentState("r1-invalid-altitude-reopened", in: app)
+        replace("altitude", with: "2500")
+        XCTAssertFalse(altitudeError.exists)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        tapAmendmentControl(row, in: console)
+        XCTAssertFalse(frequencyError.exists)
+        XCTAssertFalse(altitudeError.exists)
+        captureAmendmentState("r1-cues-corrected", in: app)
+    }
+
+    @MainActor
     func testManualAmendmentShowsUnavailableEstimate() throws {
         let app = try launchManualAmendmentReview(unavailable: true)
         let console = app.descendants(matching: .any)["route-amendment-console"]
         openAmendmentCheck(in: app, console: console)
         XCTAssertTrue(app.staticTexts["amendment-estimate-unavailable"].waitForExistence(timeout: 4))
         XCTAssertFalse(app.descendants(matching: .any)["amendment-reference-estimate"].exists)
+        XCTAssertTrue(app.staticTexts["amendment-estimate-unavailable-guidance"].exists)
         captureAmendmentState("manual-check-unavailable", in: app)
     }
 
@@ -3463,7 +3510,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(edit.frame.height, 44)
         XCTAssertGreaterThanOrEqual(app.buttons["amendment-overlap-rejoin"].frame.height, 44)
         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
-        XCTAssertEqual(panel.scrollViews.firstMatch.frame.width, 338, accuracy: 1)
+        // The overlap actions are exposed even when SwiftUI flattens the non-scrolling container.
+        // Measure their shared content width (338pt card less 19pt inset on each side).
+        XCTAssertEqual(edit.frame.width, 300, accuracy: 1)
+        XCTAssertEqual(edit.frame.minX, app.buttons["amendment-overlap-rejoin"].frame.minX, accuracy: 1)
         let measurements = XCTAttachment(string: "D04 48:565; inherited D03 panel: \(panel.frame); Edit \(edit.frame); Rejoin \(app.buttons["amendment-overlap-rejoin"].frame)")
         measurements.name = "D04 overlap measured targets"
         measurements.lifetime = .keepAlways

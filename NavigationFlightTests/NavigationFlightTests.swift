@@ -62,6 +62,49 @@ struct NavigationFlightTests {
     }
 
     @MainActor
+    @Test(arguments: [RouteAmendmentLegEntry.Field.frequency, .altitude])
+    func invalidEnteredCuesRemainVisibleUntilCorrected(_ field: RouteAmendmentLegEntry.Field) throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        var draft = RouteAmendmentDraft(flightID: flight.id, mode: .manual)
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let end = route.anchor(at: 1, fraction: 1)
+        draft.update(.plot(.init(position: route.coordinate(at: end), anchors: [end])), route: route)
+        for leg in draft.reviewLegs(on: route) {
+            draft.update(.editLeg(leg.id), route: route)
+            draft.update(.editLegField(.heading, "087"), route: route)
+            draft.update(.editLegField(.duration, "02:15"), route: route)
+            draft.update(.saveLegValues, route: route)
+        }
+        let first = try #require(draft.reviewLegs(on: route).first)
+        draft.update(.editLeg(first.id), route: route)
+        draft.update(.editLegField(field, field == .frequency ? "0" : "malformed"), route: route)
+        #expect(draft.editor?.entry.invalidEnteredFields == [field])
+        draft.update(.saveLegValues, route: route)
+        #expect(draft.editor == nil)
+        #expect(throws: (any Error).self) {
+            try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        }
+        draft.update(.editLeg(first.id), route: route)
+        #expect(draft.editor?.showsCues == true)
+        #expect(draft.editor?.entry.invalidEnteredFields == [field])
+        draft.update(.editLegField(field, field == .frequency ? "122.525" : "2500"), route: route)
+        #expect(draft.editor?.entry.invalidEnteredFields.isEmpty == true)
+        draft.update(.saveLegValues, route: route)
+        _ = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        draft.update(.editLeg(first.id), route: route)
+        draft.update(.editLegField(.heading, ""), route: route)
+        #expect(draft.editor?.entry.invalidEnteredFields.isEmpty == true)
+        draft.update(.saveLegValues, route: route)
+        #expect(draft.reviewLegs(on: route).first?.entry.magneticHeading == nil)
+    }
+
+    @MainActor
     @Test(arguments: [false, true])
     func checkPreservesEveryPilotFieldAndManualAidEligibility(_ available: Bool) throws {
         let plan = try twoLegFlight()

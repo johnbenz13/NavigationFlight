@@ -135,3 +135,55 @@ recorded above rather than counted as application regressions.
 Deferred by approved AP-04 scope: AP-05 time wheels/cap, AP-06 cue controls,
 AP-09 persistence and AP-11 arming. Final-route completeness validation remains
 unchanged. The outstanding verification listed here is not a scope deferral.
+
+## Review remediation contract (R1–R3)
+
+| Criterion | Observable result | Fixture | Verification |
+| --- | --- | --- | --- |
+| R1 invalid entered cues | Invalid nonempty altitude/frequency retain Done/pencil exit, reopen expanded with errors; correction restores complete values; blank required values remain allowed | Otherwise valid heading/time plus invalid cue | Domain parameterized regression and rendered cue correction/reopen |
+| R2 retained Check guidance | Unavailable explains inability to calculate and continue own values; no-wind course clearly reference only; pilot values unchanged | Existing available/unavailable Check fixtures | Domain nonmutation reused; rendered D02-F05 12:557/12:563 comparison |
+| R3 full overlap flow | Stable exposed action container measured; Edit/close/Rejoin/post-rejoin edit all reached | B-open-overlap | Complete existing UI test plus captures, D04 48:409 |
+
+Pre-edit inspected reviewer Figma D02-F05 image and unavailable simulator render.
+The unavailable title/metrics lack guidance; available metric layout remains a
+separate reported design discrepancy requiring owner acceptance.
+
+### R1–R3 remediation results
+
+| Finding | Disposition | Verification / evidence |
+| --- | --- | --- |
+| R1 | Fixed and behavior verified | `invalidEnteredFields` excludes missing required fields but includes malformed nonempty entries. Reopen expands invalid cues. New parameterized domain regression confirms valid heading/time plus invalid frequency/altitude blocks Pending conversion, correction restores it, missing heading remains retainable. UI repeats Done/reopen/correction for both cues on iPad and iPhone. [Frequency](../assets/ap-04-review/ipad-invalid-frequency.png), [altitude](../assets/ap-04-review/ipad-invalid-altitude.png), [compact frequency](../assets/ap-04-review/iphone-invalid-frequency.png) |
+| R2 | Guidance and metric-layout fixes verified; human visual acceptance pending | D02-F05 12:557/12:563 directly retrieved and inspected. Unavailable copy describes inability to calculate with current inputs (not falsely absent inputs), directs own-value entry. No-wind course explicitly reference only. Horizontal headline metrics with narrow-space stacked fallback restore hierarchy. [iPad available](../assets/ap-04-review/ipad-check-available.png), [unavailable](../assets/ap-04-review/ipad-check-unavailable.png), [landscape](../assets/ap-04-review/ipad-landscape-check.png), [iPhone available](../assets/ap-04-review/iphone-check-available.png), [unavailable](../assets/ap-04-review/iphone-check-unavailable.png) |
+| R3 | Test defect fixed and complete flow verified | Exposed Edit/Rejoin controls measure shared300pt content width (338pt card minus19pt each side), aligned x and44pt minimum height; no assumption of ScrollView existence. Full original remaining Edit/close/Rejoin/post-rejoin editor sequence passes. [Overlap choice](../assets/ap-04-review/ipad-overlap-choice.png), [post-rejoin editor](../assets/ap-04-review/ipad-post-rejoin-editor.png). No application routing change |
+
+Run provenance: session ActionArtifacts `4342E0E2-E728-4F71-861B-48E15514BBBF`.
+
+| Local run (+0200) | Results | Reuse / limits |
+| --- | --- | --- |
+| 11:01:20 | Build including tests passed | Compiler validation before focused run |
+| 11:01:31 iPad | 6/6 passed | Two new domain argument cases; overlap, cue validation, available and unavailable UI. Captures exported `/tmp/ap04-remediation-ipad` |
+| 11:05:55 iPhone | 3/3 passed | Cue validation, unavailable, full heading/Check flow. Export `/tmp/ap04-remediation-iphone` |
+| 11:08:39 iPhone | 2/2 passed | After horizontal metric change: normal and maximum-text heading/Check flows. Export `/tmp/ap04-remediation-iphone-final` |
+| 11:10:50 iPad | 5/5 reported passed | Portrait, landscape, maximum text and selected partial/nonmutation domain results. Tool reports selected parameter results, not all argument combinations; no new212-case claim. Export `/tmp/ap04-remediation-ipad-final` |
+| 11:13:32 | Final BuildProject including tests passed, no errors | `BuildProject-Log-20261125-111332.txt` |
+
+All retained images were directly viewed. Device/OS: AP01 iPad11 and iPhone16Pro,
+iOS27.2; full-resolution originals, fixture/test timestamps and SHA256 hashes
+in [provenance](../assets/ap-04-review/provenance.json). Fixture recipes are
+existing `launchManualAmendmentReview`, `A-progress-heading`, `B-open-overlap`.
+Metric/content comparison is bounded: D02 guidance, card distinction and
+horizontal hierarchy observed; native font/control treatment is adaptive.
+Portrait captures show a partly obscured mode caption; maximum-text Check
+captures at initial scroll position do not expose all metrics. No whole-screen
+visual match or usability approval is claimed. Human visual acceptance remains
+pending, including these capture limitations.
+
+No test failure occurred during remediation. The initial test-tool response was
+empty, so BuildProject established compilation before the actual focused run.
+Attachment export first failed on result-bundle filesystem permissions (tooling);
+approved elevated export succeeded. No application changes followed either tool
+problem. The only repeated UI flows were needed after the metric-layout change.
+Approximate remediation effort: exploration5min, implementation5min, test/tool
+repair1min, verification12min, delivery4min (27min total). Original issue-wide
+Reduce Motion verification and human acceptance remain pending; this remediation
+does not mark #228 complete, merge the PR or close the issue.

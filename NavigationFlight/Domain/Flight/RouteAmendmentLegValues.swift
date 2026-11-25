@@ -90,6 +90,11 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         return invalid
     }
 
+    /// Missing required fields are permitted in a partial draft; malformed entries still need feedback.
+    var invalidEnteredFields: Set<Field> {
+        invalidFields.filter { !trimmed(self[$0]).isEmpty }
+    }
+
     var values: RouteAmendmentLegValues? {
         guard let magneticHeading, let durationSeconds, invalidFields.isEmpty else { return nil }
         let original = acceptedValues.map { Self(values: $0) }

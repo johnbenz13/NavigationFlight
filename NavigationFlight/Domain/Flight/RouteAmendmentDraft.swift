@@ -360,7 +360,6 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     struct Editor: Equatable, Sendable {
         let id: ReviewLeg.ID
         var entry: RouteAmendmentLegEntry
-        var showValidation = false
         var showsCues = false
         var estimate: RouteAmendmentEstimator.Result?
         var referenceID: UUID?
@@ -761,7 +760,9 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         guard legPanel == nil, step == .drawing || step == .review,
               let leg = reviewLegs(on: route).first(where: { $0.id == id }) else { return }
         let entry = leg.entry
-        editor = Editor(id: id, entry: entry, estimate: check ? estimate(for: leg, inputs: inputs) : nil)
+        editor = Editor(id: id, entry: entry,
+                        showsCues: !entry.invalidEnteredFields.isDisjoint(with: [.altitude, .frequency]),
+                        estimate: check ? estimate(for: leg, inputs: inputs) : nil)
         legPanel = .editor
     }
 

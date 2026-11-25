@@ -2434,30 +2434,24 @@ final class NavigationFlightUITests: XCTestCase {
     private func launchPendingAmendmentForManagement(
         landscape: Bool = false, preferredContentSize: String? = nil, captureCamera: Bool = false
     ) throws -> XCUIApplication {
-        let app = XCUIApplication()
-        if let preferredContentSize {
-            app.launchArguments += ["-UIPreferredContentSizeCategoryName", preferredContentSize]
-        }
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = try crossingAmendmentPlanData().base64EncodedString()
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"] = "1"
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] = "armed"
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE"] = "1"
-        if captureCamera { app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_CAMERA"] = "1" }
-        app.launch()
-        let start = app.buttons["start-leg"]
-        XCTAssertTrue(start.waitForExistence(timeout: 5))
+        var environment = [
+            "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "armed",
+            "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE": "1"
+        ]
+        if captureCamera { environment["NAVIGATION_FLIGHT_UI_TEST_CAMERA"] = "1" }
+        let app = launchCockpit(
+            planData: try crossingAmendmentPlanData(),
+            preferredContentSizeCategory: preferredContentSize,
+            fixtureEnvironment: environment
+        )
         if landscape {
             XCUIDevice.shared.orientation = .landscapeLeft
-            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                app.frame.width > app.frame.height
+            }, object: nil)
             XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
         }
-        start.tap()
-        closeStartChecklist(in: app)
-        app.buttons["amend-route"].tap()
-        let retry = app.buttons["retry-amendment-save"]
-        XCTAssertTrue(retry.waitForExistence(timeout: 8))
-        retry.tap()
+        startAmendmentFixture(in: app)
         XCTAssertTrue(app.buttons["pending-amendment-pencil"].waitForExistence(timeout: 8))
         return app
     }
@@ -3615,8 +3609,6 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func launchPartialAmendment(largerText: Bool = false, fixture: String = "A-partial") throws -> XCUIApplication {
-        let app = XCUIApplication()
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
         var planData = try crossingAmendmentPlanData()
         if fixture.hasPrefix("A-progress") {
             var document = try XCTUnwrap(JSONSerialization.jsonObject(with: planData) as? [String: Any])
@@ -3631,29 +3623,15 @@ final class NavigationFlightUITests: XCTestCase {
             document["navigation"] = navigation
             planData = try JSONSerialization.data(withJSONObject: document)
         }
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_PLAN"] = planData.base64EncodedString()
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] = fixture
-        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_CAMERA"] = "1"
-        if largerText { app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"] }
-        app.launch()
-        let start = app.buttons["start-leg"]
-        XCTAssertTrue(start.waitForExistence(timeout: 8))
-        if largerText {
-            start.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-            if !start.waitForNonExistence(timeout: 3) {
-                start.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).tap()
-            }
-            let close = app.buttons["leg-start-checklist-close"]
-            if close.exists { close.tap() }
-        } else {
-            start.tap()
-            if fixture.hasPrefix("A-progress") {
-                let close = app.buttons["leg-start-checklist-close"]
-                if close.exists { close.tap() }
-            } else {
-                closeStartChecklist(in: app)
-            }
-        }
+        let app = launchCockpit(
+            planData: planData,
+            preferredContentSizeCategory: largerText ? "UICTContentSizeCategoryAccessibilityXXXL" : nil,
+            fixtureEnvironment: [
+                "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": fixture,
+                "NAVIGATION_FLIGHT_UI_TEST_CAMERA": "1"
+            ]
+        )
+        startAmendmentFixture(in: app)
         return app
     }
 
@@ -4064,12 +4042,23 @@ final class NavigationFlightUITests: XCTestCase {
         ).firstMatch
         // The medium sheet lazily loads rows below the correction actions. Expand/scroll
         // before querying a waypoint, rather than treating virtualization as missing data.
+        let inputLists = app.collectionViews.containing(.button, identifier: "Use map center")
+        XCTAssertTrue(inputLists.firstMatch.waitForExistence(timeout: 4))
+        // A regular-width cockpit also has a sidebar collection. Resolve the input
+        // list by its action, then retain its index while lazy rows scroll that action away.
+        guard let list = app.collectionViews.allElementsBoundByIndex.first(where: {
+            $0.buttons["Use map center"].exists
+        }) else {
+            XCTFail("Could not locate the route waypoint sheet's collection")
+            return
+        }
         for _ in 0..<8 {
-            if point.exists && point.isHittable { break }
-            app.collectionViews.firstMatch.swipeUp()
+            if point.exists && point.isHittable && list.frame.contains(point.frame) { break }
+            list.swipeUp()
         }
         XCTAssertTrue(point.waitForExistence(timeout: 3))
         XCTAssertTrue(point.isHittable)
+        XCTAssertTrue(list.frame.contains(point.frame), "Waypoint must be inside the sheet viewport")
         point.tap()
         XCTAssertTrue(point.waitForNonExistence(timeout: 4))
     }
@@ -4621,6 +4610,28 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(app.buttons["leg-start-checklist-chip"].waitForExistence(timeout: 3))
     }
 
+    @MainActor
+    private func startAmendmentFixture(in app: XCUIApplication) {
+        let start = app.buttons["start-leg"]
+        XCTAssertTrue(start.waitForExistence(timeout: 8))
+        XCTAssertTrue(start.isHittable)
+        start.tap()
+        XCTAssertTrue(start.waitForNonExistence(timeout: 8))
+        // Progress fixtures can advance beyond the first checklist before rendering.
+        // Wait for either the checklist or an operational amendment control, then
+        // close the checklist if present instead of racing its asynchronous arrival.
+        let close = app.buttons["leg-start-checklist-close"]
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            close.exists || app.buttons["amend-route"].isHittable
+                || app.buttons["pending-amendment-pencil"].isHittable
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 8), .completed)
+        if close.exists {
+            close.tap()
+            XCTAssertTrue(close.waitForNonExistence(timeout: 4))
+        }
+    }
+
     private func launchCockpit(
         planData: Data,
         progressionPolicy: String? = nil,
@@ -4630,7 +4641,8 @@ final class NavigationFlightUITests: XCTestCase {
         fixtureDelay: Double? = nil,
         recordingFailure: Bool = false,
         recordingDegradation: Bool = false,
-        recordingStatus: String? = nil
+        recordingStatus: String? = nil,
+        fixtureEnvironment: [String: String] = [:]
     ) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_LIBRARY_ID"] = UUID().uuidString
@@ -4659,6 +4671,8 @@ final class NavigationFlightUITests: XCTestCase {
         if let recordingStatus {
             app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_RECORDING_STATUS"] = recordingStatus
         }
+        // Additional fixture switches share the same disposable library and plan setup.
+        for (key, value) in fixtureEnvironment { app.launchEnvironment[key] = value }
         app.launch()
         XCTAssertTrue(app.buttons["start-leg"].waitForExistence(timeout: 2))
         return app

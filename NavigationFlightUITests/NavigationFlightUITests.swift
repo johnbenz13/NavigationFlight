@@ -2349,12 +2349,7 @@ final class NavigationFlightUITests: XCTestCase {
             XCTAssertTrue(app.buttons["keep-saved-amendment"].waitForExistence(timeout: 4))
         }
         func captureCameraState(_ name: String, in app: XCUIApplication) {
-            // Device captures preserve the full rotated screen; app snapshots can crop
-            // a newly rotated iPad to its prior portrait bounds in Xcode 27.2.
-            let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-            attachment.name = name
-            attachment.lifetime = .keepAlways
-            add(attachment)
+            captureEvidence(name)
         }
         openReplacement()
         let map = app.descendants(matching: .any)["aviation-map"].firstMatch
@@ -4095,16 +4090,47 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func captureAmendmentState(_ name: String, in app: XCUIApplication) {
-        let needsFullScreen = name.contains("landscape") || name.contains("keyboard")
-        let screenshot = needsFullScreen ? XCUIScreen.main.screenshot() : app.screenshot()
-        let attachment = XCTAttachment(screenshot: screenshot)
-        attachment.name = "Route amendment - \(name)"
+        captureEvidence("Route amendment - \(name)")
+    }
+
+    /// Always capture the screen: app bounds can remain portrait immediately after rotation.
+    @MainActor
+    private func captureEvidence(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+        let orientation = XCUIDevice.shared.orientation
+        let landscape = orientation == .landscapeLeft || orientation == .landscapeRight
+        let portrait = orientation == .portrait || orientation == .portraitUpsideDown
+        guard landscape || portrait else {
+            XCTFail("Evidence requires a portrait or landscape device orientation", file: file, line: line)
+            return
+        }
+        var image = XCUIScreen.main.screenshot().image
+        // Screen captures can store portrait backing pixels with rotation metadata.
+        // Render the oriented image at its original scale so exported PNG pixels
+        // themselves match the visible screen, independent of metadata readers.
+        let dimensionsMatch = NSPredicate { _, _ in
+            let captured = XCUIScreen.main.screenshot().image
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = captured.scale
+            image = UIGraphicsImageRenderer(size: captured.size, format: format).image { _ in
+                captured.draw(in: CGRect(origin: .zero, size: captured.size))
+            }
+            guard let pixels = image.cgImage else { return false }
+            return landscape ? pixels.width > pixels.height : pixels.height > pixels.width
+        }
+        let ready = XCTNSPredicateExpectation(predicate: dimensionsMatch, object: nil)
+        guard XCTWaiter.wait(for: [ready], timeout: 5) == .completed else {
+            XCTFail("Evidence \(name): screen \(image.size) does not match device orientation \(orientation.rawValue) after rotation", file: file, line: line)
+            return
+        }
+        let attachment = XCTAttachment(image: image)
+        attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
     }
 
     @MainActor
     func testAdaptiveCockpitKeepsOperationalActionsAvailableAcrossOrientations() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
         let app = launchCockpit(planData: try oneLegPlanData())
         app.buttons["start-leg"].tap()
         let collapseChecklist = app.buttons["Collapse start of leg checklist"]
@@ -4119,6 +4145,7 @@ final class NavigationFlightUITests: XCTestCase {
             XCTAssertTrue(app.descendants(matching: .any)["aviation-map"].exists)
             XCTAssertTrue(app.descendants(matching: .any)["cockpit-time"].exists)
             XCTAssertTrue(app.descendants(matching: .any)["cockpit-eta"].exists)
+            captureEvidence(orientation == .portrait ? "Evidence portrait" : "Evidence landscape")
         }
 
         XCUIDevice.shared.orientation = .portrait

@@ -1,0 +1,230 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "71E777AD-F834-47A0-9DAD-E403A900CA11",
+        "deviceName" : "iPad Pro 13-inch (M5)",
+        "modelName" : "iPad Pro 13-inch (M5)",
+        "osBuildNumber" : "24A434",
+        "osVersion" : "27.0",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 16,
+      "passedTests" : 785,
+      "skippedTests" : 1,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "NavigationFlight · Built with macOS 27.2.1",
+  "expectedFailures" : 0,
+  "failedTests" : 16,
+  "finishTime" : 1795421276.385,
+  "passedTests" : 623,
+  "result" : "Failed",
+  "runtimeWarnings" : [
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Modifying state during view update, this will cause undefined behavior."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Type \"app.navigationflight.diagnostic-bundle\" was expected to be declared and exported in the Info.plist of NavigationFlight.app, but it was not found."
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Type \"app.navigationflight.diagnostic-bundle\" was expected to be declared and exported in the Info.plist of NavigationFlight.app, but it was not found."
+    }
+  ],
+  "skippedTests" : 1,
+  "startTime" : 1795419062.383,
+  "statistics" : [
+    {
+      "subtitle" : "201 test runs",
+      "title" : "39 tests ran with dynamic parameters"
+    },
+    {
+      "subtitle" : "1 test run",
+      "title" : "1 test collected performance metrics"
+    }
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Expectation failed: detail.flightPlanTitle == \"Unavailable recording\"\ndetail.flightPlanTitle → \"Unreadable recording\"",
+      "targetName" : "NavigationFlightTests",
+      "testIdentifier" : 85,
+      "testIdentifierString" : "FlightRecordingLibraryTests/corruptPackageDetail()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightTests/FlightRecordingLibraryTests/corruptPackageDetail()",
+      "testName" : "Corrupt package exposes a deletable unavailable detail without reading evidence"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 511,
+      "testIdentifierString" : "NavigationFlightUITests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions",
+      "testName" : "testAccessibilityTextUsesScrollableCompactConsoleWithoutTruncatingActions()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 519,
+      "testIdentifierString" : "NavigationFlightUITests/testAddPickerCancellationPreservesEmptyLibrary()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAddPickerCancellationPreservesEmptyLibrary",
+      "testName" : "testAddPickerCancellationPreservesEmptyLibrary()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 522,
+      "testIdentifierString" : "NavigationFlightUITests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets",
+      "testName" : "testCanonicalReviewPresentsFrequencyAndRouteDetailsAsSheets()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 523,
+      "testIdentifierString" : "NavigationFlightUITests/testChecklistActionsRemainReachableWithAccessibilityText()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testChecklistActionsRemainReachableWithAccessibilityText",
+      "testName" : "testChecklistActionsRemainReachableWithAccessibilityText()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 526,
+      "testIdentifierString" : "NavigationFlightUITests/testClosedFlightDeletionCancellationPreservesTheNamedFlight()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testClosedFlightDeletionCancellationPreservesTheNamedFlight",
+      "testName" : "testClosedFlightDeletionCancellationPreservesTheNamedFlight()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Planned next, Synthetic service, 120.50 megahertz, Synthetic waypoint 1 → Synthetic waypoint 2 · later this leg\") is not equal to (\"Planned now, SYN, 113.50 megahertz\")",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 528,
+      "testIdentifierString" : "NavigationFlightUITests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues",
+      "testName" : "testCockpitOperationalCuesExposeSemanticFrequencyAndAltitudeValues()"
+    },
+    {
+      "failureText" : "XCTAssertFalse failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 536,
+      "testIdentifierString" : "NavigationFlightUITests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testConfirmedClosedFlightDeletionReturnsToListAfterRemoval",
+      "testName" : "testConfirmedClosedFlightDeletionReturnsToListAfterRemoval()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 540,
+      "testIdentifierString" : "NavigationFlightUITests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated",
+      "testName" : "testDraftCanSelectAnInteriorDepartureAndKeepItWhenRotated()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 543,
+      "testIdentifierString" : "NavigationFlightUITests/testFailedDeletionPreservesDetailAndOffersRetry()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testFailedDeletionPreservesDetailAndOffersRetry",
+      "testName" : "testFailedDeletionPreservesDetailAndOffersRetry()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 558,
+      "testIdentifierString" : "NavigationFlightUITests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector",
+      "testName" : "testImportedWindPlanLaunchesCockpitWithNoWindValuesAndNoModeSelector()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 619,
+      "testIdentifierString" : "CockpitChartsUITests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/CockpitChartsUITests/testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable",
+      "testName" : "testKnownArrivalWithoutChartsAndLargeTextLeaveDepartureUsable()"
+    },
+    {
+      "failureText" : "XCTAssertEqualWithAccuracy failed: (\"644.0\") is not equal to (\"446.0\") +/- (\"1.0\")",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 566,
+      "testIdentifierString" : "NavigationFlightUITests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles",
+      "testName" : "testManualAmendmentChartSelectsLegsAndDisambiguatesTheirRoles()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 570,
+      "testIdentifierString" : "NavigationFlightUITests/testManualAmendmentReviewSupportsLargerText()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentReviewSupportsLargerText",
+      "testName" : "testManualAmendmentReviewSupportsLargerText()"
+    },
+    {
+      "failureText" : "XCTAssertTrue failed",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 582,
+      "testIdentifierString" : "NavigationFlightUITests/testPositionCheckAccessibilityTextStacksDistinctReachableActions()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPositionCheckAccessibilityTextStacksDistinctReachableActions",
+      "testName" : "testPositionCheckAccessibilityTextStacksDistinctReachableActions()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Recording · GPS Gap\") is not equal to (\"Recording · No GPS\")",
+      "targetName" : "NavigationFlightUITests",
+      "testIdentifier" : 610,
+      "testIdentifierString" : "NavigationFlightUITests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit()",
+      "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit",
+      "testName" : "testSingleRecoveryRequiresChoiceAndContinueOpensRestoredCockpit()"
+    }
+  ],
+  "title" : "Test - NavigationFlight",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "8% of duration",
+      "text" : "3 longest test runs with outlier durations exceeding 77.56s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 640
+}

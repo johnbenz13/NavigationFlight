@@ -1,0 +1,60 @@
+warning: /Users/john/Library/org.swift.swiftpm/configuration is not accessible or not writable, disabling user-level cache features.
+warning: /Users/john/Library/org.swift.swiftpm/security is not accessible or not writable, disabling user-level cache features.
+Building for debugging...
+[Constructing description]
+[Planning deferred tasks]
+[28 / 52]
+[29 / 53] FlightEvidenceCore
+[38 / 90]
+[41 / 90]
+[44 / 90]
+[46 / 90]
+[47 / 90]
+[48 / 90]
+[51 / 90]
+[52 / 90]
+[53 / 90]
+[54 / 90]
+[55 / 90]
+[57 / 90]
+[60 / 90]
+[61 / 90]
+[62 / 90]
+[63 / 90]
+[66 / 90] FlightEvidenceCore
+[72 / 90]
+[74 / 90] FlightEvidenceCore
+[76 / 90] FlightEvidenceCore-product
+[80 / 91]
+[80 / 91] FlightEvidenceCoreTests-product
+[81 / 96]
+[83 / 96] FlightEvidenceCoreTests-product
+[85 / 96] FlightEvidenceCoreTests-product
+[90 / 96] FlightEvidenceCoreTests-product
+[92 / 96] FlightEvidenceCoreTests-product
+Build complete! (23.93 secs)
+Test Suite 'All tests' started at 2026-11-23 09:32:42.538.
+Test Suite 'All tests' passed at 2026-11-23 09:32:42.544.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.006) seconds
+◇ Test run started.
+↳ Testing Library Version: 2403
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite "Diagnostic bundle codec" started.
+◇ Test "All portable evidence round-trips deterministically" started.
+◇ Test "Physical-state and closure payloads reject unsupported enum values" started.
+◇ Test "Out-of-order samples within a segment fail explicitly" started.
+◇ Test "Unsupported versions fail explicitly" started.
+◇ Test "Negative accuracy values fail explicitly" started.
+◇ Test "Disclosed position samples reject invalid coordinates and horizontal accuracy" started.
+◇ Test "Malformed event payload shapes fail explicitly" started.
+◇ Test "Malformed event order fails explicitly" started.
+✔ Test "Negative accuracy values fail explicitly" passed after 0.003 seconds.
+✔ Test "Unsupported versions fail explicitly" passed after 0.003 seconds.
+✔ Test "Out-of-order samples within a segment fail explicitly" passed after 0.003 seconds.
+✔ Test "Malformed event payload shapes fail explicitly" passed after 0.003 seconds.
+✔ Test "Malformed event order fails explicitly" passed after 0.003 seconds.
+✔ Test "Physical-state and closure payloads reject unsupported enum values" passed after 0.003 seconds.
+✔ Test "Disclosed position samples reject invalid coordinates and horizontal accuracy" passed after 0.003 seconds.
+✔ Test "All portable evidence round-trips deterministically" passed after 0.019 seconds.
+✔ Suite "Diagnostic bundle codec" passed after 0.019 seconds.
+✔ Test run with 8 tests in 1 suite passed after 0.020 seconds.

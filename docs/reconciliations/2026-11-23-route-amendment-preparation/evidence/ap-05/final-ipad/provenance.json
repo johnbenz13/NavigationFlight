@@ -1,0 +1,12 @@
+{
+  "sourceDirectory": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize",
+  "device": "UIEvidence-iPad 0F915431-D1D4-4A72-A07C-19BF5914ABD6 iOS27.2",
+  "source": "main4c106bb plus final uncommitted candidate; production unchanged since15:04, final build15:29:02",
+  "appPath": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Build/Products/Debug-iphonesimulator/NavigationFlight.app",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "configuration": "NavigationFlight Debug",
+  "fixture": "disposable A-progress-heading normal text",
+  "method": "simctl exact matching install/launch PID27815; DeviceHub opened; direct device interaction capture",
+  "handoff": "left running portrait zero editor; interaction session ended",
+  "toolRecovery": "DeviceHub opening invalidated original interaction session; recovered capture session without rebuild"
+}

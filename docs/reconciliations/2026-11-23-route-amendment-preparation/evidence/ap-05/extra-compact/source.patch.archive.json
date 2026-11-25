@@ -1,0 +1,6 @@
+{
+  "originalFile": "source.patch",
+  "archive": "source.patch.gz",
+  "uncompressedSHA256": "db902471fcbf05e8c86d33ede01e95a1bd92051008317bee853fcda8547f1f14",
+  "reason": "Lossless archival of exact exporter output; patch context blank lines are meaningful and trigger repository whitespace checks as plain text."
+}

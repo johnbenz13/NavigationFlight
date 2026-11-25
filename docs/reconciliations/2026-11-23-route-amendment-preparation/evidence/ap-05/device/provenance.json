@@ -1,0 +1,46 @@
+{
+  "sourceBase": "4c106bb",
+  "note": "Before capture predates source edits. Other captures use unchanged duration implementation; see ledger for revision and settings.",
+  "files": [
+    {
+      "file": "before-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Pre Edit Baseline-14_33_57_486-screenshot.png",
+      "sha256": "4e69d402e50fb43143c0a26c9f6a549549bb709625c69e10028661791a6e99d1"
+    },
+    {
+      "file": "before-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Pre Edit Baseline-14_33_57_486-hierarchy.txt",
+      "sha256": "659b1cd421acff0e742d80360212e597bc56288485705c050431d9a2151b4389"
+    },
+    {
+      "file": "large-minutes-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Larger Text Diagnosis-14_47_24_870-screenshot.png",
+      "sha256": "0a5ae6473ab6fb89655077367fb580f71f0f2f0ce06139bec655a5af400d7f7e"
+    },
+    {
+      "file": "large-minutes-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Larger Text Diagnosis-14_47_24_870-hierarchy.txt",
+      "sha256": "d30804b3c7364cddc79ded9ebb8a0619a76ff207aa68d7096777beb1db8c2dcb"
+    },
+    {
+      "file": "large-seconds-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Larger Text Diagnosis-14_47_32_746-screenshot.png",
+      "sha256": "e3cbc7d020c30f46023cc6505bc96c7bcfa08f7b6e0382e3360300a359f19cb7"
+    },
+    {
+      "file": "large-seconds-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Larger Text Diagnosis-14_47_32_746-hierarchy.txt",
+      "sha256": "f988c7cf1d4fb5edd12dacf4faca7a99c8a16abe64d40f1b396e03a109338563"
+    },
+    {
+      "file": "motion-on-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Compact Motion Confirm-14_54_11_726-screenshot.png",
+      "sha256": "4aa2e0bcbc389f6444412460dcb46dea9361e90c5c9aef9267e1a11e62c75e6f"
+    },
+    {
+      "file": "motion-on-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/8F94BEAF-3946-4EA4-AECB-2558ACB9AEAD/DeviceInteractionSynthesize/AP05 Compact Motion Confirm-14_54_11_726-hierarchy.txt",
+      "sha256": "3f7bfb1c0e7f91fb2926d532d07d09ccd9ec0c893bf3a25d67ce10cd6d37a0f1"
+    }
+  ]
+}

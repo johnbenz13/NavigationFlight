@@ -1,0 +1,83 @@
+{
+  "exportedAt": "2026-11-25T13:21:05.973884+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_15-09-14-+0200.xcresult",
+  "resultInfoSHA256": "83ac89d0df447f59f7987f8bd38caba2e636f66dab6f0b494caa8c723999550e",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+          "deviceName": "AP01-iPhone-16-Pro",
+          "modelName": "iPhone 16 Pro",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 2,
+        "passedTests": 2,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 2,
+    "finishTime": 1795612458.247,
+    "passedTests": 2,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795612154.816,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "failed - Could not reveal chart panel control: \"Leg time seconds, Not set\" PickerWheel, panel: (8.0, 357.3333333333333, 386.0, 292.6666666666667)",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 2,
+        "testIdentifierString": "NavigationFlightUITests/testLegTimeWheelsWithLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testLegTimeWheelsWithLargerText",
+        "testName": "testLegTimeWheelsWithLargerText()"
+      },
+      {
+        "failureText": "XCTAssertTrue failed",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 4,
+        "testIdentifierString": "NavigationFlightUITests/testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder",
+        "testName": "testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 4
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "4c106bb37d0f420706a23f5725cc4bc6150ef0ca",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "58AAB8CD-63F2-46F0-9801-8A667BED2AB2.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-zero-portrait_0_05C570E2-2B91-487B-A90F-7DAFF4ECD4A0.png",
+        "timestamp": 1795612362.347
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "9cb25a3da61182192fb6ff29f6b7faadb8fdc24ddf3b2a11ba7ca4023caf1728"
+    }
+  ]
+}

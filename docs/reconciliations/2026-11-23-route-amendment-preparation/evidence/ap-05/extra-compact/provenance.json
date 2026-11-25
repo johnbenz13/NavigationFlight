@@ -1,0 +1,98 @@
+{
+  "exportedAt": "2026-11-25T13:27:05.686558+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_15-24-30-+0200.xcresult",
+  "resultInfoSHA256": "526988b17dcc9107d3d4ef847c6dcfe3a0d49d47dcf5ec66138fbcd82eeb7242",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+          "deviceName": "iPhone 17e",
+          "modelName": "iPhone 17e",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795613206.238,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795613070.867,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "4c106bb37d0f420706a23f5725cc4bc6150ef0ca",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n M scripts/UI-TEST-HELPERS.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName": "iPhone 17e",
+        "exportedFileName": "55F8BFDE-2DA8-400D-9621-53D006F68F09.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-untouched-portrait_0_A50A3330-7A2F-4E53-B193-EB67F91931CF.png",
+        "timestamp": 1795613153.892
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1170,
+      "pixelHeight": 2532,
+      "sha256": "f0bce0b5d438a0f61bfb167f06932679e2f8f250ec254963635a5ce71ba6f52f"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName": "iPhone 17e",
+        "exportedFileName": "796E86F5-8BEB-40A3-A55F-B58994656FAF.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-zero-portrait_0_46FC88B1-35B2-4651-BE22-858718103ABA.png",
+        "timestamp": 1795613163.624
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1170,
+      "pixelHeight": 2532,
+      "sha256": "7ed5b8abd8c44f0bc82fe837a272d7770df8f4cd46717d7ae362ff9af61ae309"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName": "iPhone 17e",
+        "exportedFileName": "43F2042B-3D46-4190-A19F-4516590C5353.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap05-ceiling-portrait_0_30E82FF7-700F-4609-B559-2CB163A4BA38.png",
+        "timestamp": 1795613177.212
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1170,
+      "pixelHeight": 2532,
+      "sha256": "b4b66f7f5ddd9bd9f14f09bf94c90e002104f79a1bf2ae19c1696f58db336682"
+    }
+  ]
+}

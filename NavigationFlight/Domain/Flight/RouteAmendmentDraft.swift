@@ -286,6 +286,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
+        case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
         case saveLegValues, backToLegReview, checkLeg(ReviewLeg.ID)
         case toggleCues, toggleCheck, adjustHeading(Int), adjustFlightTime(Int)
         case inspectOriginal, cancelInspection, chooseLeg, selectLeg(LegChoice), closeLegPanel
@@ -536,7 +537,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         if legPanel != nil {
             switch intent {
             case .resolveDrawingOverlap, .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
-                 .editLegField, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
+                 .editLegField, .selectLegTime, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
                  .adjustHeading, .adjustFlightTime: break
             default: return
             }
@@ -688,6 +689,10 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .editLegField(let field, let text):
             guard legPanel == .editor else { return }
             editor?.entry[field] = text
+            retainEditorEntry(on: route)
+        case .selectLegTime(let component, let value):
+            guard legPanel == .editor else { return }
+            editor?.entry.selectTime(component, value: value)
             retainEditorEntry(on: route)
         case .adjustHeading(let delta):
             guard legPanel == .editor else { return }

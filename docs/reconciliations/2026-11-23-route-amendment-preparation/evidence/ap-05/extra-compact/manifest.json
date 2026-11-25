@@ -1,0 +1,80 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "91892136-5B4E-40AD-ADBC-36EBD50166A8.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "R2 retained MapLibre camera_0_F88EC3CE-8AC8-4397-A408-FEC890E842D3.txt",
+        "timestamp" : 1795613200.423
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "D16B6840-D878-4C49-B63D-C8C65E097B03.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-cleared-portrait_0_48F19626-59BA-492A-AF1A-81A918664568.png",
+        "timestamp" : 1795613196.331
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "F5799991-CC49-45FB-8533-B2BE800DE291.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-partial-portrait_0_4D698CA7-8BA4-405E-AA63-E4B2D18B726B.png",
+        "timestamp" : 1795613187.591
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "43F2042B-3D46-4190-A19F-4516590C5353.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-ceiling-portrait_0_30E82FF7-700F-4609-B559-2CB163A4BA38.png",
+        "timestamp" : 1795613177.212
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "66DE7278-8BC5-4170-A682-8BABF556E7DE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-59-59-portrait_0_D194D9AA-F174-4C27-9EAB-BFCBBB2A3F80.png",
+        "timestamp" : 1795613174.24
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "892EF312-4F03-4D6D-A9EB-CA7C628D4D35.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-one-second-portrait_0_0A4D6BD3-669D-40B0-96EF-E4C58782443E.png",
+        "timestamp" : 1795613166.717
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "796E86F5-8BEB-40A3-A55F-B58994656FAF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-zero-portrait_0_46FC88B1-35B2-4651-BE22-858718103ABA.png",
+        "timestamp" : 1795613163.624
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "55F8BFDE-2DA8-400D-9621-53D006F68F09.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-untouched-portrait_0_A50A3330-7A2F-4E53-B193-EB67F91931CF.png",
+        "timestamp" : 1795613153.892
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange"
+  }
+]

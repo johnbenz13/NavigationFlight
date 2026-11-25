@@ -811,6 +811,21 @@ extension CockpitFeatureState {
             }
             updateRouteAmendment(.saveLegValues)
         }
+        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION"] == "1",
+           let flight, let draft = routeAmendmentDraft,
+           let pending = try? PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route),
+           let data = try? JSONEncoder().encode(pending),
+           var archived = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+           var legs = archived["replacementLegs"] as? [[String: Any]], !legs.isEmpty {
+            // Model a previously accepted archive, rather than bypassing new-edit
+            // validation. Restore it through the existing complete-value adapter.
+            legs[0]["durationSeconds"] = 5400
+            archived["replacementLegs"] = legs
+            if let archive = try? JSONSerialization.data(withJSONObject: archived),
+               let legacy = try? JSONDecoder().decode(PendingRouteAmendment.self, from: archive) {
+                routeAmendmentDraft = RouteAmendmentDraft(replacing: legacy, on: route)
+            }
+        }
         updateRouteAmendment(.pause)
         updateRouteAmendment(.resume)
     }

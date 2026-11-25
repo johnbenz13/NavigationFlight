@@ -11,6 +11,8 @@ Keep UI automation in XCUITest; these helpers do not change production behavior.
 - `startAmendmentFixture` starts the leg and waits for Start to disappear, then
   dismisses the checklist when present. Progress fixtures can advance beyond the
   first checklist; readiness accepts the operational amendment control too.
+  It explicitly closes an identified system sidebar overlay before Start: after
+  rotation, that overlay can intercept a tap even when AX reports Start hittable.
   `launchPartialAmendment` uses this path for existing empty, partial, progress,
   heading and overlap fixtures, including accessibility text sizes.
 - `launchPendingAmendmentForManagement` uses the existing `armed` workspace fixture.
@@ -29,6 +31,11 @@ Keep UI automation in XCUITest; these helpers do not change production behavior.
 - Reuse `tapAmendmentControl` for the adaptive console and `tapChartPanelControl`
   for the editor's scroll viewport and pinned footer. After cancellation, assert
   the next allowed interaction's result, not just that a panel exists.
+  Editor scrolling uses measured, bounded slow drags beside the wheels to avoid
+  overshooting controls in the compact accessibility viewport. Fully visible,
+  enabled buttons may use their measured center when native AX incorrectly reports
+  them unhittable; callers must still assert the resulting action. A failed reveal
+  retains the panel hierarchy and a full-screen screenshot for diagnosis.
 
 Fixtures establish a starting state; they do not replace interaction coverage.
 Use observable UI outcomes and bounded predicate/existence waits rather than

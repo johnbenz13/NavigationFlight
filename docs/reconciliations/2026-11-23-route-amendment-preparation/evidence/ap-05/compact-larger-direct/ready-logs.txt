@@ -1,0 +1,13 @@
+2026-11-25 15:21:06.821248+0200 [18119:20050815] [XPC] [C:1] Ignoring activation message because no connection exists for 1
+
+2026-11-25 15:21:09.333372+0200 [18119:20051034] [Core] {"msg":"file does not exist... clearing", "file":/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.pkVpZu/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, "error":Error Domain=NSCocoaErrorDomain Code=260 "The file “com.apple.CoreMotion.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.pkVpZu/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSURL=file:///private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.pkVpZu/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS%2027.2.simruntime/Contents/Resources/RuntimeRoot/private/var/Managed%20Preferences/kCFPreferencesCurrentUser/com.apple.CoreMotion.plist, NSUnderlyingError=0x103231ce0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}}
+
+objc[18119]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.pkVpZu/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10a04c310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.pkVpZu/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x109f04398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+
+2026-11-25 15:21:10.241689+0200 [18119:20050492] MLNMapView WARNING UIViewController.automaticallyAdjustsScrollViewInsets is deprecated use MLNMapView.automaticallyAdjustContentInset instead.
+
+2026-11-25 15:21:10.550837+0200 [18119:20050492] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-25 15:21:10.550919+0200 [18119:20050492] [API] cannot add handler to 0 from 0 - dropping
+
+2026-11-25 15:21:10.581270+0200 [18119:20050492] [XPCErrors] non-launching port is incompatible with service identifier "com.apple.PointerUI.pointeruid.default-service"

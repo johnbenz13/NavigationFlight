@@ -13,6 +13,110 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @MainActor
+    @Test(arguments: ["", "001", "087", "360"], ["", "02:15"])
+    func partialHeadingAndTimeSurviveDoneClearAndPencil(_ heading: String, _ duration: String) throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)))
+        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
+        let first = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        state.updateRouteAmendment(.editLeg(first.id))
+        #expect(state.routeAmendmentDraft?.editor?.entry == RouteAmendmentLegEntry())
+        state.updateRouteAmendment(.saveLegValues)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first?.entry == RouteAmendmentLegEntry())
+        state.updateRouteAmendment(.editLeg(first.id))
+        state.updateRouteAmendment(.editLegField(.heading, heading))
+        state.updateRouteAmendment(.editLegField(.duration, duration))
+        state.updateRouteAmendment(.editLegField(.altitude, "2517"))
+        state.updateRouteAmendment(.editLegField(.frequency, "122.525"))
+        state.updateRouteAmendment(.editLegField(.visualReference, "Road junction"))
+        let entry = try #require(state.routeAmendmentDraft?.editor?.entry)
+        state.updateRouteAmendment(.saveLegValues)
+        #expect(state.routeAmendmentDraft?.editor == nil)
+        let stored = try #require(state.routeAmendmentDraft?.reviewLegs(on: route).first)
+        #expect(stored.id == first.id)
+        #expect(stored.entry == entry)
+        #expect((stored.values != nil) == (!heading.isEmpty && !duration.isEmpty))
+        state.updateRouteAmendment(.plot(.init(position: first.from, legHits: [.proposed(first.id)])))
+        #expect(state.routeAmendmentDraft?.editor?.entry == entry)
+        state.updateRouteAmendment(.toggleWorkspace)
+        state.updateRouteAmendment(.toggleWorkspace)
+        #expect(state.routeAmendmentDraft?.editor?.entry == entry)
+        state.updateRouteAmendment(.editLegField(.heading, ""))
+        state.updateRouteAmendment(.saveLegValues)
+        state.updateRouteAmendment(.editLeg(first.id))
+        let cleared = try #require(state.routeAmendmentDraft?.editor?.entry)
+        #expect(cleared.magneticHeading == nil)
+        #expect(cleared.duration == entry.duration)
+        #expect(cleared.altitude == entry.altitude)
+        #expect(cleared.frequency == entry.frequency)
+        #expect(cleared.visualReference == entry.visualReference)
+        #expect(state.flight == flight)
+        #expect(state.amendmentSave == nil)
+    }
+
+    @MainActor
+    @Test(arguments: [false, true])
+    func checkPreservesEveryPilotFieldAndManualAidEligibility(_ available: Bool) throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = try #require(state.flight)
+        let route = try #require(state.routeForAmendment)
+        var draft = RouteAmendmentDraft(flightID: flight.id, mode: .manual)
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)), route: route)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))), route: route)
+        let end = route.anchor(at: 1, fraction: 1)
+        draft.update(.plot(.init(position: route.coordinate(at: end), anchors: [end])), route: route)
+        for leg in draft.reviewLegs(on: route) {
+            draft.update(.editLeg(leg.id), route: route)
+            for (field, value) in [(RouteAmendmentLegEntry.Field.heading, "176"), (.duration, "02:15"),
+                                   (.altitude, "2517"), (.frequency, "122.525"), (.visualReference, "Junction")] {
+                draft.update(.editLegField(field, value), route: route)
+            }
+            draft.update(.saveLegValues, route: route)
+        }
+        let before = draft.reviewLegs(on: route)
+        let inputs: RouteAmendmentEstimator.Inputs? = available
+            ? .init(mode: .noWind, magneticVariationEast: .init(value: 5), planningAirspeed: .init(value: 90), defaultWind: nil)
+            : nil
+        draft.update(.editLeg(before[0].id), route: route)
+        draft.update(.toggleCheck, route: route, estimateInputs: inputs)
+        #expect(draft.editor?.entry == before[0].entry)
+        #expect((draft.editor?.estimate != .unavailable) == available)
+        #expect(draft.mode == .manual)
+        #expect(draft.reviewLegs(on: route) == before)
+        draft.update(.toggleCheck, route: route, estimateInputs: inputs)
+        draft.update(.saveLegValues, route: route)
+        let pending = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        #expect(pending.mode == .manual)
+        var activated = flight
+        try activated.installPendingAmendment(pending, in: plan)
+        _ = try activated.activateAmendment(id: pending.id, expectedLegID: flight.activeLegID,
+                                            targetID: pending.replacementLegs[0].from.id,
+                                            at: Date(timeIntervalSince1970: 110))
+        let presentation = try AviationMapPresentationFactory().makePresentation(flightPlan: plan, flight: activated)
+        #expect(presentation.minuteMarkers.isEmpty)
+        #expect(presentation.driftReferenceArms.isEmpty)
+        let restored = RouteAmendmentDraft(replacing: pending, on: route)
+        #expect(restored.reviewLegs(on: route).map(\.values) == before.map(\.values))
+        var incomplete = draft
+        incomplete.update(.editLeg(before[0].id), route: route)
+        incomplete.update(.editLegField(.heading, ""), route: route)
+        incomplete.update(.saveLegValues, route: route)
+        #expect(throws: PendingRouteAmendment.Validation.incompleteLegs) {
+            try PendingRouteAmendment(id: UUID(), draft: incomplete, flight: flight, route: route)
+        }
+        #expect(state.flight == flight)
+    }
+
     @Test func cancellingDepartureOccurrencesStillRequiresDeparture() throws {
         let plan = try twoLegFlight()
         let leg = plan.legs[0]
@@ -240,8 +344,10 @@ struct NavigationFlightTests {
         #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
         state.updateRouteAmendment(.editLegField(.heading, "087"))
         state.updateRouteAmendment(.saveLegValues)
-        #expect(state.routeAmendmentDraft?.editor?.showValidation == true)
+        #expect(state.routeAmendmentDraft?.editor == nil)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first?.entry.magneticHeading == 87)
         #expect(state.routeAmendmentDraft?.reviewLegs(on: route).first?.values == nil)
+        state.updateRouteAmendment(.editLeg(leg.id))
         state.updateRouteAmendment(.editLegField(.minutes, "03"))
         state.updateRouteAmendment(.editLegField(.seconds, "20"))
         state.updateRouteAmendment(.saveLegValues)
@@ -1632,10 +1738,9 @@ struct NavigationFlightTests {
         let leg = legs[0]
         state.updateRouteAmendment(.editLeg(leg.id))
         state.updateRouteAmendment(.saveLegValues)
-        guard state.routeAmendmentDraft?.editor?.showValidation == true else {
-            Issue.record("Incomplete leg should show validation and stay in its editor")
-            return
-        }
+        #expect(state.routeAmendmentDraft?.editor == nil)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route)[0].values == nil)
+        state.updateRouteAmendment(.editLeg(leg.id))
         state.updateRouteAmendment(.editLegField(.heading, "87"))
         state.updateRouteAmendment(.editLegField(.duration, "03:20"))
         state.updateRouteAmendment(.editLegField(.visualReference, "Road junction"))
@@ -1660,7 +1765,7 @@ struct NavigationFlightTests {
             Issue.record("Expected a no-wind estimate for the first leg")
             return
         }
-        #expect(state.routeAmendmentDraft?.editor?.entry.heading == "087")
+        #expect(state.routeAmendmentDraft?.editor?.entry.magneticHeading == 87)
         state.updateRouteAmendment(.editLegField(.heading, "150"))
         state.updateRouteAmendment(.editLegField(.minutes, "05"))
         state.updateRouteAmendment(.editLegField(.seconds, "13"))
@@ -1690,7 +1795,9 @@ struct NavigationFlightTests {
         state.updateRouteAmendment(.resume, mode: .assisted)
         #expect(state.routeAmendmentDraft?.mode == .manual)
         #expect(state.routeAmendmentDraft?.editor == comparison)
-        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == saved)
+        let retained = try #require(state.routeAmendmentDraft?.reviewLegs(on: route))
+        #expect(retained[0].entry == comparison.entry)
+        #expect(retained[1] == saved[1])
         #expect(state.flight == flight)
 
         state.updateRouteAmendment(.backToLegReview)
@@ -1698,7 +1805,7 @@ struct NavigationFlightTests {
         #expect(state.routeAmendmentDraft?.editor?.id == leg.id)
         state.updateRouteAmendment(.backToLegReview)
         #expect(state.routeAmendmentDraft?.step == .review)
-        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == saved)
+        #expect(state.routeAmendmentDraft?.reviewLegs(on: route) == retained)
 
         state.updateRouteAmendment(.discard)
         state.updateRouteAmendment(.open, mode: .assisted)

@@ -66,6 +66,29 @@ struct RouteAmendmentEstimateTests {
         #expect(RouteAmendmentLegEntry(values: values).values == values)
     }
 
+    @Test func legacyCompleteValuesRemainLosslessWhileOtherFieldsChange() {
+        let values = RouteAmendmentLegValues(
+            headingMagnetic: 176, durationSeconds: 3901,
+            altitude: .init(value: 2500.123456789), frequency: .init(value: 122.123456789),
+            visualReference: "  Keep legacy spacing  "
+        )
+        var entry = RouteAmendmentLegEntry(values: values)
+        #expect(entry.values == values)
+        entry[.heading] = "087"
+        #expect(entry.values?.altitude == values.altitude)
+        #expect(entry.values?.frequency == values.frequency)
+        #expect(entry.values?.visualReference == values.visualReference)
+        #expect(entry.values?.durationSeconds == 3901)
+        entry[.heading] = ""
+        #expect(entry.values == nil)
+        #expect(entry.durationSeconds == 3901)
+        entry[.heading] = "176"
+        #expect(entry.values == values)
+        entry[.altitude] = ""
+        #expect(entry.values?.altitude == nil)
+        #expect(entry.values?.frequency == values.frequency)
+    }
+
     @Test func headingEntryRejectsOutOfRangeEditsAndWrapsAtNorth() {
         var entry = RouteAmendmentLegEntry()
         entry[.heading] = "00"

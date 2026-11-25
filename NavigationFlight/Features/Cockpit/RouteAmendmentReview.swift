@@ -56,9 +56,9 @@ struct RouteAmendmentReview: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             if !compact {
-                Text(heading(leg)).foregroundStyle(leg.values == nil ? .secondary : .primary)
+                Text(heading(leg)).foregroundStyle(leg.entry.magneticHeading == nil ? .secondary : .primary)
                     .frame(width: 136, alignment: .leading)
-                Text(duration(leg)).foregroundStyle(leg.values == nil ? .secondary : .primary)
+                Text(duration(leg)).foregroundStyle(leg.entry.durationSeconds == nil ? .secondary : .primary)
                     .frame(width: 136, alignment: .leading)
                 Image(systemName: "chevron.right").foregroundStyle(.secondary)
             }
@@ -75,7 +75,7 @@ struct RouteAmendmentReview: View {
     }
 
     private func heading(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
-        leg.values.map { "\($0.headingText)°" } ?? "Not set"
+        leg.entry.magneticHeading.map { String(format: "%03d°", $0) } ?? "Not set"
     }
 
     private func boundary(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
@@ -89,7 +89,7 @@ struct RouteAmendmentReview: View {
     }
 
     private func duration(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
-        leg.values.map { RouteAmendmentLegEntry.durationText($0.durationSeconds) } ?? "Not set"
+        leg.entry.durationSeconds.map(RouteAmendmentLegEntry.durationText) ?? "Not set"
     }
 }
 

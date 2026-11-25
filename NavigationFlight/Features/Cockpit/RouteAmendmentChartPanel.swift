@@ -15,12 +15,13 @@ struct RouteAmendmentChartPanel: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var contentHeight: CGFloat = 0
     @State private var footerHeight: CGFloat = 0
+    @State private var presentsNativeChoice = false
 
     private typealias Style = RouteAmendmentPanelStyle
 
     var body: some View {
         GeometryReader { geometry in
-            if let panel = draft.legPanel {
+            if let panel = draft.legPanel, !usesNativeChoice {
                 if draft.isChoosingInspectionLeg, geometry.size.width >= 810, !dynamicTypeSize.isAccessibilitySize {
                     panelContent(.inspection)
                         .frame(width: 406)
@@ -74,6 +75,14 @@ struct RouteAmendmentChartPanel: View {
                 .padding(.horizontal, inset)
                 .padding(.top, top)
             }
+            nativeChoice
+
+        }
+        .onChange(of: draft.legPanel, initial: true) { _, _ in
+            presentsNativeChoice = usesNativeChoice
+        }
+        .onChange(of: usesNativeChoice) { _, presented in
+            presentsNativeChoice = presented
         }
         .onChange(of: focus) { previous, _ in
             guard let previous, let entry = draft.editor?.entry else { return }
@@ -81,6 +90,52 @@ struct RouteAmendmentChartPanel: View {
             if finalized != entry[previous] {
                 onIntent(.editLegField(previous, finalized))
             }
+        }
+    }
+
+    private var nativeChoice: some View {
+        Color.clear
+            .confirmationDialog("Edit / Rejoin", isPresented: Binding(
+                get: { presentsNativeChoice && isNativeOverlap },
+                set: { presentsNativeChoice = $0 }
+            ), titleVisibility: .visible) {
+                Button("Edit") { onIntent(.resolveDrawingOverlap(rejoin: false)) }
+                    .accessibilityIdentifier("amendment-overlap-edit")
+                Button("Rejoin") { onIntent(.resolveDrawingOverlap(rejoin: true)) }
+                    .accessibilityIdentifier("amendment-overlap-rejoin")
+                Button("Cancel", role: .cancel) { onIntent(.closeLegPanel) }
+            }
+            .sheet(isPresented: Binding(get: { usesNativeChoice && !isNativeOverlap }, set: { _ in })) {
+                NavigationStack {
+                    List {
+                        if case .chooser(let choices, false, _) = draft.legPanel {
+                            ForEach(draft.legChoiceRows(choices, on: route)) { row in
+                                Button(row.name) { onIntent(.selectLeg(row.id)) }
+                                    .accessibilityIdentifier("choose-amendment-proposed-row")
+                            }
+                        }
+                    }
+                    .navigationTitle("Choose a leg")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { onIntent(.closeLegPanel) }
+                        }
+                    }
+                }
+                .interactiveDismissDisabled()
+            }
+    }
+
+    private var isNativeOverlap: Bool {
+        if case .drawingOverlap = draft.legPanel { return true }
+        return false
+    }
+
+    private var usesNativeChoice: Bool {
+        guard compact, dynamicTypeSize.isAccessibilitySize else { return false }
+        return switch draft.legPanel {
+        case .drawingOverlap, .chooser(_, false, _): true
+        default: false
         }
     }
 
@@ -122,6 +177,19 @@ struct RouteAmendmentChartPanel: View {
                 if let editor = draft.editor,
                    let leg = draft.reviewLegs(on: route).first(where: { $0.id == editor.id }) {
                     editorContent(editor, leg: leg)
+                }
+            case .drawingOverlap:
+                Text("Edit / Rejoin").font(.headline)
+                Button { onIntent(.resolveDrawingOverlap(rejoin: false)) } label: {
+                    Text("Edit").frame(maxWidth: .infinity, minHeight: 44).contentShape(.rect)
+                }
+                .accessibilityIdentifier("amendment-overlap-edit")
+                Button { onIntent(.resolveDrawingOverlap(rejoin: true)) } label: {
+                    Text("Rejoin").frame(maxWidth: .infinity, minHeight: 44).contentShape(.rect)
+                }
+                .accessibilityIdentifier("amendment-overlap-rejoin")
+                Button { onIntent(.closeLegPanel) } label: {
+                    Text("Cancel").frame(maxWidth: .infinity, minHeight: 44).contentShape(.rect)
                 }
             case .inspection:
                 inspection

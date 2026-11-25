@@ -259,6 +259,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var waypoint: RouteAmendmentRoute.Stop?
         var pointID: UUID?
         var legHits: [LegChoice]?
+        // A deliberate chart hit may snap to an original leg; map-center input does not.
+        var isRouteTap = false
     }
 
     enum CrossingPurpose: Equatable, Sendable {
@@ -279,6 +281,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     enum Intent {
         case open, pause, resume, discard
         case toggleWorkspace, togglePlotting, stopPlotting
+        case resolveDrawingOverlap(rejoin: Bool)
         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
@@ -362,6 +365,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
 
     enum LegPanel: Equatable, Sendable {
         case editor
+        case drawingOverlap([LegChoice], [RouteAmendmentAnchor])
         case inspection
         case chooser([LegChoice], inspecting: Bool, overlap: Bool)
         case original(UUID, inspecting: Bool)
@@ -529,7 +533,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         validateDeparture(on: route)
         if legPanel != nil {
             switch intent {
-            case .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
+            case .resolveDrawingOverlap, .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
                  .editLegField, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
                  .adjustHeading, .adjustFlightTime: break
             default: return
@@ -543,22 +547,38 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .plot(let input):
             if let hits = input.legHits, acceptsLegTap {
                 let eligible = legChoices(on: route, originalsOnly: isInspecting)
-                let choices = eligible.filter { hits.contains($0) }
+                let choices = eligible.filter { hits.contains($0) }.filter {
+                    if isInspecting { return true }
+                    if case .proposed = $0 { return true }
+                    return false
+                }
+                let anchors = rejoinCandidates(from: input, on: route)
+                    .filter { isValid($0, forDeparture: false, route: route) }
+                if !isInspecting, departure != nil, rejoin == nil, !choices.isEmpty, !anchors.isEmpty {
+                    legPanel = .drawingOverlap(choices, anchors)
+                    return
+                }
                 if choices.count > 1 {
                     overlapPosition = input.position
                     legPanel = .chooser(choices, inspecting: isInspecting, overlap: true)
+                    return
                 } else if let choice = choices.first {
                     selectLeg(choice, inspecting: isInspecting, on: route)
+                    return
                 } else if isInspecting {
                     message = "No original leg here. Try another chart location."
+                    return
                 }
-                return
             }
             guard acceptsMapInput else { return }
             if case .move(let id) = step {
                 editPoint(id, replacingWith: input, route: route)
             } else if step == .departure || step == .rejoin {
                 propose(input.anchors, route: route)
+            } else if rejoin != nil {
+                return
+            } else if !rejoinCandidates(from: input, on: route).isEmpty {
+                propose(rejoinCandidates(from: input, on: route), route: route)
             } else if let id = input.pointID, points.contains(where: { $0.id == id }) {
                 sketch.selection = id
             } else {
@@ -591,15 +611,27 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             var candidate = sketch
             candidate.rejoin = anchor
             if applyPlot(candidate, route: route) { step = .drawing }
+        case .resolveDrawingOverlap(let shouldRejoin):
+            guard case .drawingOverlap(let choices, let anchors) = legPanel else { return }
+            legPanel = nil
+            guard departure != nil, rejoin == nil, step == .drawing else { return }
+            if shouldRejoin {
+                // Re-resolve against current progress rather than trusting the displayed options.
+                propose(anchors.filter { isValid($0, forDeparture: false, route: route) }, route: route)
+            } else if choices.count == 1, let choice = choices.first {
+                selectLeg(choice, inspecting: false, on: route)
+            } else {
+                legPanel = .chooser(choices, inspecting: false, overlap: true)
+            }
         case .selectPoint(let id):
-            guard step == .drawing, points.contains(where: { $0.id == id }) else { return }
+            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
             sketch.selection = id
         case .movePoint(let id):
-            guard step == .drawing, points.contains(where: { $0.id == id }) else { return }
+            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
             sketch.selection = id
             step = .move(id)
         case .removePoint(let id):
-            guard step == .drawing, points.contains(where: { $0.id == id }) else { return }
+            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
             editPoint(id, replacingWith: nil, route: route)
         case .undo:
             guard step == .drawing || step == .departure, let previous = plotHistory.popLast() else { return }
@@ -607,21 +639,24 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             step = departure == nil ? .departure : .drawing
             validateDeparture(on: route)
         case .chooseDeparture:
-            guard step == .staleDeparture || step == .drawing else { return }
+            guard step == .staleDeparture || step == .drawing || step == .review else { return }
             if step == .staleDeparture { sketch.departure = nil }
             step = .departure
         case .clearRejoin:
             guard step == .staleDeparture || step == .departure else { return }
             sketch.rejoin = nil
         case .chooseRejoin:
-            guard step == .drawing else { return }
+            guard step == .drawing || step == .review else { return }
+            var candidate = sketch
+            candidate.rejoin = nil
+            guard applyPlot(candidate, route: route) else { return }
             step = .rejoin
         case .back:
             switch step {
             case .crossing(_, let purpose):
                 switch purpose {
                 case .departure: step = .departure
-                case .rejoin: step = .rejoin
+                case .rejoin: step = .drawing
                 case .finish: step = .drawing
                 }
             case .departure where departure != nil: step = .drawing
@@ -702,6 +737,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .closeLegPanel:
             overlapPosition = nil
             switch legPanel {
+            case .drawingOverlap:
+                legPanel = nil
             case .inspection, .original:
                 legPanel = editor == nil ? nil : .editor
             case .chooser(_, let inspecting, _):
@@ -789,7 +826,26 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             candidate.departure = first
             if applyPlot(candidate, route: route) { step = .drawing }
         } else {
-            step = .confirmRejoin(first)
+            var candidate = sketch
+            candidate.rejoin = first
+            if applyPlot(candidate, route: route) {
+                step = .review
+            }
+        }
+    }
+
+    private func rejoinCandidates(from input: MapInput, on route: RouteAmendmentRoute) -> [RouteAmendmentAnchor] {
+        let position = input.waypoint?.position ?? input.position
+        var seen = Set<RouteAmendmentAnchor>()
+        return (input.anchors + [input.waypoint?.id].compactMap { $0 }).compactMap { candidate in
+            guard route.legs.indices.contains(candidate.legIndex),
+                  route.legs[candidate.legIndex].id == candidate.legID,
+                  (0...1).contains(candidate.fraction),
+                  input.isRouteTap || route.sameLocation(position, route.coordinate(at: candidate)) else { return nil }
+            let endpoints = [route.anchor(at: candidate.legIndex, fraction: 0),
+                             route.anchor(at: candidate.legIndex, fraction: 1)]
+            let anchor = endpoints.first { route.sameLocation(position, route.coordinate(at: $0)) } ?? candidate
+            return seen.insert(anchor).inserted ? anchor : nil
         }
     }
 

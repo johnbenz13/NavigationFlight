@@ -17,7 +17,6 @@ struct RouteAmendmentReview: View {
                     row(leg, number: index + 1)
                 }
                 .buttonStyle(RouteAmendmentLegButtonStyle())
-                .disabled(isPlotting)
                 .id(leg.id)
                 .accessibilityLabel("Proposed leg \(index + 1), \(leg.name)")
                 .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))")

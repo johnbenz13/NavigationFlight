@@ -104,19 +104,7 @@ struct CockpitFeatureState: Equatable, Sendable {
             updateRouteAmendment(isAmendmentWorkspaceVisible ? .pause : .open, mode: mode)
             return
         }
-        if case .togglePlotting = intent {
-            guard isAmendmentWorkspaceVisible, amendmentSave == nil,
-                  routeAmendmentDraft?.legPanel == nil else { return }
-            isAmendmentPlotting.toggle()
-            if let route = routeForAmendment {
-                if isAmendmentPlotting, routeAmendmentDraft?.step == .review {
-                    routeAmendmentDraft?.update(.back, route: route)
-                } else if !isAmendmentPlotting {
-                    routeAmendmentDraft?.update(.stopPlotting, route: route)
-                }
-            }
-            return
-        }
+        if case .togglePlotting = intent { return }
         if case .pause = intent {
             isAmendmentWorkspaceVisible = false
             isAmendmentPlotting = false
@@ -156,17 +144,11 @@ struct CockpitFeatureState: Equatable, Sendable {
             isAmendmentPlotting = false
         case .plot(let input):
             guard isAmendmentWorkspaceVisible else { return }
-            if isAmendmentPlotting {
-                // Placement has no leg-selection semantics, even if a caller supplies hits.
-                var placement = input
-                placement.legHits = nil
-                routeAmendmentDraft?.update(.plot(placement), route: route)
-            } else if input.legHits != nil, routeAmendmentDraft?.acceptsLegTap == true {
-                routeAmendmentDraft?.update(.plot(input), route: route)
-            }
+            routeAmendmentDraft?.update(.plot(input), route: route)
+            isAmendmentPlotting = routeAmendmentDraft?.rejoin == nil
             return
         case .editLeg, .checkLeg, .chooseLeg:
-            guard isAmendmentWorkspaceVisible, !isAmendmentPlotting else { return }
+            guard isAmendmentWorkspaceVisible else { return }
         case .movePoint, .chooseDeparture, .chooseRejoin:
             guard isAmendmentWorkspaceVisible else { return }
             isAmendmentPlotting = true
@@ -185,13 +167,9 @@ struct CockpitFeatureState: Equatable, Sendable {
                 defaultWind: flightPlan.operationalContext.defaultWind
             )
         )
-        if case .open = intent, !isAmendmentPlotting {
-            routeAmendmentDraft?.update(.stopPlotting, route: route)
-        }
-        if case .resume = intent, !isAmendmentPlotting {
-            routeAmendmentDraft?.update(.stopPlotting, route: route)
-        }
-        if routeAmendmentDraft?.step == .review { isAmendmentPlotting = false }
+        isAmendmentPlotting = isAmendmentWorkspaceVisible && amendmentSave == nil
+            && routeAmendmentDraft?.rejoin == nil
+
     }
 
     init(progressionPolicy: Flight.ProgressionPolicy = .automaticNextLeg) {
@@ -755,10 +733,27 @@ extension CockpitFeatureState {
         isFutureDeparture: Bool = false,
         rejoinFixture: String? = nil,
         workspaceFixture: Bool = false,
-        partialWorkspaceFixture: Bool = false
+        partialWorkspaceFixture: Bool = false,
+        overlapWorkspaceFixture: Bool = false,
+        completedFirstLegFixture: Bool = false,
+        overlapChoiceFixture: Bool = false,
+        multipleOverlapFixture: Bool = false,
+        overlapOccurrencesFixture: Bool = false
     ) {
+        if completedFirstLegFixture, var fixtureFlight = flight, fixtureFlight.activeLegIndex == 0 {
+            // Disposable visual fixture: exercise the real progression rules before preparing leg 2.
+            guard let timestamp = fixtureFlight.legStartedAt else { return }
+            guard (try? fixtureFlight.reachCurrentWaypoint(at: timestamp)) != nil else { return }
+            if fixtureFlight.legState == .ready {
+                guard (try? fixtureFlight.startLeg(at: timestamp)) != nil else { return }
+            }
+            flight = fixtureFlight
+            selectedLegIndex = fixtureFlight.activeLegIndex
+        }
         guard let route = routeForAmendment else { return }
-        let departureIndex = route.firstAvailable.legIndex + (isFutureDeparture ? 1 : 0)
+        let availableIndex = completedFirstLegFixture ? (flight?.activeLegIndex ?? route.firstAvailable.legIndex)
+            : route.firstAvailable.legIndex
+        let departureIndex = availableIndex + (isFutureDeparture ? 1 : 0)
         guard route.legs.indices.contains(departureIndex + 1) else { return }
         updateRouteAmendment(.open)
         updateRouteAmendment(.togglePlotting)
@@ -769,10 +764,20 @@ extension CockpitFeatureState {
         default: route.anchor(at: departure.legIndex + 1, fraction: 1)
         }
         let position = route.coordinate(at: departure)
-        let via = WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,
-                                  longitudeDegrees: position.longitudeDegrees + 0.02)
+        let via = overlapWorkspaceFixture ? route.coordinate(at: route.anchor(at: departureIndex, fraction: 0.8))
+            : WGS84Coordinate(latitudeDegrees: position.latitudeDegrees + 0.02,
+                              longitudeDegrees: position.longitudeDegrees + 0.02)
         updateRouteAmendment(.chooseAnchor(departure))
         updateRouteAmendment(.plot(.init(position: via)))
+        if multipleOverlapFixture {
+            updateRouteAmendment(.plot(.init(position: route.coordinate(at: route.anchor(at: departureIndex, fraction: 0.5)))))
+        }
+        if overlapChoiceFixture, let legs = routeAmendmentDraft?.reviewLegs(on: route), !legs.isEmpty {
+            let anchor = route.anchor(at: departureIndex, fraction: overlapOccurrencesFixture ? 0.5 : 0.63)
+            let anchors = overlapOccurrencesFixture ? [anchor, route.anchor(at: departureIndex + 2, fraction: 0.5)] : [anchor]
+            updateRouteAmendment(.plot(.init(position: route.coordinate(at: anchor), anchors: anchors,
+                                             legHits: legs.map { .proposed($0.id) }, isRouteTap: true)))
+        }
         if partialWorkspaceFixture {
             updateRouteAmendment(.togglePlotting)
             updateRouteAmendment(.pause)

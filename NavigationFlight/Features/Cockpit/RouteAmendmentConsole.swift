@@ -60,6 +60,7 @@ struct RouteAmendmentConsole: View {
                                              isPlotting: isPlotting, isReplacing: isReplacing, onIntent: onIntent)
                             .allowsHitTesting(draft.legPanel == nil)
                         controls
+                            .id("amendment-route-controls")
                             .allowsHitTesting(draft.legPanel == nil)
                         if confirmationUnavailableWhileAmended {
                             Text("You can keep editing this draft. Confirming another amendment on this revised route is unavailable.")
@@ -85,6 +86,9 @@ struct RouteAmendmentConsole: View {
                 .onChange(of: draft.reviewLegs(on: route).last?.id) { _, id in
                     if isPlotting, let id { proxy.scrollTo(id, anchor: .bottom) }
                 }
+                .onChange(of: draft.step) { _, step in
+                    if case .crossing = step { proxy.scrollTo("amendment-route-controls", anchor: .top) }
+                }
             }
             workspaceActions
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -101,7 +105,7 @@ struct RouteAmendmentConsole: View {
                     .accessibilityLabel("Amend route, \(draft.mode.title)")
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
-                plottingButton.font(.caption2)
+                drawingStatus.font(.caption2)
             }
             .frame(minHeight: 44)
         } else {
@@ -109,11 +113,11 @@ struct RouteAmendmentConsole: View {
                 HStack(spacing: 12) {
                     workspaceTitle
                     Spacer(minLength: 0)
-                    plottingButton
+                    drawingStatus
                 }
                 VStack(alignment: .leading, spacing: 0) {
                     workspaceTitle
-                    plottingButton
+                    drawingStatus
                 }
             }
             .frame(minHeight: 44)
@@ -136,24 +140,10 @@ struct RouteAmendmentConsole: View {
         }
     }
 
-    private var plottingButton: some View {
-        Button { onIntent(.togglePlotting) } label: {
-            Text(isPlotting ? "Done plotting" : "Plot points")
-                .frame(minHeight: 32)
-        }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .frame(minHeight: 44)
-            .disabled(draft.legPanel != nil)
-            .accessibilityValue(isPlotting ? "On" : "Off")
-            .accessibilityHint(isPlotting ? "Map taps plot points. Map tools provides route waypoints and map center input." : "Enable map point placement")
-            .accessibilityIdentifier("toggle-amendment-plotting")
-            .accessibilityAction(named: "Route waypoints") {
-                if isPlotting { isPointPickerPresented = true }
-            }
-            .accessibilityAction(named: "Use map center") {
-                if isPlotting { onPlaceAtMapCenter() }
-            }
+    private var drawingStatus: some View {
+        Text(draft.rejoin == nil ? "Drawing" : "Rejoined")
+            .font(.subheadline.weight(.semibold))
+            .accessibilityIdentifier("amendment-drawing-status")
     }
 
     @ViewBuilder
@@ -327,7 +317,7 @@ struct RouteAmendmentConsole: View {
         switch draft.step {
         case .departure:
             VStack(alignment: .leading, spacing: 4) {
-                Text(isPlotting ? "Choose departure" : "Choose Plot points to begin.").font(.headline)
+                Text("Choose departure").font(.headline)
                 Text("Choose a departure on the remaining original route. Each new leg appears here as you draw.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
@@ -338,10 +328,9 @@ struct RouteAmendmentConsole: View {
         case .drawing, .review:
             if draft.rejoin == nil {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(isPlotting ? "Add another point or rejoin the route." : "Route incomplete · choose a later return point.")
+                    Text("Add another point or rejoin the route.")
                         .font(.subheadline.weight(.semibold))
-                    Text(isPlotting ? "Done plotting lets you enter values before the route is complete."
-                         : "Select a leg to enter values. Choose Plot points to continue.")
+                    Text("Select a proposed leg to enter values while drawing.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 8)
@@ -357,7 +346,7 @@ struct RouteAmendmentConsole: View {
             }
             .accessibilityIdentifier("amendment-return-candidate")
         case .crossing(let options, let purpose):
-            Text(purpose == .departure ? "Choose departure leg" : "Choose return leg")
+            Text(purpose == .departure ? "Choose departure leg" : "Return to which leg?")
                 .font(.headline)
             ForEach(options, id: \.self) { anchor in
                 occurrenceOption(anchor)
@@ -387,9 +376,6 @@ struct RouteAmendmentConsole: View {
                 }
                 if draft.step == .drawing {
                     Button("Change departure") { sendPickerIntent(.chooseDeparture) }
-                    Button(draft.rejoin == nil ? "Choose return point" : "Change return point") {
-                        sendPickerIntent(.chooseRejoin)
-                    }
                     // Retain the existing correction commands until AP-06 replaces their presentation.
                     if let selected = draft.points.first(where: { $0.id == draft.selectedPointID }) {
                         Section(pointName(selected)) {

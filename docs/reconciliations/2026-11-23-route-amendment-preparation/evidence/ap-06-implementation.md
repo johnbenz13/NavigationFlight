@@ -183,8 +183,8 @@ bounded cue/adaptation comparison, with owner visual approval still pending.
 
 Approximate elapsed allocation, including test/build/tool waiting: exploration and
 contract/Figma inspection15 min; implementation25 min; test/tool diagnosis and
-repair85 min; final verification/comparison40 min; delivery/handoff15 min
-(about3 hours overall; phase boundaries are estimates, overlapping sampling is
+repair85 min; final verification/comparison40 min; delivery/handoff25 min
+(about3 hours10 minutes overall; phase boundaries are estimates, overlapping sampling is
 not counted twice). No owner-wait time is counted as implementation.
 
 Avoidable reruns include early selectors/disclosure assumptions, initial use of
@@ -204,3 +204,22 @@ Staging exposed expected single-space blank context lines inside exported unifie
 the original patch bytes/hashes; source whitespace remains checked normally.
 The initial local commit ran despite that check failure; it was corrected and
 amended before publication, with the full base-to-candidate check rerun.
+
+## Live owner handoff
+
+Verified source candidate `16cc861`, scheme NavigationFlight, Debug simulator app:
+`/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Build/Products/Debug-iphonesimulator/NavigationFlight.app`.
+Installed/launched on exact AP01-iPad-11-Reference (UDID above), bundle
+`com.bensaidj.NavigationFlight`, process1781. A new disposable UUID library uses
+the canonical synthetic A-progress plan. [Current screenshot](ap-06/handoff/running-reference-ipad.png)
+was directly inspected: usable Ready Cockpit in landscape, Start leg available.
+The live app remains running. Device Hub from the active Xcode was opened;
+select **AP01-iPad-11-Reference** there. Start leg, dismiss its checklist if shown,
+then pencil → first proposed leg → Optional cues. Rotate to portrait if desired.
+
+The delegated install/launch/interaction sequence stalled without intermediate
+output and was interrupted after about6 minutes. Separate explicit simctl steps
+then verified installation, launch and screenshot. Final touch navigation and
+DeviceHub device selection are unverified handoff details, not missing acceptance
+coverage: final automated cue/keyboard flows passed on both exact devices.
+No application changes or test reruns followed the final passing verification.

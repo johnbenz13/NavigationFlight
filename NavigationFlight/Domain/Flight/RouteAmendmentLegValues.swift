@@ -150,7 +150,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
               (0..<60).contains(seconds), minutes <= (Int.max - seconds) / 60 else { return nil }
         let total = minutes * 60 + seconds
         guard total > 0 else { return nil }
-        return total <= 3600 || preservesAcceptedDuration ? total : nil
+        return total < 3600 || preservesAcceptedDuration ? total : nil
     }
 
     /// Only an unchanged accepted value can cross the new preparation boundary.
@@ -165,7 +165,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     }
 
     func timeOptions(_ component: TimeComponent) -> ClosedRange<Int> {
-        component == .minutes ? 0...60 : 0...(timeSelection(.minutes) == 60 ? 0 : 59)
+        0...59
     }
 
     /// Opening sends no intent. A deliberate first choice initializes the other
@@ -178,10 +178,30 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         switch component {
         case .minutes:
             minutes = text
-            if value == 60 || (untouched && value != nil) { seconds = "00" }
+            if untouched && value != nil { seconds = "00" }
         case .seconds:
             seconds = text
             if untouched && value != nil { minutes = "00" }
+        }
+    }
+
+    /// Physical wheel deltas retain direction across the cyclic boundary.
+    /// Missing components remain missing after independent clearing.
+    mutating func advanceTime(_ component: TimeComponent, steps: Int) {
+        guard steps != 0 else { return }
+        // Unset sits outside the numeric cycle: forward starts at 00, backward at 59.
+        guard let old = timeSelection(component) else {
+            let first = steps > 0 ? steps - 1 : steps
+            selectTime(component, value: ((first % 60) + 60) % 60)
+            return
+        }
+        let untouched = minutes.isEmpty && seconds.isEmpty
+        let sum = old % 60 + steps % 3600
+        let value = ((sum % 60) + 60) % 60
+        let carry = (sum - value) / 60
+        selectTime(component, value: value)
+        if component == .seconds, !untouched, let minute = timeSelection(.minutes) {
+            minutes = String(format: "%02d", ((minute % 60 + carry % 60) % 60 + 60) % 60)
         }
     }
 

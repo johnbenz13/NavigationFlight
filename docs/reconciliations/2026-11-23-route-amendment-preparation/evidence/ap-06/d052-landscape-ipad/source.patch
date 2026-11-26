@@ -1,0 +1,1052 @@
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+index b9cd23d..26f0f54 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+@@ -287,6 +287,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
+         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
+         case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
++        case advanceLegTime(RouteAmendmentLegEntry.TimeComponent, Int)
+         case selectLegCue(RouteAmendmentLegEntry.CueComponent, RouteAmendmentLegEntry.CueChoice)
+         case saveLegValues, backToLegReview, checkLeg(ReviewLeg.ID)
+         case toggleCues, toggleCheck, adjustHeading(Int), adjustFlightTime(Int)
+@@ -538,7 +539,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         if legPanel != nil {
+             switch intent {
+             case .resolveDrawingOverlap, .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
+-                 .editLegField, .selectLegTime, .selectLegCue, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
++                 .editLegField, .selectLegTime, .advanceLegTime, .selectLegCue, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
+                  .adjustHeading, .adjustFlightTime: break
+             default: return
+             }
+@@ -695,6 +696,10 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+             guard legPanel == .editor else { return }
+             editor?.entry.selectTime(component, value: value)
+             retainEditorEntry(on: route)
++        case .advanceLegTime(let component, let steps):
++            guard legPanel == .editor else { return }
++            editor?.entry.advanceTime(component, steps: steps)
++            retainEditorEntry(on: route)
+         case .selectLegCue(let component, let choice):
+             guard legPanel == .editor else { return }
+             editor?.entry.selectCue(component, choice: choice)
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+index 6dd6569..e4d0ec8 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+@@ -150,7 +150,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+               (0..<60).contains(seconds), minutes <= (Int.max - seconds) / 60 else { return nil }
+         let total = minutes * 60 + seconds
+         guard total > 0 else { return nil }
+-        return total <= 3600 || preservesAcceptedDuration ? total : nil
++        return total < 3600 || preservesAcceptedDuration ? total : nil
+     }
+ 
+     /// Only an unchanged accepted value can cross the new preparation boundary.
+@@ -165,7 +165,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+     }
+ 
+     func timeOptions(_ component: TimeComponent) -> ClosedRange<Int> {
+-        component == .minutes ? 0...60 : 0...(timeSelection(.minutes) == 60 ? 0 : 59)
++        0...59
+     }
+ 
+     /// Opening sends no intent. A deliberate first choice initializes the other
+@@ -178,13 +178,33 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+         switch component {
+         case .minutes:
+             minutes = text
+-            if value == 60 || (untouched && value != nil) { seconds = "00" }
++            if untouched && value != nil { seconds = "00" }
+         case .seconds:
+             seconds = text
+             if untouched && value != nil { minutes = "00" }
+         }
+     }
+ 
++    /// Physical wheel deltas retain direction across the cyclic boundary.
++    /// Missing components remain missing after independent clearing.
++    mutating func advanceTime(_ component: TimeComponent, steps: Int) {
++        guard steps != 0 else { return }
++        // Unset sits outside the numeric cycle: forward starts at 00, backward at 59.
++        guard let old = timeSelection(component) else {
++            let first = steps > 0 ? steps - 1 : steps
++            selectTime(component, value: ((first % 60) + 60) % 60)
++            return
++        }
++        let untouched = minutes.isEmpty && seconds.isEmpty
++        let sum = old % 60 + steps % 3600
++        let value = ((sum % 60) + 60) % 60
++        let carry = (sum - value) / 60
++        selectTime(component, value: value)
++        if component == .seconds, !untouched, let minute = timeSelection(.minutes) {
++            minutes = String(format: "%02d", ((minute % 60 + carry % 60) % 60 + 60) % 60)
++        }
++    }
++
+     /// Integer kHz identifies a 25 kHz channel; conversion never rounds custom input.
+     var radioChannelKHz: Int? {
+         guard let value = originalCueValue(.frequencyMHz) ?? decimal(frequency) else { return nil }
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+index f5a0bb2..cbc6cba 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+@@ -56,7 +56,7 @@ struct RouteAmendmentChartPanel: View {
+                     .scrollBounceBehavior(.basedOnSize)
+                     .scrollDismissesKeyboard(focus == nil ? .automatic : .never)
+                     .frame(height: panel == .editor && focus == nil
+-                           ? max(1, min(664, viewportHeight) - footerHeight)
++                           ? max(1, min(643, viewportHeight) - footerHeight)
+                            : max(1, min(contentHeight == 0 ? viewportHeight : contentHeight,
+                                         viewportHeight - (pinnedActions ? footerHeight : 0))))
+                     .clipped()
+@@ -313,10 +313,12 @@ struct RouteAmendmentChartPanel: View {
+     ) -> some View {
+         if focused == nil {
+             RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
+-            Divider().padding(.vertical, 8)
++                .id(editor.id)
++            Divider().padding(.vertical, 2)
+         }
+         if focused == nil {
+             RouteAmendmentTimeSection(entry: editor.entry, onIntent: onIntent)
++                .id(editor.id)
+         }
+     }
+ 
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift
+new file mode 100644
+index 0000000..cda37be
+--- /dev/null
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift
+@@ -0,0 +1,37 @@
++import Foundation
++
++/// Unwrapped presentation angle; only `heading` crosses the domain boundary.
++nonisolated struct RouteAmendmentHeadingMotion {
++    var degrees: Double = 360
++    private var previousAngle: Double?
++    private var origin: Double = 360
++    private var hasMoved = false
++
++    var heading: Int {
++        let value = ((Int(degrees.rounded()) % 360) + 360) % 360
++        return value == 0 ? 360 : value
++    }
++
++    mutating func begin(angle: Double, heading: Int?) {
++        degrees = heading.map(Double.init) ?? 360
++        origin = degrees
++        hasMoved = false
++        previousAngle = angle
++    }
++
++    mutating func move(angle: Double) -> Int? {
++        guard let previousAngle else { return nil }
++        var delta = (angle - previousAngle).truncatingRemainder(dividingBy: 360)
++        if delta > 180 { delta -= 360 }
++        if delta < -180 { delta += 360 }
++        degrees -= delta
++        self.previousAngle = angle
++        hasMoved = hasMoved || abs(degrees - origin) >= 0.5
++        return hasMoved ? heading : nil
++    }
++
++    static func coastTravel(velocity: Double, reduceMotion: Bool) -> Double {
++        guard !reduceMotion, abs(velocity) >= 90 else { return 0 }
++        return min(90, max(-90, velocity * 0.15))
++    }
++}
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift
+index 772c261..4e32638 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift
+@@ -1,49 +1,23 @@
+ import SwiftUI
+ 
+-/// Nil is a real wheel choice, so presenting the editor never enters a heading.
+ struct RouteAmendmentHeadingSection: View {
+     let entry: RouteAmendmentLegEntry
+     let onIntent: (RouteAmendmentDraft.Intent) -> Void
+ 
+-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+-    @ScaledMetric(relativeTo: .body) private var wheelHeight = 108
+-    @ScaledMetric(relativeTo: .body) private var wheelWidth = 110
+-
+-    private var selection: Binding<Int?> {
+-        Binding(
+-            get: { entry.magneticHeading },
+-            set: { value in
+-                onIntent(.editLegField(.heading, value.map { String(format: "%03d", $0) } ?? ""))
+-            }
+-        )
+-    }
+-
+     var body: some View {
+-        VStack(alignment: .leading, spacing: 8) {
+-            Text("Magnetic heading")
+-                .font(.headline)
+-                .accessibilityAddTraits(.isHeader)
+-            let layout = dynamicTypeSize.isAccessibilitySize
+-                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+-                : AnyLayout(HStackLayout(spacing: 18))
+-            layout {
+-                Picker("Magnetic heading", selection: selection) {
+-                    Text("Not set").tag(nil as Int?)
+-                    ForEach(1...360, id: \.self) { heading in
+-                        Text(String(format: "%03d°", heading)).tag(Optional(heading))
+-                    }
+-                }
+-                .pickerStyle(.wheel)
+-                .frame(width: min(wheelWidth, 240), height: wheelHeight)
+-                .clipped()
+-                .accessibilityValue(entry.magneticHeading.map { String(format: "%03d degrees", $0) } ?? "Not set")
+-                .accessibilityIdentifier("amendment-field-heading")
++        VStack(spacing: 6) {
++            HStack {
++                Text("Magnetic heading").font(.headline).accessibilityAddTraits(.isHeader)
++                Spacer(minLength: 8)
+                 Button { onIntent(.editLegField(.heading, "")) } label: {
+-                    Text("Clear").frame(minWidth: 44, minHeight: 44).contentShape(.rect)
++                    Text("Clear").frame(minWidth: 44, minHeight: 44)
+                 }
+                 .accessibilityLabel("Clear magnetic heading")
+                 .accessibilityIdentifier("clear-amendment-heading")
+             }
++            RouteAmendmentCompass(heading: entry.magneticHeading) { value in
++                onIntent(.editLegField(.heading, String(format: "%03d", value)))
++            }
+         }
+         .frame(maxWidth: .infinity, alignment: .leading)
+     }
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift
+index 27e5108..9c1afaa 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift
+@@ -9,27 +9,29 @@ struct RouteAmendmentTimeSection: View {
+     @ScaledMetric(relativeTo: .body) private var wheelWidth = 110
+ 
+     var body: some View {
+-        VStack(alignment: .leading, spacing: 8) {
+-            Text("Leg time")
+-                .font(.headline)
+-                .accessibilityAddTraits(.isHeader)
++        VStack(alignment: .leading, spacing: 4) {
++            HStack(alignment: .firstTextBaseline) {
++                Text("Leg time").font(.headline).accessibilityAddTraits(.isHeader)
++                Spacer(minLength: 8)
++                Text("\(entry.minutes.isEmpty ? "--" : entry.minutes):\(entry.seconds.isEmpty ? "--" : entry.seconds)")
++                    .font(.title3.weight(.semibold)).monospacedDigit()
++                    .accessibilityLabel("Leg time, \(entry.minutes.isEmpty ? "minutes Not set" : entry.minutes + " minutes"), \(entry.seconds.isEmpty ? "seconds Not set" : entry.seconds + " seconds")")
++                    .accessibilityIdentifier("amendment-duration-readout")
++            }
+             let layout = dynamicTypeSize.isAccessibilitySize
+-                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 18))
+-                : AnyLayout(HStackLayout(alignment: .top, spacing: 18))
++                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
++                : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
+             layout {
+-                timeWheel(.minutes, title: "Minutes", unit: "minutes")
+-                timeWheel(.seconds, title: "Seconds", unit: "seconds")
++                timeWheel(.minutes, title: "Minutes")
++                timeWheel(.seconds, title: "Seconds")
+             }
+-            Text("Leg time up to 60:00. At 60 minutes, seconds are limited to 00.")
+-                .font(.caption).foregroundStyle(.secondary)
+-                .fixedSize(horizontal: false, vertical: true)
+-            if entry.preservesAcceptedDuration, let duration = entry.durationSeconds, duration > 3600 {
++            if entry.preservesAcceptedDuration, let duration = entry.durationSeconds, duration >= 3600 {
+                 Text("Existing leg time \(RouteAmendmentLegEntry.durationText(duration)) is unchanged until edited.")
+                     .font(.caption).foregroundStyle(.secondary)
+                     .fixedSize(horizontal: false, vertical: true)
+             }
+             if entry.invalidEnteredFields.contains(.duration) {
+-                Text("Enter a positive leg time up to 60:00.")
++                Text("Enter a positive leg time up to 59:59.")
+                     .font(.caption).foregroundStyle(RouteAmendmentPanelStyle.overPlannedInk)
+                     .fixedSize(horizontal: false, vertical: true)
+                     .accessibilityIdentifier("amendment-error-duration")
+@@ -38,43 +40,23 @@ struct RouteAmendmentTimeSection: View {
+         .frame(maxWidth: .infinity, alignment: .leading)
+     }
+ 
+-    private func timeWheel(
+-        _ component: RouteAmendmentLegEntry.TimeComponent, title: LocalizedStringKey, unit: String
+-    ) -> some View {
+-        let selection = entry.timeSelection(component)
+-        let options = entry.timeOptions(component)
+-        return VStack(spacing: 8) {
+-            Text(title).font(.caption.weight(.semibold))
+-            Picker(title, selection: Binding(
+-                get: { selection },
+-                set: { onIntent(.selectLegTime(component, $0)) }
+-            )) {
+-                Text("Not set")
+-                    .accessibilityLabel("Leg time \(unit), Not set")
+-                    .tag(nil as Int?)
+-                // A legacy/custom value has its own tag; rendering never rounds it.
+-                if let selection, !options.contains(selection) {
+-                    Text(String(format: "%02d", selection))
+-                        .accessibilityLabel("Leg time \(unit), \(selection) \(unit)")
+-                        .tag(Optional(selection))
+-                }
+-                ForEach(Array(options), id: \.self) { value in
+-                    Text(String(format: "%02d", value))
+-                        .accessibilityLabel("Leg time \(unit), \(value) \(unit)")
+-                        .tag(Optional(value))
++    private func timeWheel(_ component: RouteAmendmentLegEntry.TimeComponent, title: LocalizedStringKey) -> some View {
++        VStack(spacing: 4) {
++            HStack {
++                Text(title).font(.footnote).foregroundStyle(.secondary)
++                Spacer(minLength: 4)
++                Button { onIntent(.selectLegTime(component, nil)) } label: {
++                    Text("Clear").frame(minWidth: 44, minHeight: 44)
+                 }
++                .accessibilityLabel("Clear leg time \(component.rawValue)")
++                .accessibilityIdentifier("clear-amendment-\(component.rawValue)")
++            }
++            RouteAmendmentCyclicTimeWheel(selection: entry.timeSelection(component), component: component) {
++                onIntent(.advanceLegTime(component, $0))
+             }
+-            .pickerStyle(.wheel)
+             .frame(width: min(wheelWidth, 240), height: wheelHeight)
+             .clipped()
+-            .accessibilityLabel("Leg time \(unit)")
+-            .accessibilityValue(selection.map { "\($0) \(unit)" } ?? "Not set")
+-            .accessibilityIdentifier("amendment-field-\(component.rawValue)")
+-            Button { onIntent(.selectLegTime(component, nil)) } label: {
+-                Text("Clear").frame(minWidth: 44, minHeight: 44).contentShape(.rect)
+-            }
+-            .accessibilityLabel("Clear leg time \(unit)")
+-            .accessibilityIdentifier("clear-amendment-\(component.rawValue)")
+         }
++        .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 152)
+     }
+ }
+diff --git a/NavigationFlightTests/NavigationFlightTests.swift b/NavigationFlightTests/NavigationFlightTests.swift
+index 497eba5..83740c7 100644
+--- a/NavigationFlightTests/NavigationFlightTests.swift
++++ b/NavigationFlightTests/NavigationFlightTests.swift
+@@ -21,7 +21,6 @@ struct NavigationFlightTests {
+         let expected: Int? = switch duration {
+         case "00:01": 1
+         case "59:59": 3599
+-        case "60:00": 3600
+         default: nil
+         }
+         #expect(entry.durationSeconds == expected)
+@@ -45,15 +44,12 @@ struct NavigationFlightTests {
+         entry.selectTime(.seconds, value: 59)
+         #expect(entry.durationSeconds == 3599)
+         entry.selectTime(.minutes, value: 60)
+-        #expect(entry.duration == "60:00")
+-        #expect(entry.durationSeconds == 3600)
+-        entry.selectTime(.seconds, value: 1)
+-        #expect(entry.duration == "60:00")
++        #expect(entry.duration == "59:59")
+         entry.selectTime(.minutes, value: 61)
+-        #expect(entry.duration == "60:00")
++        #expect(entry.duration == "59:59")
+         entry.selectTime(.minutes, value: nil)
+-        #expect(entry.minutes.isEmpty && entry.seconds == "00")
+-        #expect(entry.durationSeconds == nil)
++        #expect(entry.minutes.isEmpty && entry.seconds == "59")
++        #expect(entry.durationSeconds == 59)
+         entry.selectTime(.seconds, value: nil)
+         #expect(entry.duration.isEmpty)
+         entry.selectTime(.seconds, value: 1)
+@@ -72,8 +68,8 @@ struct NavigationFlightTests {
+         #expect(entry.durationSeconds == duration)
+         entry[.heading] = "088"
+         #expect(entry.durationSeconds == duration)
+-        entry.selectTime(.minutes, value: 60)
+-        #expect(entry.durationSeconds == 3600)
++        entry.selectTime(.minutes, value: 59)
++        #expect(entry.durationSeconds == 3540 + duration % 60)
+         let edited = try #require(entry.values)
+         #expect(edited.headingMagnetic == 88)
+         #expect(edited.altitude == values.altitude)
+@@ -83,6 +79,79 @@ struct NavigationFlightTests {
+         #expect(entry.durationSeconds == nil)
+     }
+ 
++    @Test func cyclicDurationMatchesAllSecondsAndBothDirections() {
++        for total in 0..<3600 {
++            for step in [-121, -60, -1, 1, 60, 121] {
++                var entry = RouteAmendmentLegEntry()
++                entry.duration = RouteAmendmentLegEntry.durationText(total)
++                entry.advanceTime(.seconds, steps: step)
++                let expected = ((total + step) % 3600 + 3600) % 3600
++                #expect(entry.duration == RouteAmendmentLegEntry.durationText(expected))
++                #expect(entry.durationSeconds == (expected == 0 ? nil : expected))
++            }
++        }
++    }
++
++    @Test func cyclicDurationPreservesPartialAndLegacyUntilEdited() {
++        var entry = RouteAmendmentLegEntry()
++        entry.advanceTime(.seconds, steps: 1)
++        #expect(entry.duration == "00:00")
++        entry.advanceTime(.seconds, steps: 1)
++        #expect(entry.duration == "00:01")
++        entry.selectTime(.minutes, value: nil)
++        entry.selectTime(.seconds, value: 59)
++        entry.advanceTime(.seconds, steps: 1)
++        #expect(entry.minutes.isEmpty && entry.seconds == "00")
++        entry.advanceTime(.seconds, steps: -1)
++        #expect(entry.minutes.isEmpty && entry.seconds == "59")
++        entry.minutes = "59"
++        entry.advanceTime(.minutes, steps: 1)
++        #expect(entry.duration == "00:59")
++        let original = RouteAmendmentLegValues(headingMagnetic: 176, durationSeconds: 5401,
++                                              altitude: nil, frequency: nil, visualReference: nil)
++        entry = .init(values: original)
++        entry.advanceTime(.seconds, steps: 0)
++        #expect(entry.values == original)
++        entry.advanceTime(.minutes, steps: 1)
++        #expect(entry.duration == "31:01")
++    }
++
++    @Test(arguments: RouteAmendmentLegEntry.TimeComponent.allCases)
++    func unsetTimeIsOutsideTheNumericCycle(_ component: RouteAmendmentLegEntry.TimeComponent) {
++        var entry = RouteAmendmentLegEntry()
++        entry.heading = "087"
++        entry.advanceTime(component, steps: 1)
++        #expect(entry.duration == "00:00")
++        #expect(entry.durationSeconds == nil)
++        entry.selectTime(component, value: nil)
++        entry.advanceTime(component, steps: -1)
++        #expect(entry.timeSelection(component) == 59)
++        #expect(entry.heading == "087")
++    }
++
++    @Test func compassMotionNeverJumpsOnContactAndCrossesNorthContinuously() {
++        var motion = RouteAmendmentHeadingMotion()
++        motion.begin(angle: 47, heading: nil)
++        #expect(motion.move(angle: 47) == nil)
++        #expect(motion.move(angle: 46) == 1)
++        motion.begin(angle: 179, heading: 359)
++        #expect(motion.move(angle: 178) == 360)
++        #expect(motion.move(angle: 177) == 1)
++        #expect(motion.degrees == 361)
++        #expect(motion.move(angle: 179) == 359)
++        motion.begin(angle: -179, heading: 1)
++        #expect(motion.move(angle: 179) == 3)
++        for _ in 0..<5 {
++            for angle in stride(from: 170.0, through: -170, by: -10) { _ = motion.move(angle: angle) }
++            _ = motion.move(angle: 180)
++        }
++        #expect((1...360).contains(motion.heading))
++        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 89, reduceMotion: false) == 0)
++        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 1000, reduceMotion: true) == 0)
++        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 1000, reduceMotion: false) == 90)
++        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: -1000, reduceMotion: false) == -90)
++    }
++
+     @MainActor
+     @Test(arguments: ["", "00:00", "00:01", "59:59", "60:00", "60:01"])
+     func timeReadinessAndPartialExitUseSharedValidation(_ duration: String) throws {
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index ee5ebdb..5eb6db3 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -2456,6 +2456,60 @@ final class NavigationFlightUITests: XCTestCase {
+         return app
+     }
+ 
++    @MainActor
++    func testD052VoiceOverAdjustsHeadingAndTime() throws {
++        continueAfterFailure = true
++        let voiceOver = XCUIDevice.shared.voiceOverService
++        let wasEnabled = voiceOver.isEnabled
++        if wasEnabled { try voiceOver.disable() }
++        defer {
++            if wasEnabled && !voiceOver.isEnabled { try? voiceOver.enable() }
++            if !wasEnabled && voiceOver.isEnabled { try? voiceOver.disable() }
++        }
++        let app = try launchPartialAmendment(fixture: "A-progress")
++        app.buttons["amend-route"].tap()
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
++        try voiceOver.enable()
++        var speech: [String] = []
++        var adjustedHeading = false
++        var adjustedMinutes = false
++        var adjustedSeconds = false
++        for _ in 0..<70 {
++            let utterance = try voiceOver.moveForward().utterance
++            speech.append(utterance)
++            if utterance.localizedCaseInsensitiveContains("Magnetic heading"),
++               utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedHeading {
++                app.swipeUp()
++                let changed = try voiceOver.currentSpeech().utterance
++                speech.append(changed)
++                XCTAssertTrue(changed.contains("177"), changed)
++                adjustedHeading = true
++            } else if utterance.localizedCaseInsensitiveContains("Leg time minutes"),
++                      utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedMinutes {
++                app.swipeUp()
++                speech.append(try voiceOver.currentSpeech().utterance)
++                adjustedMinutes = true
++            } else if utterance.localizedCaseInsensitiveContains("Leg time seconds"),
++                      utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedSeconds {
++                app.swipeUp()
++                speech.append(try voiceOver.currentSpeech().utterance)
++                adjustedSeconds = true
++            }
++            if adjustedHeading && adjustedMinutes && adjustedSeconds { break }
++        }
++        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
++        attachment.name = "D05.2 actual VoiceOver adjustments"
++        attachment.lifetime = .keepAlways
++        add(attachment)
++        XCTAssertTrue(adjustedHeading && adjustedMinutes && adjustedSeconds)
++        captureAmendmentState("d052-voiceover-adjusted", in: app)
++        try voiceOver.disable()
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
++        XCTAssertEqual(heading.value as? String, "177 degrees")
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 03 minutes, 16 seconds")
++    }
++
+     @MainActor
+     func testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder() throws {
+         let voiceOver = XCUIDevice.shared.voiceOverService
+@@ -2504,6 +2558,130 @@ final class NavigationFlightUITests: XCTestCase {
+         captureAmendmentState("ap04-voiceover-heading", in: app)
+     }
+ 
++    @MainActor
++    func testD052PrimaryControlsAndNorthCrossing() throws {
++        let app = try launchPartialAmendment(fixture: "A-progress-heading")
++        app.buttons["amend-route"].tap()
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
++        XCTAssertTrue(heading.waitForExistence(timeout: 4))
++        XCTAssertEqual(heading.value as? String, "Not set")
++        heading.tap()
++        XCTAssertEqual(heading.value as? String, "Not set", "Touching the dial cannot enter north")
++        XCTAssertTrue(app.pickers["amendment-field-minutes"].exists)
++        XCTAssertTrue(app.pickers["amendment-field-seconds"].exists)
++        captureAmendmentState("d052-unset-primary", in: app)
++        selectAmendmentHeading(359, in: app, panel: panel)
++        selectAmendmentHeading(360, in: app, panel: panel)
++        selectAmendmentHeading(1, in: app, panel: panel)
++        selectAmendmentHeading(360, in: app, panel: panel)
++        selectAmendmentHeading(176, in: app, panel: panel)
++        captureAmendmentState("d052-selected-primary", in: app)
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        let row = app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1)
++        XCTAssertTrue((row.value as? String ?? "").contains("176°, leg time 02:15"))
++    }
++
++    @MainActor
++    func testD052AdaptiveLandscape() throws {
++        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
++        try verifyD052Adaptive(landscape: true)
++    }
++
++    @MainActor
++    func testD052AdaptiveLargerText() throws {
++        try verifyD052Adaptive(largerText: true)
++    }
++
++    @MainActor
++    private func verifyD052Adaptive(landscape: Bool = false, largerText: Bool = false) throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        let app = try launchPartialAmendment(largerText: largerText, fixture: "A-progress")
++        if landscape { XCUIDevice.shared.orientation = .landscapeLeft }
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let camera = try settledCameraValues(of: map)
++        let originalMapFrame = map.frame
++        app.buttons["amend-route"].tap()
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        let row = rows.element(boundBy: 1)
++        tapAmendmentControl(row, in: console)
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
++        let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
++        captureAmendmentState("d052-adaptive-initial-" + suffix, in: app)
++        selectAmendmentHeading(177, in: app, panel: panel)
++        selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
++        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 04 minutes, 00 seconds")
++        captureAmendmentState("d052-adaptive-time-" + suffix, in: app)
++        tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
++        XCTAssertTrue(app.descendants(matching: .any)["amendment-reference-estimate"].waitForExistence(timeout: 4))
++        captureAmendmentState("d052-adaptive-check-" + suffix, in: app)
++        tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
++        tapChartPanelControl(heading, in: panel, performTap: false)
++        XCTAssertEqual(heading.value as? String, "177 degrees")
++        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++        let note = app.textFields["amendment-field-visualReference"]
++        tapChartPanelControl(note, in: panel)
++        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
++        note.typeText("Road junction")
++        let keyboardDone = app.buttons["amendment-keyboard-done"]
++        tapChartPanelControl(keyboardDone, in: panel, performTap: false)
++        captureAmendmentState("d052-adaptive-note-keyboard-" + suffix, in: app)
++        tapChartPanelControl(keyboardDone, in: panel)
++        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 4))
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        XCTAssertTrue((row.value as? String ?? "").contains("177°, leg time 04:00"))
++        tapAmendmentControl(row, in: console)
++        tapChartPanelControl(app.buttons["clear-amendment-minutes"], in: panel)
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, 00 seconds")
++        tapChartPanelControl(app.buttons["clear-amendment-heading"], in: panel)
++        app.buttons["amend-route"].tap()
++        app.buttons["amend-route"].tap()
++        tapChartPanelControl(heading, in: panel, performTap: false)
++        XCTAssertEqual(heading.value as? String, "Not set")
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, 00 seconds")
++        tapChartPanelControl(app.buttons["clear-amendment-seconds"], in: panel)
++        captureAmendmentState("d052-adaptive-cleared-" + suffix, in: app)
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        tapAmendmentControl(rows.firstMatch, in: console)
++        tapChartPanelControl(heading, in: panel, performTap: false)
++        XCTAssertEqual(heading.value as? String, "087 degrees", "Switching legs must not leak gesture state")
++        XCTAssertEqual(map.frame, originalMapFrame)
++        assertCamera(camera, remainsOn: map)
++    }
++
++    @MainActor
++    func testD052SecondsCarryBorrowAndFullBoundary() throws {
++        let app = try launchPartialAmendment(fixture: "A-progress")
++        app.buttons["amend-route"].tap()
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        let readout = app.staticTexts["amendment-duration-readout"]
++        selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
++        XCTAssertEqual(readout.label, "Leg time, 03 minutes, 59 seconds")
++        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
++        XCTAssertEqual(readout.label, "Leg time, 04 minutes, 00 seconds")
++        captureAmendmentState("d052-seconds-carry", in: app)
++        stepAmendmentTimeWheel("seconds", forward: false, in: app, panel: panel)
++        XCTAssertEqual(readout.label, "Leg time, 03 minutes, 59 seconds")
++        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
++        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
++        XCTAssertEqual(readout.label, "Leg time, 00 minutes, 00 seconds")
++        XCTAssertTrue(app.staticTexts["amendment-error-duration"].exists)
++        captureAmendmentState("d052-duration-zero-boundary", in: app)
++        stepAmendmentTimeWheel("seconds", forward: false, in: app, panel: panel)
++        XCTAssertEqual(readout.label, "Leg time, 59 minutes, 59 seconds")
++        XCTAssertFalse(app.staticTexts["amendment-error-duration"].exists)
++        captureAmendmentState("d052-reverse-boundary", in: app)
++    }
++
+     @MainActor
+     func testManualAmendmentTimeWheelsEnforceRange() throws {
+         try verifyTimeWheels()
+@@ -2536,10 +2714,10 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 90:00"))
+         tapAmendmentControl(row, in: console)
+         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "90"))
+-        selectAmendmentWheel("minutes", value: "60", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
+         XCTAssertEqual(app.pickers["amendment-field-seconds"].pickerWheels.firstMatch.value as? String, timeWheelValue("seconds", "00"))
+         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+-        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 60:00"))
++        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 59:00"))
+     }
+ 
+     private func timeWheelValue(_ component: String, _ raw: String) -> String {
+@@ -2551,12 +2729,60 @@ final class NavigationFlightUITests: XCTestCase {
+     @MainActor
+     private func selectAmendmentWheel(_ field: String, value: String, in app: XCUIApplication,
+                                       panel: XCUIElement) {
++        if field == "heading" {
++            selectAmendmentHeading(Int(value.replacingOccurrences(of: "°", with: "")) ?? 360, in: app, panel: panel)
++            return
++        }
+         let wheel = app.pickers["amendment-field-\(field)"].pickerWheels.firstMatch
+         XCTAssertTrue(wheel.waitForExistence(timeout: 4))
+         tapChartPanelControl(wheel, in: panel, performTap: false)
+-        let accessibleValue = field == "heading" ? value : timeWheelValue(field, value)
+-        wheel.adjust(toPickerWheelValue: accessibleValue)
+-        XCTAssertEqual(wheel.value as? String, accessibleValue)
++        // XCTest's value search traverses repeated rows. Enter the numeric cycle
++        // with a real one-row gesture so fixture setup cannot introduce carries.
++        if wheel.value as? String == timeWheelValue(field, "Not set") {
++            stepAmendmentTimeWheel(field, forward: true, in: app, panel: panel)
++        }
++        if wheel.value as? String != timeWheelValue(field, value) {
++            wheel.adjust(toPickerWheelValue: timeWheelValue(field, value))
++        }
++        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++            (wheel.value as? String) == self.timeWheelValue(field, value)
++        }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 4), .completed)
++    }
++
++    @MainActor
++    private func stepAmendmentTimeWheel(_ field: String, forward: Bool, in app: XCUIApplication,
++                                        panel: XCUIElement) {
++        let wheel = app.pickers["amendment-field-\(field)"].pickerWheels.firstMatch
++        tapChartPanelControl(wheel, in: panel, performTap: false)
++        let rowHeight = max(32, wheel.frame.height / 108 * 32)
++        let start = wheel.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
++        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: forward ? -rowHeight : rowHeight)),
++                    withVelocity: XCUIGestureVelocity(rawValue: rowHeight), thenHoldForDuration: 0.5)
++    }
++
++    @MainActor
++    private func selectAmendmentHeading(_ value: Int, in app: XCUIApplication, panel: XCUIElement) {
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
++        XCTAssertTrue(heading.waitForExistence(timeout: 4))
++        tapChartPanelControl(heading, in: panel, performTap: false)
++        let current = Int((heading.value as? String ?? "").prefix(3)) ?? 360
++        var delta = ((value - current + 540) % 360) - 180
++        while delta != 0 {
++            let step = min(60, max(-60, delta))
++            let frame = heading.frame
++            let radius = min(frame.width / 2 - 24, frame.height - 12)
++            let centerY = frame.height - 6
++            let radians = Double(-step) * .pi / 180
++            let start = heading.coordinate(withNormalizedOffset: .zero)
++                .withOffset(CGVector(dx: frame.width / 2, dy: centerY - radius))
++            let end = heading.coordinate(withNormalizedOffset: .zero)
++                .withOffset(CGVector(dx: frame.width / 2 + sin(radians) * radius,
++                                     dy: centerY - cos(radians) * radius))
++            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.5)
++            delta -= step
++        }
++        XCTAssertEqual(heading.value as? String, String(format: "%03d degrees", value))
+     }
+ 
+     @MainActor
+@@ -2575,13 +2801,13 @@ final class NavigationFlightUITests: XCTestCase {
+         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+         let minutes = app.pickers["amendment-field-minutes"].pickerWheels.firstMatch
+         let seconds = app.pickers["amendment-field-seconds"].pickerWheels.firstMatch
+-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+         let done = app.buttons["save-amendment-leg-values"]
+         let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
+         XCTAssertTrue(minutes.waitForExistence(timeout: 4))
+         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
+         XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "Not set"))
+-        XCTAssertEqual(heading.value as? String, "087°")
++        XCTAssertEqual(heading.value as? String, "087 degrees")
+         captureAmendmentState("ap05-untouched-" + suffix, in: app)
+         tapChartPanelControl(done, in: panel)
+         XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time Not set"))
+@@ -2594,23 +2820,20 @@ final class NavigationFlightUITests: XCTestCase {
+         selectAmendmentWheel("seconds", value: "01", in: app, panel: panel)
+         XCTAssertFalse(app.staticTexts["amendment-error-duration"].exists)
+         captureAmendmentState("ap05-one-second-" + suffix, in: app)
+-        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
+         selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
+-        captureAmendmentState("ap05-59-59-" + suffix, in: app)
+-        selectAmendmentWheel("minutes", value: "60", in: app, panel: panel)
+-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
+-        captureAmendmentState("ap05-ceiling-" + suffix, in: app)
++        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
++        captureAmendmentState("d052-ceiling-" + suffix, in: app)
+         tapChartPanelControl(done, in: panel)
+-        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 60:00"))
++        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 59:59"))
+         tapAmendmentControl(row, in: console)
+-        XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "60"))
+-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
+-        XCTAssertEqual(heading.value as? String, "087°")
++        XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "59"))
++        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "59"))
++        XCTAssertEqual(heading.value as? String, "087 degrees")
+         tapChartPanelControl(app.buttons["clear-amendment-minutes"], in: panel)
+         tapChartPanelControl(done, in: panel)
+         tapAmendmentControl(row, in: console)
+         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
+-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
++        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "59"))
+         captureAmendmentState("ap05-partial-" + suffix, in: app)
+         selectAmendmentWheel("seconds", value: "01", in: app, panel: panel)
+         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
+@@ -2666,7 +2889,7 @@ final class NavigationFlightUITests: XCTestCase {
+         let done = app.buttons["amendment-keyboard-done"]
+         func type(_ text: String, in fieldName: String) {
+             if fieldName == "heading" {
+-                app.pickers["amendment-field-heading"].pickerWheels.firstMatch.adjust(toPickerWheelValue: "\(text)°")
++                selectAmendmentHeading(Int(text) ?? 360, in: app, panel: panel)
+                 return
+             }
+             if fieldName == "minutes" || fieldName == "seconds" {
+@@ -2772,8 +2995,9 @@ final class NavigationFlightUITests: XCTestCase {
+             let fraction = points / max(1, viewport.frame.height)
+             let visibleStartY = visibleFrame.minY + visibleFrame.height * (down ? 0.2 : 0.8)
+             let startY = (visibleStartY - viewport.frame.minY) / max(1, viewport.frame.height)
+-            let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY))
+-            let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY + (down ? fraction : -fraction)))
++            // Stay in the panel's 16pt content inset, outside the full-width dial.
++            let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: startY))
++            let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: startY + (down ? fraction : -fraction)))
+             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
+         }
+         for _ in 0..<40 {
+@@ -2833,13 +3057,13 @@ final class NavigationFlightUITests: XCTestCase {
+         }
+ 
+         tapMap(x: 0.51, y: 0.815)
+-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+         XCTAssertTrue(heading.waitForExistence(timeout: 4))
+         XCTAssertEqual(panel.scrollViews.firstMatch.frame.width, 390, accuracy: 1)
+         XCTAssertEqual(panel.scrollViews.firstMatch.frame.minX, 20, accuracy: 1)
+         captureAmendmentState("manual-editor-chart", in: app)
+-        heading.adjust(toPickerWheelValue: "087°")
+-        XCTAssertEqual(heading.value as? String, "087°")
++        selectAmendmentHeading(87, in: app, panel: panel)
++        XCTAssertEqual(heading.value as? String, "087 degrees")
+         tapMap(x: 0.18, y: 0.75)
+         XCTAssertTrue(heading.exists)
+         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+@@ -3663,7 +3887,7 @@ final class NavigationFlightUITests: XCTestCase {
+         tapAmendmentControl(rows.element(boundBy: 1), in: console)
+         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+         XCTAssertTrue(panel.waitForExistence(timeout: 4))
+-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
++        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+         XCTAssertTrue(heading.waitForExistence(timeout: 4))
+         XCTAssertEqual(heading.value as? String, "Not set")
+         let done = app.buttons["save-amendment-leg-values"]
+@@ -3674,8 +3898,8 @@ final class NavigationFlightUITests: XCTestCase {
+         tapAmendmentControl(rows.element(boundBy: 1), in: console)
+         XCTAssertEqual(heading.value as? String, "Not set")
+         tapChartPanelControl(heading, in: panel, performTap: false)
+-        heading.adjust(toPickerWheelValue: "001°")
+-        XCTAssertEqual(heading.value as? String, "001°")
++        selectAmendmentHeading(1, in: app, panel: panel)
++        XCTAssertEqual(heading.value as? String, "001 degrees")
+         captureAmendmentState("ap04-heading-selected-" + suffix, in: app)
+         tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
+         let reference = app.descendants(matching: .any)["amendment-reference-estimate"]
+@@ -3684,11 +3908,11 @@ final class NavigationFlightUITests: XCTestCase {
+         captureAmendmentState("ap04-check-" + suffix, in: app)
+         tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
+         tapChartPanelControl(heading, in: panel, performTap: false)
+-        XCTAssertEqual(heading.value as? String, "001°")
++        XCTAssertEqual(heading.value as? String, "001 degrees")
+         pencil.tap()
+         pencil.tap()
+         tapChartPanelControl(heading, in: panel, performTap: false)
+-        XCTAssertEqual(heading.value as? String, "001°")
++        XCTAssertEqual(heading.value as? String, "001 degrees")
+         tapChartPanelControl(app.buttons["clear-amendment-heading"], in: panel)
+         tapChartPanelControl(heading, in: panel, performTap: false)
+         XCTAssertEqual(heading.value as? String, "Not set")
+@@ -3698,7 +3922,7 @@ final class NavigationFlightUITests: XCTestCase {
+         tapAmendmentControl(rows.firstMatch, in: console)
+         tapChartPanelControl(heading, in: panel, performTap: false)
+         XCTAssertTrue(heading.waitForExistence(timeout: 4))
+-        XCTAssertEqual(heading.value as? String, "087°")
++        XCTAssertEqual(heading.value as? String, "087 degrees")
+         tapChartPanelControl(done, in: panel)
+         XCTAssertTrue((rows.firstMatch.value as? String ?? "").contains("087°, leg time Not set"))
+         XCTAssertEqual(map.frame, before)
+diff --git a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+index 0aefd51..c73e56b 100644
+--- a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
++++ b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+@@ -104,6 +104,47 @@ Assisted prefill, cue wheels and durable unarmed-draft recovery remain outside
+ this checkpoint. [AP-05 evidence](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md)
+ records verification and pending owner acceptance separately.
+ 
++### D05.2 heading and cyclic duration revision · 2026-11-25
++
++John authorized implementing the [D05.2 main-screen direction](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-146)
++and [gesture rules](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-554),
++adapting missing devices/states consistently without another design-approval gate.
++This supersedes AP-04's heading wheel and AP-05's 60:00 new-entry endpoint;
++those checkpoints remain historical. Implemented visual acceptance is separate.
++
++1. Heading is manually entered magnetic heading001°…360°. An upper180° compass
++   card rotates beneath a stationary12-o’clock index; selected numeric text stays
++   upright. Both time wheels are immediately visible. No heading± buttons,
++   field-expansion tap, long press or precision-mode switch is required.
++2. A fast drag/flick travels quickly; slow continuous contact permits1° selection.
++   Initial contact does not change a value and touching during momentum stops it.
++   Slow release adds no coast. Momentum is bounded; Reduce Motion removes coast.
++   North crosses continuously359→360→001 in either direction.
++3. Minutes and seconds cycle00…59. John explicitly confirmed symmetric carry,
++   borrowing and full-duration wrap:03:59→04:00;03:00→02:59 backward;
++   59:59→00:00 forward and00:00→59:59 backward. Direct minute adjustment wraps
++   59:ss→00:ss. New complete durations are1…3599 seconds;00:00 is retainable
++   but invalid for readiness.
++4. Opening/touch-down enters no default. Unset remains distinct from zero and
++   outside the numeric cycle: one forward step chooses00 and one backward step59.
++   The first selection of a missing component does not infer carry. Preserve first-edit initialization of the other time
++   component to00, partial component clearing, Done/pencil retention and exact
++   accepted legacy values until deliberate editing. A missing minute stays missing
++   while seconds cycle; there is no inferred carry into an independently cleared
++   component. Deliberately editing a legacy component starts from its value modulo
++   60; untouched legacy duration remains exact, including60:00 and longer values.
++   An unset heading starts relative motion from north only after deliberate motion;
++   accessibility increment/decrement from unset chooses001°/360° respectively.
++5. VoiceOver supplies adjustable one-degree and one-unit time actions with explicit
++   units and independent44pt Clear controls. Adapt typography, grouping and scroll
++   extent for Larger Text, iPad landscape and iPhone portrait while keeping both
++   controls directly editable. Gestures inside a control edit it; outside scrolls
++   the editor. Neither action pans the chart through the panel.
++6. F05 optional cue contents, native note/keyboard, Check, readiness requirements,
++   logical-leg identity, operational events, live compass permissions and map
++   camera contracts remain unchanged. These are preparation durations, not ETA or
++   operational flight timers. Existing Inspect original remains available.
++
+ ## Approved future preparation revision · 2026-11-24
+ 
+ John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)
+diff --git a/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md b/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md
+index 6635d2e..0c89124 100644
+--- a/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md
++++ b/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md
+@@ -28,6 +28,8 @@ archive adapter. No owner Flight data is modified.
+ 
+ | Criterion / affected state | Authority | Observable result / evidence | Status |
+ | --- | --- | --- | --- |
++| D05.2 heading | [67:146](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-146), [67:554](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-554); product D05.2 | Unset/selected, slow1°, fast/repeated north crossings, stop-on-contact, clear, Check/Done/pencil; shared A-progress-heading | In progress; human visual acceptance pending |
++| D05.2 duration | Same direction; owner confirmed symmetric boundaries in conversation |00…59 cycles, carry/borrow/full wrap, partial/zero/legacy, independent clear, VoiceOver units/actions | In progress; earlier AP-05 endpoint checks superseded |
+ | A1 altitude, selected / unset/cleared | G03; [F05 12:503](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=12-503) | 216 options −1500…20000 in 100 ft steps; boundary/negative/rejected-new tests; native wheel and clear in portrait/landscape/phone exports | Domain and rendered cue audit passed; human visual approval pending |
+ | A2 radio, selected / unset/cleared | G03/Q25; F05 | Exhaustive 760 integer-kHz combinations plus118.000/136.975 endpoints; invalid choices rejected; whole/fraction wheels and entire-frequency clear | Domain and rendered cue audit passed; human visual approval pending |
+ | A3 inherited custom, open→Done→reopen→deliberate edit/clear | Shared contract; F05 custom rule | Out-of-range/off-step and near-grid Doubles retain exact values; explicit replacement tracked even when legacy strings coincide; [phone accepted custom](ap-06/iphone-custom/) | Domain/UI passed, including exact custom frequency after reopen |
+@@ -223,3 +225,105 @@ then verified installation, launch and screenshot. Final touch navigation and
+ DeviceHub device selection are unverified handoff details, not missing acceptance
+ coverage: final automated cue/keyboard flows passed on both exact devices.
+ No application changes or test reruns followed the final passing verification.
++
++## D05.2 revision pre-edit contract and verification
++
++User authorized extension of existing PR248; remain on its feature branch at
++b0ff6b3, preserving uncommitted design research/assets without staging them.
++#228→merged PR241 remains remembered. Main-screen direction and exact Figma
++67:146/67:554 contexts/screenshots were retrieved and directly inspected before
++source changes, sessiona424eef1-ba1e-4f76-bb38-2f889dd4f836. Latest user authority
++waives another pre-implementation design approval, not runtime/visual acceptance.
++Symmetric full-duration cycling was explicitly confirmed (“yes”) in conversation.
++Boundary assumptions are documented in the product checkpoint before coding.
++
++Pre-edit exact-iPad heading/partial-value UI test passed1/1 at23:29:23.
++Original result in DerivedData Logs/Test `Test-NavigationFlight-2026.11.25_23-29-23-+0200.xcresult`;
++export `/private/tmp/d052-baseline`, directly inspected against D05.2: existing
++native heading/time wheels, larger separated groups; no compass yet.
++Normal target:390×643 editor,16insets/18radius,176-high interactive vector compass,
++fixed index, upright36pt-equivalent scalable value, paired152pt timegroups/14gap,
++110×108 native wheels and independent Clear. Reuse project semantic teal/card/action
++and system typography. Compass ticks/labels are dynamic view geometry, not static
++Figma SVG assets. Existing live chart/context stays unchanged. Adapt unset/partial/
++legacy, Check, cues/note focus and maximum text under these same rules; no new
++screen or external design approval is inferred. Required device/accessibility
++coverage remains exact iPad portrait/landscape and phone portrait, actual VoiceOver
++adjustment, maximum text, actual Reduce Motion and scroll/map gesture isolation.
++
++D05.2 initial implementation: BuildProject(test targets) passed at23:34:16,
++zero errors. Primary runtime screenshot23:36:48 showed176°/02:15 directly visible;
++root inspected against67:146. Simulator touch probe achieved173→172 using1.4pt
++slow drag over1s. The first fixture attempt had an empty plan payload; explicitly
++rereading the canonical on-disk plan recovered it once, with a new disposable
++library. No application change was made for this fixture failure.
++Native picker AX bounds initially reflected its320×216 intrinsic size rather
++than110×108 proposal; added sizeThatFits before carry/accessibility verification.
++BuildProject(test targets) passed again23:39:19, zero errors. Source no longer uses
++the earlier heading wheel; old heading UI selectors were adapted to the adjustable
++dial with actual slow angular drags. AP-05 ceiling assertions now use59:59;
++seconds selection precedes minute setup because real cyclic selection can borrow.
++The uncommitted research document/assets remain owner-owned and unstaged by this
++implementation, including their historical approval-status wording.
++
++D05.2 focused run23:39:28:260/262 passed (259 domain/value executions plus
++primary UI). Exact all-second carry/borrow/full-wrap property checks passed.
++Motion returning exactly to the drag origin failed; fixed by retaining the fact
++that deliberate motion began, so returning republishes the original heading.
++UI direct-value adjustment59→00 selected a numeric row without a direction;
++replaced that boundary check with an actual one-row gesture, not relaxed assertions.
++
++Build23:47:15 passed. Focused run23:47:43 passed repaired motion and actual
++VoiceOver adjustment (heading176→177, minutes02→03, seconds15→16). Two touch
++checks failed: seconds drag remained59, and selecting00 from unset traversed
++repeated numeric cycles, carrying minutes. Retained original result and event
++plist/recording were inspected (`/private/tmp/d052-carry-failure`, exact frames115s
++and117s). Actual drag278,641→278,609 did not alter the readout or scroll the
++editor. Direct native touch diagnosis requested before another app change.
++Nil replaced numeric zero’s visual row; corrected with a separate transient
++placeholder outside the numeric sequence so first forward motion reaches00.
++That presentation and the native picker touch bounds are separate from the
++already-passing integer duration/carry rules and VoiceOver actions.
++
++Direct native touch probes at23:58 confirmed32pt/1s advances15→16 and80pt/1s
++advances16→18, preserving editor/map frames and camera value. The original test
++used `.slow` (250pt/s), making32pt last only128ms; corrected to32pt/s rather than
++changing the working108pt native picker. Retained device screenshots/hierarchies
++`D05.2 Native Time Touch-23_58_20_109` and `23_58_50_647` in ActionArtifacts.
++BuildProject(test targets) passed00:02:15 with zero errors after the unset fix.
++One test invocation rejected an incorrect existing test identifier before execution;
++corrected to `testManualAmendmentTimeWheelsEnforceRange`, with no app change.
++
++Run00:02:26:219/220 passed: all218 domain/value executions and the corrected
++real-touch carry/borrow/full-boundary UI passed. Reuse the domain results; this
++includes exhaustive21,600 numeric transitions, both unset entry directions,
++partial/legacy retention and compass motion. [Boundary captures](ap-06/d052-cyclic-boundaries/)
++were exported from the original result and directly inspected. One remaining
++range UI failure arose from XCTest value-search traversing repeated rows from
++Not set and carrying minutes during setup. The shared helper now enters the
++numeric cycle with an actual1-second one-row touch before value selection;
++no application change followed. One-row distance/velocity scale with the native
++wheel height for Larger Text. This fixture repair preserves the zero/partial/
++clear/readiness assertions.
++
++[Primary iPad selected/unset](ap-06/d052-primary-ipad/) and
++[actual iPad VoiceOver](ap-06/d052-voiceover-ipad/) exports reuse earlier passing
++results for unchanged heading and selected-state accessibility behavior. Export
++patches record export-time context, including owner-owned research changes;
++that research is excluded from implementation commits. A concurrent screenshot
++attempt using sandboxed simctl could not access CoreSimulator; it was not an
++application failure. Explicit permitted simulator access recovered inspection
++without rerunning a test.
++
++Adaptive batch00:20:53: landscape completed and passed; maximum text was stopped
++by the implementing agent after direct rendering exposed arc/readout overlap.
++This was an agent-requested cancellation, not an owner stop request. Preserve
++its original bundle. The same capture also exposed a fixture defect: the shared
++reveal helper's94% scroll lane crossed the new full-width compass and rotated
++it repeatedly instead of scrolling (176→090). Moved that lane into the existing
++16pt panel inset at98%, preserving real outer scrolling and all assertions.
++Accessibility layout now reserves360pt, with the enlarged upright value above
++the arc and cardinal-only arc labels; normal176pt geometry remains unchanged.
++A bounded direct maximum-text render check precedes another broad adaptive run.
++The interrupted result reports a view-update runtime warning during maximum text;
++its source is under diagnosis, not yet accepted as harmless.
+diff --git a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+index 5dc9a56..cdb7e54 100644
+--- a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
++++ b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+@@ -154,6 +154,27 @@ recording schema or draft store changes. The old time controls described in the
+ AP-04 checkpoint are superseded within preparation only. See the
+ [AP-05 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md).
+ 
++## D05.2 implementation boundary · 2026-11-25
++
++The product D05.2 checkpoint supersedes the preparation-only heading wheel and
++60:00 entry limit. `RouteAmendmentLegEntry` owns cyclic duration deltas, carry,
++borrowing, partial/legacy preservation and the1…3599-second validation boundary.
++Draft intents retain entry by logical directed leg, with no operational events.
++The heading presentation owns only transient unwrapped angle, touch/coast and
++cancellation state. It sends magnetic integer values through existing edit intents.
++Time uses native cyclic picker presentation and sends physical row deltas through
++one typed intent, shared by touch and accessibility. Recentring is presentation
++only and sends no edit. Closing/replacing a control cancels its transient motion.
++
++Figma67:146 supplies390pt editor/16pt insets/18pt radius,176pt compass,
++44pt heading/Clear row, paired152pt time groups/14pt gap/110×108pt native wheels.
++The normal-text target is643pt high; accessibility layouts grow/scroll. Retain
++Inspect original even though omitted from the illustrative D05.2 context. F05
++cues, Check comparison and the existing native keyboard bridge remain unchanged.
++The owner’s latest implementation authorization supersedes the handoff’s additional
++paired-design approval gate; actual gesture feel and adapted states still require
++runtime evidence and owner visual acceptance. The AP-06 ledger records the revision.
++
+ ## AP-01 workspace ownership · 2026-11-24
+ 
+ `CockpitFeatureState` owns `isAmendmentWorkspaceVisible` and

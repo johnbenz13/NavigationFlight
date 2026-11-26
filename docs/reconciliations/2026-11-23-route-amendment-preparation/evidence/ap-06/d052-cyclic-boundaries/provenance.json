@@ -1,0 +1,127 @@
+{
+  "exportedAt": "2026-11-25T22:21:41.196822+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_00-02-26-+0200.xcresult",
+  "resultInfoSHA256": "d137073ee103b64c5f9a25d79e5946a9e192bb7f865d648148e582b66f68fbae",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 1,
+        "passedTests": 219,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795644480.606,
+    "passedTests": 153,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795644146.285,
+    "statistics": [
+      {
+        "subtitle": "86 test runs",
+        "title": "20 tests ran with dynamic parameters"
+      }
+    ],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertEqual failed: (\"Optional(\"Leg time minutes, 11 minutes\")\") is not equal to (\"Optional(\"Leg time minutes, 0 minutes\")\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 154,
+        "testIdentifierString": "NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testManualAmendmentTimeWheelsEnforceRange",
+        "testName": "testManualAmendmentTimeWheelsEnforceRange()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [
+      {
+        "category": "Longest Test Runs",
+        "impact": "10% of duration",
+        "text": "1 longest test run with outlier durations exceeding 0.07s (three standard deviations)"
+      }
+    ],
+    "totalTestCount": 154
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "b0ff6b39947aef06aa8b7c2f5550a7749a70f5a8",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\nAM docs/research/2026-11-25-heading-and-duration-picker.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCompass.swift\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCyclicTimeWheel.swift\n?? docs/research/assets/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived. Published source.patch omits the owner-owned research diff; see sourcePatchExclusions. Status remains the original export-time status."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "C02EBD91-1AE4-4D6D-8E40-A8489891C6BF.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-seconds-carry_0_DC4DA00B-7B27-4733-831E-3E3AAF38B28A.png",
+        "timestamp": 1795644234.219
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "df55c6b5a99695c219cfcc74dfc35cb55918231bbb6f6a0aebd3e8379eb95691"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "87780B07-298B-4D31-8F41-BD280DBE870D.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-duration-zero-boundary_0_2A0BAEA9-EAF3-439C-9F60-3BE78AD460FC.png",
+        "timestamp": 1795644294.876
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "aabb206c7b84e4c5141e1304fcfa56fb7107b1af6f8a5ebd5aaa49d09d24da49"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "0BF2195E-919A-417C-9BB5-D7A5B0723D92.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-reverse-boundary_0_18E2EA44-33C9-4783-83A6-29AF40F69EDC.png",
+        "timestamp": 1795644321.492
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "71b174ca4c119321bf9d7edd56f602c38a42e98d6bf4d584978eeee7c649c65c"
+    }
+  ],
+  "sourcePatchExclusions": {
+    "paths": [
+      "docs/research/2026-11-25-heading-and-duration-picker.md"
+    ],
+    "reason": "Owner-owned uncommitted design research is outside this implementation; omitted from published patch only. Remaining unified diff sections are unchanged.",
+    "fullOriginalPatchSHA256": "c24a46d9975e7d8545874eff540a6522da072bd23a8064ae87ff43cf4caaf274",
+    "publishedPatchSHA256": "066b9f48515006f2a8d4d13f8c967dc99ed090900fd6b0c6a2cb98ca480c865d",
+    "fullOriginalRetainedLocally": "/private/tmp/d052-full-source-patches/d052-cyclic-boundaries.patch"
+  }
+}

@@ -21,7 +21,6 @@ struct NavigationFlightTests {
         let expected: Int? = switch duration {
         case "00:01": 1
         case "59:59": 3599
-        case "60:00": 3600
         default: nil
         }
         #expect(entry.durationSeconds == expected)
@@ -45,15 +44,12 @@ struct NavigationFlightTests {
         entry.selectTime(.seconds, value: 59)
         #expect(entry.durationSeconds == 3599)
         entry.selectTime(.minutes, value: 60)
-        #expect(entry.duration == "60:00")
-        #expect(entry.durationSeconds == 3600)
-        entry.selectTime(.seconds, value: 1)
-        #expect(entry.duration == "60:00")
+        #expect(entry.duration == "59:59")
         entry.selectTime(.minutes, value: 61)
-        #expect(entry.duration == "60:00")
+        #expect(entry.duration == "59:59")
         entry.selectTime(.minutes, value: nil)
-        #expect(entry.minutes.isEmpty && entry.seconds == "00")
-        #expect(entry.durationSeconds == nil)
+        #expect(entry.minutes.isEmpty && entry.seconds == "59")
+        #expect(entry.durationSeconds == 59)
         entry.selectTime(.seconds, value: nil)
         #expect(entry.duration.isEmpty)
         entry.selectTime(.seconds, value: 1)
@@ -72,8 +68,8 @@ struct NavigationFlightTests {
         #expect(entry.durationSeconds == duration)
         entry[.heading] = "088"
         #expect(entry.durationSeconds == duration)
-        entry.selectTime(.minutes, value: 60)
-        #expect(entry.durationSeconds == 3600)
+        entry.selectTime(.minutes, value: 59)
+        #expect(entry.durationSeconds == 3540 + duration % 60)
         let edited = try #require(entry.values)
         #expect(edited.headingMagnetic == 88)
         #expect(edited.altitude == values.altitude)
@@ -81,6 +77,79 @@ struct NavigationFlightTests {
         #expect(edited.visualReference == values.visualReference)
         entry[.duration] = "60:01"
         #expect(entry.durationSeconds == nil)
+    }
+
+    @Test func cyclicDurationMatchesAllSecondsAndBothDirections() {
+        for total in 0..<3600 {
+            for step in [-121, -60, -1, 1, 60, 121] {
+                var entry = RouteAmendmentLegEntry()
+                entry.duration = RouteAmendmentLegEntry.durationText(total)
+                entry.advanceTime(.seconds, steps: step)
+                let expected = ((total + step) % 3600 + 3600) % 3600
+                #expect(entry.duration == RouteAmendmentLegEntry.durationText(expected))
+                #expect(entry.durationSeconds == (expected == 0 ? nil : expected))
+            }
+        }
+    }
+
+    @Test func cyclicDurationPreservesPartialAndLegacyUntilEdited() {
+        var entry = RouteAmendmentLegEntry()
+        entry.advanceTime(.seconds, steps: 1)
+        #expect(entry.duration == "00:00")
+        entry.advanceTime(.seconds, steps: 1)
+        #expect(entry.duration == "00:01")
+        entry.selectTime(.minutes, value: nil)
+        entry.selectTime(.seconds, value: 59)
+        entry.advanceTime(.seconds, steps: 1)
+        #expect(entry.minutes.isEmpty && entry.seconds == "00")
+        entry.advanceTime(.seconds, steps: -1)
+        #expect(entry.minutes.isEmpty && entry.seconds == "59")
+        entry.minutes = "59"
+        entry.advanceTime(.minutes, steps: 1)
+        #expect(entry.duration == "00:59")
+        let original = RouteAmendmentLegValues(headingMagnetic: 176, durationSeconds: 5401,
+                                              altitude: nil, frequency: nil, visualReference: nil)
+        entry = .init(values: original)
+        entry.advanceTime(.seconds, steps: 0)
+        #expect(entry.values == original)
+        entry.advanceTime(.minutes, steps: 1)
+        #expect(entry.duration == "31:01")
+    }
+
+    @Test(arguments: RouteAmendmentLegEntry.TimeComponent.allCases)
+    func unsetTimeIsOutsideTheNumericCycle(_ component: RouteAmendmentLegEntry.TimeComponent) {
+        var entry = RouteAmendmentLegEntry()
+        entry.heading = "087"
+        entry.advanceTime(component, steps: 1)
+        #expect(entry.duration == "00:00")
+        #expect(entry.durationSeconds == nil)
+        entry.selectTime(component, value: nil)
+        entry.advanceTime(component, steps: -1)
+        #expect(entry.timeSelection(component) == 59)
+        #expect(entry.heading == "087")
+    }
+
+    @Test func compassMotionNeverJumpsOnContactAndCrossesNorthContinuously() {
+        var motion = RouteAmendmentHeadingMotion()
+        motion.begin(angle: 47, heading: nil)
+        #expect(motion.move(angle: 47) == nil)
+        #expect(motion.move(angle: 46) == 1)
+        motion.begin(angle: 179, heading: 359)
+        #expect(motion.move(angle: 178) == 360)
+        #expect(motion.move(angle: 177) == 1)
+        #expect(motion.degrees == 361)
+        #expect(motion.move(angle: 179) == 359)
+        motion.begin(angle: -179, heading: 1)
+        #expect(motion.move(angle: 179) == 3)
+        for _ in 0..<5 {
+            for angle in stride(from: 170.0, through: -170, by: -10) { _ = motion.move(angle: angle) }
+            _ = motion.move(angle: 180)
+        }
+        #expect((1...360).contains(motion.heading))
+        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 89, reduceMotion: false) == 0)
+        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 1000, reduceMotion: true) == 0)
+        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: 1000, reduceMotion: false) == 90)
+        #expect(RouteAmendmentHeadingMotion.coastTravel(velocity: -1000, reduceMotion: false) == -90)
     }
 
     @MainActor

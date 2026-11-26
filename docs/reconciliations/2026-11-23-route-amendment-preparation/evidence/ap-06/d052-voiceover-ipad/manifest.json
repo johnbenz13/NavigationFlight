@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "D0BECC8C-E75F-485E-AD52-59588F65D438.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-voiceover-adjusted_0_65D2B93C-D3D9-4034-AF79-C82B2BE4D974.png",
+        "timestamp" : 1795643523.072
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "2BC1BA06-10EA-40DA-B770-7D8AA543FE42.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "D05.2 actual VoiceOver adjustments_0_A19E843D-F55C-46B6-8D46-BF4DF045E682.txt",
+        "timestamp" : 1795643521.498
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052VoiceOverAdjustsHeadingAndTime()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052VoiceOverAdjustsHeadingAndTime"
+  }
+]

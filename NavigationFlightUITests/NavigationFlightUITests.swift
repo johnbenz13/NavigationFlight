@@ -2457,6 +2457,60 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testD052VoiceOverAdjustsHeadingAndTime() throws {
+        continueAfterFailure = true
+        let voiceOver = XCUIDevice.shared.voiceOverService
+        let wasEnabled = voiceOver.isEnabled
+        if wasEnabled { try voiceOver.disable() }
+        defer {
+            if wasEnabled && !voiceOver.isEnabled { try? voiceOver.enable() }
+            if !wasEnabled && voiceOver.isEnabled { try? voiceOver.disable() }
+        }
+        let app = try launchPartialAmendment(fixture: "A-progress")
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
+        try voiceOver.enable()
+        var speech: [String] = []
+        var adjustedHeading = false
+        var adjustedMinutes = false
+        var adjustedSeconds = false
+        for _ in 0..<70 {
+            let utterance = try voiceOver.moveForward().utterance
+            speech.append(utterance)
+            if utterance.localizedCaseInsensitiveContains("Magnetic heading"),
+               utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedHeading {
+                app.swipeUp()
+                let changed = try voiceOver.currentSpeech().utterance
+                speech.append(changed)
+                XCTAssertTrue(changed.contains("177"), changed)
+                adjustedHeading = true
+            } else if utterance.localizedCaseInsensitiveContains("Leg time minutes"),
+                      utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedMinutes {
+                app.swipeUp()
+                speech.append(try voiceOver.currentSpeech().utterance)
+                adjustedMinutes = true
+            } else if utterance.localizedCaseInsensitiveContains("Leg time seconds"),
+                      utterance.localizedCaseInsensitiveContains("adjustable"), !adjustedSeconds {
+                app.swipeUp()
+                speech.append(try voiceOver.currentSpeech().utterance)
+                adjustedSeconds = true
+            }
+            if adjustedHeading && adjustedMinutes && adjustedSeconds { break }
+        }
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "D05.2 actual VoiceOver adjustments"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        XCTAssertTrue(adjustedHeading && adjustedMinutes && adjustedSeconds)
+        captureAmendmentState("d052-voiceover-adjusted", in: app)
+        try voiceOver.disable()
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+        XCTAssertEqual(heading.value as? String, "177 degrees")
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 03 minutes, 16 seconds")
+    }
+
+    @MainActor
     func testManualAmendmentVoiceOverNamesFlightTimeFieldsInOrder() throws {
         let voiceOver = XCUIDevice.shared.voiceOverService
         let wasEnabled = voiceOver.isEnabled
@@ -2505,6 +2559,131 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testD052PrimaryControlsAndNorthCrossing() throws {
+        let app = try launchPartialAmendment(fixture: "A-progress-heading")
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: 4))
+        XCTAssertEqual(heading.value as? String, "Not set")
+        heading.tap()
+        XCTAssertEqual(heading.value as? String, "Not set", "Touching the dial cannot enter north")
+        XCTAssertTrue(app.pickers["amendment-field-minutes"].exists)
+        XCTAssertTrue(app.pickers["amendment-field-seconds"].exists)
+        captureAmendmentState("d052-unset-primary", in: app)
+        selectAmendmentHeading(359, in: app, panel: panel)
+        selectAmendmentHeading(360, in: app, panel: panel)
+        selectAmendmentHeading(1, in: app, panel: panel)
+        selectAmendmentHeading(360, in: app, panel: panel)
+        selectAmendmentHeading(176, in: app, panel: panel)
+        captureAmendmentState("d052-selected-primary", in: app)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        let row = app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1)
+        XCTAssertTrue((row.value as? String ?? "").contains("176°, leg time 02:15"))
+    }
+
+    @MainActor
+    func testD052AdaptiveLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
+        try verifyD052Adaptive(landscape: true)
+    }
+
+    @MainActor
+    func testD052AdaptiveLargerText() throws {
+        try verifyD052Adaptive(largerText: true)
+    }
+
+    @MainActor
+    private func verifyD052Adaptive(landscape: Bool = false, largerText: Bool = false) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = try launchPartialAmendment(largerText: largerText, fixture: "A-progress")
+        if landscape { XCUIDevice.shared.orientation = .landscapeLeft }
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let camera = try settledCameraValues(of: map)
+        let originalMapFrame = map.frame
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        let row = rows.element(boundBy: 1)
+        tapAmendmentControl(row, in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+        let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
+        captureAmendmentState("d052-adaptive-initial-" + suffix, in: app)
+        selectAmendmentHeading(177, in: app, panel: panel)
+        captureAmendmentState("d052-adaptive-heading-" + suffix, in: app)
+        selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
+        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 04 minutes, 00 seconds")
+        captureAmendmentState("d052-adaptive-time-" + suffix, in: app)
+        tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
+        XCTAssertTrue(app.descendants(matching: .any)["amendment-reference-estimate"].waitForExistence(timeout: 4))
+        captureAmendmentState("d052-adaptive-check-" + suffix, in: app)
+        tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
+        tapChartPanelControl(heading, in: panel, performTap: false)
+        XCTAssertEqual(heading.value as? String, "177 degrees")
+        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+        let note = app.textFields["amendment-field-visualReference"]
+        tapChartPanelControl(note, in: panel)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
+        note.typeText("Road junction")
+        let keyboardDone = app.buttons["amendment-keyboard-done"]
+        tapChartPanelControl(keyboardDone, in: panel, performTap: false)
+        captureAmendmentState("d052-adaptive-note-keyboard-" + suffix, in: app)
+        tapChartPanelControl(keyboardDone, in: panel)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 4))
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        XCTAssertTrue((row.value as? String ?? "").contains("177°, leg time 04:00"))
+        tapAmendmentControl(row, in: console)
+        tapChartPanelControl(app.buttons["clear-amendment-minutes"], in: panel)
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, 00 seconds")
+        tapChartPanelControl(app.buttons["clear-amendment-heading"], in: panel)
+        app.buttons["amend-route"].tap()
+        app.buttons["amend-route"].tap()
+        tapChartPanelControl(heading, in: panel, performTap: false)
+        XCTAssertEqual(heading.value as? String, "Not set")
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, 00 seconds")
+        tapChartPanelControl(app.buttons["clear-amendment-seconds"], in: panel)
+        captureAmendmentState("d052-adaptive-cleared-" + suffix, in: app)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        tapAmendmentControl(rows.firstMatch, in: console)
+        tapChartPanelControl(heading, in: panel, performTap: false)
+        XCTAssertEqual(heading.value as? String, "087 degrees", "Switching legs must not leak gesture state")
+        XCTAssertEqual(map.frame, originalMapFrame)
+        assertCamera(camera, remainsOn: map)
+    }
+
+    @MainActor
+    func testD052SecondsCarryBorrowAndFullBoundary() throws {
+        let app = try launchPartialAmendment(fixture: "A-progress")
+        app.buttons["amend-route"].tap()
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").element(boundBy: 1), in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        let readout = app.staticTexts["amendment-duration-readout"]
+        selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
+        XCTAssertEqual(readout.label, "Leg time, 03 minutes, 59 seconds")
+        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
+        XCTAssertEqual(readout.label, "Leg time, 04 minutes, 00 seconds")
+        captureAmendmentState("d052-seconds-carry", in: app)
+        stepAmendmentTimeWheel("seconds", forward: false, in: app, panel: panel)
+        XCTAssertEqual(readout.label, "Leg time, 03 minutes, 59 seconds")
+        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
+        stepAmendmentTimeWheel("seconds", forward: true, in: app, panel: panel)
+        XCTAssertEqual(readout.label, "Leg time, 00 minutes, 00 seconds")
+        XCTAssertTrue(app.staticTexts["amendment-error-duration"].exists)
+        captureAmendmentState("d052-duration-zero-boundary", in: app)
+        stepAmendmentTimeWheel("seconds", forward: false, in: app, panel: panel)
+        XCTAssertEqual(readout.label, "Leg time, 59 minutes, 59 seconds")
+        XCTAssertFalse(app.staticTexts["amendment-error-duration"].exists)
+        captureAmendmentState("d052-reverse-boundary", in: app)
+    }
+
+    @MainActor
     func testManualAmendmentTimeWheelsEnforceRange() throws {
         try verifyTimeWheels()
     }
@@ -2536,10 +2715,10 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 90:00"))
         tapAmendmentControl(row, in: console)
         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "90"))
-        selectAmendmentWheel("minutes", value: "60", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
         XCTAssertEqual(app.pickers["amendment-field-seconds"].pickerWheels.firstMatch.value as? String, timeWheelValue("seconds", "00"))
         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
-        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 60:00"))
+        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 59:00"))
     }
 
     private func timeWheelValue(_ component: String, _ raw: String) -> String {
@@ -2551,12 +2730,61 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     private func selectAmendmentWheel(_ field: String, value: String, in app: XCUIApplication,
                                       panel: XCUIElement) {
+        if field == "heading" {
+            selectAmendmentHeading(Int(value.replacingOccurrences(of: "°", with: "")) ?? 360, in: app, panel: panel)
+            return
+        }
         let wheel = app.pickers["amendment-field-\(field)"].pickerWheels.firstMatch
         XCTAssertTrue(wheel.waitForExistence(timeout: 4))
         tapChartPanelControl(wheel, in: panel, performTap: false)
-        let accessibleValue = field == "heading" ? value : timeWheelValue(field, value)
-        wheel.adjust(toPickerWheelValue: accessibleValue)
-        XCTAssertEqual(wheel.value as? String, accessibleValue)
+        // XCTest's value search traverses repeated rows. Enter the numeric cycle
+        // with a real one-row gesture so fixture setup cannot introduce carries.
+        if wheel.value as? String == timeWheelValue(field, "Not set") {
+            stepAmendmentTimeWheel(field, forward: true, in: app, panel: panel)
+        }
+        if wheel.value as? String != timeWheelValue(field, value) {
+            wheel.adjust(toPickerWheelValue: timeWheelValue(field, value))
+        }
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (wheel.value as? String) == self.timeWheelValue(field, value)
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 4), .completed)
+    }
+
+    @MainActor
+    private func stepAmendmentTimeWheel(_ field: String, forward: Bool, in app: XCUIApplication,
+                                        panel: XCUIElement) {
+        let wheel = app.pickers["amendment-field-\(field)"].pickerWheels.firstMatch
+        tapChartPanelControl(wheel, in: panel, performTap: false)
+        let rowHeight = max(32, wheel.frame.height / 108 * 32)
+        let start = wheel.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: forward ? -rowHeight : rowHeight)),
+                    withVelocity: XCUIGestureVelocity(rawValue: rowHeight), thenHoldForDuration: 0.5)
+    }
+
+    @MainActor
+    private func selectAmendmentHeading(_ value: Int, in app: XCUIApplication, panel: XCUIElement) {
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: 4))
+        tapChartPanelControl(heading, in: panel, performTap: false)
+        let current = Int((heading.value as? String ?? "").prefix(3)) ?? 360
+        var delta = ((value - current + 540) % 360) - 180
+        while delta != 0 {
+            let step = min(60, max(-60, delta))
+            let frame = heading.frame
+            // AX bounds follow the upper arc's hit shape, not its enclosing view.
+            let radius = frame.width / 2 - 10
+            let centerY = frame.height
+            let radians = Double(-step) * .pi / 180
+            let start = heading.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: frame.width / 2, dy: centerY - radius))
+            let end = heading.coordinate(withNormalizedOffset: .zero)
+                .withOffset(CGVector(dx: frame.width / 2 + sin(radians) * radius,
+                                     dy: centerY - cos(radians) * radius))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.5)
+            delta -= step
+        }
+        XCTAssertEqual(heading.value as? String, String(format: "%03d degrees", value))
     }
 
     @MainActor
@@ -2575,13 +2803,13 @@ final class NavigationFlightUITests: XCTestCase {
         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
         let minutes = app.pickers["amendment-field-minutes"].pickerWheels.firstMatch
         let seconds = app.pickers["amendment-field-seconds"].pickerWheels.firstMatch
-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
         let done = app.buttons["save-amendment-leg-values"]
         let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
         XCTAssertTrue(minutes.waitForExistence(timeout: 4))
         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
         XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "Not set"))
-        XCTAssertEqual(heading.value as? String, "087°")
+        XCTAssertEqual(heading.value as? String, "087 degrees")
         captureAmendmentState("ap05-untouched-" + suffix, in: app)
         tapChartPanelControl(done, in: panel)
         XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time Not set"))
@@ -2594,23 +2822,20 @@ final class NavigationFlightUITests: XCTestCase {
         selectAmendmentWheel("seconds", value: "01", in: app, panel: panel)
         XCTAssertFalse(app.staticTexts["amendment-error-duration"].exists)
         captureAmendmentState("ap05-one-second-" + suffix, in: app)
-        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
         selectAmendmentWheel("seconds", value: "59", in: app, panel: panel)
-        captureAmendmentState("ap05-59-59-" + suffix, in: app)
-        selectAmendmentWheel("minutes", value: "60", in: app, panel: panel)
-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
-        captureAmendmentState("ap05-ceiling-" + suffix, in: app)
+        selectAmendmentWheel("minutes", value: "59", in: app, panel: panel)
+        captureAmendmentState("d052-ceiling-" + suffix, in: app)
         tapChartPanelControl(done, in: panel)
-        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 60:00"))
+        XCTAssertTrue((row.value as? String ?? "").contains("087°, leg time 59:59"))
         tapAmendmentControl(row, in: console)
-        XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "60"))
-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
-        XCTAssertEqual(heading.value as? String, "087°")
+        XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "59"))
+        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "59"))
+        XCTAssertEqual(heading.value as? String, "087 degrees")
         tapChartPanelControl(app.buttons["clear-amendment-minutes"], in: panel)
         tapChartPanelControl(done, in: panel)
         tapAmendmentControl(row, in: console)
         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
-        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "00"))
+        XCTAssertEqual(seconds.value as? String, timeWheelValue("seconds", "59"))
         captureAmendmentState("ap05-partial-" + suffix, in: app)
         selectAmendmentWheel("seconds", value: "01", in: app, panel: panel)
         XCTAssertEqual(minutes.value as? String, timeWheelValue("minutes", "Not set"))
@@ -2666,7 +2891,7 @@ final class NavigationFlightUITests: XCTestCase {
         let done = app.buttons["amendment-keyboard-done"]
         func type(_ text: String, in fieldName: String) {
             if fieldName == "heading" {
-                app.pickers["amendment-field-heading"].pickerWheels.firstMatch.adjust(toPickerWheelValue: "\(text)°")
+                selectAmendmentHeading(Int(text) ?? 360, in: app, panel: panel)
                 return
             }
             if fieldName == "minutes" || fieldName == "seconds" {
@@ -2772,8 +2997,9 @@ final class NavigationFlightUITests: XCTestCase {
             let fraction = points / max(1, viewport.frame.height)
             let visibleStartY = visibleFrame.minY + visibleFrame.height * (down ? 0.2 : 0.8)
             let startY = (visibleStartY - viewport.frame.minY) / max(1, viewport.frame.height)
-            let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY))
-            let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.94, dy: startY + (down ? fraction : -fraction)))
+            // Stay in the panel's 16pt content inset, outside the full-width dial.
+            let start = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: startY))
+            let end = viewport.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: startY + (down ? fraction : -fraction)))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
         }
         for _ in 0..<40 {
@@ -2783,10 +3009,12 @@ final class NavigationFlightUITests: XCTestCase {
                 continue
             }
             let frame = element.frame
+            let isCompass = element.identifier == "amendment-field-heading"
+            let target = CGPoint(x: frame.midX, y: isCompass ? frame.minY + 10 : frame.midY)
             let visibleBounds = visibleFrame.insetBy(dx: 0, dy: 3)
             let visible = element.identifier == "amendment-keyboard-done"
                 ? visibleBounds.contains(frame)
-                : visibleBounds.contains(CGPoint(x: frame.midX, y: frame.midY))
+                : visibleBounds.contains(target)
             let isPinnedAction = ["save-amendment-leg-values", "check-working-amendment-leg"].contains(element.identifier)
             let inFooter = isPinnedAction && frame.minY >= viewport.frame.maxY && frame.maxY <= panel.frame.maxY
             if inFooter, !frame.isEmpty {
@@ -2801,6 +3029,16 @@ final class NavigationFlightUITests: XCTestCase {
                 if performTap { element.tap() }
                 return
             }
+            if isCompass, visible, !frame.isEmpty {
+                // Its adjustable AX element covers the whole dial, while touch
+                // intentionally belongs only to the visible upper arc.
+                beforeTap()
+                if performTap {
+                    element.coordinate(withNormalizedOffset: .zero)
+                        .withOffset(CGVector(dx: target.x - frame.minX, dy: target.y - frame.minY)).tap()
+                }
+                return
+            }
             if element.elementType == .button, element.isEnabled, !frame.isEmpty,
                visibleFrame.insetBy(dx: 0, dy: 3).contains(frame) {
                 // Native AX can report visible scroll-content buttons unhittable.
@@ -2810,9 +3048,9 @@ final class NavigationFlightUITests: XCTestCase {
                 if performTap { element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
                 return
             }
-            let down = element.exists && element.frame.midY < visibleFrame.midY
+            let down = element.exists && target.y < visibleFrame.midY
             // Scroll beside the wheel, so revealing it never selects a heading.
-            scroll(down: down, distance: abs(frame.midY - visibleFrame.midY))
+            scroll(down: down, distance: abs(target.y - visibleFrame.midY))
         }
         let hierarchy = XCTAttachment(string: panel.debugDescription)
         hierarchy.name = "Chart panel reveal failure hierarchy"
@@ -2833,13 +3071,13 @@ final class NavigationFlightUITests: XCTestCase {
         }
 
         tapMap(x: 0.51, y: 0.815)
-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
         XCTAssertTrue(heading.waitForExistence(timeout: 4))
         XCTAssertEqual(panel.scrollViews.firstMatch.frame.width, 390, accuracy: 1)
         XCTAssertEqual(panel.scrollViews.firstMatch.frame.minX, 20, accuracy: 1)
         captureAmendmentState("manual-editor-chart", in: app)
-        heading.adjust(toPickerWheelValue: "087°")
-        XCTAssertEqual(heading.value as? String, "087°")
+        selectAmendmentHeading(87, in: app, panel: panel)
+        XCTAssertEqual(heading.value as? String, "087 degrees")
         tapMap(x: 0.18, y: 0.75)
         XCTAssertTrue(heading.exists)
         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
@@ -3663,7 +3901,7 @@ final class NavigationFlightUITests: XCTestCase {
         tapAmendmentControl(rows.element(boundBy: 1), in: console)
         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
         XCTAssertTrue(panel.waitForExistence(timeout: 4))
-        let heading = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
+        let heading = app.descendants(matching: .any)["amendment-field-heading"].firstMatch
         XCTAssertTrue(heading.waitForExistence(timeout: 4))
         XCTAssertEqual(heading.value as? String, "Not set")
         let done = app.buttons["save-amendment-leg-values"]
@@ -3674,8 +3912,8 @@ final class NavigationFlightUITests: XCTestCase {
         tapAmendmentControl(rows.element(boundBy: 1), in: console)
         XCTAssertEqual(heading.value as? String, "Not set")
         tapChartPanelControl(heading, in: panel, performTap: false)
-        heading.adjust(toPickerWheelValue: "001°")
-        XCTAssertEqual(heading.value as? String, "001°")
+        selectAmendmentHeading(1, in: app, panel: panel)
+        XCTAssertEqual(heading.value as? String, "001 degrees")
         captureAmendmentState("ap04-heading-selected-" + suffix, in: app)
         tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
         let reference = app.descendants(matching: .any)["amendment-reference-estimate"]
@@ -3684,11 +3922,11 @@ final class NavigationFlightUITests: XCTestCase {
         captureAmendmentState("ap04-check-" + suffix, in: app)
         tapChartPanelControl(app.buttons["check-working-amendment-leg"], in: panel)
         tapChartPanelControl(heading, in: panel, performTap: false)
-        XCTAssertEqual(heading.value as? String, "001°")
+        XCTAssertEqual(heading.value as? String, "001 degrees")
         pencil.tap()
         pencil.tap()
         tapChartPanelControl(heading, in: panel, performTap: false)
-        XCTAssertEqual(heading.value as? String, "001°")
+        XCTAssertEqual(heading.value as? String, "001 degrees")
         tapChartPanelControl(app.buttons["clear-amendment-heading"], in: panel)
         tapChartPanelControl(heading, in: panel, performTap: false)
         XCTAssertEqual(heading.value as? String, "Not set")
@@ -3698,7 +3936,7 @@ final class NavigationFlightUITests: XCTestCase {
         tapAmendmentControl(rows.firstMatch, in: console)
         tapChartPanelControl(heading, in: panel, performTap: false)
         XCTAssertTrue(heading.waitForExistence(timeout: 4))
-        XCTAssertEqual(heading.value as? String, "087°")
+        XCTAssertEqual(heading.value as? String, "087 degrees")
         tapChartPanelControl(done, in: panel)
         XCTAssertTrue((rows.firstMatch.value as? String ?? "").contains("087°, leg time Not set"))
         XCTAssertEqual(map.frame, before)

@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "1AFBFF9B-CD28-48CB-8B44-72713E85F7DA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-selected-primary_0_3D152403-7B67-4046-A6C4-B3C38D880111.png",
+        "timestamp" : 1795642950.932
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "B9127870-6DC3-402D-9184-6AE48288B617.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-unset-primary_0_FD910CE0-FF00-4DCF-8191-E56BB3F854C2.png",
+        "timestamp" : 1795642875.795
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing"
+  }
+]

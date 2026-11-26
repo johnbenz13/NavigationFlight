@@ -154,6 +154,32 @@ recording schema or draft store changes. The old time controls described in the
 AP-04 checkpoint are superseded within preparation only. See the
 [AP-05 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md).
 
+## D05.2 implementation boundary · 2026-11-25
+
+The product D05.2 checkpoint supersedes the preparation-only heading wheel and
+60:00 entry limit. `RouteAmendmentLegEntry` owns cyclic duration deltas, carry,
+borrowing, partial/legacy preservation and the1…3599-second validation boundary.
+Draft intents retain entry by logical directed leg, with no operational events.
+The heading presentation owns only transient unwrapped angle, touch/coast and
+cancellation state. It sends magnetic integer values through existing edit intents.
+Its touch shape is the upper44pt arc band; the upright value and surrounding
+space permit parent scrolling. Accessibility exposes one adjustable magnetic value.
+Time uses native cyclic picker presentation and sends physical row deltas through
+one typed intent, shared by touch and accessibility. Recentring is presentation
+only and sends no edit. Closing/replacing a control cancels its transient motion.
+
+Figma67:146 supplies390pt editor/16pt insets/18pt radius,176pt compass,
+44pt heading/Clear row, paired152pt time groups/14pt gap/110×108pt native wheels.
+The normal-text target is643pt high; accessibility layouts grow/scroll. The
+accessibility compass reserves360pt, places the scaled readout above its arc
+and limits arc labels to cardinals. This is an owner-authorized adaptation of
+the approved main direction, not a separately approved Figma frame. Retain
+Inspect original even though omitted from the illustrative D05.2 context. F05
+cues, Check comparison and the existing native keyboard bridge remain unchanged.
+The owner’s latest implementation authorization supersedes the handoff’s additional
+paired-design approval gate; actual gesture feel and adapted states still require
+runtime evidence and owner visual acceptance. The AP-06 ledger records the revision.
+
 ## AP-01 workspace ownership · 2026-11-24
 
 `CockpitFeatureState` owns `isAmendmentWorkspaceVisible` and

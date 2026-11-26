@@ -56,7 +56,7 @@ struct RouteAmendmentChartPanel: View {
                     .scrollBounceBehavior(.basedOnSize)
                     .scrollDismissesKeyboard(focus == nil ? .automatic : .never)
                     .frame(height: panel == .editor && focus == nil
-                           ? max(1, min(664, viewportHeight) - footerHeight)
+                           ? max(1, min(643, viewportHeight) - footerHeight)
                            : max(1, min(contentHeight == 0 ? viewportHeight : contentHeight,
                                         viewportHeight - (pinnedActions ? footerHeight : 0))))
                     .clipped()
@@ -313,10 +313,12 @@ struct RouteAmendmentChartPanel: View {
     ) -> some View {
         if focused == nil {
             RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
-            Divider().padding(.vertical, 8)
+                .id(editor.id)
+            Divider().padding(.vertical, 2)
         }
         if focused == nil {
             RouteAmendmentTimeSection(entry: editor.entry, onIntent: onIntent)
+                .id(editor.id)
         }
     }
 

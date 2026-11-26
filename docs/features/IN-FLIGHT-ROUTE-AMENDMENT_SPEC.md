@@ -104,6 +104,49 @@ Assisted prefill, cue wheels and durable unarmed-draft recovery remain outside
 this checkpoint. [AP-05 evidence](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md)
 records verification and pending owner acceptance separately.
 
+### D05.2 heading and cyclic duration revision · 2026-11-25
+
+John authorized implementing the [D05.2 main-screen direction](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-146)
+and [gesture rules](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-554),
+adapting missing devices/states consistently without another design-approval gate.
+This supersedes AP-04's heading wheel and AP-05's 60:00 new-entry endpoint;
+those checkpoints remain historical. Implemented visual acceptance is separate.
+
+1. Heading is manually entered magnetic heading001°…360°. An upper180° compass
+   card rotates beneath a stationary12-o’clock index; selected numeric text stays
+   upright. Both time wheels are immediately visible. No heading± buttons,
+   field-expansion tap, long press or precision-mode switch is required.
+2. A fast drag/flick travels quickly; slow continuous contact permits1° selection.
+   Initial contact does not change a value and touching during momentum stops it.
+   Slow release adds no coast. Momentum is bounded; Reduce Motion removes coast.
+   North crosses continuously359→360→001 in either direction.
+3. Minutes and seconds cycle00…59. John explicitly confirmed symmetric carry,
+   borrowing and full-duration wrap:03:59→04:00;03:00→02:59 backward;
+   59:59→00:00 forward and00:00→59:59 backward. Direct minute adjustment wraps
+   59:ss→00:ss. New complete durations are1…3599 seconds;00:00 is retainable
+   but invalid for readiness.
+4. Opening/touch-down enters no default. Unset remains distinct from zero and
+   outside the numeric cycle: one forward step chooses00 and one backward step59.
+   The first selection of a missing component does not infer carry. Preserve first-edit initialization of the other time
+   component to00, partial component clearing, Done/pencil retention and exact
+   accepted legacy values until deliberate editing. A missing minute stays missing
+   while seconds cycle; there is no inferred carry into an independently cleared
+   component. Deliberately editing a legacy component starts from its value modulo
+   60; untouched legacy duration remains exact, including60:00 and longer values.
+   An unset heading starts relative motion from north only after deliberate motion;
+   accessibility increment/decrement from unset chooses001°/360° respectively.
+5. VoiceOver supplies adjustable one-degree and one-unit time actions with explicit
+   units and independent44pt Clear controls. Adapt typography, grouping and scroll
+   extent for Larger Text, iPad landscape and iPhone portrait. At accessibility
+   sizes, keep the upright value above the360pt compass arc and show cardinal
+   arc labels to avoid overlap; time groups stack and remain independently available.
+   Keep both controls directly editable. Gestures inside a control edit it; outside scrolls
+   the editor. Neither action pans the chart through the panel.
+6. F05 optional cue contents, native note/keyboard, Check, readiness requirements,
+   logical-leg identity, operational events, live compass permissions and map
+   camera contracts remain unchanged. These are preparation durations, not ETA or
+   operational flight timers. Existing Inspect original remains available.
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

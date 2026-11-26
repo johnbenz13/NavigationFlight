@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "0BF2195E-919A-417C-9BB5-D7A5B0723D92.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-reverse-boundary_0_18E2EA44-33C9-4783-83A6-29AF40F69EDC.png",
+        "timestamp" : 1795644321.492
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "87780B07-298B-4D31-8F41-BD280DBE870D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-duration-zero-boundary_0_2A0BAEA9-EAF3-439C-9F60-3BE78AD460FC.png",
+        "timestamp" : 1795644294.876
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "C02EBD91-1AE4-4D6D-8E40-A8489891C6BF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-seconds-carry_0_DC4DA00B-7B27-4733-831E-3E3AAF38B28A.png",
+        "timestamp" : 1795644234.219
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary"
+  }
+]

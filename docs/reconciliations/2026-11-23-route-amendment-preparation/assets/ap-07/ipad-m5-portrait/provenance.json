@@ -1,0 +1,123 @@
+{
+  "exportedAt": "2026-11-26T10:11:59.493092+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/98CE93E2-ACA4-4ADF-8599-1DCACF428B5D/RunSomeTests/Test-NavigationFlight-2026.11.26_12-06-28-+0200.xcresult",
+  "resultInfoSHA256": "da54c41a02744c253079600294e2afa25f2d6a5f34bae1a19fdcae1d959590a1",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+          "deviceName": "UIEvidence-iPad",
+          "modelName": "iPad Pro 11-inch (M5)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 1,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795687775.391,
+    "passedTests": 1,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795687588.764,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertTrue failed",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 1,
+        "testIdentifierString": "NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors",
+        "testName": "testMapToolsCorrectsAndRecoversBothAnchors()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 2
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "27a22f44962bb2db616d0ebc3a64829454673dab",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift\n M NavigationFlight/Map/OfflineAviationMapView.swift\n M NavigationFlight/Map/RouteAmendmentMapOverlay.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nA  docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-07-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "521D002A-500D-44D0-91F7-B7ED3FE6E9D5.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-moved-portrait_0_231AF3D4-2A6C-485D-85DE-50267055D5AB.png",
+        "timestamp": 1795687647.76
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "e22dc24e65fecccc7420a4e004b92896e36595dca45403fb5bc7f9d61af68312"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "066F911B-62A9-414B-94BC-EDC5A7BBC024.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-deleted-portrait_0_BEFE5799-85A9-4985-9155-6D2DF35FD4A8.png",
+        "timestamp": 1795687771.113
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "4d25472efa8f4c39b067c0da81316e831b1382a85d5ae0d9efbc6e4cf52390f8"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "8BB15AA6-1A63-46F2-8374-17EF82C3CDB5.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-delete-offer-portrait_0_8C9069CA-53A6-4E92-8233-207644B8CBC5.png",
+        "timestamp": 1795687763.358
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "fe88d4a86d5a537d58614f7cfc7f05fd36751ca8cb1450e9a03258426055db62"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "DF51F48C-5751-4DF3-8305-AFDD82483408.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-restored-portrait_0_C75DB005-D848-4D9D-BE9C-96A333E4A526.png",
+        "timestamp": 1795687774.534
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "19b31a262e1793c26cc428c9b6b253b3c2ddbccafb4e252fd29cd2ca7610363b"
+    }
+  ]
+}

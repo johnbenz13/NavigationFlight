@@ -75,6 +75,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
     let pendingAmendment: RouteAmendmentMapOverlay.Pending?
     let amendmentCenterRequest: UUID?
     let onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void
+    let onAmendmentCorrection: (RouteAmendmentDraft.Intent) -> Void
     let onMapInteraction: () -> Void
 
     init(
@@ -105,6 +106,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         pendingAmendment: RouteAmendmentMapOverlay.Pending? = nil,
         amendmentCenterRequest: UUID? = nil,
         onAmendmentPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void = { _ in },
+        onAmendmentCorrection: @escaping (RouteAmendmentDraft.Intent) -> Void = { _ in },
         onMapInteraction: @escaping () -> Void = {}
     ) {
         self.presentation = presentation
@@ -133,6 +135,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
         self.amendment = amendment
         self.pendingAmendment = pendingAmendment
         self.amendmentCenterRequest = amendmentCenterRequest
+        self.onAmendmentCorrection = onAmendmentCorrection
         self.onAmendmentPlot = onAmendmentPlot
         self.onMapInteraction = onMapInteraction
     }
@@ -184,6 +187,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
         backgroundTap.cancelsTouchesInView = false
         backgroundTap.delegate = context.coordinator
         mapView.addGestureRecognizer(backgroundTap)
+        let pointPress = UILongPressGestureRecognizer(
+            target: context.coordinator, action: #selector(Coordinator.didPressAmendmentPoint)
+        )
+        pointPress.minimumPressDuration = 0.5
+        pointPress.delegate = context.coordinator
+        mapView.addGestureRecognizer(pointPress)
+        backgroundTap.require(toFail: pointPress)
         context.coordinator.installAmendmentOverlay(on: mapView)
         return mapView
     }
@@ -201,6 +211,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
             onHidePilotETACheck: onHidePilotETACheck,
             onMapInteraction: onMapInteraction
         )
+        context.coordinator.onAmendmentCorrection = onAmendmentCorrection
         let departureHeaderChanged = context.coordinator.updateAmendment(
             amendment, pending: pendingAmendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
         )
@@ -253,6 +264,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
         private var replacementReviewFitScheduled = false
         private var amendmentCenterRequest: UUID?
         private var onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void = { _ in }
+        var onAmendmentCorrection: (RouteAmendmentDraft.Intent) -> Void = { _ in }
+        private var pressedAmendmentPoint: RouteAmendmentDraft.CorrectionPoint?
+        private var pointPressOrigin = CGPoint.zero
+        private var pointPressMoved = false
 
         func installAmendmentOverlay(on mapView: MLNMapView) {
             let overlay = RouteAmendmentMapOverlay(map: mapView)
@@ -495,6 +510,69 @@ struct OfflineAviationMapView: UIViewRepresentable {
             } else {
                 onDismissCallout()
             }
+        }
+
+        @objc func didPressAmendmentPoint(_ recognizer: UILongPressGestureRecognizer) {
+            guard let overlay = amendmentOverlay, let map = overlay.map else { return }
+            let location = recognizer.location(in: map)
+            switch recognizer.state {
+            case .began:
+                pressedAmendmentPoint = overlay.correctionPoint(at: location)
+                overlay.heldPointID = pressedAmendmentPoint?.id
+                pointPressOrigin = location
+                pointPressMoved = false
+                onMapInteraction()
+            case .changed, .ended:
+                guard let point = pressedAmendmentPoint else { return }
+                pointPressMoved = pointPressMoved || hypot(location.x - pointPressOrigin.x, location.y - pointPressOrigin.y) > 6
+                if var input = overlay.input(at: location) {
+                    input.correction = pointPressMoved ? .move(point.id) : .offerDelete(point.id)
+                    if recognizer.state == .ended {
+                        overlay.dragPreview = nil
+                        overlay.heldPointID = nil
+                        pressedAmendmentPoint = nil
+                        if pointPressMoved {
+                            onAmendmentPlot(input)
+                        } else {
+                            offerPointDeletion(point, on: map)
+                        }
+                    } else if pointPressMoved, let presentation = overlay.presentation {
+                        // Preview is disposable. Only release commits one validated history entry.
+                        var draft = presentation.draft
+                        draft.update(.plot(input), route: presentation.route)
+                        overlay.dragPreview = .init(draft: draft, route: presentation.route, isPlotting: presentation.isPlotting)
+                    }
+                }
+            case .cancelled, .failed:
+                overlay.heldPointID = nil
+                overlay.dragPreview = nil
+                pressedAmendmentPoint = nil
+            default: break
+            }
+        }
+
+        private func offerPointDeletion(_ point: RouteAmendmentDraft.CorrectionPoint, on map: MLNMapView) {
+            var responder: UIResponder? = map
+            while let current = responder, !(current is UIViewController) { responder = current.next }
+            guard let presenter = responder as? UIViewController, presenter.presentedViewController == nil else { return }
+            let usesAlert = map.traitCollection.preferredContentSizeCategory.isAccessibilityCategory
+            let offer = UIAlertController(title: point.name, message: nil,
+                                          preferredStyle: usesAlert ? .alert : .actionSheet)
+            offer.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+                self?.onAmendmentCorrection(.removePoint(point.id))
+            })
+            offer.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            let anchor = map.convert(CLLocationCoordinate2D(latitude: point.position.latitudeDegrees,
+                                                           longitude: point.position.longitudeDegrees), toPointTo: map)
+            offer.popoverPresentationController?.sourceView = map
+            offer.popoverPresentationController?.sourceRect = CGRect(x: anchor.x - 9, y: anchor.y - 9, width: 18, height: 18)
+            presenter.present(offer, animated: !UIAccessibility.isReduceMotionEnabled)
+        }
+
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard gestureRecognizer is UILongPressGestureRecognizer,
+                  let map = amendmentOverlay?.map else { return true }
+            return amendmentOverlay?.correctionPoint(at: gestureRecognizer.location(in: map)) != nil
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {

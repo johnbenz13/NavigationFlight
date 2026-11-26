@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "243A625F-C7A5-437E-A7D0-893B559944DF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-voiceover-actions_0_88A55DDA-BC60-4A7D-AF99-A684200BCF3D.png",
+        "timestamp" : 1795688574.889
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "2295F540-FF92-421C-818F-0CAAC3A96E66.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "AP07 VoiceOver point correction speech_0_B5CE71C3-72D8-4456-878E-735D42A68C8B.txt",
+        "timestamp" : 1795688573.372
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions"
+  }
+]

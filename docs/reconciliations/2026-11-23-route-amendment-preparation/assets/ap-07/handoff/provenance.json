@@ -1,0 +1,18 @@
+{
+  "capturedAtUTC": "2026-11-26T12:07:26Z",
+  "appPath": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Build/Products/Debug-iphonesimulator/NavigationFlight.app",
+  "device": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "bundle": "com.bensaidj.NavigationFlight",
+  "process": "com.bensaidj.NavigationFlight: 6562",
+  "sourceBaseline": "27a22f44962bb2db616d0ebc3a64829454673dab",
+  "sourcePatchSHA256": "1b804d34b40e338d2df8e5317f179ed9fab6e2ad9e4513f276129f44772b8e61",
+  "branch": "feature/correct-route-points-and-undo",
+  "candidate": "14:02 final production build: map-point Delete anchor and enlarged pickup marker; uncommitted AP07 implementation",
+  "configuration": "Debug-iphonesimulator",
+  "fixture": "A/correction cues; disposable library",
+  "entry": "Live amendment already open; long press Point 1. To reopen from Ready: Start leg, dismiss checklist if shown, pencil.",
+  "viewer": "DeviceHub opened; select AP01-iPad-11-Reference and View Screen if needed",
+  "settings": "normal text; Reduce Motion restored OFF",
+  "screenshot": "primary-amendment-final.png"
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "744EAFBC-3284-483F-B82E-C1BAE6C0755A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-Rejoin_0_58448683-01EB-428C-97CD-C5A7F3BAB7DF.png",
+        "timestamp" : 1795688393.605
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "AFA212CD-93EF-4023-982D-6D3A024A7897.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-invalid-Rejoin_0_7A8D524E-C656-4179-AC7C-873404431EB2.png",
+        "timestamp" : 1795688388.712
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "265D91B8-FF70-4054-ADF1-646E5C5336A6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-Departure_0_9D5927DF-7D68-4CCD-8C14-0170289A8B53.png",
+        "timestamp" : 1795688380.974
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "0EEC4264-99B9-4D84-9D4F-F9E7F2286BCA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-invalid-Departure_0_20E9E381-7904-4ACF-86DB-52317D927E37.png",
+        "timestamp" : 1795688376.49
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues"
+  }
+]

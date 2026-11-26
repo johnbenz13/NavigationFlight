@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "0556CC3C-83C8-49D1-B31E-0655C178EECB.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-Rejoin_0_898E7518-4ABE-42F8-BE21-4296C6A09BA8.png",
+        "timestamp" : 1795688719.257
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "0817F301-15CF-401E-BE99-4D4B230CBEE0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-invalid-Rejoin_0_919047C6-B6D8-4DDD-8C58-6B7E57DCC71E.png",
+        "timestamp" : 1795688715.393
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "99113896-FBC1-429F-BEB1-A5472231F430.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-Departure_0_68CF9B86-93DB-43F2-8A6C-CA90F296EC73.png",
+        "timestamp" : 1795688708.693
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "DD6B83E0-DBB9-478E-8C5E-19FC3B888736.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-invalid-Departure_0_C642D2A9-E009-427A-9FAA-6770AB5D2136.png",
+        "timestamp" : 1795688705.034
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues"
+  }
+]

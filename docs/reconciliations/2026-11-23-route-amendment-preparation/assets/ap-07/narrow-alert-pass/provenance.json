@@ -1,0 +1,82 @@
+{
+  "exportedAt": "2026-11-26T11:25:41.962397+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/98CE93E2-ACA4-4ADF-8599-1DCACF428B5D/RunSomeTests/Test-NavigationFlight-2026.11.26_13-21-27-+0200.xcresult",
+  "resultInfoSHA256": "e9cb0daa838ee594a4bfcf27da5ebfbf1b831fe61c87a1a7159e2e1219d5b44c",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+          "deviceName": "iPhone 17e",
+          "modelName": "iPhone 17e",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795692207.941,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795692087.143,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "27a22f44962bb2db616d0ebc3a64829454673dab",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift\n M NavigationFlight/Map/OfflineAviationMapView.swift\n M NavigationFlight/Map/RouteAmendmentMapOverlay.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-07-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName": "iPhone 17e",
+        "exportedFileName": "D269989E-3F81-48D9-8925-BBC0BCD3AD9D.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-Departure-Move_0_2EBCF3FB-7C4A-4200-A0A7-703EC2B5DF59.png",
+        "timestamp": 1795692188.269
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1170,
+      "pixelHeight": 2532,
+      "sha256": "9a3955243e85f5450feebbdb465b1aef2a3fa735300ce55e49f498d23be4dbaf"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName": "iPhone 17e",
+        "exportedFileName": "57EA7E45-4EC1-4014-9689-10E1561C2FF5.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-restored_0_D206B8C6-3DB3-430B-8262-2E7DA0B014C7.png",
+        "timestamp": 1795692207.414
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1170,
+      "pixelHeight": 2532,
+      "sha256": "2d8c2c7f51537f8b729f545918578e96a6d81681e4e3526dafff9ee10a9319a5"
+    }
+  ]
+}

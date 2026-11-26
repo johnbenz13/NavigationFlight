@@ -82,7 +82,8 @@ struct RouteAmendmentReview: View {
         func role(_ endpoint: RouteAmendmentDraft.ReviewLeg.Endpoint) -> String {
             switch endpoint {
             case .point: "Via"
-            case .anchor(let anchor): anchor == draft.departure ? route.name(for: anchor) : "Rejoin"
+            case .departure: draft.departure.map { route.name(for: $0) } ?? "Departure"
+            case .rejoin: "Rejoin"
             }
         }
         return "\(role(leg.id.from)) → \(role(leg.id.to))"

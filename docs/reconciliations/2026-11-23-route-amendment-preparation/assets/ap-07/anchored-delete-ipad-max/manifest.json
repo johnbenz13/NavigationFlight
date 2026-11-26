@@ -1,0 +1,53 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "41E7BB37-B6A6-46EF-969C-9B10961B1EB2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-portrait_0_199BF8F3-1B2E-4F89-BC78-1B39350E3CBB.png",
+        "timestamp" : 1795694837.833
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "D6ECD1F4-0CBE-4411-B0F2-448622294565.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-portrait_0_6C10E1A0-6545-4387-AD14-5CB0207523FB.png",
+        "timestamp" : 1795694827.704
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "548E682B-08DB-41BA-AC59-62E541505EC9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-confirm-portrait_0_D71E3569-4630-4DF7-B040-8955B00CA8AB.png",
+        "timestamp" : 1795694824.53
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "E8A157D9-7658-4064-B4CB-C0B0EBDA43D6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-portrait_0_AD64C950-0241-490D-A90B-DD18668957A1.png",
+        "timestamp" : 1795694817.493
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "B86D2A96-96B5-49B6-AAE4-BD3EE41EB137.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-portrait-larger_0_3E085990-7503-44C4-BA6C-52493CD3E2BA.png",
+        "timestamp" : 1795694801.396
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionWithLargerText"
+  }
+]

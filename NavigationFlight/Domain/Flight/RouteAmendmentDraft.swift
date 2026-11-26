@@ -254,6 +254,9 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     struct MapInput: Equatable, Sendable {
+        enum Correction: Equatable, Sendable {
+            case move(UUID), offerDelete(UUID)
+        }
         let position: WGS84Coordinate
         var anchors: [RouteAmendmentAnchor] = []
         var waypoint: RouteAmendmentRoute.Stop?
@@ -261,6 +264,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var legHits: [LegChoice]?
         // A deliberate chart hit may snap to an original leg; map-center input does not.
         var isRouteTap = false
+        var correction: Correction?
     }
 
     enum CrossingPurpose: Equatable, Sendable {
@@ -284,6 +288,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case resolveDrawingOverlap(rejoin: Bool)
         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
+        case offerPointDeletion(UUID), dismissPointDeletion
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
         case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
@@ -308,9 +313,41 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var selection: UUID?
     }
 
+    private struct Snapshot: Equatable, Sendable {
+        let sketch: Sketch
+        let entries: [LegGeometry: RouteAmendmentLegEntry]
+    }
+
+    struct CorrectionPoint: Identifiable, Equatable, Sendable {
+        let id: UUID
+        let name: String
+        let position: WGS84Coordinate
+    }
+
+    private let departurePointID = UUID()
+    private let rejoinPointID = UUID()
+    private(set) var pointDeletionID: UUID?
+
+    func correctionPoints(on route: RouteAmendmentRoute) -> [CorrectionPoint] {
+        let departure = sketch.departure.map {
+            CorrectionPoint(id: departurePointID, name: "Departure", position: route.coordinate(at: $0))
+        }
+        let vias = points.enumerated().map {
+            CorrectionPoint(id: $0.element.id, name: "Point \($0.offset + 1)", position: $0.element.position)
+        }
+        let rejoin = sketch.rejoin.map {
+            CorrectionPoint(id: rejoinPointID, name: "Rejoin", position: route.coordinate(at: $0))
+        }
+        return [departure].compactMap { $0 } + vias + [rejoin].compactMap { $0 }
+    }
+
+    var acceptsPointCorrection: Bool {
+        !isPaused && legPanel == nil && (step == .departure || step == .drawing || step == .review)
+    }
+
     struct ReviewLeg: Identifiable, Equatable, Sendable {
         enum Endpoint: Hashable, Sendable {
-            case anchor(RouteAmendmentAnchor)
+            case departure, rejoin
             case point(UUID)
         }
 
@@ -464,16 +501,16 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     func reviewLegs(on route: RouteAmendmentRoute) -> [ReviewLeg] {
-        guard let departure else { return [] }
         typealias Stop = (id: ReviewLeg.Endpoint, name: String, position: WGS84Coordinate)
-        func stop(_ anchor: RouteAmendmentAnchor) -> Stop {
-            (.anchor(anchor), route.name(for: anchor), route.coordinate(at: anchor))
+        func stop(_ anchor: RouteAmendmentAnchor, endpoint: ReviewLeg.Endpoint) -> Stop {
+            (endpoint, route.name(for: anchor), route.coordinate(at: anchor))
         }
         let via: [Stop] = points.enumerated().map { index, point in
             (.point(point.id),
              point.name ?? "Point \(index + 1)", point.position)
         }
-        let stops = [stop(departure)] + via + (rejoin.map { [stop($0)] } ?? [])
+        let stops = (departure.map { [stop($0, endpoint: .departure)] } ?? []) + via
+            + (rejoin.map { [stop($0, endpoint: .rejoin)] } ?? [])
         return zip(stops, stops.dropFirst()).map { from, to in
             let id = ReviewLeg.ID(from: from.id, to: to.id)
             let geometry = LegGeometry(id: id, fromLatitude: from.position.latitudeDegrees,
@@ -484,7 +521,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
     private var sketch = Sketch()
-    private var plotHistory: [Sketch] = []
+    private var plotHistory: [Snapshot] = []
     private(set) var step: Step = .departure
     private(set) var isPaused = false
     private(set) var message: String?
@@ -526,6 +563,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         switch intent {
         case .pause:
             isPaused = true
+            pointDeletionID = nil
             return
         case .resume, .open:
             isPaused = false
@@ -550,6 +588,15 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             guard step != .staleDeparture else { return }
             step = departure == nil ? .departure : reviewLegs(on: route).isEmpty ? .drawing : .review
         case .plot(let input):
+            if let correction = input.correction {
+                guard acceptsPointCorrection else { return }
+                switch correction {
+                case .move(let id): editPoint(id, replacingWith: input, route: route)
+                case .offerDelete(let id):
+                    if correctionPoints(on: route).contains(where: { $0.id == id }) { pointDeletionID = id }
+                }
+                return
+            }
             if let hits = input.legHits, acceptsLegTap {
                 let eligible = legChoices(on: route, originalsOnly: isInspecting)
                 let choices = eligible.filter { hits.contains($0) }.filter {
@@ -632,15 +679,22 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
             sketch.selection = id
         case .movePoint(let id):
-            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
-            sketch.selection = id
+            guard acceptsPointCorrection, correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
             step = .move(id)
         case .removePoint(let id):
-            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
+            guard acceptsPointCorrection else { return }
+            pointDeletionID = nil
             editPoint(id, replacingWith: nil, route: route)
+        case .offerPointDeletion(let id):
+            guard acceptsPointCorrection, correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
+            pointDeletionID = id
+        case .dismissPointDeletion:
+            pointDeletionID = nil
         case .undo:
-            guard step == .drawing || step == .departure, let previous = plotHistory.popLast() else { return }
-            sketch = previous
+            guard acceptsPointCorrection, let previous = plotHistory.popLast() else { return }
+            sketch = previous.sketch
+            legEntries = previous.entries
+            pointDeletionID = nil
             step = departure == nil ? .departure : .drawing
             validateDeparture(on: route)
         case .chooseDeparture:
@@ -669,7 +723,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                 editor = nil
                 legPanel = nil
                 step = .drawing
-            case .rejoin, .confirmRejoin, .move: step = .drawing
+            case .rejoin, .confirmRejoin, .move: step = departure == nil ? .departure : .drawing
             default: break
             }
         case .review:
@@ -913,20 +967,55 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             return false
         }
         guard candidate != sketch else { return true }
-        plotHistory.append(sketch)
+        let previousLegs = reviewLegs(on: route)
+        plotHistory.append(Snapshot(sketch: sketch, entries: legEntries))
         sketch = candidate
+        // Match directed endpoint identities, never row offsets or old coordinates.
+        let old = Dictionary(uniqueKeysWithValues: previousLegs.map { ($0.id, $0) })
+        legEntries = Dictionary(uniqueKeysWithValues: reviewLegs(on: route).map { leg in
+            guard let previous = old[leg.id] else { return (leg.geometry, RouteAmendmentLegEntry()) }
+            var entry = previous.entry
+            if previous.geometry != leg.geometry {
+                entry[.heading] = ""
+                entry[.minutes] = ""
+                entry[.seconds] = ""
+            }
+            return (leg.geometry, entry)
+        })
         return true
     }
 
     private mutating func editPoint(_ id: UUID, replacingWith input: MapInput?, route: RouteAmendmentRoute) {
-        guard let index = points.firstIndex(where: { $0.id == id }) else { return }
+        guard correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
         var candidate = sketch
-        if let input {
-            candidate.points[index] = plottedPoint(from: input, on: route, id: id)
+        if id == departurePointID || id == rejoinPointID {
+            let isDeparture = id == departurePointID
+            if let input {
+                let anchors = rejoinCandidates(from: input, on: route)
+                    .filter { isValid($0, forDeparture: isDeparture, route: route) }
+                guard anchors.count == 1, let anchor = anchors.first else {
+                    message = anchors.isEmpty ? "Drop on an eligible original-route location in forward order."
+                        : "Choose one route occurrence using Map tools."
+                    return
+                }
+                if isDeparture { candidate.departure = anchor } else { candidate.rejoin = anchor }
+            } else if isDeparture {
+                candidate.departure = nil
+            } else {
+                candidate.rejoin = nil
+            }
+        } else if let index = points.firstIndex(where: { $0.id == id }) {
+            if let input {
+                candidate.points[index] = plottedPoint(from: input, on: route, id: id)
+            } else {
+                candidate.points.remove(at: index)
+            }
+        }
+        if input != nil {
+            candidate.selection = id
         } else {
-            candidate.points.remove(at: index)
             candidate.selection = nil
         }
-        if applyPlot(candidate, route: route) { step = .drawing }
+        if applyPlot(candidate, route: route) { step = departure == nil ? .departure : .drawing }
     }
 }

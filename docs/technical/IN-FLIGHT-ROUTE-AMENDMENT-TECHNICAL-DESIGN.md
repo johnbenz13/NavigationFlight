@@ -292,6 +292,29 @@ The [approved Cockpit revision](https://www.figma.com/design/o6gfoVEgyzJ0UA51d9V
 
 ## Draft, map, and estimates
 
+AP-07 / D04 point corrections (2026-11-26): `RouteAmendmentDraft` owns validation,
+named correction points and atomic geometry/entry snapshots. Directed review-edge
+identity uses departure/rejoin roles or via UUIDs; coordinates remain a separate
+geometry signature. Corrections remap surviving entries by identity, clear changed
+heading/time fields, retain lossless cue entries and prune removed edges. Removing
+an anchor retains formed edges between surviving points. Undo restores the prior
+entry dictionary with the sketch, so returning to old coordinates cannot resurrect
+superseded values accidentally. Operational Flight and recording events are untouched.
+
+`OfflineAviationMapView` recognizes long press only at editable point targets;
+MapLibre retains ordinary pan/pinch. `RouteAmendmentMapOverlay` renders a disposable
+validated drag preview. Only release commits a typed correction; cancellation
+discards preview. The map coordinator presents a native Delete action sheet with its popover source rectangle
+projected from the selected map point; the console presents named Map tools Move/Delete choices.
+The overlay enlarges the held marker immediately (15 pt radius), clearing pickup feedback
+on release/cancellation without motion. Named corrections use native alerts at all sizes;
+native context-menu actions remained open without activating on both maximum-text
+and narrower regular-size iPhone layouts. At accessibility text sizes the direct
+Delete offer also uses a native alert because the system iPad popover clips Delete.
+Both accessible placement and direct drag use the
+same draft validator. D04 replaces the F02 persistent point card by explicit owner
+choice; D03 shell geometry remains authoritative.
+
 - Store the draft in the existing `CockpitFeatureState` owner, scoped by Flight ID and outside recording. Preserve sketch points, local undo, selected step, working values, and the Manual or Assisted mode captured at entry. Pause hides plotting and restores operational map and console input. Resume reopens the same step and revalidates the anchors against current progression. Leaving Cockpit preserves the draft for the same running Flight. Load, restart, or process loss clears it. Amend Route remains available in an underway Flight between manually progressed legs.
 - Add the preference through [PreferenceChange](../../NavigationFlight/Domain/Settings/PreferenceChange.swift), the [Settings controller](../../NavigationFlight/Features/Settings/SettingsController.swift), and [disk preferences](../../NavigationFlight/Data/Settings/DiskSettingsStore.swift). A missing key defaults to Manual. A failed settings save leaves the last saved preference in use. The preference is separate from Flight execution mode.
 - Use one tap-intent dispatcher in [OfflineAviationMapView](../../NavigationFlight/Map/OfflineAviationMapView.swift). While editing, route and waypoint hit testing uses screen-space proximity, and free taps use the map conversion to WGS84. Select the intended occurrence for crossings. Gestures for panning, zoom, and rotation remain MapLibre-owned. Coordinate choice, move, and accessible map-center placement all feed the same typed edit intent. Pausing restores normal target taps without simultaneously plotting or reporting a reach. SwiftUI keeps field focus, numeric input, and orientation layout local to presentation.

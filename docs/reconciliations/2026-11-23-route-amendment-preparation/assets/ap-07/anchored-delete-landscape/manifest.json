@@ -1,0 +1,53 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "5A697D5F-86EF-4C74-8121-66BC9098881D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-landscape_0_C67B8395-FB7C-4A67-AAA8-52E3B71AFCD5.png",
+        "timestamp" : 1795694765.958
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "EC3AA805-222E-4C7F-B863-3C38D1E82439.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-landscape_0_6863A2B1-73F6-48D8-B15A-EAFDA664EF33.png",
+        "timestamp" : 1795694758.773
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "CFAFE7D0-7099-45FA-9E78-39A4F29620E3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-confirm-landscape_0_AB56B88C-54D7-4FC7-AB2A-122C436DDA60.png",
+        "timestamp" : 1795694754.929
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "6B88D65E-3CA7-4901-8665-D57781B3C163.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-landscape_0_68B92FB6-9C60-4CC5-81FE-061D5B2B34B3.png",
+        "timestamp" : 1795694747.005
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "9681E088-3950-4EF0-92E4-2701EE5DC144.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-landscape_0_D9042407-45B0-48BF-9202-15133E3E1CA0.png",
+        "timestamp" : 1795694736.468
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionInLandscape"
+  }
+]

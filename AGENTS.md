@@ -106,6 +106,15 @@ Continue validating legibility, contrast, supported text sizes, touch targets an
 Reduce Motion where relevant to the changed cockpit controls. These remain part of
 pilot usability and existing contracts.
 
+## Supported cockpit use
+
+Owner decision (2026-11-26, issue #231): prioritize iPad and iPhone Pro cockpit
+use. Maximum accessibility text sizes on small iPhone screens are outside the
+supported cockpit layout contract; do not require direct map gestures there or
+expand excluded Cockpit header/legend layout work to accommodate them. Preserve
+text scaling and validate normal iPhone Pro use and supported iPad text sizes.
+This does not remove other ticket-specific accessibility requirements.
+
 ## Validation
 
 Use progressive verification during implementation.

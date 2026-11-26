@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "8CC7284F-9853-46F9-B050-04B0F34E9B4B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-landscape_0_A374F7E7-721C-40CE-AAF0-1CF9C73D5237.png",
+        "timestamp" : 1795688532.912
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "B8A16519-4806-4B49-BE33-5878ADABF4AA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-landscape_0_D5AC6967-3EDA-4C21-8EE1-986CD99FA794.png",
+        "timestamp" : 1795688529.231
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "C743B7DA-CB74-4CD7-A991-BD851B22C883.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-landscape_0_B63A7824-2F4A-4584-BD28-95F40CBBF16D.png",
+        "timestamp" : 1795688521.776
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "9AD63687-B6FF-496E-869F-5EC8F8EFE5E6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-landscape_0_A53E952F-69C5-4799-96CD-1E5A382DCDAB.png",
+        "timestamp" : 1795688514.003
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionInLandscape"
+  }
+]

@@ -9,6 +9,285 @@ import XCTest
 
 final class NavigationFlightUITests: XCTestCase {
 
+    @MainActor
+    func testAnchorDragRejectsInvalidDropsAndUndoRestoresValues() throws {
+        let app = try launchPartialAmendment(fixture: "A", correctionCues: true)
+        app.buttons["amend-route"].tap()
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
+        for name in ["Departure", "Rejoin"] {
+            let point = try correctionPointCoordinate(in: app, map: map, name: name)
+            point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
+            XCTAssertTrue(app.descendants(matching: .any)["amendment-feedback"].waitForExistence(timeout: 4))
+            XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+            captureAmendmentState("ap07-invalid-\(name)", in: app)
+            let valid = try correctionPointCoordinate(in: app, map: map, name: name == "Departure" ? "Kadima" : "Ramat")
+            point.press(forDuration: 0.65, thenDragTo: valid)
+            let changed = rows.matching(NSPredicate(format: "label BEGINSWITH %@", "Proposed leg \(name == "Departure" ? 1 : 3),")).firstMatch
+            XCTAssertTrue((changed.value as? String ?? "").contains("Not set"))
+            captureAmendmentState("ap07-moved-\(name)", in: app)
+            undoPointCorrection(in: app)
+            XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        }
+    }
+
+    @MainActor
+    func testPointCorrectionVoiceOverNamesAndActions() throws {
+        let service = XCUIDevice.shared.voiceOverService
+        let wasEnabled = service.isEnabled
+        if wasEnabled { try service.disable() }
+        defer {
+            if !wasEnabled && service.isEnabled { try? service.disable() }
+            if wasEnabled && !service.isEnabled { try? service.enable() }
+        }
+        let app = try launchPartialAmendment(fixture: "A")
+        app.buttons["amend-route"].tap()
+        openAmendmentMapInput(in: app)
+        try service.enable()
+        var speech: [String] = []
+        for _ in 0..<35 {
+            speech.append(try service.moveForward().utterance)
+            if speech.joined(separator: " ").contains("Rejoin") { break }
+        }
+        let names = speech.joined(separator: " ")
+        for name in ["Departure", "Point 1", "Point 2", "Rejoin"] { XCTAssertTrue(names.contains(name), names) }
+        try service.disable()
+        app.buttons["amendment-correct-Point 1"].tap()
+        try service.enable()
+        speech.append(try service.currentSpeech().utterance)
+        for _ in 0..<12 {
+            speech.append(try service.moveForward().utterance)
+            if speech.joined(separator: " ").contains("Delete") { break }
+        }
+        let actions = speech.joined(separator: " ")
+        XCTAssertTrue(actions.contains("Move"), actions)
+        XCTAssertTrue(actions.contains("Delete"), actions)
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "AP07 VoiceOver point correction speech"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        captureAmendmentState("ap07-voiceover-actions", in: app)
+    }
+
+    @MainActor
+    private func undoPointCorrection(in app: XCUIApplication) {
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        func renderedRows() -> [String] {
+            rows.allElementsBoundByIndex.map { $0.label + "|" + String(describing: $0.value) }
+        }
+        let before = renderedRows()
+        let undo = app.buttons["undo-amendment-plot"]
+        if !undo.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
+        XCTAssertTrue(undo.waitForExistence(timeout: 4))
+        undo.tap()
+        let restored = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            renderedRows() != before
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [restored], timeout: 5), .completed)
+    }
+
+    @MainActor
+    func testMapToolsCorrectsAndRecoversBothAnchors() throws {
+        try verifyMapToolsCorrection()
+    }
+
+    @MainActor
+    func testMapToolsCorrectionWithLargerText() throws {
+        try verifyMapToolsCorrection(largerText: true)
+    }
+
+    @MainActor
+    func testMapToolsCorrectionInLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
+        try verifyMapToolsCorrection(landscape: true)
+    }
+
+    @MainActor
+    private func verifyMapToolsCorrection(largerText: Bool = false, landscape: Bool = false) throws {
+        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", correctionCues: true)
+        openCorrectionWorkspace(in: app, landscape: landscape)
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
+        func act(_ name: String, _ action: String) {
+            openAmendmentMapInput(in: app)
+            let point = app.buttons["amendment-correct-\(name)"]
+            revealAmendmentInput(point, in: app)
+            point.tap()
+            XCTAssertTrue(app.buttons[action].firstMatch.waitForExistence(timeout: 4))
+            XCTAssertTrue(app.alerts.firstMatch.exists)
+            XCTAssertGreaterThanOrEqual(app.buttons[action].firstMatch.frame.height + 0.000001, 44)
+            captureAmendmentState("ap07-tools-\(name)-\(action)", in: app)
+            app.buttons[action].firstMatch.tap()
+            XCTAssertTrue(app.navigationBars["Route waypoints"].waitForNonExistence(timeout: 4))
+        }
+        act("Departure", "Delete")
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertTrue(app.staticTexts["amendment-readiness"].label.localizedCaseInsensitiveContains("incomplete"))
+        captureAmendmentState("ap07-missing-departure", in: app)
+        chooseAmendmentWaypoint("Kadima", in: app)
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertEqual(rows.element(boundBy: 1).value as? String, values[1])
+        XCTAssertEqual(rows.element(boundBy: 2).value as? String, values[2])
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.count, 2)
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        act("Rejoin", "Delete")
+        XCTAssertEqual(rows.count, 2)
+        XCTAssertNotEqual(app.staticTexts["amendment-drawing-status"].label, "Rejoined")
+        captureAmendmentState("ap07-missing-rejoin", in: app)
+        chooseAmendmentWaypoint("West", in: app)
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertEqual(app.staticTexts["amendment-drawing-status"].label, "Rejoined")
+        undoPointCorrection(in: app)
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        act("Departure", "Move")
+        chooseAmendmentWaypoint("Kadima", in: app)
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertTrue((rows.firstMatch.value as? String ?? "").contains("Not set"))
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        captureAmendmentState("ap07-tools-restored", in: app)
+    }
+
+    @MainActor
+    func testPointCorrectionDragDeleteAndUndo() throws {
+        try verifyPointCorrection()
+    }
+
+    @MainActor
+    func testPointCorrectionInLandscape() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
+        try verifyPointCorrection(landscape: true)
+    }
+
+    @MainActor
+    func testPointCorrectionWithLargerText() throws {
+        try verifyPointCorrection(largerText: true)
+    }
+
+    @MainActor
+    private func verifyPointCorrection(landscape: Bool = false, largerText: Bool = false) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        if largerText && UIDevice.current.userInterfaceIdiom == .phone {
+            throw XCTSkip("Owner decision 2026-11-26: maximum accessibility text on small iPhone cockpit screens is unsupported; named Map tools remains covered separately.")
+        }
+        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", correctionCues: true)
+        openCorrectionWorkspace(in: app, landscape: landscape)
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        XCTAssertEqual(rows.count, 3)
+        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
+        let frame = map.frame
+        let point = try correctionPointCoordinate(in: app, map: map)
+        let destination = point.withOffset(CGVector(dx: -35, dy: -20))
+        point.press(forDuration: 0.65, thenDragTo: destination)
+        let changed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (rows.firstMatch.value as? String)?.contains("Not set") == true
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
+        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
+        XCTAssertEqual(rows.element(boundBy: 2).value as? String, values[2])
+        XCTAssertEqual(map.frame, frame)
+        captureAmendmentState("ap07-moved\(landscape ? "-landscape" : "-portrait")\(largerText ? "-larger" : "")", in: app)
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        if !landscape && !largerText {
+            tapAmendmentControl(rows.firstMatch, in: console)
+            let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+            let note = app.textFields["amendment-field-visualReference"]
+            XCTAssertTrue(note.exists)
+            XCTAssertEqual(note.value as? String, "Correction cue 1")
+            captureAmendmentState("ap07-undo-cues\(largerText ? "-larger" : "")", in: app)
+            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+            XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
+        }
+
+        let restoredPoint = try correctionPointCoordinate(in: app, map: map)
+        restoredPoint.press(forDuration: 0.65)
+        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
+        if largerText {
+            XCTAssertTrue(app.alerts.firstMatch.exists)
+            XCTAssertGreaterThanOrEqual(app.buttons["Delete"].frame.height, 44)
+        }
+        captureAmendmentState("ap07-delete-offer\(landscape ? "-landscape" : "-portrait")", in: app)
+        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
+        else { map.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.35)).tap() }
+        XCTAssertTrue(app.buttons["Delete"].waitForNonExistence(timeout: 4))
+        XCTAssertEqual(rows.count, 3)
+        restoredPoint.press(forDuration: 0.65)
+        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
+        captureAmendmentState("ap07-delete-confirm\(landscape ? "-landscape" : "-portrait")", in: app)
+        app.buttons["Delete"].tap()
+        let deleted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in rows.count == 2 }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [deleted], timeout: 5), .completed)
+        XCTAssertEqual(rows.count, 2)
+        captureAmendmentState("ap07-deleted\(landscape ? "-landscape" : "-portrait")", in: app)
+        let merged = rows.matching(NSPredicate(format: "label BEGINSWITH %@", "Proposed leg 1,")).firstMatch
+        XCTAssertTrue((merged.value as? String ?? "").contains("Not set"), "Merged: \(merged.label), \(String(describing: merged.value)); all: \(rows.debugDescription)")
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
+        captureAmendmentState("ap07-restored\(landscape ? "-landscape" : "-portrait")", in: app)
+    }
+
+    @MainActor
+    private func openCorrectionWorkspace(in app: XCUIApplication, landscape: Bool) {
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                app.frame.width > app.frame.height
+            }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
+        }
+        app.buttons["amend-route"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["route-amendment-console"].firstMatch.waitForExistence(timeout: 5))
+    }
+
+    /// Projects the existing fixture through the observed, unpitched MapLibre camera.
+    /// This chooses a real touch coordinate; it does not send a domain correction.
+    @MainActor
+    private func correctionPointCoordinate(in app: XCUIApplication, map: XCUIElement, name: String = "Point 1") throws -> XCUICoordinate {
+        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: crossingAmendmentPlanData()) as? [String: Any])
+        let navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+        let route = try XCTUnwrap(navigation["route"] as? [String: Any])
+        let points = try XCTUnwrap(route["waypoints"] as? [[String: Any]])
+        let from = try XCTUnwrap(points[0]["position"] as? [String: Double])
+        let to = try XCTUnwrap(points[1]["position"] as? [String: Double])
+        func mercator(_ latitude: Double) -> Double { asinh(tan(latitude * .pi / 180)) }
+        let departureY = mercator(try XCTUnwrap(from["latitude"])) * 0.54 + mercator(try XCTUnwrap(to["latitude"])) * 0.46
+        var latitude = atan(sinh(departureY)) * 180 / .pi
+        var longitude = try XCTUnwrap(from["longitude"]) * 0.54 + XCTUnwrap(to["longitude"]) * 0.46
+        switch name {
+        case "Departure": break
+        case "Rejoin":
+            let position = try XCTUnwrap(points[2]["position"] as? [String: Double])
+            latitude = try XCTUnwrap(position["latitude"])
+            longitude = try XCTUnwrap(position["longitude"])
+        case "Kadima":
+            latitude = try XCTUnwrap(from["latitude"])
+            longitude = try XCTUnwrap(from["longitude"])
+        case "Ramat":
+            latitude = try XCTUnwrap(to["latitude"])
+            longitude = try XCTUnwrap(to["longitude"])
+        default:
+            latitude += 0.02
+            longitude += 0.02
+        }
+        let camera = try settledCameraValues(of: map)
+        XCTAssertEqual(camera[4], 0, accuracy: 0.001)
+        let world = 512 * pow(2, camera[2])
+        let dx = (longitude - camera[1]) / 360 * world
+        let dy = (mercator(camera[0]) - mercator(latitude)) / (2 * .pi) * world
+        let angle = camera[3] * .pi / 180
+        return map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(
+            CGVector(dx: dx * cos(angle) + dy * sin(angle), dy: -dx * sin(angle) + dy * cos(angle))
+        )
+    }
+
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
 
@@ -4020,8 +4299,9 @@ final class NavigationFlightUITests: XCTestCase {
         let edit = app.buttons["amendment-overlap-edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 4))
         XCTAssertTrue(app.buttons["amendment-overlap-rejoin"].isHittable)
-        XCTAssertGreaterThanOrEqual(edit.frame.height, 44)
-        XCTAssertGreaterThanOrEqual(app.buttons["amendment-overlap-rejoin"].frame.height, 44)
+        // Screen-coordinate conversion can report 44 pt as 43.99999999999997.
+        XCTAssertGreaterThanOrEqual(edit.frame.height + 0.000001, 44)
+        XCTAssertGreaterThanOrEqual(app.buttons["amendment-overlap-rejoin"].frame.height + 0.000001, 44)
         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
         // The overlap actions are exposed even when SwiftUI flattens the non-scrolling container.
         // Measure their shared content width (338pt card less 19pt inset on each side).
@@ -4133,7 +4413,8 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func launchPartialAmendment(
-        largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false
+        largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false,
+        correctionCues: Bool = false
     ) throws -> XCUIApplication {
         var planData = try crossingAmendmentPlanData()
         if fixture.hasPrefix("A-progress") {
@@ -4155,6 +4436,7 @@ final class NavigationFlightUITests: XCTestCase {
             fixtureEnvironment: [
                 "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": fixture,
                 "NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION": legacyDuration ? "1" : "0",
+                "NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES": correctionCues ? "1" : "0",
                 "NAVIGATION_FLIGHT_UI_TEST_CAMERA": "1"
             ]
         )
@@ -4560,6 +4842,14 @@ final class NavigationFlightUITests: XCTestCase {
         let point = app.buttons.matching(
             NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "amendment-route-waypoint", name)
         ).firstMatch
+        revealAmendmentInput(point, in: app)
+        point.tap()
+        XCTAssertTrue(point.waitForNonExistence(timeout: 4))
+        XCTAssertTrue(app.navigationBars["Route waypoints"].waitForNonExistence(timeout: 4))
+    }
+
+    @MainActor
+    private func revealAmendmentInput(_ point: XCUIElement, in app: XCUIApplication) {
         // The medium sheet lazily loads rows below the correction actions. Expand/scroll
         // before querying a waypoint, rather than treating virtualization as missing data.
         let inputLists = app.collectionViews.containing(.button, identifier: "Use map center")
@@ -4579,8 +4869,6 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(point.waitForExistence(timeout: 3))
         XCTAssertTrue(point.isHittable)
         XCTAssertTrue(list.frame.contains(point.frame), "Waypoint must be inside the sheet viewport")
-        point.tap()
-        XCTAssertTrue(point.waitForNonExistence(timeout: 4))
     }
 
     @MainActor

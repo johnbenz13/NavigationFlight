@@ -95,6 +95,12 @@ final class RouteAmendmentMapOverlay: UIView {
     }
 
     weak var map: MLNMapView?
+    var heldPointID: UUID? {
+        didSet { setNeedsDisplay() }
+    }
+    var dragPreview: Presentation? {
+        didSet { setNeedsDisplay() }
+    }
     var viewportDidLayout: (() -> Void)?
 
     override func layoutSubviews() {
@@ -181,13 +187,20 @@ final class RouteAmendmentMapOverlay: UIView {
                      isRouteTap: !retainsCenterPosition && !anchors.isEmpty)
     }
 
+    func correctionPoint(at point: CGPoint) -> RouteAmendmentDraft.CorrectionPoint? {
+        guard let map, let presentation, presentation.draft.acceptsPointCorrection else { return nil }
+        return presentation.draft.correctionPoints(on: presentation.route)
+            .map { ($0, distance(point, project($0.position, on: map))) }
+            .filter { $0.1 <= 22 }.min { $0.1 < $1.1 }?.0
+    }
+
     override func draw(_ rect: CGRect) {
         guard let map, let context = UIGraphicsGetCurrentContext() else { return }
         if let pending {
             drawPending(pending, on: map, in: context)
             return
         }
-        guard let presentation else { return }
+        guard let presentation = dragPreview ?? presentation else { return }
         let draft = presentation.draft
         let route = presentation.route
         let segments = draft.segments(on: route)
@@ -202,17 +215,31 @@ final class RouteAmendmentMapOverlay: UIView {
             marker(project(stop.position, on: map), label: stop.name, color: color, in: context)
         }
         for (index, point) in draft.points.enumerated() {
-            let selected = draft.selectedPointID == point.id
+            let selected = draft.selectedPointID == point.id || heldPointID == point.id
             marker(project(point.position, on: map), label: point.name ?? "Point \(index + 1)",
                    color: Self.proposedColor, selected: selected, in: context)
         }
         if let departure = draft.departure {
             let label = draft.step == .staleDeparture ? "Previous departure" : "Departure"
             marker(project(route.coordinate(at: departure), on: map),
-                   label: "\(label) · \(route.name(for: departure))", color: Self.proposedColor, in: context)
+                   label: "\(label) · \(route.name(for: departure))", color: Self.proposedColor,
+                   selected: heldPointID == draft.correctionPoints(on: route).first?.id, in: context)
         }
         if let rejoin = draft.rejoin {
-            marker(project(route.coordinate(at: rejoin), on: map), label: "Return · \(route.name(for: rejoin))", color: Self.proposedColor, in: context)
+            marker(project(route.coordinate(at: rejoin), on: map), label: "Return · \(route.name(for: rejoin))", color: Self.proposedColor,
+                   selected: heldPointID == draft.correctionPoints(on: route).last?.id, in: context)
+        }
+        if let held = draft.correctionPoints(on: route).first(where: { $0.id == heldPointID }) {
+            // Immediate, motion-free pickup feedback remains visible under the finger.
+            let center = project(held.position, on: map)
+            let circle = CGRect(x: center.x - 15, y: center.y - 15, width: 30, height: 30)
+            context.setFillColor(UIColor.white.cgColor)
+            context.fillEllipse(in: circle)
+            context.setStrokeColor(Self.proposedColor.cgColor)
+            context.setLineWidth(4)
+            context.strokeEllipse(in: circle)
+            context.setFillColor(Self.proposedColor.cgColor)
+            context.fillEllipse(in: circle.insetBy(dx: 9, dy: 9))
         }
         if let position = draft.overlapPosition {
             let point = project(position, on: map)

@@ -1,0 +1,53 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "DF51F48C-5751-4DF3-8305-AFDD82483408.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-portrait_0_C75DB005-D848-4D9D-BE9C-96A333E4A526.png",
+        "timestamp" : 1795687774.534
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "066F911B-62A9-414B-94BC-EDC5A7BBC024.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-portrait_0_BEFE5799-85A9-4985-9155-6D2DF35FD4A8.png",
+        "timestamp" : 1795687771.113
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "8BB15AA6-1A63-46F2-8374-17EF82C3CDB5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-portrait_0_8C9069CA-53A6-4E92-8233-207644B8CBC5.png",
+        "timestamp" : 1795687763.358
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "774C2BDC-B002-4C37-B45C-C982B5AD2071.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-undo-cues_0_564E1699-55BC-435F-B461-82E34802E374.png",
+        "timestamp" : 1795687712.955
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "521D002A-500D-44D0-91F7-B7ED3FE6E9D5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-portrait_0_231AF3D4-2A6C-485D-85DE-50267055D5AB.png",
+        "timestamp" : 1795687647.76
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo"
+  }
+]

@@ -1,0 +1,1082 @@
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+index 26f0f54..564b267 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+@@ -254,6 +254,9 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+     }
+ 
+     struct MapInput: Equatable, Sendable {
++        enum Correction: Equatable, Sendable {
++            case move(UUID), offerDelete(UUID)
++        }
+         let position: WGS84Coordinate
+         var anchors: [RouteAmendmentAnchor] = []
+         var waypoint: RouteAmendmentRoute.Stop?
+@@ -261,6 +264,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         var legHits: [LegChoice]?
+         // A deliberate chart hit may snap to an original leg; map-center input does not.
+         var isRouteTap = false
++        var correction: Correction?
+     }
+ 
+     enum CrossingPurpose: Equatable, Sendable {
+@@ -284,6 +288,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         case resolveDrawingOverlap(rejoin: Bool)
+         case plot(MapInput), chooseAnchor(RouteAmendmentAnchor), confirmRejoin
+         case selectPoint(UUID), movePoint(UUID), removePoint(UUID)
++        case offerPointDeletion(UUID), dismissPointDeletion
+         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
+         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
+         case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
+@@ -308,9 +313,41 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         var selection: UUID?
+     }
+ 
++    private struct Snapshot: Equatable, Sendable {
++        let sketch: Sketch
++        let entries: [LegGeometry: RouteAmendmentLegEntry]
++    }
++
++    struct CorrectionPoint: Identifiable, Equatable, Sendable {
++        let id: UUID
++        let name: String
++        let position: WGS84Coordinate
++    }
++
++    private let departurePointID = UUID()
++    private let rejoinPointID = UUID()
++    private(set) var pointDeletionID: UUID?
++
++    func correctionPoints(on route: RouteAmendmentRoute) -> [CorrectionPoint] {
++        let departure = sketch.departure.map {
++            CorrectionPoint(id: departurePointID, name: "Departure", position: route.coordinate(at: $0))
++        }
++        let vias = points.enumerated().map {
++            CorrectionPoint(id: $0.element.id, name: "Point \($0.offset + 1)", position: $0.element.position)
++        }
++        let rejoin = sketch.rejoin.map {
++            CorrectionPoint(id: rejoinPointID, name: "Rejoin", position: route.coordinate(at: $0))
++        }
++        return [departure].compactMap { $0 } + vias + [rejoin].compactMap { $0 }
++    }
++
++    var acceptsPointCorrection: Bool {
++        !isPaused && legPanel == nil && (step == .departure || step == .drawing || step == .review)
++    }
++
+     struct ReviewLeg: Identifiable, Equatable, Sendable {
+         enum Endpoint: Hashable, Sendable {
+-            case anchor(RouteAmendmentAnchor)
++            case departure, rejoin
+             case point(UUID)
+         }
+ 
+@@ -464,16 +501,16 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+     }
+ 
+     func reviewLegs(on route: RouteAmendmentRoute) -> [ReviewLeg] {
+-        guard let departure else { return [] }
+         typealias Stop = (id: ReviewLeg.Endpoint, name: String, position: WGS84Coordinate)
+-        func stop(_ anchor: RouteAmendmentAnchor) -> Stop {
+-            (.anchor(anchor), route.name(for: anchor), route.coordinate(at: anchor))
++        func stop(_ anchor: RouteAmendmentAnchor, endpoint: ReviewLeg.Endpoint) -> Stop {
++            (endpoint, route.name(for: anchor), route.coordinate(at: anchor))
+         }
+         let via: [Stop] = points.enumerated().map { index, point in
+             (.point(point.id),
+              point.name ?? "Point \(index + 1)", point.position)
+         }
+-        let stops = [stop(departure)] + via + (rejoin.map { [stop($0)] } ?? [])
++        let stops = (departure.map { [stop($0, endpoint: .departure)] } ?? []) + via
++            + (rejoin.map { [stop($0, endpoint: .rejoin)] } ?? [])
+         return zip(stops, stops.dropFirst()).map { from, to in
+             let id = ReviewLeg.ID(from: from.id, to: to.id)
+             let geometry = LegGeometry(id: id, fromLatitude: from.position.latitudeDegrees,
+@@ -484,7 +521,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         }
+     }
+     private var sketch = Sketch()
+-    private var plotHistory: [Sketch] = []
++    private var plotHistory: [Snapshot] = []
+     private(set) var step: Step = .departure
+     private(set) var isPaused = false
+     private(set) var message: String?
+@@ -526,6 +563,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         switch intent {
+         case .pause:
+             isPaused = true
++            pointDeletionID = nil
+             return
+         case .resume, .open:
+             isPaused = false
+@@ -550,6 +588,15 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+             guard step != .staleDeparture else { return }
+             step = departure == nil ? .departure : reviewLegs(on: route).isEmpty ? .drawing : .review
+         case .plot(let input):
++            if let correction = input.correction {
++                guard acceptsPointCorrection else { return }
++                switch correction {
++                case .move(let id): editPoint(id, replacingWith: input, route: route)
++                case .offerDelete(let id):
++                    if correctionPoints(on: route).contains(where: { $0.id == id }) { pointDeletionID = id }
++                }
++                return
++            }
+             if let hits = input.legHits, acceptsLegTap {
+                 let eligible = legChoices(on: route, originalsOnly: isInspecting)
+                 let choices = eligible.filter { hits.contains($0) }.filter {
+@@ -632,15 +679,22 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+             guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
+             sketch.selection = id
+         case .movePoint(let id):
+-            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
+-            sketch.selection = id
++            guard acceptsPointCorrection, correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
+             step = .move(id)
+         case .removePoint(let id):
+-            guard step == .drawing || step == .review, points.contains(where: { $0.id == id }) else { return }
++            guard acceptsPointCorrection else { return }
++            pointDeletionID = nil
+             editPoint(id, replacingWith: nil, route: route)
++        case .offerPointDeletion(let id):
++            guard acceptsPointCorrection, correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
++            pointDeletionID = id
++        case .dismissPointDeletion:
++            pointDeletionID = nil
+         case .undo:
+-            guard step == .drawing || step == .departure, let previous = plotHistory.popLast() else { return }
+-            sketch = previous
++            guard acceptsPointCorrection, let previous = plotHistory.popLast() else { return }
++            sketch = previous.sketch
++            legEntries = previous.entries
++            pointDeletionID = nil
+             step = departure == nil ? .departure : .drawing
+             validateDeparture(on: route)
+         case .chooseDeparture:
+@@ -669,7 +723,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+                 editor = nil
+                 legPanel = nil
+                 step = .drawing
+-            case .rejoin, .confirmRejoin, .move: step = .drawing
++            case .rejoin, .confirmRejoin, .move: step = departure == nil ? .departure : .drawing
+             default: break
+             }
+         case .review:
+@@ -913,20 +967,55 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+             return false
+         }
+         guard candidate != sketch else { return true }
+-        plotHistory.append(sketch)
++        let previousLegs = reviewLegs(on: route)
++        plotHistory.append(Snapshot(sketch: sketch, entries: legEntries))
+         sketch = candidate
++        // Match directed endpoint identities, never row offsets or old coordinates.
++        let old = Dictionary(uniqueKeysWithValues: previousLegs.map { ($0.id, $0) })
++        legEntries = Dictionary(uniqueKeysWithValues: reviewLegs(on: route).map { leg in
++            guard let previous = old[leg.id] else { return (leg.geometry, RouteAmendmentLegEntry()) }
++            var entry = previous.entry
++            if previous.geometry != leg.geometry {
++                entry[.heading] = ""
++                entry[.minutes] = ""
++                entry[.seconds] = ""
++            }
++            return (leg.geometry, entry)
++        })
+         return true
+     }
+ 
+     private mutating func editPoint(_ id: UUID, replacingWith input: MapInput?, route: RouteAmendmentRoute) {
+-        guard let index = points.firstIndex(where: { $0.id == id }) else { return }
++        guard correctionPoints(on: route).contains(where: { $0.id == id }) else { return }
+         var candidate = sketch
+-        if let input {
+-            candidate.points[index] = plottedPoint(from: input, on: route, id: id)
++        if id == departurePointID || id == rejoinPointID {
++            let isDeparture = id == departurePointID
++            if let input {
++                let anchors = rejoinCandidates(from: input, on: route)
++                    .filter { isValid($0, forDeparture: isDeparture, route: route) }
++                guard anchors.count == 1, let anchor = anchors.first else {
++                    message = anchors.isEmpty ? "Drop on an eligible original-route location in forward order."
++                        : "Choose one route occurrence using Map tools."
++                    return
++                }
++                if isDeparture { candidate.departure = anchor } else { candidate.rejoin = anchor }
++            } else if isDeparture {
++                candidate.departure = nil
++            } else {
++                candidate.rejoin = nil
++            }
++        } else if let index = points.firstIndex(where: { $0.id == id }) {
++            if let input {
++                candidate.points[index] = plottedPoint(from: input, on: route, id: id)
++            } else {
++                candidate.points.remove(at: index)
++            }
++        }
++        if input != nil {
++            candidate.selection = id
+         } else {
+-            candidate.points.remove(at: index)
+             candidate.selection = nil
+         }
+-        if applyPlot(candidate, route: route) { step = .drawing }
++        if applyPlot(candidate, route: route) { step = departure == nil ? .departure : .drawing }
+     }
+ }
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+index 26f9cbf..f553162 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+@@ -808,6 +808,11 @@ extension CockpitFeatureState {
+                 updateRouteAmendment(.editLegField(.heading, headings[index]))
+                 updateRouteAmendment(.editLegField(.minutes, minutes[index]))
+                 updateRouteAmendment(.editLegField(.seconds, seconds[index]))
++                if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES"] == "1" {
++                    updateRouteAmendment(.editLegField(.altitude, "\(2500 + index * 100)"))
++                    updateRouteAmendment(.editLegField(.frequency, "123.50"))
++                    updateRouteAmendment(.editLegField(.visualReference, "Correction cue \(index + 1)"))
++                }
+             }
+             updateRouteAmendment(.saveLegValues)
+         }
+diff --git a/NavigationFlight/Features/Cockpit/CockpitView.swift b/NavigationFlight/Features/Cockpit/CockpitView.swift
+index 5f99eec..5a8e702 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitView.swift
+@@ -831,6 +831,7 @@ struct CockpitView: View {
+                 pendingAmendment: pendingAmendmentMapPresentation,
+                 amendmentCenterRequest: amendmentCenterRequest,
+                 onAmendmentPlot: { onRouteAmendment(.plot($0)) },
++                onAmendmentCorrection: onRouteAmendment,
+                 onMapInteraction: mapInteractionOccurred
+                 )
+                 .id(mapIdentity)
+@@ -1146,7 +1147,7 @@ struct CockpitView: View {
+                 onShowPlanInspection()
+             },
+             onClose: { cockpitPresentationState.setMapToolsPresented(false) },
+-            onAmendmentPointInput: isEditingRouteAmendment && isAmendmentPlotting ? {
++            onAmendmentPointInput: isEditingRouteAmendment && routeAmendmentDraft?.legPanel == nil ? {
+                 cockpitPresentationState.setMapToolsPresented(false)
+                 isAmendmentPointPickerPresented = true
+             } : nil
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
+index 6aec1d8..e998ee3 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
+@@ -16,6 +16,8 @@ struct RouteAmendmentConsole: View {
+     let onPlaceAtMapCenter: () -> Void
+     let onDiscard: () -> Void
+     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
++    @State private var correctionTarget: RouteAmendmentDraft.CorrectionPoint?
++    @State private var isCorrectionActionsPresented = false
+ 
+     private let actionColor = Color(red: 0, green: 0.40, blue: 0.75)
+ 
+@@ -374,13 +376,16 @@ struct RouteAmendmentConsole: View {
+                     isPointPickerPresented = false
+                     onPlaceAtMapCenter()
+                 }
+-                if draft.step == .drawing {
+-                    Button("Change departure") { sendPickerIntent(.chooseDeparture) }
+-                    // Retain the existing correction commands until AP-06 replaces their presentation.
+-                    if let selected = draft.points.first(where: { $0.id == draft.selectedPointID }) {
+-                        Section(pointName(selected)) {
+-                            Button("Move point") { sendPickerIntent(.movePoint(selected.id)) }
+-                            Button("Remove point", role: .destructive) { sendPickerIntent(.removePoint(selected.id)) }
++                if draft.acceptsPointCorrection {
++                    Section("Correct route points") {
++                        ForEach(draft.correctionPoints(on: route)) { point in
++                            Button {
++                                correctionTarget = point
++                                isCorrectionActionsPresented = true
++                            } label: {
++                                correctionLabel(point.name)
++                            }
++                            .accessibilityIdentifier("amendment-correct-\(point.name)")
+                         }
+                     }
+                 }
+@@ -407,6 +412,18 @@ struct RouteAmendmentConsole: View {
+                 }
+             }
+         }
++        .alert(correctionTarget?.name ?? "Point", isPresented: $isCorrectionActionsPresented,
++               presenting: correctionTarget) { point in
++            Button("Move") { sendPickerIntent(.movePoint(point.id)) }
++            Button("Delete", role: .destructive) { sendPickerIntent(.removePoint(point.id)) }
++            Button("Cancel", role: .cancel) {}
++        }
++    }
++
++    private func correctionLabel(_ name: String) -> some View {
++        Text(name)
++            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
++            .contentShape(.rect)
+     }
+ 
+     private func sendPickerIntent(_ intent: RouteAmendmentDraft.Intent) {
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
+index 2c7ed7a..cb29a72 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
+@@ -82,7 +82,8 @@ struct RouteAmendmentReview: View {
+         func role(_ endpoint: RouteAmendmentDraft.ReviewLeg.Endpoint) -> String {
+             switch endpoint {
+             case .point: "Via"
+-            case .anchor(let anchor): anchor == draft.departure ? route.name(for: anchor) : "Rejoin"
++            case .departure: draft.departure.map { route.name(for: $0) } ?? "Departure"
++            case .rejoin: "Rejoin"
+             }
+         }
+         return "\(role(leg.id.from)) → \(role(leg.id.to))"
+diff --git a/NavigationFlight/Map/OfflineAviationMapView.swift b/NavigationFlight/Map/OfflineAviationMapView.swift
+index a9a9aa9..a29bdd5 100644
+--- a/NavigationFlight/Map/OfflineAviationMapView.swift
++++ b/NavigationFlight/Map/OfflineAviationMapView.swift
+@@ -75,6 +75,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
+     let pendingAmendment: RouteAmendmentMapOverlay.Pending?
+     let amendmentCenterRequest: UUID?
+     let onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void
++    let onAmendmentCorrection: (RouteAmendmentDraft.Intent) -> Void
+     let onMapInteraction: () -> Void
+ 
+     init(
+@@ -105,6 +106,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
+         pendingAmendment: RouteAmendmentMapOverlay.Pending? = nil,
+         amendmentCenterRequest: UUID? = nil,
+         onAmendmentPlot: @escaping (RouteAmendmentDraft.MapInput) -> Void = { _ in },
++        onAmendmentCorrection: @escaping (RouteAmendmentDraft.Intent) -> Void = { _ in },
+         onMapInteraction: @escaping () -> Void = {}
+     ) {
+         self.presentation = presentation
+@@ -133,6 +135,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
+         self.amendment = amendment
+         self.pendingAmendment = pendingAmendment
+         self.amendmentCenterRequest = amendmentCenterRequest
++        self.onAmendmentCorrection = onAmendmentCorrection
+         self.onAmendmentPlot = onAmendmentPlot
+         self.onMapInteraction = onMapInteraction
+     }
+@@ -184,6 +187,13 @@ struct OfflineAviationMapView: UIViewRepresentable {
+         backgroundTap.cancelsTouchesInView = false
+         backgroundTap.delegate = context.coordinator
+         mapView.addGestureRecognizer(backgroundTap)
++        let pointPress = UILongPressGestureRecognizer(
++            target: context.coordinator, action: #selector(Coordinator.didPressAmendmentPoint)
++        )
++        pointPress.minimumPressDuration = 0.5
++        pointPress.delegate = context.coordinator
++        mapView.addGestureRecognizer(pointPress)
++        backgroundTap.require(toFail: pointPress)
+         context.coordinator.installAmendmentOverlay(on: mapView)
+         return mapView
+     }
+@@ -201,6 +211,7 @@ struct OfflineAviationMapView: UIViewRepresentable {
+             onHidePilotETACheck: onHidePilotETACheck,
+             onMapInteraction: onMapInteraction
+         )
++        context.coordinator.onAmendmentCorrection = onAmendmentCorrection
+         let departureHeaderChanged = context.coordinator.updateAmendment(
+             amendment, pending: pendingAmendment, centerRequest: amendmentCenterRequest, onPlot: onAmendmentPlot, on: mapView
+         )
+@@ -253,6 +264,10 @@ struct OfflineAviationMapView: UIViewRepresentable {
+         private var replacementReviewFitScheduled = false
+         private var amendmentCenterRequest: UUID?
+         private var onAmendmentPlot: (RouteAmendmentDraft.MapInput) -> Void = { _ in }
++        var onAmendmentCorrection: (RouteAmendmentDraft.Intent) -> Void = { _ in }
++        private var pressedAmendmentPoint: RouteAmendmentDraft.CorrectionPoint?
++        private var pointPressOrigin = CGPoint.zero
++        private var pointPressMoved = false
+ 
+         func installAmendmentOverlay(on mapView: MLNMapView) {
+             let overlay = RouteAmendmentMapOverlay(map: mapView)
+@@ -497,6 +512,69 @@ struct OfflineAviationMapView: UIViewRepresentable {
+             }
+         }
+ 
++        @objc func didPressAmendmentPoint(_ recognizer: UILongPressGestureRecognizer) {
++            guard let overlay = amendmentOverlay, let map = overlay.map else { return }
++            let location = recognizer.location(in: map)
++            switch recognizer.state {
++            case .began:
++                pressedAmendmentPoint = overlay.correctionPoint(at: location)
++                overlay.heldPointID = pressedAmendmentPoint?.id
++                pointPressOrigin = location
++                pointPressMoved = false
++                onMapInteraction()
++            case .changed, .ended:
++                guard let point = pressedAmendmentPoint else { return }
++                pointPressMoved = pointPressMoved || hypot(location.x - pointPressOrigin.x, location.y - pointPressOrigin.y) > 6
++                if var input = overlay.input(at: location) {
++                    input.correction = pointPressMoved ? .move(point.id) : .offerDelete(point.id)
++                    if recognizer.state == .ended {
++                        overlay.dragPreview = nil
++                        overlay.heldPointID = nil
++                        pressedAmendmentPoint = nil
++                        if pointPressMoved {
++                            onAmendmentPlot(input)
++                        } else {
++                            offerPointDeletion(point, on: map)
++                        }
++                    } else if pointPressMoved, let presentation = overlay.presentation {
++                        // Preview is disposable. Only release commits one validated history entry.
++                        var draft = presentation.draft
++                        draft.update(.plot(input), route: presentation.route)
++                        overlay.dragPreview = .init(draft: draft, route: presentation.route, isPlotting: presentation.isPlotting)
++                    }
++                }
++            case .cancelled, .failed:
++                overlay.heldPointID = nil
++                overlay.dragPreview = nil
++                pressedAmendmentPoint = nil
++            default: break
++            }
++        }
++
++        private func offerPointDeletion(_ point: RouteAmendmentDraft.CorrectionPoint, on map: MLNMapView) {
++            var responder: UIResponder? = map
++            while let current = responder, !(current is UIViewController) { responder = current.next }
++            guard let presenter = responder as? UIViewController, presenter.presentedViewController == nil else { return }
++            let usesAlert = map.traitCollection.preferredContentSizeCategory.isAccessibilityCategory
++            let offer = UIAlertController(title: point.name, message: nil,
++                                          preferredStyle: usesAlert ? .alert : .actionSheet)
++            offer.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
++                self?.onAmendmentCorrection(.removePoint(point.id))
++            })
++            offer.addAction(UIAlertAction(title: "Cancel", style: .cancel))
++            let anchor = map.convert(CLLocationCoordinate2D(latitude: point.position.latitudeDegrees,
++                                                           longitude: point.position.longitudeDegrees), toPointTo: map)
++            offer.popoverPresentationController?.sourceView = map
++            offer.popoverPresentationController?.sourceRect = CGRect(x: anchor.x - 9, y: anchor.y - 9, width: 18, height: 18)
++            presenter.present(offer, animated: !UIAccessibility.isReduceMotionEnabled)
++        }
++
++        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
++            guard gestureRecognizer is UILongPressGestureRecognizer,
++                  let map = amendmentOverlay?.map else { return true }
++            return amendmentOverlay?.correctionPoint(at: gestureRecognizer.location(in: map)) != nil
++        }
++
+         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+             var view: UIView? = touch.view
+             while let current = view {
+diff --git a/NavigationFlight/Map/RouteAmendmentMapOverlay.swift b/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
+index 5e58c4d..1a69bbd 100644
+--- a/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
++++ b/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
+@@ -95,6 +95,12 @@ final class RouteAmendmentMapOverlay: UIView {
+     }
+ 
+     weak var map: MLNMapView?
++    var heldPointID: UUID? {
++        didSet { setNeedsDisplay() }
++    }
++    var dragPreview: Presentation? {
++        didSet { setNeedsDisplay() }
++    }
+     var viewportDidLayout: (() -> Void)?
+ 
+     override func layoutSubviews() {
+@@ -181,13 +187,20 @@ final class RouteAmendmentMapOverlay: UIView {
+                      isRouteTap: !retainsCenterPosition && !anchors.isEmpty)
+     }
+ 
++    func correctionPoint(at point: CGPoint) -> RouteAmendmentDraft.CorrectionPoint? {
++        guard let map, let presentation, presentation.draft.acceptsPointCorrection else { return nil }
++        return presentation.draft.correctionPoints(on: presentation.route)
++            .map { ($0, distance(point, project($0.position, on: map))) }
++            .filter { $0.1 <= 22 }.min { $0.1 < $1.1 }?.0
++    }
++
+     override func draw(_ rect: CGRect) {
+         guard let map, let context = UIGraphicsGetCurrentContext() else { return }
+         if let pending {
+             drawPending(pending, on: map, in: context)
+             return
+         }
+-        guard let presentation else { return }
++        guard let presentation = dragPreview ?? presentation else { return }
+         let draft = presentation.draft
+         let route = presentation.route
+         let segments = draft.segments(on: route)
+@@ -202,17 +215,31 @@ final class RouteAmendmentMapOverlay: UIView {
+             marker(project(stop.position, on: map), label: stop.name, color: color, in: context)
+         }
+         for (index, point) in draft.points.enumerated() {
+-            let selected = draft.selectedPointID == point.id
++            let selected = draft.selectedPointID == point.id || heldPointID == point.id
+             marker(project(point.position, on: map), label: point.name ?? "Point \(index + 1)",
+                    color: Self.proposedColor, selected: selected, in: context)
+         }
+         if let departure = draft.departure {
+             let label = draft.step == .staleDeparture ? "Previous departure" : "Departure"
+             marker(project(route.coordinate(at: departure), on: map),
+-                   label: "\(label) · \(route.name(for: departure))", color: Self.proposedColor, in: context)
++                   label: "\(label) · \(route.name(for: departure))", color: Self.proposedColor,
++                   selected: heldPointID == draft.correctionPoints(on: route).first?.id, in: context)
+         }
+         if let rejoin = draft.rejoin {
+-            marker(project(route.coordinate(at: rejoin), on: map), label: "Return · \(route.name(for: rejoin))", color: Self.proposedColor, in: context)
++            marker(project(route.coordinate(at: rejoin), on: map), label: "Return · \(route.name(for: rejoin))", color: Self.proposedColor,
++                   selected: heldPointID == draft.correctionPoints(on: route).last?.id, in: context)
++        }
++        if let held = draft.correctionPoints(on: route).first(where: { $0.id == heldPointID }) {
++            // Immediate, motion-free pickup feedback remains visible under the finger.
++            let center = project(held.position, on: map)
++            let circle = CGRect(x: center.x - 15, y: center.y - 15, width: 30, height: 30)
++            context.setFillColor(UIColor.white.cgColor)
++            context.fillEllipse(in: circle)
++            context.setStrokeColor(Self.proposedColor.cgColor)
++            context.setLineWidth(4)
++            context.strokeEllipse(in: circle)
++            context.setFillColor(Self.proposedColor.cgColor)
++            context.fillEllipse(in: circle.insetBy(dx: 9, dy: 9))
+         }
+         if let position = draft.overlapPosition {
+             let point = project(position, on: map)
+diff --git a/NavigationFlightTests/NavigationFlightTests.swift b/NavigationFlightTests/NavigationFlightTests.swift
+index 83740c7..a315ae1 100644
+--- a/NavigationFlightTests/NavigationFlightTests.swift
++++ b/NavigationFlightTests/NavigationFlightTests.swift
+@@ -13,6 +13,195 @@ import UIKit
+ private final class FixtureLocator {}
+ 
+ struct NavigationFlightTests {
++    @MainActor
++    @Test(arguments: [0, 1, 2])
++    func pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_ index: Int) throws {
++        let (route, original) = try correctionDraft()
++        let before = original.reviewLegs(on: route)
++        let point = original.points[index]
++        var draft = original
++        let moved = WGS84Coordinate(latitudeDegrees: point.position.latitudeDegrees + 0.001,
++                                    longitudeDegrees: point.position.longitudeDegrees + 0.002)
++        draft.update(.plot(.init(position: moved, correction: .move(point.id))), route: route)
++        let after = draft.reviewLegs(on: route)
++        #expect(draft.points[index].position == moved)
++        for edge in before.indices {
++            let affected = edge == index || edge == index + 1
++            #expect(after[edge].entry.altitude == before[edge].entry.altitude)
++            #expect(after[edge].entry.frequency == before[edge].entry.frequency)
++            #expect(after[edge].entry.visualReference == before[edge].entry.visualReference)
++            if affected {
++                #expect(after[edge].entry.heading.isEmpty)
++                #expect(after[edge].entry.minutes.isEmpty && after[edge].entry.seconds.isEmpty)
++            } else {
++                #expect(after[edge].entry == before[edge].entry)
++            }
++        }
++        draft.update(.undo, route: route)
++        #expect(draft.points == original.points)
++        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
++        #expect(draft.selectedPointID == original.selectedPointID)
++        #expect(draft.reviewLegs(on: route) == before)
++
++        draft.update(.removePoint(point.id), route: route)
++        let remaining = draft.reviewLegs(on: route)
++        #expect(remaining.count == before.count - 1)
++        #expect(remaining[index].entry == RouteAmendmentLegEntry())
++        for leg in remaining where leg.id != remaining[index].id {
++            #expect(leg.entry == before.first(where: { $0.id == leg.id })?.entry)
++        }
++        draft.update(.undo, route: route)
++        #expect(draft.reviewLegs(on: route) == before)
++        #expect(draft.points == original.points)
++    }
++
++    @MainActor
++    @Test(arguments: [true, false])
++    func anchorCorrectionRejectsInvalidDropsAndRecoversDeletion(_ isDeparture: Bool) throws {
++        let (route, original) = try correctionDraft()
++        let target = try #require(original.correctionPoints(on: route).first {
++            $0.name == (isDeparture ? "Departure" : "Rejoin")
++        })
++        var draft = original
++        let before = original.reviewLegs(on: route)
++        let invalid = isDeparture ? try #require(original.rejoin) : try #require(original.departure)
++        draft.update(.plot(.init(position: route.coordinate(at: invalid), anchors: [invalid],
++                                  isRouteTap: true, correction: .move(target.id))), route: route)
++        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
++        #expect(draft.reviewLegs(on: route) == before)
++        #expect(draft.selectedPointID == original.selectedPointID)
++        #expect(draft.message != nil)
++        draft.update(.plot(.init(position: .init(latitudeDegrees: 50, longitudeDegrees: 50),
++                                  correction: .move(target.id))), route: route)
++        #expect(draft.reviewLegs(on: route) == before)
++
++        draft.update(.offerPointDeletion(target.id), route: route)
++        draft.update(.dismissPointDeletion, route: route)
++        #expect(draft.reviewLegs(on: route) == before)
++        draft.update(.removePoint(target.id), route: route)
++        #expect(draft.points == original.points)
++        #expect(isDeparture ? draft.departure == nil : draft.rejoin == nil)
++        let surviving = draft.reviewLegs(on: route)
++        #expect(surviving.count == before.count - 1)
++        #expect(surviving.allSatisfy { leg in before.first(where: { $0.id == leg.id })?.entry == leg.entry })
++        draft.update(.undo, route: route)
++        #expect(draft.reviewLegs(on: route) == before)
++        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
++
++        draft.update(.removePoint(target.id), route: route)
++        let replacement = route.anchor(at: isDeparture ? 0 : 1, fraction: isDeparture ? 0.3 : 0.7)
++        draft.update(.plot(.init(position: route.coordinate(at: replacement), anchors: [replacement], isRouteTap: true)), route: route)
++        #expect(isDeparture ? draft.departure == replacement : draft.rejoin == replacement)
++        #expect(draft.points == original.points)
++
++        draft = original
++        draft.update(.movePoint(target.id), route: route)
++        draft.update(.plot(.init(position: route.coordinate(at: replacement), anchors: [replacement], isRouteTap: true)), route: route)
++        #expect(isDeparture ? draft.departure == replacement : draft.rejoin == replacement)
++        let changed = draft.reviewLegs(on: route)[isDeparture ? 0 : before.count - 1]
++        #expect(changed.entry.heading.isEmpty)
++        #expect(changed.entry.visualReference == before[isDeparture ? 0 : before.count - 1].entry.visualReference)
++        draft.update(.undo, route: route)
++        #expect(draft.reviewLegs(on: route) == before)
++    }
++
++    @MainActor
++    @Test func anchorCorrectionsRespectProgressAndCanonicalOccurrences() throws {
++        let (route, original) = try correctionDraft()
++        let remaining = RouteAmendmentRoute(legs: route.legs, firstAvailable: route.anchor(at: 0, fraction: 0.1))
++        var draft = original
++        let departure = try #require(draft.correctionPoints(on: remaining).first { $0.name == "Departure" })
++        let completed = route.anchor(at: 0, fraction: 0.05)
++        let before = draft.reviewLegs(on: remaining)
++        draft.update(.plot(.init(position: route.coordinate(at: completed), anchors: [completed],
++                                  isRouteTap: true, correction: .move(departure.id))), route: remaining)
++        #expect(draft.departure == original.departure)
++        #expect(draft.reviewLegs(on: remaining) == before)
++        #expect(draft.message != nil)
++
++        let rejoin = try #require(draft.correctionPoints(on: remaining).first { $0.name == "Rejoin" })
++        let crossing = [route.anchor(at: 0, fraction: 0.7), route.anchor(at: 1, fraction: 0.7)]
++        draft.update(.plot(.init(position: route.coordinate(at: crossing[0]), anchors: crossing,
++                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
++        #expect(draft.rejoin == original.rejoin)
++        #expect(draft.reviewLegs(on: remaining) == before)
++        #expect(draft.message != nil)
++
++        let shared = route.anchor(at: 0, fraction: 1)
++        draft.update(.plot(.init(position: route.coordinate(at: shared),
++                                  anchors: [shared, route.anchor(at: 1, fraction: 0)],
++                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
++        #expect(draft.rejoin == shared)
++        draft.update(.undo, route: remaining)
++        #expect(draft.reviewLegs(on: remaining) == before)
++        let sameLeg = route.anchor(at: 0, fraction: 0.8)
++        draft.update(.plot(.init(position: route.coordinate(at: sameLeg), anchors: [sameLeg],
++                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
++        #expect(draft.rejoin == sameLeg)
++        #expect(draft.points == original.points)
++    }
++
++    @MainActor
++    @Test func correctionRejectionCancellationAndOperationalIsolation() throws {
++        let (route, original) = try correctionDraft()
++        var draft = original
++        let point = try #require(draft.points.first)
++        let originalLegs = draft.reviewLegs(on: route)
++        let adjacent = try #require(draft.departure)
++        draft.update(.plot(.init(position: route.coordinate(at: adjacent), correction: .move(point.id))), route: route)
++        #expect(draft.points == original.points)
++        #expect(draft.reviewLegs(on: route) == originalLegs)
++        #expect(draft.selectedPointID == original.selectedPointID)
++        #expect(draft.message != nil)
++        draft.update(.offerPointDeletion(point.id), route: route)
++        draft.update(.dismissPointDeletion, route: route)
++        #expect(draft.points == original.points && draft.pointDeletionID == nil)
++        draft.update(.movePoint(point.id), route: route)
++        draft.update(.back, route: route)
++        #expect(draft.points == original.points && draft.reviewLegs(on: route) == originalLegs)
++
++        var state = CockpitFeatureState()
++        try state.accept(twoLegFlight())
++        try state.startLeg(at: Date(timeIntervalSince1970: 100))
++        let flight = state.flight
++        let source = try #require(state.routeForAmendment)
++        state.updateRouteAmendment(.open)
++        state.updateRouteAmendment(.chooseAnchor(source.anchor(at: 0, fraction: 0.2)))
++        state.updateRouteAmendment(.plot(.init(position: point.position)))
++        let target = try #require(state.routeAmendmentDraft?.points.first)
++        state.updateRouteAmendment(.removePoint(target.id))
++        state.updateRouteAmendment(.undo)
++        #expect(state.flight == flight)
++        #expect(state.routeAmendmentDraft?.points.first == target)
++    }
++
++    @MainActor
++    private func correctionDraft() throws -> (RouteAmendmentRoute, RouteAmendmentDraft) {
++        let plan = try twoLegFlight()
++        let route = RouteAmendmentRoute(legs: plan.legs,
++                                       firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
++        var draft = RouteAmendmentDraft(flightID: UUID())
++        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)), route: route)
++        for index in 0..<3 {
++            draft.update(.plot(.init(position: .init(latitudeDegrees: 32 + Double(index) * 0.01,
++                                                      longitudeDegrees: 35 + Double(index) * 0.01))), route: route)
++        }
++        draft.update(.plot(.init(position: route.coordinate(at: route.anchor(at: 1, fraction: 0.8)),
++                                  anchors: [route.anchor(at: 1, fraction: 0.8)], isRouteTap: true)), route: route)
++        for (index, leg) in draft.reviewLegs(on: route).enumerated() {
++            draft.update(.editLeg(leg.id), route: route)
++            draft.update(.editLegField(.heading, "\(87 + index)"), route: route)
++            // Include independent unfinished duration fields in the snapshot contract.
++            draft.update(.editLegField(.minutes, index == 1 ? "" : "03"), route: route)
++            draft.update(.editLegField(.seconds, "\(20 + index)"), route: route)
++            draft.update(.editLegField(.altitude, "\(2500 + index * 100)"), route: route)
++            draft.update(.editLegField(.frequency, "123.50"), route: route)
++            draft.update(.editLegField(.visualReference, "Cue \(index)"), route: route)
++            draft.update(.saveLegValues, route: route)
++        }
++        return (route, draft)
++    }
++
+     @Test(arguments: ["", "00:00", "00:01", "59:59", "60:00", "60:01", "61:00"])
+     func legTimeBoundaryValidation(_ duration: String) {
+         var entry = RouteAmendmentLegEntry()
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index b01185a..411f846 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -9,6 +9,285 @@ import XCTest
+ 
+ final class NavigationFlightUITests: XCTestCase {
+ 
++    @MainActor
++    func testAnchorDragRejectsInvalidDropsAndUndoRestoresValues() throws {
++        let app = try launchPartialAmendment(fixture: "A", correctionCues: true)
++        app.buttons["amend-route"].tap()
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
++        for name in ["Departure", "Rejoin"] {
++            let point = try correctionPointCoordinate(in: app, map: map, name: name)
++            point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
++            XCTAssertTrue(app.descendants(matching: .any)["amendment-feedback"].waitForExistence(timeout: 4))
++            XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++            captureAmendmentState("ap07-invalid-\(name)", in: app)
++            let valid = try correctionPointCoordinate(in: app, map: map, name: name == "Departure" ? "Kadima" : "Ramat")
++            point.press(forDuration: 0.65, thenDragTo: valid)
++            let changed = rows.matching(NSPredicate(format: "label BEGINSWITH %@", "Proposed leg \(name == "Departure" ? 1 : 3),")).firstMatch
++            XCTAssertTrue((changed.value as? String ?? "").contains("Not set"))
++            captureAmendmentState("ap07-moved-\(name)", in: app)
++            undoPointCorrection(in: app)
++            XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        }
++    }
++
++    @MainActor
++    func testPointCorrectionVoiceOverNamesAndActions() throws {
++        let service = XCUIDevice.shared.voiceOverService
++        let wasEnabled = service.isEnabled
++        if wasEnabled { try service.disable() }
++        defer {
++            if !wasEnabled && service.isEnabled { try? service.disable() }
++            if wasEnabled && !service.isEnabled { try? service.enable() }
++        }
++        let app = try launchPartialAmendment(fixture: "A")
++        app.buttons["amend-route"].tap()
++        openAmendmentMapInput(in: app)
++        try service.enable()
++        var speech: [String] = []
++        for _ in 0..<35 {
++            speech.append(try service.moveForward().utterance)
++            if speech.joined(separator: " ").contains("Rejoin") { break }
++        }
++        let names = speech.joined(separator: " ")
++        for name in ["Departure", "Point 1", "Point 2", "Rejoin"] { XCTAssertTrue(names.contains(name), names) }
++        try service.disable()
++        app.buttons["amendment-correct-Point 1"].tap()
++        try service.enable()
++        speech.append(try service.currentSpeech().utterance)
++        for _ in 0..<12 {
++            speech.append(try service.moveForward().utterance)
++            if speech.joined(separator: " ").contains("Delete") { break }
++        }
++        let actions = speech.joined(separator: " ")
++        XCTAssertTrue(actions.contains("Move"), actions)
++        XCTAssertTrue(actions.contains("Delete"), actions)
++        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
++        attachment.name = "AP07 VoiceOver point correction speech"
++        attachment.lifetime = .keepAlways
++        add(attachment)
++        captureAmendmentState("ap07-voiceover-actions", in: app)
++    }
++
++    @MainActor
++    private func undoPointCorrection(in app: XCUIApplication) {
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        func renderedRows() -> [String] {
++            rows.allElementsBoundByIndex.map { $0.label + "|" + String(describing: $0.value) }
++        }
++        let before = renderedRows()
++        let undo = app.buttons["undo-amendment-plot"]
++        if !undo.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
++        XCTAssertTrue(undo.waitForExistence(timeout: 4))
++        undo.tap()
++        let restored = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++            renderedRows() != before
++        }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [restored], timeout: 5), .completed)
++    }
++
++    @MainActor
++    func testMapToolsCorrectsAndRecoversBothAnchors() throws {
++        try verifyMapToolsCorrection()
++    }
++
++    @MainActor
++    func testMapToolsCorrectionWithLargerText() throws {
++        try verifyMapToolsCorrection(largerText: true)
++    }
++
++    @MainActor
++    func testMapToolsCorrectionInLandscape() throws {
++        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
++        try verifyMapToolsCorrection(landscape: true)
++    }
++
++    @MainActor
++    private func verifyMapToolsCorrection(largerText: Bool = false, landscape: Bool = false) throws {
++        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", correctionCues: true)
++        openCorrectionWorkspace(in: app, landscape: landscape)
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
++        func act(_ name: String, _ action: String) {
++            openAmendmentMapInput(in: app)
++            let point = app.buttons["amendment-correct-\(name)"]
++            revealAmendmentInput(point, in: app)
++            point.tap()
++            XCTAssertTrue(app.buttons[action].firstMatch.waitForExistence(timeout: 4))
++            XCTAssertTrue(app.alerts.firstMatch.exists)
++            XCTAssertGreaterThanOrEqual(app.buttons[action].firstMatch.frame.height + 0.000001, 44)
++            captureAmendmentState("ap07-tools-\(name)-\(action)", in: app)
++            app.buttons[action].firstMatch.tap()
++            XCTAssertTrue(app.navigationBars["Route waypoints"].waitForNonExistence(timeout: 4))
++        }
++        act("Departure", "Delete")
++        XCTAssertEqual(rows.count, 2)
++        XCTAssertTrue(app.staticTexts["amendment-readiness"].label.localizedCaseInsensitiveContains("incomplete"))
++        captureAmendmentState("ap07-missing-departure", in: app)
++        chooseAmendmentWaypoint("Kadima", in: app)
++        XCTAssertEqual(rows.count, 3)
++        XCTAssertEqual(rows.element(boundBy: 1).value as? String, values[1])
++        XCTAssertEqual(rows.element(boundBy: 2).value as? String, values[2])
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.count, 2)
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        act("Rejoin", "Delete")
++        XCTAssertEqual(rows.count, 2)
++        XCTAssertNotEqual(app.staticTexts["amendment-drawing-status"].label, "Rejoined")
++        captureAmendmentState("ap07-missing-rejoin", in: app)
++        chooseAmendmentWaypoint("West", in: app)
++        XCTAssertEqual(rows.count, 3)
++        XCTAssertEqual(app.staticTexts["amendment-drawing-status"].label, "Rejoined")
++        undoPointCorrection(in: app)
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        act("Departure", "Move")
++        chooseAmendmentWaypoint("Kadima", in: app)
++        XCTAssertEqual(rows.count, 3)
++        XCTAssertTrue((rows.firstMatch.value as? String ?? "").contains("Not set"))
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        captureAmendmentState("ap07-tools-restored", in: app)
++    }
++
++    @MainActor
++    func testPointCorrectionDragDeleteAndUndo() throws {
++        try verifyPointCorrection()
++    }
++
++    @MainActor
++    func testPointCorrectionInLandscape() throws {
++        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
++        try verifyPointCorrection(landscape: true)
++    }
++
++    @MainActor
++    func testPointCorrectionWithLargerText() throws {
++        try verifyPointCorrection(largerText: true)
++    }
++
++    @MainActor
++    private func verifyPointCorrection(landscape: Bool = false, largerText: Bool = false) throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        if largerText && UIDevice.current.userInterfaceIdiom == .phone {
++            throw XCTSkip("Owner decision 2026-11-26: maximum accessibility text on small iPhone cockpit screens is unsupported; named Map tools remains covered separately.")
++        }
++        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", correctionCues: true)
++        openCorrectionWorkspace(in: app, landscape: landscape)
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        XCTAssertEqual(rows.count, 3)
++        let values = rows.allElementsBoundByIndex.map { $0.value as? String }
++        let frame = map.frame
++        let point = try correctionPointCoordinate(in: app, map: map)
++        let destination = point.withOffset(CGVector(dx: -35, dy: -20))
++        point.press(forDuration: 0.65, thenDragTo: destination)
++        let changed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++            (rows.firstMatch.value as? String)?.contains("Not set") == true
++        }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
++        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
++        XCTAssertEqual(rows.element(boundBy: 2).value as? String, values[2])
++        XCTAssertEqual(map.frame, frame)
++        captureAmendmentState("ap07-moved\(landscape ? "-landscape" : "-portrait")\(largerText ? "-larger" : "")", in: app)
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        if !landscape && !largerText {
++            tapAmendmentControl(rows.firstMatch, in: console)
++            let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++            let note = app.textFields["amendment-field-visualReference"]
++            XCTAssertTrue(note.exists)
++            XCTAssertEqual(note.value as? String, "Correction cue 1")
++            captureAmendmentState("ap07-undo-cues\(largerText ? "-larger" : "")", in: app)
++            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++            XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
++        }
++
++        let restoredPoint = try correctionPointCoordinate(in: app, map: map)
++        restoredPoint.press(forDuration: 0.65)
++        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
++        if largerText {
++            XCTAssertTrue(app.alerts.firstMatch.exists)
++            XCTAssertGreaterThanOrEqual(app.buttons["Delete"].frame.height, 44)
++        }
++        captureAmendmentState("ap07-delete-offer\(landscape ? "-landscape" : "-portrait")", in: app)
++        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
++        else { map.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: 0.35)).tap() }
++        XCTAssertTrue(app.buttons["Delete"].waitForNonExistence(timeout: 4))
++        XCTAssertEqual(rows.count, 3)
++        restoredPoint.press(forDuration: 0.65)
++        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 4))
++        captureAmendmentState("ap07-delete-confirm\(landscape ? "-landscape" : "-portrait")", in: app)
++        app.buttons["Delete"].tap()
++        let deleted = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in rows.count == 2 }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [deleted], timeout: 5), .completed)
++        XCTAssertEqual(rows.count, 2)
++        captureAmendmentState("ap07-deleted\(landscape ? "-landscape" : "-portrait")", in: app)
++        let merged = rows.matching(NSPredicate(format: "label BEGINSWITH %@", "Proposed leg 1,")).firstMatch
++        XCTAssertTrue((merged.value as? String ?? "").contains("Not set"), "Merged: \(merged.label), \(String(describing: merged.value)); all: \(rows.debugDescription)")
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, values)
++        captureAmendmentState("ap07-restored\(landscape ? "-landscape" : "-portrait")", in: app)
++    }
++
++    @MainActor
++    private func openCorrectionWorkspace(in app: XCUIApplication, landscape: Bool) {
++        if landscape {
++            XCUIDevice.shared.orientation = .landscapeLeft
++            let rotated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++                app.frame.width > app.frame.height
++            }, object: nil)
++            XCTAssertEqual(XCTWaiter.wait(for: [rotated], timeout: 5), .completed)
++        }
++        app.buttons["amend-route"].tap()
++        XCTAssertTrue(app.descendants(matching: .any)["route-amendment-console"].firstMatch.waitForExistence(timeout: 5))
++    }
++
++    /// Projects the existing fixture through the observed, unpitched MapLibre camera.
++    /// This chooses a real touch coordinate; it does not send a domain correction.
++    @MainActor
++    private func correctionPointCoordinate(in app: XCUIApplication, map: XCUIElement, name: String = "Point 1") throws -> XCUICoordinate {
++        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: crossingAmendmentPlanData()) as? [String: Any])
++        let navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
++        let route = try XCTUnwrap(navigation["route"] as? [String: Any])
++        let points = try XCTUnwrap(route["waypoints"] as? [[String: Any]])
++        let from = try XCTUnwrap(points[0]["position"] as? [String: Double])
++        let to = try XCTUnwrap(points[1]["position"] as? [String: Double])
++        func mercator(_ latitude: Double) -> Double { asinh(tan(latitude * .pi / 180)) }
++        let departureY = mercator(try XCTUnwrap(from["latitude"])) * 0.54 + mercator(try XCTUnwrap(to["latitude"])) * 0.46
++        var latitude = atan(sinh(departureY)) * 180 / .pi
++        var longitude = try XCTUnwrap(from["longitude"]) * 0.54 + XCTUnwrap(to["longitude"]) * 0.46
++        switch name {
++        case "Departure": break
++        case "Rejoin":
++            let position = try XCTUnwrap(points[2]["position"] as? [String: Double])
++            latitude = try XCTUnwrap(position["latitude"])
++            longitude = try XCTUnwrap(position["longitude"])
++        case "Kadima":
++            latitude = try XCTUnwrap(from["latitude"])
++            longitude = try XCTUnwrap(from["longitude"])
++        case "Ramat":
++            latitude = try XCTUnwrap(to["latitude"])
++            longitude = try XCTUnwrap(to["longitude"])
++        default:
++            latitude += 0.02
++            longitude += 0.02
++        }
++        let camera = try settledCameraValues(of: map)
++        XCTAssertEqual(camera[4], 0, accuracy: 0.001)
++        let world = 512 * pow(2, camera[2])
++        let dx = (longitude - camera[1]) / 360 * world
++        let dy = (mercator(camera[0]) - mercator(latitude)) / (2 * .pi) * world
++        let angle = camera[3] * .pi / 180
++        return map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).withOffset(
++            CGVector(dx: dx * cos(angle) + dy * sin(angle), dy: -dx * sin(angle) + dy * cos(angle))
++        )
++    }
++
+     override func setUpWithError() throws {
+         // Put setup code here. This method is called before the invocation of each test method in the class.
+ 
+@@ -4020,8 +4299,9 @@ final class NavigationFlightUITests: XCTestCase {
+         let edit = app.buttons["amendment-overlap-edit"]
+         XCTAssertTrue(edit.waitForExistence(timeout: 4))
+         XCTAssertTrue(app.buttons["amendment-overlap-rejoin"].isHittable)
+-        XCTAssertGreaterThanOrEqual(edit.frame.height, 44)
+-        XCTAssertGreaterThanOrEqual(app.buttons["amendment-overlap-rejoin"].frame.height, 44)
++        // Screen-coordinate conversion can report 44 pt as 43.99999999999997.
++        XCTAssertGreaterThanOrEqual(edit.frame.height + 0.000001, 44)
++        XCTAssertGreaterThanOrEqual(app.buttons["amendment-overlap-rejoin"].frame.height + 0.000001, 44)
+         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+         // The overlap actions are exposed even when SwiftUI flattens the non-scrolling container.
+         // Measure their shared content width (338pt card less 19pt inset on each side).
+@@ -4133,7 +4413,8 @@ final class NavigationFlightUITests: XCTestCase {
+ 
+     @MainActor
+     private func launchPartialAmendment(
+-        largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false
++        largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false,
++        correctionCues: Bool = false
+     ) throws -> XCUIApplication {
+         var planData = try crossingAmendmentPlanData()
+         if fixture.hasPrefix("A-progress") {
+@@ -4155,6 +4436,7 @@ final class NavigationFlightUITests: XCTestCase {
+             fixtureEnvironment: [
+                 "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": fixture,
+                 "NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION": legacyDuration ? "1" : "0",
++                "NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES": correctionCues ? "1" : "0",
+                 "NAVIGATION_FLIGHT_UI_TEST_CAMERA": "1"
+             ]
+         )
+@@ -4560,6 +4842,14 @@ final class NavigationFlightUITests: XCTestCase {
+         let point = app.buttons.matching(
+             NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "amendment-route-waypoint", name)
+         ).firstMatch
++        revealAmendmentInput(point, in: app)
++        point.tap()
++        XCTAssertTrue(point.waitForNonExistence(timeout: 4))
++        XCTAssertTrue(app.navigationBars["Route waypoints"].waitForNonExistence(timeout: 4))
++    }
++
++    @MainActor
++    private func revealAmendmentInput(_ point: XCUIElement, in app: XCUIApplication) {
+         // The medium sheet lazily loads rows below the correction actions. Expand/scroll
+         // before querying a waypoint, rather than treating virtualization as missing data.
+         let inputLists = app.collectionViews.containing(.button, identifier: "Use map center")
+@@ -4579,8 +4869,6 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertTrue(point.waitForExistence(timeout: 3))
+         XCTAssertTrue(point.isHittable)
+         XCTAssertTrue(list.frame.contains(point.frame), "Waypoint must be inside the sheet viewport")
+-        point.tap()
+-        XCTAssertTrue(point.waitForNonExistence(timeout: 4))
+     }
+ 
+     @MainActor

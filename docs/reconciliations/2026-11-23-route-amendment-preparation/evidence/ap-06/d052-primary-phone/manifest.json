@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "6290DD47-512D-4EF9-AB5A-622B39F6A3DD.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-selected-primary_0_251A6242-9B7D-4E11-AF16-97BD2ECEDBD2.png",
+        "timestamp" : 1795674146.324
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "AD2DCFE1-9A3C-4642-809A-16AD874B4CEE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-unset-primary_0_C8231626-1024-4E83-8309-95043970189E.png",
+        "timestamp" : 1795674103.931
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing"
+  }
+]

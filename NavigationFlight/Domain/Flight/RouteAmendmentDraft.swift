@@ -287,6 +287,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
         case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
+        case advanceLegTime(RouteAmendmentLegEntry.TimeComponent, Int)
+        case selectLegCue(RouteAmendmentLegEntry.CueComponent, RouteAmendmentLegEntry.CueChoice)
         case saveLegValues, backToLegReview, checkLeg(ReviewLeg.ID)
         case toggleCues, toggleCheck, adjustHeading(Int), adjustFlightTime(Int)
         case inspectOriginal, cancelInspection, chooseLeg, selectLeg(LegChoice), closeLegPanel
@@ -537,7 +539,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         if legPanel != nil {
             switch intent {
             case .resolveDrawingOverlap, .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
-                 .editLegField, .selectLegTime, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
+                 .editLegField, .selectLegTime, .advanceLegTime, .selectLegCue, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
                  .adjustHeading, .adjustFlightTime: break
             default: return
             }
@@ -693,6 +695,14 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         case .selectLegTime(let component, let value):
             guard legPanel == .editor else { return }
             editor?.entry.selectTime(component, value: value)
+            retainEditorEntry(on: route)
+        case .advanceLegTime(let component, let steps):
+            guard legPanel == .editor else { return }
+            editor?.entry.advanceTime(component, steps: steps)
+            retainEditorEntry(on: route)
+        case .selectLegCue(let component, let choice):
+            guard legPanel == .editor else { return }
+            editor?.entry.selectCue(component, choice: choice)
             retainEditorEntry(on: route)
         case .adjustHeading(let delta):
             guard legPanel == .editor else { return }

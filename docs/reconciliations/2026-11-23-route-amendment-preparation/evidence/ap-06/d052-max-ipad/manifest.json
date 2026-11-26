@@ -1,0 +1,62 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "A4FA64E2-B385-41B7-BEDA-C8C585A1E769.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "R2 retained MapLibre camera_0_9F23ECC5-796D-457A-9B76-02F44FDEA5ED.txt",
+        "timestamp" : 1795648376.702
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "FE7B76D1-060E-4F03-8397-F79C26C6A6FC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-adaptive-cleared-larger-portrait_0_03169701-10D0-444B-82E6-512B608B1628.png",
+        "timestamp" : 1795648325.629
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "73F7B18B-B2FD-4299-A1E7-B99B1360183F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-adaptive-note-keyboard-larger-portrait_0_BD247A98-37DE-41E3-948C-85DFD7FB9EF9.png",
+        "timestamp" : 1795647805.588
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "145B1750-2920-41D2-9FC6-D9386C7FAC83.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-adaptive-check-larger-portrait_0_A2FFF2C2-A437-46B8-92EC-CD0FE29A5293.png",
+        "timestamp" : 1795646820.286
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "D46FED01-F34A-424B-A190-70306770F757.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-adaptive-time-larger-portrait_0_053FA574-A41A-4C1F-B095-9DDEDF93589E.png",
+        "timestamp" : 1795646771.84
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "AB58FAA0-4905-4B92-830A-40032D32DE51.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-adaptive-initial-larger-portrait_0_CA437602-24CA-47F8-8D8D-3371C58AF0EB.png",
+        "timestamp" : 1795646578.174
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052AdaptiveLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052AdaptiveLargerText"
+  }
+]

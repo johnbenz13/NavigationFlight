@@ -1,0 +1,869 @@
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+index 54a3455..b9cd23d 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+@@ -287,6 +287,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         case undo, chooseDeparture, chooseRejoin, clearRejoin, back, review, finishHere
+         case editLeg(ReviewLeg.ID), editLegField(RouteAmendmentLegEntry.Field, String)
+         case selectLegTime(RouteAmendmentLegEntry.TimeComponent, Int?)
++        case selectLegCue(RouteAmendmentLegEntry.CueComponent, RouteAmendmentLegEntry.CueChoice)
+         case saveLegValues, backToLegReview, checkLeg(ReviewLeg.ID)
+         case toggleCues, toggleCheck, adjustHeading(Int), adjustFlightTime(Int)
+         case inspectOriginal, cancelInspection, chooseLeg, selectLeg(LegChoice), closeLegPanel
+@@ -537,7 +538,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         if legPanel != nil {
+             switch intent {
+             case .resolveDrawingOverlap, .plot, .inspectOriginal, .cancelInspection, .chooseLeg, .selectLeg, .closeLegPanel,
+-                 .editLegField, .selectLegTime, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
++                 .editLegField, .selectLegTime, .selectLegCue, .saveLegValues, .backToLegReview, .toggleCues, .toggleCheck,
+                  .adjustHeading, .adjustFlightTime: break
+             default: return
+             }
+@@ -694,6 +695,10 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+             guard legPanel == .editor else { return }
+             editor?.entry.selectTime(component, value: value)
+             retainEditorEntry(on: route)
++        case .selectLegCue(let component, let choice):
++            guard legPanel == .editor else { return }
++            editor?.entry.selectCue(component, choice: choice)
++            retainEditorEntry(on: route)
+         case .adjustHeading(let delta):
+             guard legPanel == .editor else { return }
+             editor?.entry.adjustHeading(by: delta)
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+index 8207c8a..f06fe93 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+@@ -22,6 +22,18 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+         case minutes, seconds
+     }
+ 
++    enum CueComponent: String, CaseIterable, Sendable {
++        case altitude, frequencyMHz, frequencyFraction
++    }
++
++    enum CueChoice: Hashable, Sendable {
++        case notSet, custom, value(Int)
++    }
++
++    static let altitudeOptions = Array(stride(from: -1500, through: 20000, by: 100))
++    static let radioMHzOptions = Array(118...136)
++    static let radioFractionOptions = Array(stride(from: 0, through: 975, by: 25))
++
+     enum Field: String, Sendable {
+         case heading, duration, minutes, seconds, altitude, frequency, visualReference
+     }
+@@ -171,6 +183,76 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+         }
+     }
+ 
++    /// Integer kHz identifies a 25 kHz channel; conversion never rounds custom input.
++    var radioChannelKHz: Int? {
++        guard let value = originalCueValue(.frequencyMHz) ?? decimal(frequency) else { return nil }
++        let scaled = value * 1000
++        guard (118000...136975).contains(scaled),
++              Double(Int(scaled.rounded())) / 1000 == value else { return nil }
++        let channel = Int(scaled.rounded())
++        return channel % 25 == 0 ? channel : nil
++    }
++
++    func cueOptions(_ component: CueComponent) -> [Int] {
++        switch component {
++        case .altitude: Self.altitudeOptions
++        case .frequencyMHz: Self.radioMHzOptions
++        case .frequencyFraction: Self.radioFractionOptions
++        }
++    }
++
++    func cueSelection(_ component: CueComponent) -> CueChoice {
++        switch component {
++        case .altitude:
++            guard !trimmed(altitude).isEmpty else { return .notSet }
++            guard let value = originalCueValue(.altitude) ?? decimal(altitude), Self.altitudeOptions.contains(where: { Double($0) == value }) else {
++                return .custom
++            }
++            return .value(Int(value))
++        case .frequencyMHz, .frequencyFraction:
++            guard !trimmed(frequency).isEmpty else { return .notSet }
++            guard let channel = radioChannelKHz else { return .custom }
++            return .value(component == .frequencyMHz ? channel / 1000 : channel % 1000)
++        }
++    }
++
++    /// The legacy text adapter may format fewer digits than the accepted Double.
++    /// Classification and custom presentation must consult the original value too.
++    func cueDisplayText(_ component: CueComponent) -> String {
++        originalCueValue(component).map { String($0) }
++            ?? (component == .altitude ? altitude : frequency)
++    }
++
++    private func originalCueValue(_ component: CueComponent) -> Double? {
++        guard let acceptedValues else { return nil }
++        let original = Self(values: acceptedValues)
++        if component == .altitude {
++            return altitude == original.altitude ? acceptedValues.altitude?.value : nil
++        }
++        return frequency == original.frequency ? acceptedValues.frequency?.value : nil
++    }
++
++    mutating func selectCue(_ component: CueComponent, choice: CueChoice) {
++        switch choice {
++        case .custom: return
++        case .notSet:
++            if component == .altitude { altitude = "" } else { frequency = "" }
++        case .value(let value):
++            guard cueOptions(component).contains(value) else { return }
++            if component == .altitude {
++                altitude = String(value)
++            } else {
++                // A deliberate edit of a custom/unset radio starts a valid channel;
++                // the other wheel contributes zero fractional kHz or the lower MHz endpoint.
++                let previous = radioChannelKHz ?? 118000
++                let channel = component == .frequencyMHz
++                    ? value * 1000 + previous % 1000
++                    : previous / 1000 * 1000 + value
++                frequency = String(format: "%d.%03d", channel / 1000, channel % 1000)
++            }
++        }
++    }
++
+     mutating func adjustHeading(by delta: Int) {
+         guard delta == 1 || delta == -1 else { return }
+         let value = (magneticHeading ?? 0) + delta
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+index 508019c..26f9cbf 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+@@ -811,7 +811,9 @@ extension CockpitFeatureState {
+             }
+             updateRouteAmendment(.saveLegValues)
+         }
+-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION"] == "1",
++        let legacyDuration = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION"] == "1"
++        let legacyCues = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] == "A-progress-cues"
++        if legacyDuration || legacyCues,
+            let flight, let draft = routeAmendmentDraft,
+            let pending = try? PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route),
+            let data = try? JSONEncoder().encode(pending),
+@@ -819,7 +821,11 @@ extension CockpitFeatureState {
+            var legs = archived["replacementLegs"] as? [[String: Any]], !legs.isEmpty {
+             // Model a previously accepted archive, rather than bypassing new-edit
+             // validation. Restore it through the existing complete-value adapter.
+-            legs[0]["durationSeconds"] = 5400
++            if legacyDuration { legs[0]["durationSeconds"] = 5400 }
++            if legacyCues {
++                legs[0]["altitudeFeet"] = 2550
++                legs[0]["frequencyMHz"] = 122.123456789
++            }
+             archived["replacementLegs"] = legs
+             if let archive = try? JSONSerialization.data(withJSONObject: archived),
+                let legacy = try? JSONDecoder().decode(PendingRouteAmendment.self, from: archive) {
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+index 93f62ce..eb4a555 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+@@ -337,7 +337,7 @@ struct CockpitFeatureView: View {
+                 state.installCockpitContext(transition.cockpitContext)
+ #if DEBUG
+                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
+-                if ["A", "A-progress", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
++                if ["A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                    state.flight?.activatedRouteAmendment == nil {
+                     state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
+                                                               partialWorkspaceFixture: ["A-partial", "A-progress-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+index 08729f2..25d075d 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+@@ -245,9 +245,17 @@ struct RouteAmendmentChartPanel: View {
+                 .fixedSize(horizontal: false, vertical: true)
+         }
+         if editor.showsCues {
+-            cue(.altitude, placeholder: "ft MSL", entry: editor.entry, invalid: invalid, focused: focus)
+-            cue(.frequency, placeholder: "MHz", entry: editor.entry, invalid: invalid, focused: focus)
++            if focus == nil {
++                RouteAmendmentCueSection(entry: editor.entry, onIntent: onIntent)
++            }
+             cue(.visualReference, placeholder: "Landmark note", entry: editor.entry, invalid: invalid, focused: focus)
++            if focus == nil {
++                Text("Cues are advisory leg-start references.")
++                    .font(.caption).foregroundStyle(.secondary)
++                link("Clear note", id: "clear-amendment-note") {
++                    onIntent(.editLegField(.visualReference, ""))
++                }
++            }
+         }
+         if focus != nil {
+             action("Done", id: "amendment-keyboard-done", fill: Style.action, ink: .white) {
+@@ -297,46 +305,6 @@ struct RouteAmendmentChartPanel: View {
+         }
+     }
+ 
+-    private func input(
+-        _ field: RouteAmendmentLegEntry.Field, placeholder: String, entry: RouteAmendmentLegEntry, large: Bool = false
+-    ) -> some View {
+-        let text = Binding(get: { entry[field] }, set: { value in
+-            onIntent(.editLegField(field, value))
+-        })
+-        let keyboard: UIKeyboardType = switch field {
+-        case .heading, .minutes, .seconds: UIDevice.current.userInterfaceIdiom == .pad ? .numbersAndPunctuation : .numberPad
+-        case .altitude: .numbersAndPunctuation
+-        case .frequency: UIDevice.current.userInterfaceIdiom == .pad ? .numbersAndPunctuation : .decimalPad
+-        default: .default
+-        }
+-        return HStack(spacing: 2) {
+-            if field == .heading || field == .seconds {
+-                RouteAmendmentBoundedField(
+-                    label: fieldTitle(field),
+-                    placeholder: placeholder,
+-                    keyboard: keyboard,
+-                    field: field,
+-                    focus: $nativeFocus,
+-                    text: text,
+-                    accepts: { entry.allowsInput($0, for: field) }
+-                )
+-                .frame(maxWidth: .infinity, minHeight: 44)
+-            } else {
+-                textField(field, placeholder: placeholder, text: text, keyboard: keyboard, large: large)
+-            }
+-            if field == .minutes || field == .seconds {
+-                Text(field == .minutes ? "min" : "sec")
+-                    .font(.caption2).foregroundStyle(.secondary).accessibilityHidden(true)
+-            }
+-        }
+-        .padding(.horizontal, 5)
+-        .frame(maxWidth: .infinity, minHeight: 44)
+-        .background(Color(uiColor: .systemBackground).opacity(0.75), in: .rect(cornerRadius: 7))
+-        .overlay {
+-            if large { RoundedRectangle(cornerRadius: 7).strokeBorder(Style.action.opacity(0.22)) }
+-        }
+-    }
+-
+     private func textField(
+         _ field: RouteAmendmentLegEntry.Field, placeholder: String, text: Binding<String>,
+         keyboard: UIKeyboardType, large: Bool
+@@ -359,17 +327,17 @@ struct RouteAmendmentChartPanel: View {
+         invalid: Set<RouteAmendmentLegEntry.Field>, focused: RouteAmendmentLegEntry.Field?
+     ) -> some View {
+         if focused == nil || focused == field {
+-            VStack(alignment: .leading, spacing: 2) {
++            VStack(alignment: .leading, spacing: 8) {
+                 if focused == nil {
+-                    Text(fieldTitle(field)).font(.caption2).foregroundStyle(.secondary)
+-                }
+-                input(field, placeholder: placeholder, entry: entry)
+-                if invalid.contains(field), focused == nil {
+-                    error("Enter a valid \(fieldTitle(field).lowercased()).", id: "amendment-error-\(field.rawValue)")
++                    Text("Visual reference · optional").font(.subheadline.weight(.semibold))
+                 }
++                textField(field, placeholder: placeholder,
++                          text: Binding(get: { entry[field] }, set: { onIntent(.editLegField(field, $0)) }),
++                          keyboard: .default, large: false)
++                    .padding(12)
++                    .frame(maxWidth: .infinity, minHeight: 86, alignment: .topLeading)
++                    .background(Style.card, in: .rect(cornerRadius: 10))
+             }
+-            .padding(6)
+-            .background(Style.card, in: .rect(cornerRadius: 8))
+         }
+     }
+ 
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift
+new file mode 100644
+index 0000000..07d4597
+--- /dev/null
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentCueSection.swift
+@@ -0,0 +1,100 @@
++import SwiftUI
++
++struct RouteAmendmentCueSection: View {
++    let entry: RouteAmendmentLegEntry
++    let onIntent: (RouteAmendmentDraft.Intent) -> Void
++
++    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
++    @ScaledMetric(relativeTo: .body) private var wheelHeight = 108
++    @ScaledMetric(relativeTo: .body) private var wheelWidth = 110
++
++    var body: some View {
++        VStack(alignment: .leading, spacing: 8) {
++            Text("Optional cues").font(.headline).accessibilityAddTraits(.isHeader)
++            Text("Altitude · ft MSL").font(.subheadline.weight(.semibold))
++            adaptiveRow {
++                wheel(.altitude, title: "Altitude", unit: "feet MSL")
++                VStack(alignment: .leading, spacing: 8) {
++                    Text("100 ft steps").font(.subheadline.weight(.semibold))
++                    Text("−1,500 to 20,000 ft MSL").font(.caption).foregroundStyle(.secondary)
++                    clear(.altitude, title: "Clear altitude")
++                }
++            }
++            if entry.cueSelection(.altitude) == .custom {
++                customValue("Existing altitude: \(entry.cueDisplayText(.altitude)) ft MSL", id: "altitude")
++            }
++            Text("Frequency · MHz").font(.subheadline.weight(.semibold))
++            adaptiveRow {
++                wheel(.frequencyMHz, title: "MHz", unit: "megahertz")
++                wheel(.frequencyFraction, title: "Fraction", unit: "fractional megahertz")
++                clear(.frequencyMHz, title: "Clear frequency")
++            }
++            if entry.cueSelection(.frequencyMHz) == .custom {
++                customValue("Existing frequency: \(entry.cueDisplayText(.frequencyMHz)) MHz", id: "frequency")
++            }
++            Text("118.000–136.975 MHz · valid 25 kHz channels")
++                .font(.caption).foregroundStyle(.secondary)
++                .fixedSize(horizontal: false, vertical: true)
++        }
++        .frame(maxWidth: .infinity, alignment: .leading)
++    }
++
++    private func adaptiveRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
++        let layout = dynamicTypeSize.isAccessibilitySize
++            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
++            : AnyLayout(HStackLayout(alignment: .center, spacing: 14))
++        return layout { content() }
++    }
++
++    private func wheel(
++        _ component: RouteAmendmentLegEntry.CueComponent, title: LocalizedStringKey, unit: String
++    ) -> some View {
++        let selection = entry.cueSelection(component)
++        let label = component == .altitude ? "Altitude, feet MSL"
++            : component == .frequencyMHz ? "Frequency, whole megahertz" : "Frequency, fractional megahertz"
++        return Picker(title, selection: Binding(
++            get: { selection },
++            set: { onIntent(.selectLegCue(component, $0)) }
++        )) {
++            Text("Not set")
++                .accessibilityLabel("\(label), Not set")
++                .tag(RouteAmendmentLegEntry.CueChoice.notSet)
++            if selection == .custom {
++                Text("Existing")
++                    .accessibilityLabel("Existing \(entry.cueDisplayText(component)) \(component == .altitude ? "feet MSL" : "megahertz"), unchanged")
++                    .tag(RouteAmendmentLegEntry.CueChoice.custom)
++            }
++            ForEach(entry.cueOptions(component), id: \.self) { value in
++                Text(component == .frequencyFraction ? String(format: ".%03d", value) : value.formatted())
++                    .accessibilityLabel(component == .frequencyFraction
++                        ? "\(String(format: ".%03d", value)) megahertz fractional channel"
++                        : "\(value.formatted()) \(unit)")
++                    .tag(RouteAmendmentLegEntry.CueChoice.value(value))
++            }
++        }
++        .pickerStyle(.wheel)
++        .frame(width: min(wheelWidth, 240), height: wheelHeight)
++        .clipped()
++        .accessibilityLabel(label)
++        .accessibilityIdentifier("amendment-field-\(component.rawValue)")
++    }
++
++    private func clear(_ component: RouteAmendmentLegEntry.CueComponent, title: String) -> some View {
++        Button { onIntent(.selectLegCue(component, .notSet)) } label: {
++            Text("Not set").frame(minWidth: 44, minHeight: 44).contentShape(.rect)
++        }
++        .accessibilityLabel(title)
++        .accessibilityIdentifier(component == .altitude ? "clear-amendment-altitude" : "clear-amendment-frequency")
++    }
++
++    private func customValue(_ text: String, id: String) -> some View {
++        VStack(alignment: .leading, spacing: 2) {
++            Text(text)
++            Text("Unchanged until edited or cleared.")
++        }
++        .font(.caption).foregroundStyle(.secondary)
++        .fixedSize(horizontal: false, vertical: true)
++        .accessibilityElement(children: .combine)
++        .accessibilityIdentifier("amendment-custom-\(id)")
++    }
++}
+diff --git a/NavigationFlightTests/NavigationFlightTests.swift b/NavigationFlightTests/NavigationFlightTests.swift
+index 3a4e9ba..497eba5 100644
+--- a/NavigationFlightTests/NavigationFlightTests.swift
++++ b/NavigationFlightTests/NavigationFlightTests.swift
+@@ -169,6 +169,44 @@ struct NavigationFlightTests {
+         #expect(state.amendmentSave == nil)
+     }
+ 
++    @MainActor
++    @Test func optionalCueWheelsNeverChangeReadinessOrOperationalFlight() throws {
++        var state = CockpitFeatureState()
++        try state.accept(try twoLegFlight())
++        try state.startLeg(at: Date(timeIntervalSince1970: 100))
++        let flight = try #require(state.flight)
++        let route = try #require(state.routeForAmendment)
++        state.updateRouteAmendment(.open)
++        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.3)))
++        state.updateRouteAmendment(.plot(.init(position: .init(latitudeDegrees: 32.5, longitudeDegrees: 35))))
++        let end = route.anchor(at: 1, fraction: 1)
++        state.updateRouteAmendment(.plot(.init(position: route.coordinate(at: end), anchors: [end])))
++        let legs = try #require(state.routeAmendmentDraft?.reviewLegs(on: route))
++        for leg in legs {
++            state.updateRouteAmendment(.editLeg(leg.id))
++            state.updateRouteAmendment(.editLegField(.heading, "087"))
++            state.updateRouteAmendment(.editLegField(.duration, "02:15"))
++            state.updateRouteAmendment(.saveLegValues)
++        }
++        let blank = try #require(state.routeAmendmentDraft)
++        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: blank, route: route) == .ready)
++        _ = try PendingRouteAmendment(id: UUID(), draft: blank, flight: flight, route: route)
++        state.updateRouteAmendment(.editLeg(try #require(legs.first).id))
++        state.updateRouteAmendment(.selectLegCue(.altitude, .value(-1500)))
++        state.updateRouteAmendment(.selectLegCue(.frequencyMHz, .value(122)))
++        state.updateRouteAmendment(.selectLegCue(.frequencyFraction, .value(525)))
++        state.updateRouteAmendment(.editLegField(.visualReference, "Road junction"))
++        state.updateRouteAmendment(.saveLegValues)
++        let populated = try #require(state.routeAmendmentDraft)
++        #expect(AmendmentLifecycleStatus.project(flight: flight, draft: populated, route: route) == .ready)
++        let pending = try PendingRouteAmendment(id: UUID(), draft: populated, flight: flight, route: route)
++        #expect(pending.replacementLegs.count == legs.count)
++        #expect(populated.reviewLegs(on: route).first?.entry.magneticHeading == 87)
++        #expect(populated.reviewLegs(on: route).first?.entry.durationSeconds == 135)
++        #expect(state.flight == flight, "Preparation cannot create navigation/timer events or identification targets")
++        #expect(state.amendmentSave == nil)
++    }
++
+     @MainActor
+     @Test(arguments: [RouteAmendmentLegEntry.Field.frequency, .altitude])
+     func invalidEnteredCuesRemainVisibleUntilCorrected(_ field: RouteAmendmentLegEntry.Field) throws {
+diff --git a/NavigationFlightTests/RouteAmendmentEstimateTests.swift b/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+index 26318a3..bde8f81 100644
+--- a/NavigationFlightTests/RouteAmendmentEstimateTests.swift
++++ b/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+@@ -136,6 +136,108 @@ struct RouteAmendmentEstimateTests {
+         #expect(entry.durationSeconds == 3)
+     }
+ 
++    @Test(arguments: [-1500, -1400, 0, 2500, 20000])
++    func altitudeWheelSupportsNegativeAndBoundaryValues(_ altitude: Int) {
++        var entry = RouteAmendmentLegEntry()
++        entry.selectCue(.altitude, choice: .value(altitude))
++        #expect(entry.altitude == String(altitude))
++        #expect(entry.cueSelection(.altitude) == .value(altitude))
++        entry.selectCue(.altitude, choice: .notSet)
++        #expect(entry.altitude.isEmpty)
++    }
++
++    @Test(arguments: [-1600, 2550, 20100, Int.max])
++    func altitudeWheelRejectsInvalidNewValues(_ altitude: Int) {
++        var entry = RouteAmendmentLegEntry()
++        entry.selectCue(.altitude, choice: .value(2500))
++        entry.selectCue(.altitude, choice: .value(altitude))
++        #expect(entry.altitude == "2500")
++    }
++
++    @Test(arguments: [-1550.0, 2550.0, 25000.0, 2500.123456789])
++    func inheritedCustomAltitudeRemainsLossless(_ altitude: Double) {
++        let original = RouteAmendmentLegValues(
++            headingMagnetic: 176, durationSeconds: 135, altitude: .init(value: altitude),
++            frequency: .init(value: 122.525), visualReference: "Road junction"
++        )
++        var entry = RouteAmendmentLegEntry(values: original)
++        #expect(entry.cueSelection(.altitude) == .custom)
++        #expect(entry.values == original)
++        entry[.heading] = "087"
++        entry.selectCue(.frequencyMHz, choice: .notSet)
++        #expect(entry.values?.altitude == original.altitude)
++        entry.selectCue(.altitude, choice: .value(2500))
++        #expect(entry.values?.altitude?.value == 2500)
++    }
++
++    @Test func radioWheelsOnlyConstructValidChannels() {
++        var entry = RouteAmendmentLegEntry()
++        for mhz in 118...136 {
++            for fraction in stride(from: 0, through: 975, by: 25) {
++                entry.selectCue(.frequencyMHz, choice: .value(mhz))
++                entry.selectCue(.frequencyFraction, choice: .value(fraction))
++                #expect(entry.radioChannelKHz == mhz * 1000 + fraction)
++            }
++        }
++        #expect(entry.frequency == "136.975")
++        entry.selectCue(.frequencyMHz, choice: .value(118))
++        entry.selectCue(.frequencyFraction, choice: .value(0))
++        #expect(entry.frequency == "118.000")
++        let before = entry
++        entry.selectCue(.frequencyMHz, choice: .value(137))
++        entry.selectCue(.frequencyFraction, choice: .value(5))
++        #expect(entry == before)
++    }
++
++    @Test(arguments: ["122.52500000001", "117.975", "137", "122.50833", "122.123456789"])
++    func customRadioIsNeverRoundedOnPresentation(_ frequency: String) {
++        var entry = RouteAmendmentLegEntry()
++        entry.frequency = frequency
++        let before = entry
++        #expect(entry.cueSelection(.frequencyMHz) == .custom)
++        #expect(entry.cueSelection(.frequencyFraction) == .custom)
++        #expect(entry == before)
++        entry.selectCue(.frequencyFraction, choice: .value(525))
++        #expect(entry.frequency == "118.525")
++    }
++
++    @Test(arguments: [122.52500000001, 117.975, 122.123456789])
++    func inheritedRadioPresentationDoesNotUseRoundedAdapterText(_ frequency: Double) {
++        let original = RouteAmendmentLegValues(
++            headingMagnetic: 176, durationSeconds: 135, altitude: .init(value: 2500.123456789),
++            frequency: .init(value: frequency), visualReference: nil
++        )
++        let entry = RouteAmendmentLegEntry(values: original)
++        #expect(entry.cueSelection(.frequencyMHz) == .custom)
++        #expect(entry.cueDisplayText(.frequencyMHz) == String(frequency))
++        #expect(entry.cueDisplayText(.altitude) == "2500.123456789")
++        #expect(entry.values == original)
++    }
++
++    @Test func cueClearsAndEditsPreserveOtherFieldsAndAcceptedPrecision() throws {
++        let original = RouteAmendmentLegValues(
++            headingMagnetic: 176, durationSeconds: 135,
++            altitude: .init(value: 2550), frequency: .init(value: 122.123456789),
++            visualReference: "  Road junction  "
++        )
++        var entry = RouteAmendmentLegEntry(values: original)
++        #expect(entry.cueSelection(.altitude) == .custom)
++        #expect(entry.values == original)
++        entry.selectCue(.altitude, choice: .notSet)
++        #expect(entry.values?.frequency == original.frequency)
++        #expect(entry.values?.visualReference == original.visualReference)
++        entry.selectCue(.altitude, choice: .value(-1500))
++        #expect(entry.values?.altitude?.value == -1500)
++        entry.selectCue(.frequencyMHz, choice: .notSet)
++        #expect(entry.values?.altitude?.value == -1500)
++        entry[.visualReference] = ""
++        let result = try #require(entry.values)
++        #expect(result.headingMagnetic == 176)
++        #expect(result.durationSeconds == 135)
++        #expect(result.frequency == nil)
++        #expect(result.visualReference == nil)
++    }
++
+     private func estimate(mode: NavigationMode, wind: Wind?, airspeed: Double = 90) -> RouteAmendmentEstimator.Result {
+         RouteAmendmentEstimator.estimate(
+             from: .init(latitudeDegrees: 0, longitudeDegrees: 0),
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index d31b21a..33b0243 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -2689,8 +2689,9 @@ final class NavigationFlightUITests: XCTestCase {
+ 
+         if iPad {
+             tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+-            type("2500", in: "altitude")
+-            type("123.50", in: "frequency")
++            selectCueWheel("altitude", value: "2,500", in: app, panel: panel)
++            selectCueWheel("frequencyMHz", value: "123", in: app, panel: panel)
++            selectCueWheel("frequencyFraction", value: ".500", in: app, panel: panel)
+             type("Road junction", in: "visualReference")
+ 
+             tapChartPanelControl(app.buttons["inspect-amendment-original"], in: panel)
+@@ -2898,52 +2899,182 @@ final class NavigationFlightUITests: XCTestCase {
+     }
+ 
+     @MainActor
+-    func testInvalidAmendmentCuesRemainVisibleAfterDone() throws {
+-        let app = try launchManualAmendmentReview()
++    func testInheritedAmendmentCuesRemainVisibleAfterDone() throws {
++        // Native wheels replace malformed text entry. Inherited custom values remain
++        // visible and lossless until a deliberate replacement, covered below.
++        try verifyOptionalCues(custom: true)
++    }
++
++    @MainActor
++    func testOptionalCueWheelsRetainAndClearIndependently() throws {
++        try verifyOptionalCues()
++    }
++
++    @MainActor
++    func testOptionalCueWheelsInLandscape() throws {
++        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("iPad landscape only") }
++        try verifyOptionalCues(landscape: true)
++    }
++
++    @MainActor
++    func testOptionalCueWheelsWithLargerText() throws {
++        try verifyOptionalCues(largerText: true)
++    }
++
++    @MainActor
++    func testOptionalNoteKeyboardWithLargerText() throws {
++        try verifyOptionalCues(largerText: true, noteOnly: true)
++    }
++
++    @MainActor
++    func testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions() throws {
++        let voiceOver = XCUIDevice.shared.voiceOverService
++        let wasEnabled = voiceOver.isEnabled
++        let originalContinueAfterFailure = continueAfterFailure
++        if wasEnabled { try voiceOver.disable() }
++        defer {
++            continueAfterFailure = originalContinueAfterFailure
++            if !wasEnabled && voiceOver.isEnabled { try? voiceOver.disable() }
++            if wasEnabled && !voiceOver.isEnabled { try? voiceOver.enable() }
++        }
++        let app = try launchPartialAmendment(fixture: "A-progress")
++        app.buttons["amend-route"].tap()
+         let console = app.descendants(matching: .any)["route-amendment-console"]
+         let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+-        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+-        tapAmendmentControl(row, in: console)
+-        let wheel = app.pickers["amendment-field-heading"].pickerWheels.firstMatch
+-        wheel.adjust(toPickerWheelValue: "001°")
+-        func replace(_ name: String, with text: String) {
+-            if name == "minutes" || name == "seconds" {
+-                selectAmendmentWheel(name, value: text, in: app, panel: panel)
+-                return
++        tapAmendmentControl(app.buttons.matching(identifier: "edit-amendment-leg").firstMatch, in: console)
++        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++        let altitude = app.pickers["amendment-field-altitude"].pickerWheels.firstMatch
++        tapChartPanelControl(altitude, in: panel, performTap: false)
++        // Keep assertion failures in Swift control flow so the defer restores
++        // the device setting before the next test's ordinary taps.
++        continueAfterFailure = true
++        try voiceOver.enable()
++        var speech: [String] = []
++        if let current = try? voiceOver.currentSpeech().utterance { speech.append(current) }
++        for _ in 0..<90 {
++            speech.append(try voiceOver.moveForward().utterance)
++            let spoken = speech.joined(separator: " ")
++            if spoken.contains("Clear frequency") && spoken.contains("Clear altitude") && spoken.contains("Visual-reference note") { break }
++        }
++        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
++        attachment.name = "AP06 actual VoiceOver cue speech"
++        attachment.lifetime = .keepAlways
++        add(attachment)
++        let spoken = speech.joined(separator: " ").lowercased()
++        XCTAssertTrue(spoken.contains("feet msl"))
++        XCTAssertTrue(spoken.contains("megahertz"))
++        XCTAssertTrue(spoken.contains("adjustable"))
++        XCTAssertTrue(spoken.contains("clear altitude"))
++        XCTAssertTrue(spoken.contains("clear frequency"))
++        XCTAssertTrue(spoken.contains("visual-reference note"))
++        captureAmendmentState("ap06-voiceover-cues", in: app)
++    }
++
++    @MainActor
++    private func selectCueWheel(_ name: String, value: String, in app: XCUIApplication, panel: XCUIElement) {
++        let wheel = app.pickers["amendment-field-\(name)"].pickerWheels.firstMatch
++        tapChartPanelControl(wheel, in: panel, performTap: false)
++        XCTAssertTrue(wheel.exists)
++        let spoken = cueWheelValue(name, value)
++        wheel.adjust(toPickerWheelValue: spoken)
++        XCTAssertEqual(wheel.value as? String, spoken)
++    }
++
++    private func cueWheelValue(_ name: String, _ value: String) -> String {
++        if value == "Not set" {
++            switch name {
++            case "altitude": return "Altitude, feet MSL, Not set"
++            case "frequencyMHz": return "Frequency, whole megahertz, Not set"
++            default: return "Frequency, fractional megahertz, Not set"
+             }
+-            let field = app.textFields["amendment-field-\(name)"]
+-            tapChartPanelControl(field, in: panel)
+-            let previous = field.value as? String ?? ""
+-            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: previous.count) + text)
+-            app.buttons["amendment-keyboard-done"].tap()
+         }
+-        replace("minutes", with: "02")
+-        replace("seconds", with: "15")
++        switch name {
++        case "altitude": return value + " feet MSL"
++        case "frequencyMHz": return value + " megahertz"
++        default: return value + " megahertz fractional channel"
++        }
++    }
++
++    @MainActor
++    private func verifyOptionalCues(
++        landscape: Bool = false, largerText: Bool = false, custom: Bool = false, noteOnly: Bool = false
++    ) throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        let app = try launchPartialAmendment(largerText: largerText, fixture: custom ? "A-progress-cues" : "A-progress")
++        if landscape { XCUIDevice.shared.orientation = .landscapeLeft }
++        app.buttons["amend-route"].tap()
++        let console = app.descendants(matching: .any)["route-amendment-console"]
++        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        let requiredValues = row.value as? String
++        let elapsed = app.staticTexts["amendment-leg-elapsed"].label
++        tapAmendmentControl(row, in: console)
+         tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
+-        replace("frequency", with: "0")
++        if custom {
++            let inherited = app.descendants(matching: .any)["amendment-custom-altitude"]
++            tapChartPanelControl(inherited, in: panel, performTap: false)
++            XCTAssertTrue(inherited.label.contains("2550"))
++            let radio = app.descendants(matching: .any)["amendment-custom-frequency"]
++            tapChartPanelControl(radio, in: panel, performTap: false)
++            XCTAssertTrue(radio.label.contains("122.123456789"))
++            captureAmendmentState("ap06-custom-values", in: app)
++            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++            tapAmendmentControl(row, in: console)
++            tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++            tapChartPanelControl(radio, in: panel, performTap: false)
++            XCTAssertTrue(radio.exists)
++        }
++        if !noteOnly {
++            selectCueWheel("altitude", value: "2,500", in: app, panel: panel)
++            selectCueWheel("frequencyMHz", value: "122", in: app, panel: panel)
++            selectCueWheel("frequencyFraction", value: ".525", in: app, panel: panel)
++        }
++        let suffix = "\(largerText ? "larger-" : "")\(landscape ? "landscape" : "portrait")"
++        if !noteOnly { captureAmendmentState("ap06-cue-wheels-" + suffix, in: app) }
++        let note = app.textFields["amendment-field-visualReference"]
++        tapChartPanelControl(note, in: panel)
++        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 4))
++        note.typeText("Road junction")
++        XCTAssertEqual(note.value as? String, "Road junction")
++        let keyboardDone = app.buttons["amendment-keyboard-done"]
++        tapChartPanelControl(keyboardDone, in: panel, performTap: false)
++        XCTAssertTrue(keyboardDone.isHittable)
++        captureAmendmentState("ap06-note-keyboard-" + suffix, in: app)
++        keyboardDone.tap()
++        if noteOnly {
++            tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++            XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
++            XCTAssertEqual(row.value as? String, requiredValues)
++            return
++        }
+         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        XCTAssertTrue(panel.waitForNonExistence(timeout: 4))
++        XCTAssertEqual(row.value as? String, requiredValues)
+         tapAmendmentControl(row, in: console)
+-        let frequencyError = app.staticTexts["amendment-error-frequency"]
+-        tapChartPanelControl(frequencyError, in: panel, performTap: false)
+-        XCTAssertTrue(frequencyError.exists)
+-        XCTAssertEqual(app.textFields["amendment-field-frequency"].value as? String, "0")
+-        captureAmendmentState("r1-invalid-frequency-reopened", in: app)
+-        replace("frequency", with: "122.525")
+-        XCTAssertFalse(frequencyError.exists)
+-        replace("altitude", with: "-.")
++        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++        let altitude = app.pickers["amendment-field-altitude"].pickerWheels.firstMatch
++        tapChartPanelControl(altitude, in: panel, performTap: false)
++        XCTAssertEqual(altitude.value as? String, "2,500 feet MSL")
++        let fraction = app.pickers["amendment-field-frequencyFraction"].pickerWheels.firstMatch
++        tapChartPanelControl(fraction, in: panel, performTap: false)
++        XCTAssertEqual(fraction.value as? String, ".525 megahertz fractional channel")
++        tapChartPanelControl(app.buttons["clear-amendment-altitude"], in: panel)
++        XCTAssertEqual(altitude.value as? String, cueWheelValue("altitude", "Not set"))
++        XCTAssertEqual(fraction.value as? String, ".525 megahertz fractional channel")
++        tapChartPanelControl(app.buttons["clear-amendment-frequency"], in: panel)
++        XCTAssertEqual(fraction.value as? String, cueWheelValue("frequencyFraction", "Not set"))
++        XCTAssertEqual(note.value as? String, "Road junction")
++        tapChartPanelControl(app.buttons["clear-amendment-note"], in: panel)
++        XCTAssertEqual(note.value as? String, "Landmark note")
+         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+         tapAmendmentControl(row, in: console)
+-        let altitudeError = app.staticTexts["amendment-error-altitude"]
+-        tapChartPanelControl(altitudeError, in: panel, performTap: false)
+-        XCTAssertTrue(altitudeError.exists)
+-        captureAmendmentState("r1-invalid-altitude-reopened", in: app)
+-        replace("altitude", with: "2500")
+-        XCTAssertFalse(altitudeError.exists)
++        tapChartPanelControl(app.buttons["toggle-amendment-cues"], in: panel)
++        tapChartPanelControl(altitude, in: panel, performTap: false)
++        XCTAssertEqual(altitude.value as? String, cueWheelValue("altitude", "Not set"))
+         tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+-        tapAmendmentControl(row, in: console)
+-        XCTAssertFalse(frequencyError.exists)
+-        XCTAssertFalse(altitudeError.exists)
+-        captureAmendmentState("r1-cues-corrected", in: app)
++        XCTAssertEqual(row.value as? String, requiredValues)
++        XCTAssertEqual(app.staticTexts["amendment-leg-elapsed"].label, elapsed)
++        captureAmendmentState("ap06-cleared-" + suffix, in: app)
+     }
+ 
+     @MainActor
+@@ -4739,6 +4870,18 @@ final class NavigationFlightUITests: XCTestCase {
+ 
+     @MainActor
+     private func startAmendmentFixture(in app: XCUIApplication) {
++        // XCTest worker clones can retain VoiceOver independently of the visible
++        // simulator. Ordinary bootstrap taps require it off; speech tests enable
++        // it explicitly after setup. Do not change the owner's simulator defaults.
++        let voiceOver = XCUIDevice.shared.voiceOverService
++        if voiceOver.isEnabled {
++            do { try voiceOver.disable() }
++            catch {
++                XCTFail("Could not disable inherited VoiceOver for fixture bootstrap: \(error)")
++                return
++            }
++            XCTAssertFalse(voiceOver.isEnabled)
++        }
+         // iPad's system sidebar can survive a prior landscape run as a modal
+         // overlay. Its scrim intercepts Start even when AX reports it hittable.
+         let hideSidebar = app.buttons["ToggleSidebar"]
+diff --git a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+index b12ee0b..0aefd51 100644
+--- a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
++++ b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+@@ -74,6 +74,20 @@ superseded only within editable preparation. Existing flight execution is unchan
+ [AP-04 verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md)
+ records validation and the separate pending human visual acceptance gate.
+ 
++### AP-06 implementation checkpoint · 2026-11-25
++
++Issue #230 adds optional native altitude and radio wheel controls within the
++existing leg editor. Altitude spans −1,500…20,000 ft MSL in 100 ft steps;
++radio uses MHz/fractional wheels that construct only 118.000…136.975 MHz
++25 kHz channels. Both have Not set/clear. Existing custom values remain visible
++and unchanged until deliberately replaced or cleared. Visual-reference notes
++retain native keyboard entry and independent clear. Cues remain advisory;
++required heading/time, readiness and operational Flight events are unchanged.
++This supersedes earlier preparation cue text inputs only. Radio tuning, 8.33 kHz,
++new timed targets and durable draft storage remain excluded. Runtime evidence
++and pending human acceptance are recorded in the
++[AP-06 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md).
++
+ ### AP-05 implementation checkpoint · 2026-11-25
+ 
+ Issue #229 replaces preparation's time text fields and adjustment buttons with
+diff --git a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+index 79958c7..db04c0f 100644
+--- a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
++++ b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+@@ -100,6 +100,31 @@ The existing AP-01 layout/camera helpers validate preservation. DEBUG
+ `A-progress-heading` extends fixture A with heading-only and duration-only legs.
+ See the [AP-04 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md).
+ 
++## AP-06 optional cue wheels · 2026-11-25
++
++`RouteAmendmentLegEntry` owns typed cue choices and bounds. Radio channels use
++integer kHz identities with an exact check at the existing `FrequencyMHz`
++boundary; custom values never round into a channel on presentation. Classification
++and custom labels consult an unchanged accepted Double rather than the legacy
++adapter's potentially rounded display string. DEBUG custom-cue fixtures reuse
++the existing accepted-archive restoration helper. Typed
++`selectLegCue` intents reuse the draft's existing leg-entry retention seam,
++without indexing cues by display row. Deliberately selecting one radio wheel
++preserves the other component of a valid channel; an unset/custom radio begins
++at 118 MHz or zero fractional kHz for the unselected component. Clear removes
++the entire optional radio value. No view computes eligibility or operational
++navigation effects.
++
++`RouteAmendmentCueSection` supplies native optional wheel controls, explicit
++spoken units, separate custom-value text and 44 pt clear actions, stacking at
++accessibility text sizes. The existing chart panel retains native note entry,
++keyboard Done and its pinned editor footer. Accepted complete values retain
++their original cue precision/spacing through the existing lossless adapter.
++The operational cue projector, recording schema, map geometry and Flight engine
++are unchanged. This supersedes preparation altitude/frequency text inputs from
++the earlier checkpoints; source observations and historical approvals remain.
++See the [AP-06 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md).
++
+ ## AP-05 leg duration wheels · 2026-11-25
+ 
+ `RouteAmendmentTimeSection` renders native optional-integer wheel selections,
+diff --git a/scripts/UI-TEST-HELPERS.md b/scripts/UI-TEST-HELPERS.md
+index c6df28b..7000222 100644
+--- a/scripts/UI-TEST-HELPERS.md
++++ b/scripts/UI-TEST-HELPERS.md
+@@ -8,7 +8,10 @@ Keep UI automation in XCUITest; these helpers do not change production behavior.
+   `fixtureEnvironment`; configure them before launch, not by relaunching into a
+   partially initialized state. Additional switches should not override the library
+   ID or plan. The helper waits for the ready cockpit's Start control.
+-- `startAmendmentFixture` starts the leg and waits for Start to disappear, then
++- `startAmendmentFixture` explicitly disables inherited VoiceOver on the XCTest
++  worker before ordinary touch setup. Worker clones can retain accessibility
++  settings independently of the visible simulator; speech tests enable VoiceOver
++  after bootstrap. It starts the leg and waits for Start to disappear, then
+   dismisses the checklist when present. Progress fixtures can advance beyond the
+   first checklist; readiness accepts the operational amendment control too.
+   It explicitly closes an identified system sidebar overlay before Start: after

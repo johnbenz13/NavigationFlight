@@ -9,27 +9,29 @@ struct RouteAmendmentTimeSection: View {
     @ScaledMetric(relativeTo: .body) private var wheelWidth = 110
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Leg time")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
-            let layout = dynamicTypeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 18))
-                : AnyLayout(HStackLayout(alignment: .top, spacing: 18))
-            layout {
-                timeWheel(.minutes, title: "Minutes", unit: "minutes")
-                timeWheel(.seconds, title: "Seconds", unit: "seconds")
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Leg time").font(.headline).accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                Text("\(entry.minutes.isEmpty ? "--" : entry.minutes):\(entry.seconds.isEmpty ? "--" : entry.seconds)")
+                    .font(.title3.weight(.semibold)).monospacedDigit()
+                    .accessibilityLabel("Leg time, \(entry.minutes.isEmpty ? "minutes Not set" : entry.minutes + " minutes"), \(entry.seconds.isEmpty ? "seconds Not set" : entry.seconds + " seconds")")
+                    .accessibilityIdentifier("amendment-duration-readout")
             }
-            Text("Leg time up to 60:00. At 60 minutes, seconds are limited to 00.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if entry.preservesAcceptedDuration, let duration = entry.durationSeconds, duration > 3600 {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 14))
+                : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
+            layout {
+                timeWheel(.minutes, title: "Minutes")
+                timeWheel(.seconds, title: "Seconds")
+            }
+            if entry.preservesAcceptedDuration, let duration = entry.durationSeconds, duration >= 3600 {
                 Text("Existing leg time \(RouteAmendmentLegEntry.durationText(duration)) is unchanged until edited.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if entry.invalidEnteredFields.contains(.duration) {
-                Text("Enter a positive leg time up to 60:00.")
+                Text("Enter a positive leg time up to 59:59.")
                     .font(.caption).foregroundStyle(RouteAmendmentPanelStyle.overPlannedInk)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("amendment-error-duration")
@@ -38,43 +40,23 @@ struct RouteAmendmentTimeSection: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func timeWheel(
-        _ component: RouteAmendmentLegEntry.TimeComponent, title: LocalizedStringKey, unit: String
-    ) -> some View {
-        let selection = entry.timeSelection(component)
-        let options = entry.timeOptions(component)
-        return VStack(spacing: 8) {
-            Text(title).font(.caption.weight(.semibold))
-            Picker(title, selection: Binding(
-                get: { selection },
-                set: { onIntent(.selectLegTime(component, $0)) }
-            )) {
-                Text("Not set")
-                    .accessibilityLabel("Leg time \(unit), Not set")
-                    .tag(nil as Int?)
-                // A legacy/custom value has its own tag; rendering never rounds it.
-                if let selection, !options.contains(selection) {
-                    Text(String(format: "%02d", selection))
-                        .accessibilityLabel("Leg time \(unit), \(selection) \(unit)")
-                        .tag(Optional(selection))
+    private func timeWheel(_ component: RouteAmendmentLegEntry.TimeComponent, title: LocalizedStringKey) -> some View {
+        VStack(spacing: 4) {
+            HStack {
+                Text(title).font(.footnote).foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Button { onIntent(.selectLegTime(component, nil)) } label: {
+                    Text("Clear").frame(minWidth: 44, minHeight: 44)
                 }
-                ForEach(Array(options), id: \.self) { value in
-                    Text(String(format: "%02d", value))
-                        .accessibilityLabel("Leg time \(unit), \(value) \(unit)")
-                        .tag(Optional(value))
-                }
+                .accessibilityLabel("Clear leg time \(component.rawValue)")
+                .accessibilityIdentifier("clear-amendment-\(component.rawValue)")
             }
-            .pickerStyle(.wheel)
+            RouteAmendmentCyclicTimeWheel(selection: entry.timeSelection(component), component: component) {
+                onIntent(.advanceLegTime(component, $0))
+            }
             .frame(width: min(wheelWidth, 240), height: wheelHeight)
             .clipped()
-            .accessibilityLabel("Leg time \(unit)")
-            .accessibilityValue(selection.map { "\($0) \(unit)" } ?? "Not set")
-            .accessibilityIdentifier("amendment-field-\(component.rawValue)")
-            Button { onIntent(.selectLegTime(component, nil)) } label: {
-                Text("Clear").frame(minWidth: 44, minHeight: 44).contentShape(.rect)
-            }
-            .accessibilityLabel("Clear leg time \(unit)")
-            .accessibilityIdentifier("clear-amendment-\(component.rawValue)")
         }
+        .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 152)
     }
 }

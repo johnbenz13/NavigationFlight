@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "4F1555BA-6CA0-4E4A-9CEF-1EAEE9CED235.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-voiceover-cues_0_29E70214-137F-45D8-A16F-3750AE96B5D2.png",
+        "timestamp" : 1795621565.636
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "15D570CA-A43C-43AB-841F-2B9E2B955D2D.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "AP06 actual VoiceOver cue speech_0_90EE5EC8-2445-46CC-87A9-CB7FEF240C4D.txt",
+        "timestamp" : 1795621564.16
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueVoiceOverExposesAdjustableUnitsAndClearActions"
+  }
+]

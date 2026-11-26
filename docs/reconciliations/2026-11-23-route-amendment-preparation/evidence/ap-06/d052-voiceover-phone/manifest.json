@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "88384A3C-11F2-4ED0-9807-7C569C90F05B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - d052-voiceover-adjusted_0_B4E46C5D-22A0-4125-AF3F-DBF2DE89490D.png",
+        "timestamp" : 1795674238.268
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "874BF1EE-DA8B-40F2-86C4-CC96BB02DC8B.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "D05.2 actual VoiceOver adjustments_0_4642B5E3-FD8D-4099-81D6-A62EB6A26061.txt",
+        "timestamp" : 1795674236.995
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testD052VoiceOverAdjustsHeadingAndTime()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052VoiceOverAdjustsHeadingAndTime"
+  }
+]

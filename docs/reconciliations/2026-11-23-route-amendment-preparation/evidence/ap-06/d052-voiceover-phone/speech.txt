@@ -1,0 +1,15 @@
+⁨Point 1⁩ → ⁨Point 2⁩ Heading
+Magnetic heading Heading
+Clear magnetic heading Button
+Magnetic heading 176 degrees adjustable Adjust by one degree. Clear is a separate action. Swipe up or down with one finger to adjust the value.
+177 degrees
+Leg time Heading
+Leg time, 02 minutes, 15 seconds
+Minutes
+Clear leg time minutes Button
+Seconds
+Clear leg time seconds Button
+Leg time minutes, 2 minutes Picker Item adjustable 3,003 of 6,001 Swipe up or down with one finger to adjust the value.
+Leg time minutes, 3 minutes 3,004 of 6,001
+Leg time seconds, 15 seconds Picker Item adjustable 3,016 of 6,001 Swipe up or down with one finger to adjust the value.
+Leg time seconds, 16 seconds 3,017 of 6,001

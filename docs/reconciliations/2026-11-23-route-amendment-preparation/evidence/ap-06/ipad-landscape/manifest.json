@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "489ABFED-14B5-4AD7-ADF4-66348B041CDC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-landscape_0_B29F2963-D5F6-488A-BAAE-8C99E1186A83.png",
+        "timestamp" : 1795622082.833
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "096C2055-2E24-4E60-969C-BC49F34121F9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-landscape_0_60E9198B-640D-456F-BDF1-B48489A2F7D3.png",
+        "timestamp" : 1795622037.148
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "FADF6541-D375-42CF-9EAC-73D324DD11A6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-landscape_0_7CF1CDCE-0E63-4730-8AB0-C7F6208C90A6.png",
+        "timestamp" : 1795622027.387
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsInLandscape"
+  }
+]

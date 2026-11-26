@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "38E6B7B5-ECCE-46CA-BD55-F915BBC6D98A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-larger-portrait_0_2D6C3E53-369B-46AC-A005-348F226087BD.png",
+        "timestamp" : 1795629611.431
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "09DCDAE6-FA70-4E32-B726-C3AF7AC586CF.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-larger-portrait_0_4B9B95F9-E415-4B55-ADF2-34617219900D.png",
+        "timestamp" : 1795629374.565
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "FF0C1D5C-C511-4AD9-A48C-C57E91D4E4B1.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-larger-portrait_0_FF8386E5-EC1A-4EBC-8C34-3C42445D89D7.png",
+        "timestamp" : 1795629342.645
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsWithLargerText"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "1B16F5EC-378B-4C4B-B5EC-47505E216142.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-larger-portrait_0_ECEB7842-9EC8-44F0-AD5F-27F31E084EF3.png",
+        "timestamp" : 1795622308.766
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalNoteKeyboardWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalNoteKeyboardWithLargerText"
+  }
+]

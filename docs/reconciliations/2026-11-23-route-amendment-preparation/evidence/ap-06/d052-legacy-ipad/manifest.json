@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "3EF076C0-3B76-4647-9D17-7FBE6D2A46F2.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap05-legacy-accepted_0_AA125C5E-A2C0-4FC1-ADC5-B970078A0957.png",
+        "timestamp" : 1795648390.139
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testLegacyAcceptedLegTimeRemainsUntilWheelEdit()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testLegacyAcceptedLegTimeRemainsUntilWheelEdit"
+  }
+]

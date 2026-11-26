@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "90D86D5B-6C7C-4DD9-B0E7-C3F7CA0C3949.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-larger-portrait_0_3DFD2719-FBBD-4F2E-8F07-6EFCE3A021BC.png",
+        "timestamp" : 1795629084.033
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "1BFC58D6-8A14-4D92-94FF-09251649541E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-larger-portrait_0_D54E57B6-CC27-4E57-8DA1-B4D5DEC9BB4F.png",
+        "timestamp" : 1795628877.162
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "8EAADE56-8838-4D03-80F2-44DBFCB08EC6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-larger-portrait_0_8CDD6343-3BFA-4EF2-BAD6-A4AB92834E3B.png",
+        "timestamp" : 1795628856.212
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsWithLargerText"
+  }
+]

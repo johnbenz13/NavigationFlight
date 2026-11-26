@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "9DD806D0-BC0E-4085-8595-89A54C0BC158.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-portrait_0_7ED2ECB0-7FE8-4666-8048-9B12FA2EDB6B.png",
+        "timestamp" : 1795623247.38
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "20F498C3-380D-413D-82B0-5B1606ECABB7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-complete-cues-portrait_0_A68A411D-CDFA-4E65-A663-3E4984982A41.png",
+        "timestamp" : 1795623201.114
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "A82CB8FB-09A1-40CE-AAB6-070ACB4CFABC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-portrait_0_D72B47DE-9F3D-412F-B4EA-0815ACCE905B.png",
+        "timestamp" : 1795623174.506
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "7FD2B32D-8243-4400-8ED8-ADD2584B97A0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-portrait_0_EEE88806-BF13-4246-9E00-725D91926626.png",
+        "timestamp" : 1795623163.9
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently"
+  }
+]

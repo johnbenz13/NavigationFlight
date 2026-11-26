@@ -1,0 +1,75 @@
+{
+  "exportedAt": "2026-11-26T06:50:59.149198+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_07-39-45-+0200.xcresult",
+  "resultInfoSHA256": "5dbed7707bc3e44088df7e0d99df9a1ee59c7b5379924d41b105088d7e89e695",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+          "deviceName": "AP01-iPhone-16-Pro",
+          "modelName": "iPhone 16 Pro",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 3,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795674250.028,
+    "passedTests": 3,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795671585.415,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 3
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "b0ff6b39947aef06aa8b7c2f5550a7749a70f5a8",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nA  NavigationFlight/Features/Cockpit/RouteAmendmentCompass.swift\nA  NavigationFlight/Features/Cockpit/RouteAmendmentCyclicTimeWheel.swift\nA  NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\nAM docs/research/2026-11-25-heading-and-duration-picker.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-cyclic-boundaries/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-direct-max/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-landscape-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-legacy-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-max-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-max-phone/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-primary-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-primary-phone/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-range-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-voiceover-ipad/\n?? docs/research/assets/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived. Published source.patch omits the owner-owned research diff; see sourcePatchExclusions. Status remains the original export-time status."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052VoiceOverAdjustsHeadingAndTime()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "88384A3C-11F2-4ED0-9807-7C569C90F05B.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-voiceover-adjusted_0_B4E46C5D-22A0-4125-AF3F-DBF2DE89490D.png",
+        "timestamp": 1795674238.268
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "b1017a27bb640b0f17e9aae3909a5d2846671f6d24ba20b4d35ccb7e607bc0f9"
+    }
+  ],
+  "sourcePatchExclusions": {
+    "paths": [
+      "docs/research/2026-11-25-heading-and-duration-picker.md"
+    ],
+    "reason": "Owner-owned uncommitted design research is outside this implementation; omitted from published patch only. Remaining unified diff sections are unchanged.",
+    "fullOriginalPatchSHA256": "a06f5354ab4f1f3987ac055a7d21d97c892b326a24df5a7b7de0475aa69e0bc1",
+    "publishedPatchSHA256": "b600016be5ad53dfa9e0415230ee64ef01695bad49c3a9f0d37c8fe2aa27eb94",
+    "fullOriginalRetainedLocally": "/private/tmp/d052-full-source-patches/d052-voiceover-phone.patch"
+  }
+}

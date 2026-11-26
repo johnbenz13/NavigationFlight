@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "DF6FE1D2-EE1C-4B48-AB8C-B26B51AEE12C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-portrait_0_AA563633-6605-4D8F-A8BC-FE9892855B4E.png",
+        "timestamp" : 1795622513.864
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "5F2F9425-218B-4A59-919F-4F1ECA808A07.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-portrait_0_36A46A29-7F12-4CF5-BF37-7E7A1AA5555B.png",
+        "timestamp" : 1795622467.705
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "0D2AE948-AD7B-4F9F-A8A7-280E4FB2EF8D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-portrait_0_37E6EF62-C98A-4F2A-9B14-2D40C052E5E8.png",
+        "timestamp" : 1795622459.707
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "AE8549E2-E7D5-41C7-A2B2-0DB9FD43B69D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-custom-values_0_EBECAF9A-16EC-4992-B3DD-E1BE7E4CEFDF.png",
+        "timestamp" : 1795622428.634
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testInheritedAmendmentCuesRemainVisibleAfterDone"
+  }
+]

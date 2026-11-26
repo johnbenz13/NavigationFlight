@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "AFDADE94-53F3-4DCA-B6B1-6BD68A3ADA73.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cleared-portrait_0_A0626259-A10D-40BA-BAD2-1982C911073F.png",
+        "timestamp" : 1795628758.231
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "245B2D3E-3431-4046-B189-0A9616A92307.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-complete-cues-portrait_0_A1FCEF9F-41E3-4A0F-B2F4-DC490F41C32B.png",
+        "timestamp" : 1795628712.427
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "8A5AE77F-05BA-4ECF-AD71-47029269EFF7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-portrait_0_B0AAC603-58D1-4829-8D1D-D1318163E735.png",
+        "timestamp" : 1795628685.029
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "B4F4F077-1B49-4121-8280-CF8402E9B5EE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-cue-wheels-portrait_0_0D475184-6FD7-4FF4-8ECF-F09FB5E269A8.png",
+        "timestamp" : 1795628674.499
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalCueWheelsRetainAndClearIndependently"
+  }
+]

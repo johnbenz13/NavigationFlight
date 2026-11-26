@@ -811,7 +811,9 @@ extension CockpitFeatureState {
             }
             updateRouteAmendment(.saveLegValues)
         }
-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION"] == "1",
+        let legacyDuration = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION"] == "1"
+        let legacyCues = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] == "A-progress-cues"
+        if legacyDuration || legacyCues,
            let flight, let draft = routeAmendmentDraft,
            let pending = try? PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route),
            let data = try? JSONEncoder().encode(pending),
@@ -819,7 +821,11 @@ extension CockpitFeatureState {
            var legs = archived["replacementLegs"] as? [[String: Any]], !legs.isEmpty {
             // Model a previously accepted archive, rather than bypassing new-edit
             // validation. Restore it through the existing complete-value adapter.
-            legs[0]["durationSeconds"] = 5400
+            if legacyDuration { legs[0]["durationSeconds"] = 5400 }
+            if legacyCues {
+                legs[0]["altitudeFeet"] = 2550
+                legs[0]["frequencyMHz"] = 122.123456789
+            }
             archived["replacementLegs"] = legs
             if let archive = try? JSONSerialization.data(withJSONObject: archived),
                let legacy = try? JSONDecoder().decode(PendingRouteAmendment.self, from: archive) {

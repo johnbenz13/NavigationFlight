@@ -1,0 +1,137 @@
+{
+  "exportedAt": "2026-11-25T22:37:41.442793+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_00-20-53-+0200.xcresult",
+  "resultInfoSHA256": "e3c0196017ddd7880c76d3321a14d379cb6e97a3233e416bd4a9529e5727e389",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 1,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795646190.989,
+    "passedTests": 1,
+    "result": "Failed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795645253.81,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "Testing was canceled",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 2,
+        "testIdentifierString": "NavigationFlightUITests/testD052AdaptiveLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052AdaptiveLargerText",
+        "testName": "testD052AdaptiveLargerText()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 2
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "b0ff6b39947aef06aa8b7c2f5550a7749a70f5a8",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\nAM docs/research/2026-11-25-heading-and-duration-picker.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCompass.swift\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCyclicTimeWheel.swift\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-cyclic-boundaries/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-primary-ipad/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-voiceover-ipad/\n?? docs/research/assets/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived. Published source.patch omits the owner-owned research diff; see sourcePatchExclusions. Status remains the original export-time status."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052AdaptiveLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "44DDE560-6D0A-438B-910B-9601C4550727.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-adaptive-time-landscape_0_BEED3017-C51B-4509-8903-57253EFF8C2C.png",
+        "timestamp": 1795645371.241
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "b6917b24f8ade134fd4c2373c921819df0941bc5c232b5c883994b55a1119e98"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052AdaptiveLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "1625166C-1DC7-46EF-BA68-11785C1A993A.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-adaptive-check-landscape_0_1647CBB5-45CE-475F-A4D4-9BEFA7204CB1.png",
+        "timestamp": 1795645413.971
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "5f38ce7fa9c49d5945b43dce3f1edfad0d35ac427eb0ea0d85edaf80389d093e"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052AdaptiveLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "A2679F19-87F9-4DC2-87E0-F16B948918A7.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-adaptive-note-keyboard-landscape_0_A26BE771-A2AA-4457-BF53-EC57D59BC2D7.png",
+        "timestamp": 1795645696.132
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "3afcb8e182c3b5031f07603c44aa410e92b4675dc344203885ede4e5ce6d40f6"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052AdaptiveLandscape()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "2BDE836F-125D-435B-9F3B-8B74CE1A8440.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-adaptive-cleared-landscape_0_F8300452-69CB-48CF-8F86-F455DF93A186.png",
+        "timestamp": 1795645891.326
+      },
+      "orientation": "landscape",
+      "pixelWidth": 2388,
+      "pixelHeight": 1668,
+      "sha256": "55d3f7bf9fb31e8159257a377179cdc9784060f18d210aa0edcaf9ef446fbdd8"
+    }
+  ],
+  "sourcePatchExclusions": {
+    "paths": [
+      "docs/research/2026-11-25-heading-and-duration-picker.md"
+    ],
+    "reason": "Owner-owned uncommitted design research is outside this implementation; omitted from published patch only. Remaining unified diff sections are unchanged.",
+    "fullOriginalPatchSHA256": "e7965b0e4f933543feffd16a7b2d57fb1a9a2b2567cec5b6c95c7ed6e471a758",
+    "publishedPatchSHA256": "f85f04138154ed4f1b990934cc13a12660a96b7e00303331014232b5a45dd0e2",
+    "fullOriginalRetainedLocally": "/private/tmp/d052-full-source-patches/d052-landscape-ipad.patch"
+  }
+}

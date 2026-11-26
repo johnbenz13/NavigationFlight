@@ -100,6 +100,40 @@ The existing AP-01 layout/camera helpers validate preservation. DEBUG
 `A-progress-heading` extends fixture A with heading-only and duration-only legs.
 See the [AP-04 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-04-implementation.md).
 
+## AP-06 optional cue wheels · 2026-11-25
+
+`RouteAmendmentLegEntry` owns typed cue choices and bounds. Radio channels use
+integer kHz identities with an exact check at the existing `FrequencyMHz`
+boundary; custom values never round into a channel on presentation. Classification
+and custom labels consult an unchanged accepted Double rather than the legacy
+adapter's potentially rounded display string. DEBUG custom-cue fixtures reuse
+the existing accepted-archive restoration helper. Typed
+`selectLegCue` intents reuse the draft's existing leg-entry retention seam,
+without indexing cues by display row. Deliberately selecting one radio wheel
+preserves the other component of a valid channel; an unset/custom radio begins
+at 118 MHz or zero fractional kHz for the unselected component. Clear removes
+the entire optional radio value. No view computes eligibility or operational
+navigation effects.
+
+`RouteAmendmentCueSection` supplies native optional wheel controls, explicit
+spoken units, separate custom-value text and 44 pt clear actions, stacking at
+accessibility text sizes. The existing chart panel retains native note entry,
+keyboard Done and its pinned editor footer. Accepted complete values retain
+their original cue precision/spacing through the existing lossless adapter.
+Explicit cue-choice tracking distinguishes a deliberate replacement from an
+untouched accepted value even when legacy display strings are identical.
+While a field is focused, a small `UIViewRepresentable` observes native
+keyboard-frame notifications and converts the posting screen’s coordinates into
+the chart panel’s local bounds. The parent keeps its existing
+workspace/map sizing; the panel neither guesses keyboard height nor subtracts
+a safe-area inset twice. Its deferred, deduplicated callback stays on the main
+actor. Focused scrolling keeps the keyboard open so note and Done remain reachable
+at normal and maximum Larger Text.
+The operational cue projector, recording schema, map geometry and Flight engine
+are unchanged. This supersedes preparation altitude/frequency text inputs from
+the earlier checkpoints; source observations and historical approvals remain.
+See the [AP-06 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md).
+
 ## AP-05 leg duration wheels · 2026-11-25
 
 `RouteAmendmentTimeSection` renders native optional-integer wheel selections,
@@ -119,6 +153,32 @@ accessibility with explicit minute/second labels. No operational clock, estimato
 recording schema or draft store changes. The old time controls described in the
 AP-04 checkpoint are superseded within preparation only. See the
 [AP-05 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-05-implementation.md).
+
+## D05.2 implementation boundary · 2026-11-25
+
+The product D05.2 checkpoint supersedes the preparation-only heading wheel and
+60:00 entry limit. `RouteAmendmentLegEntry` owns cyclic duration deltas, carry,
+borrowing, partial/legacy preservation and the1…3599-second validation boundary.
+Draft intents retain entry by logical directed leg, with no operational events.
+The heading presentation owns only transient unwrapped angle, touch/coast and
+cancellation state. It sends magnetic integer values through existing edit intents.
+Its touch shape is the upper44pt arc band; the upright value and surrounding
+space permit parent scrolling. Accessibility exposes one adjustable magnetic value.
+Time uses native cyclic picker presentation and sends physical row deltas through
+one typed intent, shared by touch and accessibility. Recentring is presentation
+only and sends no edit. Closing/replacing a control cancels its transient motion.
+
+Figma67:146 supplies390pt editor/16pt insets/18pt radius,176pt compass,
+44pt heading/Clear row, paired152pt time groups/14pt gap/110×108pt native wheels.
+The normal-text target is643pt high; accessibility layouts grow/scroll. The
+accessibility compass reserves360pt, places the scaled readout above its arc
+and limits arc labels to cardinals. This is an owner-authorized adaptation of
+the approved main direction, not a separately approved Figma frame. Retain
+Inspect original even though omitted from the illustrative D05.2 context. F05
+cues, Check comparison and the existing native keyboard bridge remain unchanged.
+The owner’s latest implementation authorization supersedes the handoff’s additional
+paired-design approval gate; actual gesture feel and adapted states still require
+runtime evidence and owner visual acceptance. The AP-06 ledger records the revision.
 
 ## AP-01 workspace ownership · 2026-11-24
 

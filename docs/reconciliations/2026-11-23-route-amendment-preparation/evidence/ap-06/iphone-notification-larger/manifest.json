@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "57749C57-B51A-4C38-B154-169504544130.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap06-note-keyboard-larger-portrait_0_9076785F-64BF-45D5-82D6-35F5939C08B9.png",
+        "timestamp" : 1795628509.644
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testOptionalNoteKeyboardWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testOptionalNoteKeyboardWithLargerText"
+  }
+]

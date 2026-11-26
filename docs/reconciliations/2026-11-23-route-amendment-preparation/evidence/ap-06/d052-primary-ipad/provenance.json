@@ -1,0 +1,119 @@
+{
+  "exportedAt": "2026-11-25T22:23:02.515237+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.25_23-39-28-+0200.xcresult",
+  "resultInfoSHA256": "5660bb203060383f22ddc94bcb3b2f2ef81735bf551176dbd661c479b6cc2aa5",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 2,
+        "passedTests": 260,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 2,
+    "finishTime": 1795643155.362,
+    "passedTests": 168,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795642768.947,
+    "statistics": [
+      {
+        "subtitle": "119 test runs",
+        "title": "27 tests ran with dynamic parameters"
+      }
+    ],
+    "testFailures": [
+      {
+        "failureText": "Expectation failed: motion.move(angle: 179) == 359\nmotion.move(angle: 179) \u2192 nil",
+        "targetName": "NavigationFlightTests",
+        "testIdentifier": 54,
+        "testIdentifierString": "NavigationFlightTests/compassMotionNeverJumpsOnContactAndCrossesNorthContinuously()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightTests/NavigationFlightTests/compassMotionNeverJumpsOnContactAndCrossesNorthContinuously()",
+        "testName": "compassMotionNeverJumpsOnContactAndCrossesNorthContinuously()"
+      },
+      {
+        "failureText": "XCTAssertEqual failed: (\"Leg time, 03 minutes, 00 seconds\") is not equal to (\"Leg time, 04 minutes, 00 seconds\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 170,
+        "testIdentifierString": "NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testD052SecondsCarryBorrowAndFullBoundary",
+        "testName": "testD052SecondsCarryBorrowAndFullBoundary()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [
+      {
+        "category": "Longest Test Runs",
+        "impact": "14% of duration",
+        "text": "1 longest test run with outlier durations exceeding 0.07s (three standard deviations)"
+      }
+    ],
+    "totalTestCount": 170
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "b0ff6b39947aef06aa8b7c2f5550a7749a70f5a8",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\nAM NavigationFlight/Features/Cockpit/RouteAmendmentHeadingMotion.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentHeadingSection.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentTimeSection.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06-implementation.md\nAM docs/research/2026-11-25-heading-and-duration-picker.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCompass.swift\n?? NavigationFlight/Features/Cockpit/RouteAmendmentCyclicTimeWheel.swift\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/d052-cyclic-boundaries/\n?? docs/research/assets/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived. Published source.patch omits the owner-owned research diff; see sourcePatchExclusions. Status remains the original export-time status."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "1AFBFF9B-CD28-48CB-8B44-72713E85F7DA.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-selected-primary_0_3D152403-7B67-4046-A6C4-B3C38D880111.png",
+        "timestamp": 1795642950.932
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "41f377938e24657ee68118291f5f39eb1ed1cc9c8813a1b154d9eb4608aae513"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testD052PrimaryControlsAndNorthCrossing()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "B9127870-6DC3-402D-9184-6AE48288B617.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - d052-unset-primary_0_FD910CE0-FF00-4DCF-8191-E56BB3F854C2.png",
+        "timestamp": 1795642875.795
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "598a9d0ddc73f9b4828e650cda1138bcf763dac24a7cc84a672a9b9a0becdb9f"
+    }
+  ],
+  "sourcePatchExclusions": {
+    "paths": [
+      "docs/research/2026-11-25-heading-and-duration-picker.md"
+    ],
+    "reason": "Owner-owned uncommitted design research is outside this implementation; omitted from published patch only. Remaining unified diff sections are unchanged.",
+    "fullOriginalPatchSHA256": "c24a46d9975e7d8545874eff540a6522da072bd23a8064ae87ff43cf4caaf274",
+    "publishedPatchSHA256": "066b9f48515006f2a8d4d13f8c967dc99ed090900fd6b0c6a2cb98ca480c865d",
+    "fullOriginalRetainedLocally": "/private/tmp/d052-full-source-patches/d052-primary-ipad.patch"
+  }
+}

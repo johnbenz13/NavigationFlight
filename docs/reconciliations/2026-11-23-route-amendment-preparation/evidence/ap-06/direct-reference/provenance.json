@@ -1,0 +1,18 @@
+{
+  "session": "AP06 Reference Runtime",
+  "device": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "fixture": "crossingAmendmentPlanData + A-progress, same transformation as shared test helper",
+  "library": "ap06-direct-reference-20261125-1742",
+  "sourceHead": "8942869d89b5e0dbdf017b066bf3a2a3d18766ce",
+  "build": "DeviceInteractionInstallAndRun before captures; app source included cue labels but preceded F05 note surface correction",
+  "originalDirectory": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/82465A44-9693-45FB-A1D0-D37A209BD38C/DeviceInteractionSynthesize",
+  "captures": {
+    "unset-cues": "17_42_11_777",
+    "motion-on": "17_43_01_280",
+    "motion-cues-reopened": "17_43_21_531",
+    "motion-restored": "17_43_34_038"
+  },
+  "motion": "Original OFF; verified ON and cue disclosure close/reopen; restored OFF",
+  "limits": "Software keyboard absent in device session. Note styling in these captures is historical; final note uses F05 label and 86 pt surface."
+}

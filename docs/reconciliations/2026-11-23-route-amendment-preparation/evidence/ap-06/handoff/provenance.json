@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "16cc8616fa0acebfbd853daa3f1b956f9c558de0",
+  "configuration": "Debug-iphonesimulator",
+  "scheme": "NavigationFlight",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "simulator": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "processID": 1781,
+  "fixture": "A-progress, new disposable library UUID, canonical synthetic plan",
+  "entryState": "Ready Cockpit, landscape, Start leg available",
+  "capture": "xcrun simctl io explicit-UDID screenshot, directly inspected",
+  "sha256": "ce044f43d92a275091761fd5d2f17681509adeebb7bca8e1f60809994b2ad919",
+  "limitation": "DeviceHub opened, but device selection/touch navigation not verified; device interaction handoff stalled and was stopped."
+}

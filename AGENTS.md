@@ -92,6 +92,20 @@ Use the repository's single-context domain-documentation layout. See
 - Add or update tests for changed behavior.
 - Prefer deterministic tests for domain and timing logic.
 
+## Accessibility scope
+
+Owner decision (2026-11-26): prioritize visual cockpit usability and direct touch
+interaction. VoiceOver and other screen-reader support are deferred product scope.
+Run screen-reader audits or add screen-reader acceptance gates only when explicitly
+requested by the owner or required by the active ticket. Screen-reader-only findings
+are nonblocking for delivery; preserve existing support during unrelated changes.
+For PR #248, the owner explicitly accepts deferring the repeated time-wheel row-count
+announcement reported in the design review.
+
+Continue validating legibility, contrast, supported text sizes, touch targets and
+Reduce Motion where relevant to the changed cockpit controls. These remain part of
+pilot usability and existing contracts.
+
 ## Validation
 
 Use progressive verification during implementation.

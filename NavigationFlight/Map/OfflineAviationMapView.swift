@@ -540,7 +540,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
                         // Preview is disposable. Only release commits one validated history entry.
                         var draft = presentation.draft
                         draft.update(.plot(input), route: presentation.route)
-                        overlay.dragPreview = .init(draft: draft, route: presentation.route, isPlotting: presentation.isPlotting)
+                        overlay.dragPreview = .init(draft: draft, route: presentation.route,
+                                                    isPlotting: presentation.isPlotting,
+                                                    showsDrift: presentation.showsDrift)
                     }
                 }
             case .cancelled, .failed:

@@ -1,0 +1,70 @@
+{
+  "device": "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+  "session": "AP08 Compact Final",
+  "sourceBuild": "Final source including removePoint Estimates updated marker; BuildProject19:17passed; fresh InstallAndRun21:17 compact/21:19iPad",
+  "headAtRetention": "b093fc9fea6143e0ada5001857abe2e9f2d21551",
+  "configuration": "Debug",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "files": [
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/prefilled-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_18_21_613-screenshot.png",
+      "sha256": "84ebe4beac5764acd00f4b9ec0caf434cf5403ca19a53949c196d3d673a105be"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/prefilled-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_18_21_613-hierarchy.txt",
+      "sha256": "b62c5b2f85df31b8c321c264775172515b01350ba788f4bf51a4b2cfb1cd02b3"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/editor-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_18_33_839-screenshot.png",
+      "sha256": "7997b1c4d18e58277fbb9afc0c792a6487358da597e866071688205a090d0080"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/editor-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_18_33_839-hierarchy.txt",
+      "sha256": "ef03d6bc8bee3a7471d89a97bb3c4d991ec6bcbf6ba7b0d1b1c663accbb6b7c4"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/time-0203-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_06_001-screenshot.png",
+      "sha256": "01c805f8103e920d24d923362882ddd66da7526136eb4e335e730e5727b37c37"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/time-0203-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_06_001-hierarchy.txt",
+      "sha256": "a7f7022544732662413f06024b3f7e6484063aa3d456b0f187d893308b8da845"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/override-done-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_17_130-screenshot.png",
+      "sha256": "39dbdb3d882e51b2d14a9d87faebdfb2a65858af09bf93a76211e9fc550651e1"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/override-done-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_17_130-hierarchy.txt",
+      "sha256": "52ef86f57d9a1bede6640af6266e51f52d57ba734f5fae16ce2218594f2ce127"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/updated-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_19_861-screenshot.png",
+      "sha256": "d48f2c855702a34fe93f42ad84c71da38e45510c26598e1f53a3baee58e6b027"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/updated-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_19_861-hierarchy.txt",
+      "sha256": "e619b1cc7a0f5a607b062b5032567263d3791f6c591f1759814513f078413d8f"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/undo-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_31_966-screenshot.png",
+      "sha256": "ba8f0d1f54dc548aca017acb3a649a90ddd42c25aa041cfa41daee93e6a7825e"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/compact-direct/undo-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Compact Final-21_19_31_966-hierarchy.txt",
+      "sha256": "52ef86f57d9a1bede6640af6266e51f52d57ba734f5fae16ce2218594f2ce127"
+    }
+  ]
+}

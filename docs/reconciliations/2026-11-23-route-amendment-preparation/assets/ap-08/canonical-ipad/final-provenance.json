@@ -1,0 +1,40 @@
+{
+  "device": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "session": "AP08 Final iPad Handoff",
+  "sourceBuild": "Final source including removePoint Estimates updated marker; BuildProject19:17passed; fresh InstallAndRun21:17 compact/21:19iPad",
+  "headAtRetention": "b093fc9fea6143e0ada5001857abe2e9f2d21551",
+  "configuration": "Debug",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "files": [
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-prefilled-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_06_653-screenshot.png",
+      "sha256": "eb5ba6190428d513eb7721cff588cb3a37ab2556f9acd7182e63655be088da79"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-prefilled-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_06_653-hierarchy.txt",
+      "sha256": "f1ee89da8d64cd4aa0f7355a219ef1db2ed1092cd719cd4ed2772f0c9ee7000e"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-delete-merged-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_36_817-screenshot.png",
+      "sha256": "48f652c10ed1da97582f991fd3fcaa1be7fa291dc5223efdd91f16fe5fa1d27f"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-delete-merged-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_36_817-hierarchy.txt",
+      "sha256": "c5158ebc29feb1ee7a5399e9afbc45c2454a2e91c519be224f142990b0e8f4c5"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-undo-handoff-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_42_467-screenshot.png",
+      "sha256": "de76deb001be7f4e768001d8d0515bec3b8bf24a4541d6917b62e1b3f0661f81"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/final-undo-handoff-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Final iPad Handoff-21_20_42_467-hierarchy.txt",
+      "sha256": "f1ee89da8d64cd4aa0f7355a219ef1db2ed1092cd719cd4ed2772f0c9ee7000e"
+    }
+  ]
+}

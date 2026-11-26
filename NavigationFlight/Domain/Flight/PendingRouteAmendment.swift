@@ -34,6 +34,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
         let altitudeFeet: Double?
         let frequencyMHz: Double?
         let visualReference: String?
+        var estimateProvenance: RouteAmendmentLegEntry.EstimateProvenance? = nil
 
         init(id: UUID, from: Stop, to: Stop, values: RouteAmendmentLegValues) {
             self.id = id
@@ -44,6 +45,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
             altitudeFeet = values.altitude?.value
             frequencyMHz = values.frequency?.value
             visualReference = values.visualReference
+            estimateProvenance = values.estimateProvenance
         }
 
         var isValid: Bool {

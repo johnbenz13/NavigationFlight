@@ -14,6 +14,144 @@ private final class FixtureLocator {}
 
 struct NavigationFlightTests {
     @MainActor
+    @Test(arguments: [RouteAmendmentMode.manual, .assisted])
+    func amendmentModeIsCapturedUntilTheNextDraft(_ initial: RouteAmendmentMode) throws {
+        var state = CockpitFeatureState()
+        try state.accept(try twoLegFlight())
+        try state.startLeg(at: Date(timeIntervalSince1970: 1000))
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open, mode: initial)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)))
+        state.updateRouteAmendment(.pause)
+        let next: RouteAmendmentMode = initial == .manual ? .assisted : .manual
+        state.updateRouteAmendment(.open, mode: next)
+        #expect(state.routeAmendmentDraft?.mode == initial)
+        state.updateRouteAmendment(.discard)
+        state.updateRouteAmendment(.open, mode: next)
+        #expect(state.routeAmendmentDraft?.mode == next)
+    }
+
+    @MainActor
+    @Test func assistedGeometryOverrideUndoAndSavedProvenance() throws {
+        let plan = try twoLegFlight()
+        var state = CockpitFeatureState()
+        try state.accept(plan)
+        try state.startLeg(at: Date(timeIntervalSince1970: 1000))
+        let route = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open, mode: .assisted)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)))
+        for offset in [0.01, 0.02] {
+            let start = route.coordinate(at: route.anchor(at: 0, fraction: 0.2))
+            state.updateRouteAmendment(.plot(.init(position: .init(
+                latitudeDegrees: start.latitudeDegrees + offset,
+                longitudeDegrees: start.longitudeDegrees + 0.01))))
+        }
+        state.updateRouteAmendment(.chooseRejoin)
+        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 1, fraction: 1)))
+        var draft = try #require(state.routeAmendmentDraft)
+        let inputs = RouteAmendmentEstimator.Inputs(mode: .noWind, magneticVariationEast: .init(value: 5),
+                                                  planningAirspeed: .init(value: 90), defaultWind: nil)
+        let first = try #require(draft.reviewLegs(on: route).first)
+        #expect(first.entry.values != nil)
+        #expect(first.entry.estimateProvenance?.source == .noWind)
+        draft.update(.editLeg(first.id), route: route, estimateInputs: inputs)
+        draft.update(.selectLegTime(.minutes, 3), route: route, estimateInputs: inputs)
+        draft.update(.selectLegTime(.seconds, 0), route: route, estimateInputs: inputs)
+        draft.update(.editLegField(.visualReference, "Preserved cue"), route: route)
+        draft.update(.saveLegValues, route: route)
+        let before = draft.reviewLegs(on: route)
+        #expect(before[0].entry.durationSeconds == 180)
+        #expect(before[0].entry.estimateProvenance?.durationOverridden == true)
+        let point = try #require(draft.points.first)
+        let moved = WGS84Coordinate(latitudeDegrees: point.position.latitudeDegrees + 0.002,
+                                    longitudeDegrees: point.position.longitudeDegrees + 0.001)
+        draft.update(.plot(.init(position: moved, correction: .move(point.id))), route: route, estimateInputs: inputs)
+        let after = draft.reviewLegs(on: route)
+        #expect(after.count == 3)
+        for index in 0..<2 {
+            let leg = after[index]
+            let result = RouteAmendmentEstimator.estimate(from: leg.from, to: leg.to, inputs: inputs)
+            var expected = before[index].entry
+            expected.prefill(result, geometryUpdated: true)
+            #expect(leg.entry == expected)
+            #expect(leg.entry.estimateStatus == "Estimates updated")
+        }
+        #expect(after[2] == before[2])
+        draft.update(.undo, route: route, estimateInputs: nil)
+        #expect(draft.reviewLegs(on: route) == before)
+        draft.update(.removePoint(point.id), route: route, estimateInputs: inputs)
+        let merged = draft.reviewLegs(on: route)
+        #expect(merged.count == 2)
+        #expect(merged[0].entry.estimateStatus == "Estimates updated")
+        #expect(merged[1].id == before[2].id)
+        #expect(merged[1].from == before[2].from && merged[1].to == before[2].to)
+        #expect(merged[1].entry == before[2].entry)
+        draft.update(.undo, route: route, estimateInputs: nil)
+        #expect(draft.reviewLegs(on: route) == before)
+        draft.update(.pause, route: route)
+        draft.update(.resume, route: route, estimateInputs: nil)
+        #expect(draft.reviewLegs(on: route) == before)
+        let values = try #require(before[0].entry.values)
+        let stop = PendingRouteAmendment.Stop(id: UUID(), name: "Test", position: first.from)
+        let saved = PendingRouteAmendment.Leg(id: UUID(), from: stop, to: stop, values: values)
+        let restored = try JSONDecoder().decode(PendingRouteAmendment.Leg.self, from: JSONEncoder().encode(saved))
+        #expect(restored.estimateProvenance == values.estimateProvenance)
+        var legacy = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(saved)) as? [String: Any])
+        legacy.removeValue(forKey: "estimateProvenance")
+        let oldArchive = try JSONDecoder().decode(PendingRouteAmendment.Leg.self,
+                                                from: JSONSerialization.data(withJSONObject: legacy))
+        #expect(oldArchive.estimateProvenance == nil)
+        #expect(RouteAmendmentLegEntry(values: values).estimateProvenance == before[0].entry.estimateProvenance)
+        let flight = try #require(state.flight)
+        draft.update(.review, route: route)
+        let pending = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        let archive = try JSONDecoder().decode(PendingRouteAmendment.self, from: JSONEncoder().encode(pending))
+        let recovered = RouteAmendmentDraft(replacing: archive, on: route).reviewLegs(on: route)
+        #expect(recovered.map { $0.entry.values } == before.map { $0.entry.values })
+        #expect(recovered.map { $0.entry.estimateProvenance } == before.map { $0.entry.estimateProvenance })
+        #expect(state.flight?.pendingRouteAmendment == nil)
+    }
+
+    @MainActor
+    @Test func assistedUnavailableAndOutOfRangePrefillRequirePilotEntry() {
+        var entry = RouteAmendmentLegEntry()
+        entry.prefill(.unavailable, geometryUpdated: false)
+        #expect(entry.heading.isEmpty && entry.duration.isEmpty)
+        #expect(entry.values == nil)
+        entry[.heading] = "087"
+        entry.selectTime(.minutes, value: 3)
+        #expect(entry.values?.durationSeconds == 180)
+        entry.prefill(.available(direction: .init(value: 359.8), durationSeconds: 3600, provenance: .noWind),
+                      geometryUpdated: true)
+        #expect(entry.magneticHeading == 360)
+        #expect(entry.durationSeconds == nil)
+        #expect(entry.values == nil)
+    }
+
+    @MainActor
+    @Test(arguments: [RouteAmendmentMode.manual, .assisted])
+    func preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_ mode: RouteAmendmentMode) {
+        let from = AviationMapCoordinate(latitude: 32, longitude: 35)
+        let to = AviationMapCoordinate(latitude: 32.03, longitude: 35.03)
+        func aids(_ seconds: Int?, _ drift: Bool) -> ([AviationMapMinuteMarker], [AviationMapDriftReferenceArm]) {
+            AviationMapSymbology.preparationAids(from: from, to: to, duration: seconds,
+                                                mode: mode, showsDrift: drift, driftAngle: 10)
+        }
+        let initial = aids(135, true)
+        let edited = aids(180, false)
+        if mode == .manual {
+            #expect(initial.0.isEmpty && initial.1.isEmpty && edited.0.isEmpty && edited.1.isEmpty)
+        } else {
+            #expect(initial.0.map(\.fraction) == [60.0 / 135, 120.0 / 135])
+            #expect(edited.0.map(\.fraction) == [1.0 / 3, 2.0 / 3, 1])
+            #expect(initial.1.count == 2 && edited.1.isEmpty)
+            #expect(aids(180, true).0 == edited.0)
+            #expect(edited.0.allSatisfy { $0.fraction <= 1 })
+            #expect(aids(nil, false).0.isEmpty)
+        }
+    }
+
+    @MainActor
     @Test(arguments: [0, 1, 2])
     func pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_ index: Int) throws {
         let (route, original) = try correctionDraft()

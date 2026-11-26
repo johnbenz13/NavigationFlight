@@ -1,0 +1,139 @@
+Device orientation: Unknown
+------------------------
+Application bundle identifier: com.bensaidj.NavigationFlight
+Application UI orientation: Portrait
+Application, pid: 1770, label: 'NavigationFlight'
+ Window, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+  Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+  Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+   Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+    Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+     Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+      Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+       Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+        Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+         Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+          Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+           Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+            Other, {{0.0, 47.0}, {390.0, 714.0}}, identifier: 'amendment-chart-panel', hitPoint: {195.0, 404.0}
+             ScrollView, {{8.0, 125.0}, {374.0, 535.7}}, hitPoint: {195.0, 392.8}
+              Other, {{8.0, 125.0}, {374.0, 591.0}}, hitPoint: {195.0, 420.5}
+               StaticText, {{24.0, 141.0}, {178.0, 14.3}}, label: 'ASSISTED · LEG 1 · MAGNETIC', hitPoint: {113.0, 148.2}
+               StaticText, {{24.0, 163.3}, {195.0, 24.0}}, label: '⁨Leg 1 · 46%⁩ → ⁨Point 1⁩', hitPoint: {121.5, 175.3}
+               StaticText, {{24.0, 195.3}, {67.0, 14.3}}, identifier: 'amendment-estimate-status', label: 'Time edited', hitPoint: {57.5, 202.5}
+               StaticText, {{24.0, 229.5}, {142.0, 20.3}}, label: 'Magnetic heading', hitPoint: {95.0, 239.7}
+               Button, {{322.0, 217.7}, {44.0, 44.0}}, identifier: 'clear-amendment-heading', label: 'Clear magnetic heading', hitPoint: {344.0, 239.7}
+               Other, {{48.0, 290.7}, {294.0, 147.0}}, identifier: 'amendment-field-heading', label: 'Magnetic heading', value: 035 degrees, hitPoint: {195.0, 364.2}
+                Other, {{24.0, 267.7}, {342.0, 176.0}}, hitPoint: {195.0, 355.7}
+                Other, {{193.7, 278.7}, {3.0, 26.0}}, hitPoint: {195.2, 291.7}
+                StaticText, {{154.7, 331.0}, {80.7, 40.7}}, label: '035°', hitPoint: {195.0, 351.4}
+                StaticText, {{166.0, 379.7}, {58.0, 13.3}}, label: 'MAGNETIC', hitPoint: {195.0, 386.4}
+                StaticText, {{106.0, 401.0}, {178.0, 13.3}}, label: 'Flick for speed · drag slowly for 1°', hitPoint: {195.0, 407.7}
+               StaticText, {{24.0, 466.7}, {68.3, 20.3}}, label: 'Leg time', hitPoint: {58.2, 476.8}
+               StaticText, {{310.0, 464.0}, {56.0, 24.0}}, identifier: 'amendment-duration-readout', label: 'Leg time, 02 minutes, 03 seconds', hitPoint: {338.0, 476.0}
+               StaticText, {{24.0, 506.2}, {48.3, 15.7}}, label: 'Minutes', hitPoint: {48.2, 514.0}
+               Button, {{132.0, 492.0}, {44.0, 44.0}}, identifier: 'clear-amendment-minutes', label: 'Clear leg time minutes', hitPoint: {154.0, 514.0}
+               StaticText, {{190.0, 506.2}, {52.7, 15.7}}, label: 'Seconds', hitPoint: {216.3, 514.0}
+               Button, {{298.0, 492.0}, {44.0, 44.0}}, identifier: 'clear-amendment-seconds', label: 'Clear leg time seconds', hitPoint: {320.0, 514.0}
+               Picker, {{45.0, 540.0}, {110.0, 108.0}}, identifier: 'amendment-field-minutes', label: 'Leg time minutes', hitPoint: {100.0, 594.0}
+                PickerWheel, {{45.0, 540.0}, {110.0, 108.0}}, value: Leg time minutes, ..., hitPoint: {100.0, 594.0}
+               Picker, {{211.0, 540.0}, {110.0, 108.0}}, identifier: 'amendment-field-seconds', label: 'Leg time seconds', hitPoint: {266.0, 594.0}
+                PickerWheel, {{211.0, 540.0}, {110.0, 108.0}}, value: Leg time seconds, ..., hitPoint: {266.0, 594.0}
+               Button, {{24.0, 656.0}, {167.0, 44.0}}, identifier: 'inspect-amendment-original', label: 'Inspect original leg', hitPoint: {107.5, 678.0}
+               Button, {{199.0, 656.0}, {167.0, 44.0}}, identifier: 'toggle-amendment-cues', label: 'Optional cues ›', hitPoint: {282.5, 678.0}
+              Other, {{349.0, 125.0}, {30.0, 535.7}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {364.0, 392.8}
+               Other, {{376.0, 128.0}, {3.0, 480.0}}, hitPoint: {377.5, 368.0}
+              Other, {{349.0, 125.0}, {30.0, 535.7}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {364.0, 392.8}
+               Other, {{376.0, 128.0}, {3.0, 480.0}}, hitPoint: {377.5, 368.0}
+             Button, {{24.0, 667.0}, {167.0, 58.0}}, identifier: 'check-working-amendment-leg', label: 'Check', hitPoint: {107.5, 696.0}
+             Button, {{199.0, 667.0}, {167.0, 58.0}}, identifier: 'save-amendment-leg-values', label: 'Done', hitPoint: {282.5, 696.0}
+             StaticText, {{24.0, 733.0}, {254.7, 13.3}}, label: 'Done keeps each entry, even if a field is missing.', hitPoint: {151.3, 739.7}
+            Other, {{0.0, 47.0}, {390.0, 714.0}}, hitPoint: {195.0, 404.0}
+            Button, {{268.0, 64.0}, {48.0, 48.0}}, identifier: 'amend-route', label: 'Hide amendment workspace', value: Ready · not armed, hitPoint: {292.0, 88.0}
+             Image, {{284.3, 80.0}, {16.0, 16.0}}, identifier: 'pencil', label: 'Edit', hitPoint: {292.3, 88.0}
+             Image, {{304.0, 98.3}, {6.0, 8.0}}, identifier: 'pause.fill', label: 'Pause', hitPoint: {307.0, 102.3}
+            Button, {{322.0, 66.0}, {44.0, 44.0}}, identifier: 'map', label: 'Map tools', hitPoint: {344.0, 88.0}
+            StaticText, {{24.0, 80.8}, {45.0, 14.3}}, identifier: 'leg-status', label: 'ACTIVE', hitPoint: {46.5, 88.0}
+            StaticText, {{75.0, 77.8}, {4.7, 20.3}}, label: '·', hitPoint: {77.3, 88.0}
+            StaticText, {{85.7, 80.8}, {71.0, 14.3}}, label: 'LEG 1 OF 25', hitPoint: {121.2, 88.0}
+            StaticText, {{162.7, 77.8}, {4.7, 20.3}}, label: '·', hitPoint: {165.0, 88.0}
+            Other, {{173.3, 79.0}, {46.0, 18.0}}, label: 'From Kadima to Ramat', hitPoint: {196.3, 88.0}
+             StaticText, {{173.3, 79.0}, {46.0, 18.0}}, label: 'Ramat', hitPoint: {196.3, 88.0}
+            Other, {{0.0, 47.0}, {390.0, 388.0}}, identifier: 'aviation-map', label: 'Map', value: 32.16155322325926|..., hitPoint: {195.0, 241.0}
+             Button, {{336.2, 49.2}, {51.6, 51.6}}, label: 'Compass', value: south-southwest, hitPoint: {362.0, 75.0}
+             Button, {{356.3, 401.3}, {25.7, 25.7}}, label: 'About this map', hitPoint: {369.2, 414.2}
+            StaticText, {{12.0, 123.0}, {280.3, 50.7}}, label: 'Original retained, Original bypassed, Proposed, Original minute marks', hitPoint: {152.2, 148.3}
+             StaticText, {{45.0, 132.0}, {98.3, 14.3}}, label: 'Original retained', hitPoint: {94.2, 139.2}
+             StaticText, {{177.3, 132.0}, {106.0, 14.3}}, label: 'Original bypassed', hitPoint: {230.3, 139.2}
+             StaticText, {{45.0, 150.3}, {56.3, 14.3}}, label: 'Proposed', hitPoint: {73.2, 157.5}
+             StaticText, {{112.7, 150.3}, {148.3, 14.3}}, label: 'Original minute marks', hitPoint: {186.8, 157.5}
+             Image, {{112.7, 152.7}, {9.7, 9.7}}, identifier: 'line.diagonal', label: 'Diagonal Line', hitPoint: {117.5, 157.5}
+            Other, {{16.0, 439.0}, {358.0, 91.3}}, identifier: 'amendment-current-leg', hitPoint: {195.0, 484.7}
+             StaticText, {{26.0, 443.0}, {142.0, 14.3}}, label: 'LEG 1 · ⁨Kadima⁩ → ⁨Ramat⁩', hitPoint: {97.0, 450.2}
+             StaticText, {{26.0, 459.3}, {32.3, 14.3}}, label: 'Timer', hitPoint: {42.2, 466.5}
+             StaticText, {{203.0, 459.3}, {104.3, 14.3}}, label: 'Leg time · planned', hitPoint: {255.2, 466.5}
+             StaticText, {{26.0, 475.7}, {61.7, 26.3}}, identifier: 'amendment-leg-elapsed', label: '07:22', hitPoint: {56.8, 488.8}
+             StaticText, {{203.0, 475.7}, {61.7, 26.3}}, identifier: 'amendment-leg-planned', label: '04:17', hitPoint: {233.8, 488.8}
+             StaticText, {{211.0, 508.0}, {78.7, 14.3}}, label: 'Over planned', hitPoint: {250.3, 515.2}
+            StaticText, {{16.0, 544.3}, {159.7, 24.0}}, label: 'Amend · Assisted', hitPoint: {95.8, 556.3}
+            StaticText, {{312.0, 547.3}, {62.0, 18.0}}, identifier: 'amendment-drawing-status', label: 'Rejoined', hitPoint: {343.0, 556.3}
+            ScrollView, {{16.0, 582.3}, {358.0, 116.3}}, identifier: 'route-amendment-console', hitPoint: {195.0, 640.5}
+             Other, {{16.0, 582.3}, {358.0, 208.0}}, hitPoint: {195.0, 686.3}
+              Button, {{15.2, 581.6}, {359.5, 68.2}}, identifier: 'edit-amendment-leg', label: 'Proposed leg 1, ⁨Leg 1 · 46%⁩ → ⁨Point 1⁩', value: Magnetic heading 0..., Selected, hitPoint: {195.0, 615.7}
+               StaticText, {{26.0, 586.3}, {185.7, 20.3}}, label: '1  ⁨Leg 1 · 46%⁩ → ⁨Point 1⁩', hitPoint: {118.8, 596.5}
+               StaticText, {{26.0, 609.7}, {232.7, 18.0}}, label: 'Magnetic 035° · Leg time 02:03  ›', hitPoint: {142.3, 618.7}
+               StaticText, {{26.0, 630.7}, {67.0, 14.3}}, label: 'Time edited', hitPoint: {59.5, 637.8}
+              Button, {{16.0, 653.0}, {358.0, 66.7}}, identifier: 'edit-amendment-leg', label: 'Proposed leg 2, ⁨Point 1⁩ → ⁨Point 2⁩', value: Magnetic heading 3..., hitPoint: {195.0, 686.3}
+               StaticText, {{26.0, 657.0}, {150.3, 20.3}}, label: '2  ⁨Point 1⁩ → ⁨Point 2⁩', hitPoint: {101.2, 667.2}
+               StaticText, {{26.0, 680.3}, {232.7, 18.0}}, label: 'Magnetic 332° · Leg time 00:52  ›', hitPoint: {142.3, 689.3}
+               StaticText, {{26.0, 701.3}, {109.7, 14.3}}, label: 'Estimates · no wind', hitPoint: {80.8, 708.5}
+              Button, {{16.0, 723.7}, {358.0, 66.7}}, identifier: 'edit-amendment-leg', label: 'Proposed leg 3, ⁨Point 2⁩ → ⁨West⁩', value: Magnetic heading 2..., hitPoint: {195.0, 757.0}
+               StaticText, {{26.0, 727.7}, {138.0, 20.3}}, label: '3  ⁨Point 2⁩ → ⁨West⁩', hitPoint: {95.0, 737.8}
+               StaticText, {{26.0, 751.0}, {232.7, 18.0}}, label: 'Magnetic 277° · Leg time 01:11  ›', hitPoint: {142.3, 760.0}
+               StaticText, {{26.0, 772.0}, {109.7, 14.3}}, label: 'Estimates · no wind', hitPoint: {80.8, 779.2}
+             Other, {{341.0, 582.3}, {30.0, 116.3}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {356.0, 640.5}
+              Other, {{368.0, 585.3}, {3.0, 61.7}}, hitPoint: {369.5, 616.2}
+             Other, {{341.0, 582.3}, {30.0, 116.3}}, label: 'Vertical scroll bar, 2 pages', value: 0%, hitPoint: {356.0, 640.5}
+              Other, {{368.0, 585.3}, {3.0, 61.7}}, hitPoint: {369.5, 616.2}
+            StaticText, {{16.0, 698.7}, {124.0, 14.3}}, identifier: 'amendment-readiness', label: 'Ready to arm · 3 legs', hitPoint: {78.0, 705.8}
+            Button, {{19.7, 726.0}, {37.0, 18.0}}, identifier: 'undo-amendment-plot', label: 'Undo', Disabled, hitPoint: {38.2, 735.0}
+            Button, {{68.0, 726.0}, {52.3, 18.0}}, identifier: 'discard-amendment-draft', label: 'Discard', hitPoint: {94.2, 735.0}
+            Button, {{142.0, 719.0}, {52.7, 32.0}}, identifier: 'arm-amendment', label: 'Arm', Disabled, hitPoint: {168.3, 735.0}
+       Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+        Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+         Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+          TabBar, {{0.0, 761.0}, {390.0, 83.0}}, label: 'Tab Bar', hitPoint: {195.0, 802.5}
+           Other, {{21.0, 761.0}, {348.0, 62.0}}, hitPoint: {195.0, 792.0}
+            Other, {{21.0, 761.0}, {80.5, 54.0}}, hitPoint: {61.2, 788.0}
+            Other, {{21.0, 761.0}, {348.0, 62.0}}, hitPoint: {195.0, 792.0}
+             Button, {{25.0, 765.0}, {80.5, 54.0}}, label: 'Cockpit, recording warning', Selected, hitPoint: {65.2, 792.0}
+              Image, {{50.7, 771.3}, {29.0, 27.0}}, identifier: 'airplane', label: 'airplane mode', hitPoint: {65.2, 784.8}
+             Button, {{85.5, 765.0}, {98.0, 54.0}}, label: 'Flight Plans', hitPoint: {134.5, 792.0}
+              Image, {{118.5, 772.3}, {32.0, 25.0}}, identifier: 'folder.fill', label: 'move', hitPoint: {134.5, 784.8}
+             Button, {{163.5, 765.0}, {80.5, 54.0}}, label: 'Flights', hitPoint: {203.8, 792.0}
+              Image, {{189.9, 771.3}, {27.7, 27.3}}, identifier: 'clock.arrow.trianglehead.counterclockwise.rotate.90', label: 'Clock with a counterclockwise triangle-headed arrow rotated 90 degrees', hitPoint: {203.7, 785.0}
+             Button, {{224.0, 765.0}, {80.5, 54.0}}, label: 'Charts', hitPoint: {264.3, 792.0}
+              Image, {{251.7, 770.7}, {25.3, 28.7}}, identifier: 'document.fill', label: 'Document page, filled', hitPoint: {264.4, 785.0}
+             Button, {{284.5, 765.0}, {80.5, 54.0}}, label: 'More', hitPoint: {324.8, 792.0}
+              Image, {{312.2, 780.7}, {25.0, 8.7}}, identifier: 'ellipsis', label: 'More', hitPoint: {324.7, 785.0}
+            Other, {{21.0, 761.0}, {348.0, 62.0}}, hitPoint: {195.0, 792.0}
+            Other, {{25.0, 765.0}, {80.5, 54.0}}, hitPoint: {65.2, 792.0}
+             Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+              Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+              Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+               Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+                Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+                 Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+                Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+               Other, {{25.0, 765.0}, {80.3, 54.0}}, hitPoint: {65.2, 792.0}
+         Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+          Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+           Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+            Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+             Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+              Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+            Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+             Other, {{0.0, 761.0}, {390.0, 83.0}}, hitPoint: {195.0, 802.5}
+ Window, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+  Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}
+   Other, {{0.0, 0.0}, {390.0, 844.0}}, hitPoint: {195.0, 422.0}

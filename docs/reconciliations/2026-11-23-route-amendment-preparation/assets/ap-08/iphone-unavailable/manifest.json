@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "1A0313AD-50F9-498F-A122-C0CBEF1C8DC9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-unavailable-pilot-entry_0_D772CEB0-5817-4EB7-83D9-E0A2A8461C39.png",
+        "timestamp" : 1795712061.067
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "0C97FC39-CE0C-4392-84B9-1D03832A261C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-unavailable_0_BDDEB9AB-FF05-4B39-82CD-DDB80ADAC998.png",
+        "timestamp" : 1795711893.933
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAssistedUnavailableEstimatesAcceptPilotValues()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAssistedUnavailableEstimatesAcceptPilotValues"
+  }
+]

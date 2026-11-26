@@ -24,6 +24,15 @@ struct RouteAmendmentEstimateTests {
         #expect(abs(direction.value - heading) < 0.000000001)
         #expect(duration == seconds)
         #expect(source == provenance)
+        var entry = RouteAmendmentLegEntry()
+        entry.prefill(result, geometryUpdated: false)
+        #expect(entry.magneticHeading == Int(heading))
+        #expect(entry.durationSeconds == seconds)
+        #expect(entry.estimateProvenance?.source == (mode == .noWind ? .noWind : .plannedWind))
+        entry[.duration] = "03:00"
+        #expect(entry.durationSeconds == 180)
+        #expect(entry.estimateProvenance?.durationOverridden == true)
+        #expect(entry.estimateProvenance?.headingOverridden == false)
     }
 
     @Test(arguments: [

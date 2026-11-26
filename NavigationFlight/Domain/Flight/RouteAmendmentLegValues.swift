@@ -11,6 +11,7 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
     let altitude: AltitudeFeet?
     let frequency: FrequencyMHz?
     let visualReference: String?
+    var estimateProvenance: RouteAmendmentLegEntry.EstimateProvenance? = nil
 
     var headingText: String {
         String(format: "%03d", headingMagnetic == 0 ? 360 : headingMagnetic)
@@ -18,6 +19,50 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
 }
 
 nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+    struct EstimateProvenance: Codable, Equatable, Sendable {
+        enum Source: String, Codable, Sendable { case noWind, plannedWind, unavailable }
+        var source: Source
+        var headingOverridden = false
+        var durationOverridden = false
+        var geometryUpdated = false
+    }
+
+    private(set) var estimateProvenance: EstimateProvenance?
+
+    var estimateStatus: String? {
+        guard let provenance = estimateProvenance else { return nil }
+        if provenance.geometryUpdated { return "Estimates updated" }
+        if provenance.headingOverridden && provenance.durationOverridden { return "Heading and time edited" }
+        if provenance.headingOverridden { return "Heading edited" }
+        if provenance.durationOverridden { return "Time edited" }
+        switch provenance.source {
+        case .noWind: return "Estimates · no wind"
+        case .plannedWind: return "Estimates · planned wind"
+        case .unavailable: return "Estimates unavailable · enter values"
+        }
+    }
+
+    /// Called once for newly formed/changed geometry. Reopening, Check and Undo
+    /// never invoke this path, so accepted overrides retain their exact values.
+    mutating func prefill(_ result: RouteAmendmentEstimator.Result, geometryUpdated: Bool) {
+        heading = ""
+        minutes = ""
+        seconds = ""
+        durationWasEdited = true
+        switch result {
+        case .available(let direction, let duration, let source):
+            let degrees = Int(direction.value.rounded()) % 360
+            heading = String(format: "%03d", degrees == 0 ? 360 : degrees)
+            // New estimates obey the preparation time range. Never wrap or clamp
+            // an out-of-range estimate into a plausible pilot duration.
+            if (1..<3600).contains(duration) { self.duration = Self.durationText(duration) }
+            estimateProvenance = .init(source: source == .noWind ? .noWind : .plannedWind,
+                                       geometryUpdated: geometryUpdated)
+        case .unavailable:
+            estimateProvenance = .init(source: .unavailable, geometryUpdated: geometryUpdated)
+        }
+    }
+
     enum TimeComponent: String, CaseIterable, Sendable {
         case minutes, seconds
     }
@@ -66,6 +111,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
 
     init(values: RouteAmendmentLegValues? = nil) {
         acceptedValues = values
+        estimateProvenance = values?.estimateProvenance
         guard let values else { return }
         heading = values.headingText
         duration = Self.durationText(values.durationSeconds)
@@ -88,6 +134,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         }
         set {
             guard allowsInput(newValue, for: field) else { return }
+            markOverride(field)
             switch field {
             case .heading: heading = newValue
             case .duration:
@@ -129,7 +176,8 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
             durationSeconds: durationSeconds,
             altitude: !altitudeWasEdited && altitude == original?.altitude ? acceptedValues?.altitude : decimal(altitude).map(AltitudeFeet.init(value:)),
             frequency: !frequencyWasEdited && frequency == original?.frequency ? acceptedValues?.frequency : frequencyMHz.map(FrequencyMHz.init(value:)),
-            visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note
+            visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note,
+            estimateProvenance: estimateProvenance
         )
     }
 
@@ -172,6 +220,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
     /// component to zero; later clears preserve the independently edited component.
     mutating func selectTime(_ component: TimeComponent, value: Int?) {
         if let value, !timeOptions(component).contains(value) { return }
+        markOverride(.duration)
         let untouched = minutes.isEmpty && seconds.isEmpty
         durationWasEdited = true
         let text = value.map { String(format: "%02d", $0) } ?? ""
@@ -287,6 +336,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
 
     mutating func adjustHeading(by delta: Int) {
         guard delta == 1 || delta == -1 else { return }
+        markOverride(.heading)
         let value = (magneticHeading ?? 0) + delta
         let wrapped = (value % 360 + 360) % 360
         heading = String(format: "%03d", wrapped == 0 ? 360 : wrapped)
@@ -296,8 +346,19 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
         guard delta == 5 || delta == -5 else { return }
         let adjustment = (durationSeconds ?? 0).addingReportingOverflow(delta)
         guard !adjustment.overflow, (1...3600).contains(adjustment.partialValue) else { return }
+        markOverride(.duration)
         durationWasEdited = true
         duration = Self.durationText(adjustment.partialValue)
+    }
+
+    private mutating func markOverride(_ field: Field) {
+        guard estimateProvenance != nil else { return }
+        switch field {
+        case .heading: estimateProvenance?.headingOverridden = true
+        case .duration, .minutes, .seconds: estimateProvenance?.durationOverridden = true
+        default: return
+        }
+        estimateProvenance?.geometryUpdated = false
     }
 
     func allowsInput(_ text: String, for field: Field) -> Bool {

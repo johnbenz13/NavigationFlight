@@ -1,0 +1,62 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "46E51A77-7430-4157-8B69-2FCB0060C10F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-undo-restored_0_2CB20A2D-C22D-42B0-BAC0-6F80F7CCBED6.png",
+        "timestamp" : 1795711871.586
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "EC14BA70-D71C-4D44-8349-CCEAFF518E0C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-estimates-updated_0_DA68EC53-74B3-45C1-A57B-CE5902FE7128.png",
+        "timestamp" : 1795711865.361
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "59EF4E54-A1CA-4E72-956D-6279D7E17D5A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-drift-off_0_D939B25E-4718-46C3-BB5A-199014494AC0.png",
+        "timestamp" : 1795711859.193
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "AC6589D0-B5AB-4CAB-BB63-F47CB402A98A.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-time-0300_0_88E716F2-3B34-4748-A62C-7BB19AD614E6.png",
+        "timestamp" : 1795711801.121
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "098D4CC1-CEED-4F38-9682-13AE1C72CF64.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-time-0215_0_E4A153C3-3D53-477D-BC6D-8E265B92F01C.png",
+        "timestamp" : 1795711728.559
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "0EA70BCC-99B6-4394-BE01-459F34FE74BC.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-prefilled_0_B2ED9C57-B64C-41E8-8B38-507F90251D67.png",
+        "timestamp" : 1795711653.054
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAssistedPreparationOverridesGeometryAndUndo()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAssistedPreparationOverridesGeometryAndUndo"
+  }
+]

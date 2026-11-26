@@ -1,0 +1,933 @@
+diff --git a/.gitattributes b/.gitattributes
+index 18ca3ff..aa9e30e 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -3,3 +3,4 @@
+ # Retain exact unified-diff context in AP-06 source provenance.
+ docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/**/source.patch whitespace=-blank-at-eol
+ docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/**/source.patch whitespace=-blank-at-eol
++docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/**/source.patch whitespace=-blank-at-eol
+diff --git a/NavigationFlight/Domain/Flight/PendingRouteAmendment.swift b/NavigationFlight/Domain/Flight/PendingRouteAmendment.swift
+index 55e462e..3e6ad75 100644
+--- a/NavigationFlight/Domain/Flight/PendingRouteAmendment.swift
++++ b/NavigationFlight/Domain/Flight/PendingRouteAmendment.swift
+@@ -34,6 +34,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
+         let altitudeFeet: Double?
+         let frequencyMHz: Double?
+         let visualReference: String?
++        var estimateProvenance: RouteAmendmentLegEntry.EstimateProvenance? = nil
+ 
+         init(id: UUID, from: Stop, to: Stop, values: RouteAmendmentLegValues) {
+             self.id = id
+@@ -44,6 +45,7 @@ nonisolated struct PendingRouteAmendment: Codable, Equatable, Sendable {
+             altitudeFeet = values.altitude?.value
+             frequencyMHz = values.frequency?.value
+             visualReference = values.visualReference
++            estimateProvenance = values.estimateProvenance
+         }
+ 
+         var isValid: Bool {
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+index 564b267..d0c2f7e 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+@@ -16,6 +16,7 @@ struct RouteAmendmentRoute: Equatable, Sendable {
+     let legs: [NavigationLeg]
+     let firstAvailable: RouteAmendmentAnchor
+     let identificationPoints: [IdentificationPoint]
++    var driftAngleDegrees: Double = 10
+ 
+     struct OriginalLeg: Identifiable, Equatable, Sendable {
+         let id: UUID
+@@ -49,10 +50,12 @@ struct RouteAmendmentRoute: Equatable, Sendable {
+ 
+     init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
+          planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind,
+-         identificationPoints: [IdentificationPoint] = [], amendmentLegs: [PendingRouteAmendment.Leg] = []) {
++         identificationPoints: [IdentificationPoint] = [], amendmentLegs: [PendingRouteAmendment.Leg] = [],
++         driftAngleDegrees: Double = 10) {
+         self.legs = legs
+         self.firstAvailable = firstAvailable
+         self.identificationPoints = identificationPoints
++        self.driftAngleDegrees = driftAngleDegrees
+         self.planning = planning
+         self.amendmentLegs = amendmentLegs
+         self.navigationMode = navigationMode
+@@ -494,7 +497,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+                 headingMagnetic: saved.headingMagnetic, durationSeconds: saved.durationSeconds,
+                 altitude: saved.altitudeFeet.map(AltitudeFeet.init(value:)),
+                 frequency: saved.frequencyMHz.map(FrequencyMHz.init(value:)),
+-                visualReference: saved.visualReference
++                visualReference: saved.visualReference,
++                estimateProvenance: saved.estimateProvenance
+             ))
+         }
+         validateDeparture(on: route)
+@@ -560,6 +564,21 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+     mutating func update(
+         _ intent: Intent, route: RouteAmendmentRoute, estimateInputs: RouteAmendmentEstimator.Inputs? = nil
+     ) {
++        let previous = reviewLegs(on: route)
++        let restoresSnapshot: Bool
++        if case .undo = intent { restoresSnapshot = true } else { restoresSnapshot = false }
++        defer {
++            // Geometry signatures, not row offsets, determine estimate invalidation.
++            // Undo restores its complete snapshot without consulting today's inputs.
++            if mode == .assisted, !restoresSnapshot {
++                let old = Dictionary(uniqueKeysWithValues: previous.map { ($0.id, $0.geometry) })
++                for leg in reviewLegs(on: route) where old[leg.id] != leg.geometry {
++                    var entry = leg.entry
++                    entry.prefill(estimate(for: leg, inputs: estimateInputs), geometryUpdated: old[leg.id] != nil)
++                    legEntries[leg.geometry] = entry
++                }
++            }
++        }
+         switch intent {
+         case .pause:
+             isPaused = true
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+index e4d0ec8..b573fd8 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+@@ -11,6 +11,7 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
+     let altitude: AltitudeFeet?
+     let frequency: FrequencyMHz?
+     let visualReference: String?
++    var estimateProvenance: RouteAmendmentLegEntry.EstimateProvenance? = nil
+ 
+     var headingText: String {
+         String(format: "%03d", headingMagnetic == 0 ? 360 : headingMagnetic)
+@@ -18,6 +19,50 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
+ }
+ 
+ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
++    struct EstimateProvenance: Codable, Equatable, Sendable {
++        enum Source: String, Codable, Sendable { case noWind, plannedWind, unavailable }
++        var source: Source
++        var headingOverridden = false
++        var durationOverridden = false
++        var geometryUpdated = false
++    }
++
++    private(set) var estimateProvenance: EstimateProvenance?
++
++    var estimateStatus: String? {
++        guard let provenance = estimateProvenance else { return nil }
++        if provenance.geometryUpdated { return "Estimates updated" }
++        if provenance.headingOverridden && provenance.durationOverridden { return "Heading and time edited" }
++        if provenance.headingOverridden { return "Heading edited" }
++        if provenance.durationOverridden { return "Time edited" }
++        switch provenance.source {
++        case .noWind: return "Estimates · no wind"
++        case .plannedWind: return "Estimates · planned wind"
++        case .unavailable: return "Estimates unavailable · enter values"
++        }
++    }
++
++    /// Called once for newly formed/changed geometry. Reopening, Check and Undo
++    /// never invoke this path, so accepted overrides retain their exact values.
++    mutating func prefill(_ result: RouteAmendmentEstimator.Result, geometryUpdated: Bool) {
++        heading = ""
++        minutes = ""
++        seconds = ""
++        durationWasEdited = true
++        switch result {
++        case .available(let direction, let duration, let source):
++            let degrees = Int(direction.value.rounded()) % 360
++            heading = String(format: "%03d", degrees == 0 ? 360 : degrees)
++            // New estimates obey the preparation time range. Never wrap or clamp
++            // an out-of-range estimate into a plausible pilot duration.
++            if (1..<3600).contains(duration) { self.duration = Self.durationText(duration) }
++            estimateProvenance = .init(source: source == .noWind ? .noWind : .plannedWind,
++                                       geometryUpdated: geometryUpdated)
++        case .unavailable:
++            estimateProvenance = .init(source: .unavailable, geometryUpdated: geometryUpdated)
++        }
++    }
++
+     enum TimeComponent: String, CaseIterable, Sendable {
+         case minutes, seconds
+     }
+@@ -66,6 +111,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+ 
+     init(values: RouteAmendmentLegValues? = nil) {
+         acceptedValues = values
++        estimateProvenance = values?.estimateProvenance
+         guard let values else { return }
+         heading = values.headingText
+         duration = Self.durationText(values.durationSeconds)
+@@ -88,6 +134,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+         }
+         set {
+             guard allowsInput(newValue, for: field) else { return }
++            markOverride(field)
+             switch field {
+             case .heading: heading = newValue
+             case .duration:
+@@ -129,7 +176,8 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+             durationSeconds: durationSeconds,
+             altitude: !altitudeWasEdited && altitude == original?.altitude ? acceptedValues?.altitude : decimal(altitude).map(AltitudeFeet.init(value:)),
+             frequency: !frequencyWasEdited && frequency == original?.frequency ? acceptedValues?.frequency : frequencyMHz.map(FrequencyMHz.init(value:)),
+-            visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note
++            visualReference: visualReference == original?.visualReference ? acceptedValues?.visualReference : note.isEmpty ? nil : note,
++            estimateProvenance: estimateProvenance
+         )
+     }
+ 
+@@ -172,6 +220,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+     /// component to zero; later clears preserve the independently edited component.
+     mutating func selectTime(_ component: TimeComponent, value: Int?) {
+         if let value, !timeOptions(component).contains(value) { return }
++        markOverride(.duration)
+         let untouched = minutes.isEmpty && seconds.isEmpty
+         durationWasEdited = true
+         let text = value.map { String(format: "%02d", $0) } ?? ""
+@@ -287,6 +336,7 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+ 
+     mutating func adjustHeading(by delta: Int) {
+         guard delta == 1 || delta == -1 else { return }
++        markOverride(.heading)
+         let value = (magneticHeading ?? 0) + delta
+         let wrapped = (value % 360 + 360) % 360
+         heading = String(format: "%03d", wrapped == 0 ? 360 : wrapped)
+@@ -296,10 +346,21 @@ nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+         guard delta == 5 || delta == -5 else { return }
+         let adjustment = (durationSeconds ?? 0).addingReportingOverflow(delta)
+         guard !adjustment.overflow, (1...3600).contains(adjustment.partialValue) else { return }
++        markOverride(.duration)
+         durationWasEdited = true
+         duration = Self.durationText(adjustment.partialValue)
+     }
+ 
++    private mutating func markOverride(_ field: Field) {
++        guard estimateProvenance != nil else { return }
++        switch field {
++        case .heading: estimateProvenance?.headingOverridden = true
++        case .duration, .minutes, .seconds: estimateProvenance?.durationOverridden = true
++        default: return
++        }
++        estimateProvenance?.geometryUpdated = false
++    }
++
+     func allowsInput(_ text: String, for field: Field) -> Bool {
+         guard !text.isEmpty else { return true }
+         switch field {
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+index f553162..2fd4fc5 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+@@ -93,7 +93,9 @@ struct CockpitFeatureState: Equatable, Sendable {
+ 
+     var routeForAmendment: RouteAmendmentRoute? {
+         guard let flightPlan else { return nil }
+-        return flight?.routeForAmendment(in: flightPlan)
++        var route = flight?.routeForAmendment(in: flightPlan)
++        route?.driftAngleDegrees = flightPlan.parameters.driftAngle.value
++        return route
+     }
+ 
+     mutating func updateRouteAmendment(
+@@ -142,11 +144,8 @@ struct CockpitFeatureState: Equatable, Sendable {
+         case .open, .resume:
+             isAmendmentWorkspaceVisible = true
+             isAmendmentPlotting = false
+-        case .plot(let input):
++        case .plot:
+             guard isAmendmentWorkspaceVisible else { return }
+-            routeAmendmentDraft?.update(.plot(input), route: route)
+-            isAmendmentPlotting = routeAmendmentDraft?.rejoin == nil
+-            return
+         case .editLeg, .checkLeg, .chooseLeg:
+             guard isAmendmentWorkspaceVisible else { return }
+         case .movePoint, .chooseDeparture, .chooseRejoin:
+@@ -755,7 +754,8 @@ extension CockpitFeatureState {
+             : route.firstAvailable.legIndex
+         let departureIndex = availableIndex + (isFutureDeparture ? 1 : 0)
+         guard route.legs.indices.contains(departureIndex + 1) else { return }
+-        updateRouteAmendment(.open)
++        let assistedFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_ASSISTED"] == "1"
++        updateRouteAmendment(.open, mode: assistedFixture ? .assisted : .manual)
+         updateRouteAmendment(.togglePlotting)
+         let departure = route.anchor(at: departureIndex, fraction: workspaceFixture ? 0.46 : rejoinFixture == "partway" ? 0.25 : 0.5)
+         let rejoin: RouteAmendmentAnchor = switch rejoinFixture {
+@@ -792,6 +792,7 @@ extension CockpitFeatureState {
+         updateRouteAmendment(.confirmRejoin)
+         updateRouteAmendment(.review)
+         for (index, leg) in (routeAmendmentDraft?.reviewLegs(on: route) ?? []).enumerated() {
++            if assistedFixture { continue }
+             updateRouteAmendment(.editLeg(leg.id))
+             let distinctSuccessor = includesAdvisoryValues && index == 1
+             updateRouteAmendment(.editLegField(.heading, distinctSuccessor ? "024" : "087"))
+diff --git a/NavigationFlight/Features/Cockpit/CockpitView.swift b/NavigationFlight/Features/Cockpit/CockpitView.swift
+index 5a8e702..3fa146e 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitView.swift
+@@ -277,7 +277,8 @@ struct CockpitView: View {
+ 
+     private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
+         guard isAmendmentWorkspaceVisible, let routeForAmendment, let routeAmendmentDraft else { return nil }
+-        return .init(draft: routeAmendmentDraft, route: routeForAmendment, isPlotting: isAmendmentPlotting)
++        return .init(draft: routeAmendmentDraft, route: routeForAmendment, isPlotting: isAmendmentPlotting,
++                     showsDrift: areDriftLinesVisible)
+     }
+ 
+     private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+index cbc6cba..8f82a27 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift
+@@ -311,6 +311,11 @@ struct RouteAmendmentChartPanel: View {
+         _ editor: RouteAmendmentDraft.Editor, invalid: Set<RouteAmendmentLegEntry.Field>,
+         focused: RouteAmendmentLegEntry.Field?
+     ) -> some View {
++        if let status = editor.entry.estimateStatus {
++            Text(status).font(.caption).foregroundStyle(.secondary)
++                .fixedSize(horizontal: false, vertical: true)
++                .accessibilityIdentifier("amendment-estimate-status")
++        }
+         if focused == nil {
+             RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
+                 .id(editor.id)
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
+index cb29a72..7fdcc1f 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift
+@@ -19,7 +19,7 @@ struct RouteAmendmentReview: View {
+                 .buttonStyle(RouteAmendmentLegButtonStyle())
+                 .id(leg.id)
+                 .accessibilityLabel("Proposed leg \(index + 1), \(leg.name)")
+-                .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))")
++                .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))\(leg.entry.estimateStatus.map { ", " + $0 } ?? "")")
+                 .accessibilityAddTraits(draft.editor?.id == leg.id ? .isSelected : [])
+                 .accessibilityIdentifier("edit-amendment-leg")
+             }
+@@ -53,6 +53,10 @@ struct RouteAmendmentReview: View {
+                     Text(boundary(leg))
+                         .font(.caption).foregroundStyle(.secondary)
+                 }
++                if compact, let status = leg.entry.estimateStatus {
++                    Text(status).font(.caption).foregroundStyle(.secondary)
++                        .fixedSize(horizontal: false, vertical: true)
++                }
+             }
+             .frame(maxWidth: .infinity, alignment: .leading)
+             if !compact {
+@@ -86,7 +90,7 @@ struct RouteAmendmentReview: View {
+             case .rejoin: "Rejoin"
+             }
+         }
+-        return "\(role(leg.id.from)) → \(role(leg.id.to))"
++        return "\(role(leg.id.from)) → \(role(leg.id.to))\(leg.entry.estimateStatus.map { " · " + $0 } ?? "")"
+     }
+ 
+     private func duration(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {
+diff --git a/NavigationFlight/Map/AviationMapPresentation.swift b/NavigationFlight/Map/AviationMapPresentation.swift
+index ba3b0ac..5d2fc55 100644
+--- a/NavigationFlight/Map/AviationMapPresentation.swift
++++ b/NavigationFlight/Map/AviationMapPresentation.swift
+@@ -614,6 +614,15 @@ struct AviationMapPresentationFactory {
+ enum AviationMapSymbology {
+     static let minuteLabelCadence = 2
+ 
++    static func preparationAids(
++        from: AviationMapCoordinate, to: AviationMapCoordinate, duration: Int?,
++        mode: RouteAmendmentMode, showsDrift: Bool, driftAngle: Double
++    ) -> (minutes: [AviationMapMinuteMarker], drift: [AviationMapDriftReferenceArm]) {
++        guard mode == .assisted else { return ([], []) }
++        return (duration.map { minuteMarkers(from: from, to: to, plannedDurationSeconds: $0) } ?? [],
++                showsDrift ? AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: driftAngle) : [])
++    }
++
+     static func minuteMarkers(
+         from: AviationMapCoordinate,
+         to: AviationMapCoordinate,
+diff --git a/NavigationFlight/Map/OfflineAviationMapView.swift b/NavigationFlight/Map/OfflineAviationMapView.swift
+index a29bdd5..38d06f8 100644
+--- a/NavigationFlight/Map/OfflineAviationMapView.swift
++++ b/NavigationFlight/Map/OfflineAviationMapView.swift
+@@ -540,7 +540,9 @@ struct OfflineAviationMapView: UIViewRepresentable {
+                         // Preview is disposable. Only release commits one validated history entry.
+                         var draft = presentation.draft
+                         draft.update(.plot(input), route: presentation.route)
+-                        overlay.dragPreview = .init(draft: draft, route: presentation.route, isPlotting: presentation.isPlotting)
++                        overlay.dragPreview = .init(draft: draft, route: presentation.route,
++                                                    isPlotting: presentation.isPlotting,
++                                                    showsDrift: presentation.showsDrift)
+                     }
+                 }
+             case .cancelled, .failed:
+diff --git a/NavigationFlight/Map/RouteAmendmentMapOverlay.swift b/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
+index 1a69bbd..39a62a0 100644
+--- a/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
++++ b/NavigationFlight/Map/RouteAmendmentMapOverlay.swift
+@@ -10,6 +10,7 @@ final class RouteAmendmentMapOverlay: UIView {
+         let draft: RouteAmendmentDraft
+         let route: RouteAmendmentRoute
+         let isPlotting: Bool
++        var showsDrift = true
+     }
+ 
+     struct Pending: Equatable {
+@@ -206,6 +207,7 @@ final class RouteAmendmentMapOverlay: UIView {
+         let segments = draft.segments(on: route)
+         drawSegments(segments, proposedDashed: false, on: map, in: context)
+         drawOriginalMinuteMarks(presentation, on: map, in: context)
++        drawPreparationAids(presentation, on: map, in: context)
+         drawSelectedLeg(presentation, on: map, in: context)
+         let reserved = [draft.departure, draft.rejoin].compactMap { $0 }
+         let plottedStops = draft.points.filter { $0.name != nil }
+@@ -388,6 +390,36 @@ final class RouteAmendmentMapOverlay: UIView {
+         }
+     }
+ 
++    private func drawPreparationAids(_ presentation: Presentation, on map: MLNMapView, in context: CGContext) {
++        for leg in presentation.draft.reviewLegs(on: presentation.route) {
++            let aids = AviationMapSymbology.preparationAids(
++                from: .init(latitude: leg.from.latitudeDegrees, longitude: leg.from.longitudeDegrees),
++                to: .init(latitude: leg.to.latitudeDegrees, longitude: leg.to.longitudeDegrees),
++                duration: leg.entry.durationSeconds, mode: presentation.draft.mode,
++                showsDrift: presentation.showsDrift, driftAngle: presentation.route.driftAngleDegrees
++            )
++            func point(_ coordinate: AviationMapCoordinate) -> CGPoint {
++                project(.init(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude), on: map)
++            }
++            let start = project(leg.from, on: map)
++            let end = project(leg.to, on: map)
++            let dx = end.x - start.x, dy = end.y - start.y
++            let length = hypot(dx, dy)
++            guard length > 0 else { continue }
++            for mark in aids.minutes {
++                let anchor = point(mark.coordinate)
++                let size: CGFloat = mark.showsLabel ? 10 : 7
++                let tip = CGPoint(x: anchor.x + dy / length * size, y: anchor.y - dx / length * size)
++                stroke(anchor, tip, color: .white, width: 4, dashed: false, in: context)
++                stroke(anchor, tip, color: Self.proposedColor, width: 2, dashed: false, in: context)
++            }
++            for arm in aids.drift {
++                stroke(point(arm.from), point(arm.to), color: .white, width: 3, dashed: true, in: context)
++                stroke(point(arm.from), point(arm.to), color: Self.proposedColor, width: 1, dashed: true, in: context)
++            }
++        }
++    }
++
+     private func drawSelectedLeg(_ presentation: Presentation, on map: MLNMapView, in context: CGContext) {
+         switch presentation.draft.legPanel {
+         case .editor:
+diff --git a/NavigationFlightTests/NavigationFlightTests.swift b/NavigationFlightTests/NavigationFlightTests.swift
+index a315ae1..0de477a 100644
+--- a/NavigationFlightTests/NavigationFlightTests.swift
++++ b/NavigationFlightTests/NavigationFlightTests.swift
+@@ -13,6 +13,135 @@ import UIKit
+ private final class FixtureLocator {}
+ 
+ struct NavigationFlightTests {
++    @MainActor
++    @Test(arguments: [RouteAmendmentMode.manual, .assisted])
++    func amendmentModeIsCapturedUntilTheNextDraft(_ initial: RouteAmendmentMode) throws {
++        var state = CockpitFeatureState()
++        try state.accept(try twoLegFlight())
++        try state.startLeg(at: Date(timeIntervalSince1970: 1000))
++        let route = try #require(state.routeForAmendment)
++        state.updateRouteAmendment(.open, mode: initial)
++        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)))
++        state.updateRouteAmendment(.pause)
++        let next: RouteAmendmentMode = initial == .manual ? .assisted : .manual
++        state.updateRouteAmendment(.open, mode: next)
++        #expect(state.routeAmendmentDraft?.mode == initial)
++        state.updateRouteAmendment(.discard)
++        state.updateRouteAmendment(.open, mode: next)
++        #expect(state.routeAmendmentDraft?.mode == next)
++    }
++
++    @MainActor
++    @Test func assistedGeometryOverrideUndoAndSavedProvenance() throws {
++        let plan = try twoLegFlight()
++        var state = CockpitFeatureState()
++        try state.accept(plan)
++        try state.startLeg(at: Date(timeIntervalSince1970: 1000))
++        let route = try #require(state.routeForAmendment)
++        state.updateRouteAmendment(.open, mode: .assisted)
++        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)))
++        for offset in [0.01, 0.02] {
++            let start = route.coordinate(at: route.anchor(at: 0, fraction: 0.2))
++            state.updateRouteAmendment(.plot(.init(position: .init(
++                latitudeDegrees: start.latitudeDegrees + offset,
++                longitudeDegrees: start.longitudeDegrees + 0.01))))
++        }
++        state.updateRouteAmendment(.chooseRejoin)
++        state.updateRouteAmendment(.chooseAnchor(route.anchor(at: 1, fraction: 1)))
++        var draft = try #require(state.routeAmendmentDraft)
++        let inputs = RouteAmendmentEstimator.Inputs(mode: .noWind, magneticVariationEast: .init(value: 5),
++                                                  planningAirspeed: .init(value: 90), defaultWind: nil)
++        let first = try #require(draft.reviewLegs(on: route).first)
++        #expect(first.entry.values != nil)
++        #expect(first.entry.estimateProvenance?.source == .noWind)
++        draft.update(.editLeg(first.id), route: route, estimateInputs: inputs)
++        draft.update(.selectLegTime(.minutes, 3), route: route, estimateInputs: inputs)
++        draft.update(.selectLegTime(.seconds, 0), route: route, estimateInputs: inputs)
++        draft.update(.editLegField(.visualReference, "Preserved cue"), route: route)
++        draft.update(.saveLegValues, route: route)
++        let before = draft.reviewLegs(on: route)
++        #expect(before[0].entry.durationSeconds == 180)
++        #expect(before[0].entry.estimateProvenance?.durationOverridden == true)
++        let point = try #require(draft.points.first)
++        let moved = WGS84Coordinate(latitudeDegrees: point.position.latitudeDegrees + 0.002,
++                                    longitudeDegrees: point.position.longitudeDegrees + 0.001)
++        draft.update(.plot(.init(position: moved, correction: .move(point.id))), route: route, estimateInputs: inputs)
++        let after = draft.reviewLegs(on: route)
++        #expect(after.count == 3)
++        for index in 0..<2 {
++            let leg = after[index]
++            let result = RouteAmendmentEstimator.estimate(from: leg.from, to: leg.to, inputs: inputs)
++            var expected = before[index].entry
++            expected.prefill(result, geometryUpdated: true)
++            #expect(leg.entry == expected)
++            #expect(leg.entry.estimateStatus == "Estimates updated")
++        }
++        #expect(after[2] == before[2])
++        draft.update(.undo, route: route, estimateInputs: nil)
++        #expect(draft.reviewLegs(on: route) == before)
++        draft.update(.pause, route: route)
++        draft.update(.resume, route: route, estimateInputs: nil)
++        #expect(draft.reviewLegs(on: route) == before)
++        let values = try #require(before[0].entry.values)
++        let stop = PendingRouteAmendment.Stop(id: UUID(), name: "Test", position: first.from)
++        let saved = PendingRouteAmendment.Leg(id: UUID(), from: stop, to: stop, values: values)
++        let restored = try JSONDecoder().decode(PendingRouteAmendment.Leg.self, from: JSONEncoder().encode(saved))
++        #expect(restored.estimateProvenance == values.estimateProvenance)
++        var legacy = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(saved)) as? [String: Any])
++        legacy.removeValue(forKey: "estimateProvenance")
++        let oldArchive = try JSONDecoder().decode(PendingRouteAmendment.Leg.self,
++                                                from: JSONSerialization.data(withJSONObject: legacy))
++        #expect(oldArchive.estimateProvenance == nil)
++        #expect(RouteAmendmentLegEntry(values: values).estimateProvenance == before[0].entry.estimateProvenance)
++        let flight = try #require(state.flight)
++        draft.update(.review, route: route)
++        let pending = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
++        let archive = try JSONDecoder().decode(PendingRouteAmendment.self, from: JSONEncoder().encode(pending))
++        let recovered = RouteAmendmentDraft(replacing: archive, on: route).reviewLegs(on: route)
++        #expect(recovered.map { $0.entry.values } == before.map { $0.entry.values })
++        #expect(recovered.map { $0.entry.estimateProvenance } == before.map { $0.entry.estimateProvenance })
++        #expect(state.flight?.pendingRouteAmendment == nil)
++    }
++
++    @MainActor
++    @Test func assistedUnavailableAndOutOfRangePrefillRequirePilotEntry() {
++        var entry = RouteAmendmentLegEntry()
++        entry.prefill(.unavailable, geometryUpdated: false)
++        #expect(entry.heading.isEmpty && entry.duration.isEmpty)
++        #expect(entry.values == nil)
++        entry[.heading] = "087"
++        entry.selectTime(.minutes, value: 3)
++        #expect(entry.values?.durationSeconds == 180)
++        entry.prefill(.available(direction: .init(value: 359.8), durationSeconds: 3600, provenance: .noWind),
++                      geometryUpdated: true)
++        #expect(entry.magneticHeading == 360)
++        #expect(entry.durationSeconds == nil)
++        #expect(entry.values == nil)
++    }
++
++    @MainActor
++    @Test(arguments: [RouteAmendmentMode.manual, .assisted])
++    func preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_ mode: RouteAmendmentMode) {
++        let from = AviationMapCoordinate(latitude: 32, longitude: 35)
++        let to = AviationMapCoordinate(latitude: 32.03, longitude: 35.03)
++        func aids(_ seconds: Int?, _ drift: Bool) -> ([AviationMapMinuteMarker], [AviationMapDriftReferenceArm]) {
++            AviationMapSymbology.preparationAids(from: from, to: to, duration: seconds,
++                                                mode: mode, showsDrift: drift, driftAngle: 10)
++        }
++        let initial = aids(135, true)
++        let edited = aids(180, false)
++        if mode == .manual {
++            #expect(initial.0.isEmpty && initial.1.isEmpty && edited.0.isEmpty && edited.1.isEmpty)
++        } else {
++            #expect(initial.0.map(\.fraction) == [60.0 / 135, 120.0 / 135])
++            #expect(edited.0.map(\.fraction) == [1.0 / 3, 2.0 / 3, 1])
++            #expect(initial.1.count == 2 && edited.1.isEmpty)
++            #expect(aids(180, true).0 == edited.0)
++            #expect(edited.0.allSatisfy { $0.fraction <= 1 })
++            #expect(aids(nil, false).0.isEmpty)
++        }
++    }
++
+     @MainActor
+     @Test(arguments: [0, 1, 2])
+     func pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_ index: Int) throws {
+diff --git a/NavigationFlightTests/RouteAmendmentEstimateTests.swift b/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+index db9d227..b4abd74 100644
+--- a/NavigationFlightTests/RouteAmendmentEstimateTests.swift
++++ b/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+@@ -24,6 +24,15 @@ struct RouteAmendmentEstimateTests {
+         #expect(abs(direction.value - heading) < 0.000000001)
+         #expect(duration == seconds)
+         #expect(source == provenance)
++        var entry = RouteAmendmentLegEntry()
++        entry.prefill(result, geometryUpdated: false)
++        #expect(entry.magneticHeading == Int(heading))
++        #expect(entry.durationSeconds == seconds)
++        #expect(entry.estimateProvenance?.source == (mode == .noWind ? .noWind : .plannedWind))
++        entry[.duration] = "03:00"
++        #expect(entry.durationSeconds == 180)
++        #expect(entry.estimateProvenance?.durationOverridden == true)
++        #expect(entry.estimateProvenance?.headingOverridden == false)
+     }
+ 
+     @Test(arguments: [
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index 411f846..ced6093 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -9,6 +9,122 @@ import XCTest
+ 
+ final class NavigationFlightUITests: XCTestCase {
+ 
++    @MainActor
++    func testAssistedPreparationOverridesGeometryAndUndo() throws {
++        try verifyAssistedPreparation()
++    }
++
++    @MainActor
++    func testAssistedPreparationInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyAssistedPreparation(landscape: true)
++    }
++
++    @MainActor
++    func testAssistedPreparationWithLargerText() throws {
++        try verifyAssistedPreparation(largerText: true)
++    }
++
++    @MainActor
++    func testAssistedEstimateStatusIsSpokenByVoiceOver() throws {
++        let service = XCUIDevice.shared.voiceOverService
++        let wasEnabled = service.isEnabled
++        if wasEnabled { try service.disable() }
++        defer {
++            if service.isEnabled { try? service.disable() }
++            if wasEnabled { try? service.enable() }
++        }
++        let app = try launchPartialAmendment(fixture: "A", assisted: true)
++        openCorrectionWorkspace(in: app, landscape: false)
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let point = try correctionPointCoordinate(in: app, map: map)
++        point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
++        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
++        XCTAssertTrue((row.value as? String ?? "").contains("Estimates updated"))
++        try service.enable()
++        var speech: [String] = []
++        for _ in 0..<45 {
++            speech.append(try service.moveForward().utterance)
++            if speech.joined(separator: " ").contains("Estimates updated") { break }
++        }
++        let spoken = speech.joined(separator: " ")
++        XCTAssertTrue(spoken.contains("Estimates updated"), spoken)
++        XCTAssertTrue(spoken.lowercased().contains("heading"), spoken)
++        XCTAssertTrue(spoken.lowercased().contains("leg time"), spoken)
++        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
++        attachment.name = "AP08 actual VoiceOver estimate speech"
++        attachment.lifetime = .keepAlways
++        add(attachment)
++        captureAmendmentState("ap08-voiceover-updated", in: app)
++    }
++
++    @MainActor
++    private func verifyAssistedPreparation(landscape: Bool = false, largerText: Bool = false) throws {
++        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", assisted: true)
++        openCorrectionWorkspace(in: app, landscape: landscape)
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        XCTAssertEqual(rows.count, 3)
++        XCTAssertFalse((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
++        captureAmendmentState("ap08-prefilled", in: app)
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        tapAmendmentControl(rows.element(boundBy: 1), in: console)
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        XCTAssertTrue(panel.waitForExistence(timeout: 4))
++        selectAmendmentWheel("seconds", value: "15", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "02", in: app, panel: panel)
++        captureAmendmentState("ap08-time-0215", in: app)
++        selectAmendmentWheel("seconds", value: "00", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 03 minutes, 00 seconds")
++        captureAmendmentState("ap08-time-0300", in: app)
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        XCTAssertTrue(rows.element(boundBy: 1).waitForExistence(timeout: 4))
++        let before = rows.allElementsBoundByIndex.map { $0.value as? String }
++        XCTAssertTrue((before[1] ?? "").contains("03:00"))
++        app.buttons["Map tools"].firstMatch.tap()
++        let drift = app.buttons["map-tools-toggle-drift-lines"]
++        XCTAssertTrue(drift.waitForExistence(timeout: 3))
++        if drift.label.contains("On") { drift.tap() }
++        XCTAssertTrue(drift.label.contains("Off"))
++        captureAmendmentState("ap08-drift-off", in: app)
++        app.buttons["Close"].firstMatch.tap()
++        XCTAssertFalse(drift.exists)
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let point = try correctionPointCoordinate(in: app, map: map)
++        point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
++        let updated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++            (rows.firstMatch.value as? String ?? "").contains("Estimates updated")
++        }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [updated], timeout: 4), .completed)
++        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Estimates updated"))
++        XCTAssertEqual(rows.element(boundBy: 2).value as? String, before[2])
++        captureAmendmentState("ap08-estimates-updated", in: app)
++        undoPointCorrection(in: app)
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, before)
++        captureAmendmentState("ap08-undo-restored", in: app)
++        app.buttons["amend-route"].tap()
++        app.buttons["amend-route"].tap()
++        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, before)
++    }
++
++    @MainActor
++    func testAssistedUnavailableEstimatesAcceptPilotValues() throws {
++        let app = try launchPartialAmendment(fixture: "A", assisted: true, unavailableEstimate: true)
++        openCorrectionWorkspace(in: app, landscape: false)
++        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
++        XCTAssertTrue((row.value as? String ?? "").contains("Not set"))
++        captureAmendmentState("ap08-unavailable", in: app)
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        tapAmendmentControl(row, in: console)
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        selectAmendmentWheel("heading", value: "087", in: app, panel: panel)
++        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        XCTAssertTrue((row.value as? String ?? "").contains("087°"))
++        XCTAssertTrue((row.value as? String ?? "").contains("03:00"))
++        captureAmendmentState("ap08-unavailable-pilot-entry", in: app)
++    }
++
+     @MainActor
+     func testAnchorDragRejectsInvalidDropsAndUndoRestoresValues() throws {
+         let app = try launchPartialAmendment(fixture: "A", correctionCues: true)
+@@ -3661,29 +3777,32 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
+     }
+ 
++    /// Keep the imported execution speed consistent with its planning input so
++    /// decoding succeeds while the amendment estimator rounds new durations to zero.
++    private func planWithUnavailableAmendmentEstimates(_ data: Data) throws -> Data {
++        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
++        var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
++        var parameters = try XCTUnwrap(navigation["parameters"] as? [String: Any])
++        let speed = 1_000_000.0
++        parameters["planningAirspeedKnots"] = speed
++        navigation["parameters"] = parameters
++        document["navigation"] = navigation
++        var execution = try XCTUnwrap(document["execution"] as? [String: Any])
++        var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
++        for index in legs.indices {
++            var timing = try XCTUnwrap(legs[index]["noWind"] as? [String: Any])
++            timing["plannedGroundSpeedKnots"] = speed
++            legs[index]["noWind"] = timing
++        }
++        execution["legs"] = legs
++        document["execution"] = execution
++        return try JSONSerialization.data(withJSONObject: document)
++    }
++
+     @MainActor
+     private func launchManualAmendmentReview(unavailable: Bool = false, contentSize: String? = nil) throws -> XCUIApplication {
+         var plan = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
+-        if unavailable {
+-            // A positive but very large plan-wide speed rounds both plotted estimates to zero.
+-            var document = try XCTUnwrap(JSONSerialization.jsonObject(with: plan) as? [String: Any])
+-            var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+-            var parameters = try XCTUnwrap(navigation["parameters"] as? [String: Any])
+-            let speed = 1_000_000.0
+-            parameters["planningAirspeedKnots"] = speed
+-            navigation["parameters"] = parameters
+-            document["navigation"] = navigation
+-            var execution = try XCTUnwrap(document["execution"] as? [String: Any])
+-            var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+-            for index in legs.indices {
+-                var timing = try XCTUnwrap(legs[index]["noWind"] as? [String: Any])
+-                timing["plannedGroundSpeedKnots"] = speed
+-                legs[index]["noWind"] = timing
+-            }
+-            execution["legs"] = legs
+-            document["execution"] = execution
+-            plan = try JSONSerialization.data(withJSONObject: document)
+-        }
++        if unavailable { plan = try planWithUnavailableAmendmentEstimates(plan) }
+         let app = launchCockpit(planData: plan, preferredContentSizeCategory: contentSize)
+         app.buttons["start-leg"].tap()
+         closeStartChecklist(in: app)
+@@ -4414,9 +4533,10 @@ final class NavigationFlightUITests: XCTestCase {
+     @MainActor
+     private func launchPartialAmendment(
+         largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false,
+-        correctionCues: Bool = false
++        correctionCues: Bool = false, assisted: Bool = false, unavailableEstimate: Bool = false
+     ) throws -> XCUIApplication {
+         var planData = try crossingAmendmentPlanData()
++        if unavailableEstimate { planData = try planWithUnavailableAmendmentEstimates(planData) }
+         if fixture.hasPrefix("A-progress") {
+             var document = try XCTUnwrap(JSONSerialization.jsonObject(with: planData) as? [String: Any])
+             var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+@@ -4437,6 +4557,7 @@ final class NavigationFlightUITests: XCTestCase {
+                 "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": fixture,
+                 "NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION": legacyDuration ? "1" : "0",
+                 "NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES": correctionCues ? "1" : "0",
++                "NAVIGATION_FLIGHT_UI_TEST_ASSISTED": assisted ? "1" : "0",
+                 "NAVIGATION_FLIGHT_UI_TEST_CAMERA": "1"
+             ]
+         )
+diff --git a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+index 76fe103..d4ce2f7 100644
+--- a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
++++ b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+@@ -47,6 +47,24 @@ D04 supersedes only plotting/continuation controls, plotting-off
+ value-editor gating and short-point correction in G01–G03 and affected AP tasks.
+ The linked D04 proposal records the approval boundary and issue patch drafts.
+ 
++### AP-08 implementation · Assisted preparation · 2026-11-26
++
++Assisted drafts capture their mode at creation and prefill newly formed replacement
++legs using the Flight's existing estimator inputs. Heading and duration remain
++independently editable; unavailable or out-of-range duration estimates require
++pilot entry rather than clamping or wrapping. Check remains a separate reference.
++Moving geometry recalculates only changed segments; unchanged and restored entries
++retain their values. Undo restores geometry, partial fields, cues and provenance.
++Minute marks follow the working duration and remain visible when drift is off;
++Manual replacement legs continue to show neither aid.
++
++John approved **Estimates updated** in F06's secondary row text style on
++2026-11-26. This identifies recalculated Assisted legs; Undo restores the previous
++labels/provenance. Existing D03 layout and D04 correction rules remain authoritative.
++The [AP-08 acceptance matrix and verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md)
++records verification and pending human acceptance. Unarmed draft persistence,
++Arm delivery and flying Assisted remain owned by their subsequent tickets.
++
+ ### AP-07 implementation · D04 point correction · 2026-11-26
+ 
+ The owner selected D04's direct long-press drag and release-without-drag Delete
+diff --git a/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md b/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md
+new file mode 100644
+index 0000000..4545c64
+--- /dev/null
++++ b/docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md
+@@ -0,0 +1,90 @@
++# AP-08 Assisted preparation — acceptance and verification
++
++Issue: [#232](https://github.com/johnbenz13/NavigationFlight/issues/232).
++Base: `b093fc9fea6143e0ada5001857abe2e9f2d21551`; prerequisite #231 closed
++through merged PR #249, merge verified in synchronized `main`.
++
++## Authority and owner decision
++
++G03/G06, RA-03/06/09/10/14 and the shared preparation contract govern behavior.
++D03 owns geometry; D04 supersedes drawing/correction interactions. The approved
++D05.2 [main screen](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-146)
++and [gesture rules](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=67-554)
++supersede D03's heading wheel and time ceiling: reuse the existing compass and
++cyclic 00–59 time controls, with new durations 1–3599 seconds. Both current
++references were retrieved and their renders directly inspected during this slice.
++Regular
++Cockpit, flying Assisted, estimator math, weather, wind selection and ruler are excluded.
++On 2026-11-26 John approved reusing F06's secondary row text style for
++**Estimates updated** on recalculated Assisted legs. Undo restores the previous
++values and labels/provenance. This approves that design treatment; implementation
++acceptance remains separate.
++
++## Compact acceptance matrix
++
++| Criterion/state | Observable result and next interaction | Fixture | Authority / verification |
++| --- | --- | --- | --- |
++| Captured mode | Settings initially Manual; existing draft retains its mode after Settings changes; next draft uses new setting | D, disposable Flight | RA-09; domain/settings and UI |
++| Available / missing estimates | Formed Assisted legs prefill usable estimates; missing inputs leave required entries Not set; deliberate overrides survive Done/reopen | D no-wind available/unavailable; domain planned-wind | G03; F06 [11:591](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=11-591), F05 [12:503](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=12-503) |
++| Duration / drift | 02:15 → 03:00 changes exact minute fractions; drift off removes arms but keeps marks | D, Manual/Assisted × on/off | RA-06/14; F06; projection tests and screenshots |
++| Geometry / Undo | Moving Point 1 recalculates only adjacent legs, shows Estimates updated; third leg unchanged; Undo restores exact partial values, cues and provenance | D, move/invalid move/cancel/Undo | G02/G03; owner decision above; deterministic and UI |
++| Manual / operational preservation | Manual has neither aid after Check; original aids, map boundary/camera and operational Flight unchanged | A/D Manual | RA-06; regression tests, simulator |
++
++Primary iPad portrait 834×1194; secondary iPad landscape 1194×834, iPhone Pro
++portrait 402×874 and another supported compact width. iPhone landscape and maximum
++accessibility text on small iPhones are excluded by the supported cockpit contract.
++Changed controls require supported Larger Text, actual VoiceOver, Reduce Motion,
++legibility/contrast and ≥44 pt targets. D03 [29:883](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=29-883)
++and its landscape/compact/editor references govern adaptive geometry.
++
++## Verification ledger
++
++| Revision / check | Fixture/device/settings | Result / artifact |
++| --- | --- | --- |
++| Base preflight | Clean checkout; fetched origin; ff-only main; refs 0/0 | Passed; feature branch created at base above |
++| Initial baseline launch | UIEvidence-iPad, portrait, disposable crossing A | Build/launch passed (~29 sec); ordinary Cockpit captured; amendment not yet opened. No conformance claim |
++| Design inspection | F06 11:591, F05 12:503, D03 29:883, F02 11:245 | Retrieved design context and directly inspected renders; missing recalculation label resolved by explicit owner decision above |
++| Pre-edit workspace | UIEvidence-iPad, 834×1210 runtime screen, A Manual | Directly inspected screenshot `Issue 232 Workspace Baseline-17_48_28_105-screenshot.png` under ActionArtifacts action `204A6E7F-7A38-4388-9F23-E9B67568FC62`; D03 shared console, scrolling third row, fixed actions retained. One avoidable fixture relaunch reused an old disposable library; fresh UUID resolved it |
++| 17:52 build | Final production source plus initial tests | Xcode BuildProject including tests passed, 46.6 sec, no errors; log `BuildProject-Log-20261126-175225.txt` |
++| 17:52 focused domain | No-wind prefill, selective geometry, override/Undo, saved metadata, unavailable/range, both map modes | 4/4 passed; original `Test-NavigationFlight-2026.11.26_17-52-37-+0200.xcresult` |
++| 17:54 initial UI | Primary iPad; prefill → 02:15 → 03:00 | New assertion used visual readout text instead of existing accessibility label. Fixture/test defect, corrected expectation; app unchanged. Two early renders recovered from original result without rerun |
++| 17:56 primary UI | Primary iPad; override, drift off, move Point 1, Undo, pencil round trip | 1/1 passed; [six retained captures and provenance](../assets/ap-08/ipad-portrait/). Full source at export includes later test/doc additions; production source unchanged since 17:52. Original `Test-NavigationFlight-2026.11.26_17-56-55-+0200.xcresult` |
++| Export recovery | Original 17:54 and 17:56 bundles | TestReport cache needed filesystem access; initial selector used output labels instead of required orientation. Correct selectors recovered original captures. No tests rerun for exports |
++| 18:01 domain/settings regression | NavigationFlightTests, RouteAmendmentEstimateTests, SettingsTests; 187 selected test identifiers | 220 passed, one newly expanded archive fixture failed because Undo returns to drawing and accepted construction requires review. Added explicit review step; single case rerun pending. Passing 220 unchanged checks retained |
++| Interrupted adaptive batch | M5 iPad, planned landscape/Larger Text/unavailable/VoiceOver | Xcode cancelled execution while the live preview was being installed through the same workspace. No completed result bundle was retained; no checks from this batch are counted as passed. Avoidable coordination error: build/install and tests must run sequentially. Owner explicitly resumed work; unfinished checks rerun sequentially |
++| 18:05 unobscured direct state | M5 iPad, prefilled → real Point 1 drag | [Original full-screen captures/hierarchies and provenance](../assets/ap-08/primary-direct/) directly inspected. Only legs 1–2 show Estimates updated. Map `{0,96,834,806}` and list viewport `{20,1014,794,128}` unchanged (0 pt transition tolerance). Rows 794×50, pencil 48×48 and Map tools 132×44. Existing footer AX bounds do not prove 44 pt targets and are not counted as passing |
++| 18:33 resumed batch | M5 iPad landscape, maximum Larger Text, actual VoiceOver; corrected archive case and extended editor parity | 7 passed: archive/restore, no-wind/calm-wind/crosswind prefill+override (3), landscape, Larger Text and VoiceOver. Unavailable fixture failed at launch; its new transform changed planning speed without matching execution ground speed. Extracted the existing complete Manual transformation for both callers. Production code unchanged. [Summary](../assets/ap-08/adaptive-summary.txt) |
++| 18:33 evidence recovery | Original DerivedData result; ActionArtifacts copy incomplete | [Landscape](../assets/ap-08/ipad-landscape/), [Larger Text](../assets/ap-08/ipad-larger-text/), [VoiceOver capture and actual speech](../assets/ap-08/ipad-voiceover/) exported without rerunning tests; original result retained under DerivedData/Logs/Test. Original filename `Test-NavigationFlight-2026.11.26_18-33-24-+0200.xcresult` |
++
++Landscape captures were directly inspected against D03-D [29:1167](https://www.figma.com/design/JCyQhDDzCPfrrbv6SBcwKw?node-id=29-1167)
++and F06: existing right rail, separate values, readable secondary update/override
++text, fixed actions, working-duration ticks and unobscured geometry/Undo are
++retained. Maximum Larger Text wraps the changed status and keeps the editor
++scrolling and Done reachable. The existing map-label overlap and legend/timing
++clipping remain visible; this is not a full accessibility-conformance claim.
++The runtime warning “Modifying state during view update” occurred at bootstrap,
++before Start. The identical warning is retained on main in
++[AP-07 maximum-iPad results](../assets/ap-07/ipad-max-final-summary.txt) and
++[AP-07 final gesture results](../assets/ap-07/anchored-ipad-summary.txt).
++No new production fix or unexplained rerun is attributed to that baseline warning.
++VoiceOver actually spoke the proposed-leg identity, magnetic heading, leg time
++and **Estimates updated**, as retained in `ipad-voiceover/speech.txt`.
++
++The initial simulator is an M5 iPad with an 834×1210 runtime screen. Its results
++are additional modern-iPad coverage. The exact 834×1194 portrait / 1194×834
++landscape reference is `AP01-iPad-11-Reference` (11-inch fourth generation);
++canonical-device verification is recorded separately below. Initial selection
++of the newer screen was an avoidable setup mismatch, not a design exemption.
++
++Primary direct comparison: F06 state content with D03-A/C geometry and the
++owner-approved update text. Prefill, edited 02:15/03:00, drift off, changed adjacent
++values and exact Undo are visible. Teal marks follow the second leg; drift-off
++keeps its ticks. Existing map/chart data differ from illustrative Figma geography.
++The 17:56 drift-off/updated/Undo captures retain Map tools; tapping its trigger
++does not dismiss that popover. The test now uses its native Close and asserts
++dismissal; later adaptive runs and live handoff verify the unobscured map. This
++is a fixture/evidence correction, not an application change or a fully unobscured
++primary visual-match claim.
++
++Implementation, tests, build, rendered comparisons and delivery remain pending.
++Visual acceptance remains unchecked until John reviews the final evidence.
+diff --git a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+index c8c9724..d1912f7 100644
+--- a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
++++ b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+@@ -292,6 +292,28 @@ The [approved Cockpit revision](https://www.figma.com/design/o6gfoVEgyzJ0UA51d9V
+ 
+ ## Draft, map, and estimates
+ 
++### AP-08 preparation ownership · 2026-11-26
++
++`RouteAmendmentDraft.update` compares stable directed-leg IDs and geometry
++signatures across each command. Newly formed/changed Assisted geometries receive
++the existing estimator result once. Unchanged geometry, Check, editor reopening
++and Undo do not re-estimate. The common `RouteAmendmentLegEntry` stores estimate
++source, independent heading/time override flags and geometry-update provenance.
++Existing complete-value adapters and `PendingRouteAmendment.Leg` carry this
++optional metadata losslessly; older archives without it still decode.
++
++The existing complete-entry/geometry Undo snapshot restores provenance together
++with fields and cues. Preparation aids use `AviationMapSymbology.preparationAids`
++and the existing minute/drift geometry functions. `RouteAmendmentMapOverlay`
++draws them only for Assisted drafts, using working duration, the plan drift angle
++and the existing drift visibility control. Operational projections are unchanged.
++New estimates outside the preparation time range leave duration missing; legacy
++accepted durations retain their existing compatibility boundary. Durable unarmed
++draft storage remains AP-09, and arming/flying behavior is outside AP-08.
++
++See the [AP-08 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md)
++for verification and the owner's approved recalculation-label treatment.
++
+ AP-07 / D04 point corrections (2026-11-26): `RouteAmendmentDraft` owns validation,
+ named correction points and atomic geometry/entry snapshots. Directed review-edge
+ identity uses departure/rejoin roles or via UUIDs; coordinates remain a separate

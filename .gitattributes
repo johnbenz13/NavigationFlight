@@ -3,3 +3,4 @@
 # Retain exact unified-diff context in AP-06 source provenance.
 docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/**/source.patch whitespace=-blank-at-eol
 docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/**/source.patch whitespace=-blank-at-eol
+docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/**/source.patch whitespace=-blank-at-eol

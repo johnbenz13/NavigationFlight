@@ -1,0 +1,133 @@
+{
+  "exportedAt": "2026-11-26T16:47:36.839529+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_18-33-24-+0200.xcresult",
+  "resultInfoSHA256": "367dbfa2aa38f32d9d18030a63cf5c167883fb49c9bdf81de5bc86b3aa7ad36e",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+          "deviceName": "UIEvidence-iPad",
+          "modelName": "iPad Pro 11-inch (M5)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 1,
+        "passedTests": 7,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795711517.504,
+    "passedTests": 5,
+    "result": "Failed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795710804.446,
+    "statistics": [
+      {
+        "subtitle": "3 test runs",
+        "title": "1 test ran with dynamic parameters"
+      }
+    ],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertTrue failed",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 4,
+        "testIdentifierString": "NavigationFlightUITests/testAssistedUnavailableEstimatesAcceptPilotValues()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAssistedUnavailableEstimatesAcceptPilotValues",
+        "testName": "testAssistedUnavailableEstimatesAcceptPilotValues()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 6
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "b093fc9fea6143e0ada5001857abe2e9f2d21551",
+    "status": " M .gitattributes\n M NavigationFlight/Domain/Flight/PendingRouteAmendment.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentChartPanel.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift\n M NavigationFlight/Map/AviationMapPresentation.swift\n M NavigationFlight/Map/RouteAmendmentMapOverlay.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightTests/RouteAmendmentEstimateTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testAssistedPreparationWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "7BBBCCEE-AC12-482A-98C3-34510B4D5B0F.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap08-prefilled_0_78DCAB48-36C0-42C7-97C0-547AE4A964E5.png",
+        "timestamp": 1795711170.248
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "2810f45a5a38b6fd5e0e12354df56d04b3fe3176013097fc5dff3bdc881f9b79"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAssistedPreparationWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "B9AED0E3-13FB-419D-B260-DBF60E31A5A0.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap08-time-0300_0_3F05A53A-93B6-4CB9-992A-257B162BDF0B.png",
+        "timestamp": 1795711415.91
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "b73344909e153a6367703e829038297221b3f94fd4b359fb834e77c5349495a9"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAssistedPreparationWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "26DB05E1-63CB-4495-ADE8-45DA8B848A63.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap08-estimates-updated_0_C5635082-BE98-4623-82C4-60A2B20E79C2.png",
+        "timestamp": 1795711489.496
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "0659254e29abbcea51058e556d8b727e909d431c62c86cb85807f20a505ff518"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAssistedPreparationWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName": "UIEvidence-iPad",
+        "exportedFileName": "4DC9FD86-D4CF-4E3E-AB96-57FEFBCB7DD7.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap08-undo-restored_0_D2350FA4-2BF9-4551-983A-5674954DF72C.png",
+        "timestamp": 1795711502.725
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2420,
+      "sha256": "f470666bd53c204a68827b52ce7beb3d47280811656156665a210d122fa082dd"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "device": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "viewport": "834x1194",
+  "sourceDirectory": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/98CE93E2-ACA4-4ADF-8599-1DCACF428B5D/DeviceInteractionSynthesize",
+  "captureTimestamps": {
+    "reduce-motion-on": "12_13_22_953",
+    "map-tools": "12_14_33_810",
+    "moved": "12_15_03_691",
+    "delete-offered": "12_15_20_174",
+    "delete-canceled": "12_15_28_584",
+    "move-undone": "12_15_29_650",
+    "deleted": "12_15_41_914",
+    "delete-undone": "12_15_47_454",
+    "reduce-motion-restored": "12_15_59_967"
+  },
+  "sourceBaseline": "27a22f44962bb2db616d0ebc3a64829454673dab",
+  "candidate": "uncommitted AP07 production implementation, including full-row menu fix",
+  "fixture": "A with correction cues",
+  "reduceMotion": "ON during app verification, restored OFF afterward"
+}

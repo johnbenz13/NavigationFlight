@@ -1,0 +1,114 @@
+{
+  "exportedAt": "2026-11-26T11:11:06.705004+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/98CE93E2-ACA4-4ADF-8599-1DCACF428B5D/RunSomeTests/Test-NavigationFlight-2026.11.26_13-07-05-+0200.xcresult",
+  "resultInfoSHA256": "b9121201dc2edd1dca65a9f13dd2dd12290345ce068c7ba374acdf9797964b6e",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+          "deviceName": "AP01-iPhone-16-Pro",
+          "modelName": "iPhone 16 Pro",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795691369.823,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795691225.206,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "27a22f44962bb2db616d0ebc3a64829454673dab",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift\n M NavigationFlight/Map/OfflineAviationMapView.swift\n M NavigationFlight/Map/RouteAmendmentMapOverlay.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-07-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectionWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "4C2C054B-7DF7-4B88-8366-A34105C6FD43.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-Departure-Move_0_D82C0B54-61B6-46D6-AC17-C5B02A77E198.png",
+        "timestamp": 1795691346.254
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "b30cde4d4167fb34a686a914a03e25f34bf914b8b05f9d282dce6836764dd039"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectionWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "517752F8-762C-421E-A9D9-83ACBBB1B438.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-Departure-Delete_0_0263D45F-4213-4389-9A93-88ECDC3A0031.png",
+        "timestamp": 1795691255.627
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "77646975b70897f6a9c22d186fef2133ec38d1a7bbaa5eb383096c09ec33b7d7"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectionWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "101DECDB-DD28-442D-8F07-5B119CFF7810.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-Rejoin-Delete_0_CDDF3334-0893-4B23-BCDC-DB713AB27DB2.png",
+        "timestamp": 1795691300.426
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "8bd535fc7986ef8a89c52fb953aee73ade5697b43e87ba7bffc52df56c1b8c3c"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testMapToolsCorrectionWithLargerText()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "FF97331E-E474-41BD-A70D-D542CF405CEF.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-tools-restored_0_257DDEBF-662E-491F-B204-394487513F1A.png",
+        "timestamp": 1795691369.366
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "6a7b09389b49b7b2145c6f180f9c1d2437748730402fc58b76f1b863597a21c8"
+    }
+  ]
+}

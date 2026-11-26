@@ -1,0 +1,23 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-26T11:09:30Z
+Total Results: 1
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/1
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testMapToolsCorrectionWithLargerText()
+TEST_DISPLAY_NAME: testMapToolsCorrectionWithLargerText()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 95
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

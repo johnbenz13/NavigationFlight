@@ -1,0 +1,12 @@
+{
+  "sourceVideo": "/private/tmp/ap07-phone-diagnosis-testPointCorrectionWithLargerText/7CADBA31-66F4-44F6-8D3F-D0FABAE3CCDC.mp4",
+  "sourceVideoSHA256": "25eb3d0448ff334850b8fffae9ae2bcfe7af7048b22d04df0418079f554e50d6",
+  "frameSeconds": 25,
+  "extraction": "AVAssetImageGenerator, original video orientation",
+  "originalResult": "Test-NavigationFlight-2026.11.26_12-24-29-+0200.xcresult",
+  "test": "NavigationFlightUITests/testPointCorrectionWithLargerText()",
+  "device": "AP01-iPhone-16-Pro",
+  "viewport": "402x874",
+  "textSize": "UICTContentSizeCategoryAccessibilityXXXL",
+  "state": "A fixture; pencil open; chart points obscured by existing header/legend"
+}

@@ -1,0 +1,155 @@
+{
+  "exportedAt": "2026-11-26T10:46:04.851573+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/98CE93E2-ACA4-4ADF-8599-1DCACF428B5D/RunSomeTests/Test-NavigationFlight-2026.11.26_12-24-29-+0200.xcresult",
+  "resultInfoSHA256": "10438e003c850988fe8ddadbf6c9928f243a3157a2f8496372935478022167cc",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+          "deviceName": "AP01-iPhone-16-Pro",
+          "modelName": "iPhone 16 Pro",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 5,
+        "passedTests": 3,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 5,
+    "finishTime": 1795689172.93,
+    "passedTests": 3,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795688669.011,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertGreaterThanOrEqual failed: (\"43.99999999999997\") is less than (\"44.0\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 3,
+        "testIdentifierString": "NavigationFlightUITests/testDirectDrawingOverlapOffersEditThenRejoin()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDirectDrawingOverlapOffersEditThenRejoin",
+        "testName": "testDirectDrawingOverlapOffersEditThenRejoin()"
+      },
+      {
+        "failureText": "XCTAssertTrue failed",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 4,
+        "testIdentifierString": "NavigationFlightUITests/testMapToolsCorrectionWithLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testMapToolsCorrectionWithLargerText",
+        "testName": "testMapToolsCorrectionWithLargerText()"
+      },
+      {
+        "failureText": "XCTAssertEqual failed: (\"3\") is not equal to (\"2\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 6,
+        "testIdentifierString": "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo",
+        "testName": "testPointCorrectionDragDeleteAndUndo()"
+      },
+      {
+        "failureText": "XCTAssertTrue failed - Done Button Route waypoints Heading Use map center Button Correct route points Heading Departure Button Pop up button Double tap to activate the picker Point 1 Button Pop up button Double tap to activate the picker Point 2 Button Pop up button Double tap to activate the picker Rejoin Button Pop up button Double tap to activate the picker Delete Button",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 7,
+        "testIdentifierString": "NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions",
+        "testName": "testPointCorrectionVoiceOverNamesAndActions()"
+      },
+      {
+        "failureText": "XCTAssertEqual failed: (\"XCTWaiterResult(rawValue: 2)\") is not equal to (\"XCTWaiterResult(rawValue: 1)\")",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 8,
+        "testIdentifierString": "NavigationFlightUITests/testPointCorrectionWithLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionWithLargerText",
+        "testName": "testPointCorrectionWithLargerText()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 8
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "27a22f44962bb2db616d0ebc3a64829454673dab",
+    "status": " M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentReview.swift\n M NavigationFlight/Map/OfflineAviationMapView.swift\n M NavigationFlight/Map/RouteAmendmentMapOverlay.swift\n M NavigationFlightTests/NavigationFlightTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\nAM docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-07-implementation.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "DD6B83E0-DBB9-478E-8C5E-19FC3B888736.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-invalid-Departure_0_C642D2A9-E009-427A-9FAA-6770AB5D2136.png",
+        "timestamp": 1795688705.034
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "25a2a65003828905f77f65d648b17e7c1441c8ff73bea1dc084f0b9270ecd025"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "99113896-FBC1-429F-BEB1-A5472231F430.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-moved-Departure_0_68CF9B86-93DB-43F2-8A6C-CA90F296EC73.png",
+        "timestamp": 1795688708.693
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "94803cee11ed72f7debad7f201c7e26677449dc15f75c727f63a1a54f207cc14"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "0817F301-15CF-401E-BE99-4D4B230CBEE0.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-invalid-Rejoin_0_919047C6-B6D8-4DDD-8C58-6B7E57DCC71E.png",
+        "timestamp": 1795688715.393
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "095398937fc6fce152479b24eefd7bd914f353c9a18fffab007e3cfd5109143f"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName": "AP01-iPhone-16-Pro",
+        "exportedFileName": "0556CC3C-83C8-49D1-B31E-0655C178EECB.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap07-moved-Rejoin_0_898E7518-4ABE-42F8-BE21-4296C6A09BA8.png",
+        "timestamp": 1795688719.257
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1206,
+      "pixelHeight": 2622,
+      "sha256": "2eae5f3000db9e687c45063ec9da4865c3dcee7b6ff68c42cd157d56725d909c"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Done Button
+Route waypoints Heading
+Use map center Button
+Correct route points Heading
+Departure Button Pop up button Double tap to activate the picker
+Point 1 Button Pop up button Double tap to activate the picker
+Point 2 Button Pop up button Double tap to activate the picker
+Rejoin Button Pop up button Double tap to activate the picker
+Move Button
+Delete Button

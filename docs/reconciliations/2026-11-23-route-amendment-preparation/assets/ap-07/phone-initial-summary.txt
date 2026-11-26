@@ -1,0 +1,122 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-26T10:32:53Z
+Total Results: 8
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()
+TEST_DISPLAY_NAME: testPointCorrectionDragDeleteAndUndo()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 136
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:200 NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo(): XCTAssertEqual failed: ("3") is not equal to ("2")
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors()
+TEST_DISPLAY_NAME: testMapToolsCorrectsAndRecoversBothAnchors()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 80
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()
+TEST_DISPLAY_NAME: testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 12
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions()
+TEST_DISPLAY_NAME: testPointCorrectionVoiceOverNamesAndActions()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 35
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:63 NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions(): XCTAssertTrue failed - Done Button Route waypoints Heading Use map center Button Correct route points Heading Departure Button Pop up button Double tap to activate the picker Point 1 Button Pop up button Double tap to activate the picker Point 2 Button Pop up button Double tap to activate the picker Rejoin Button Pop up button Double tap to activate the picker Delete Button
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 5/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionWithLargerText()
+TEST_DISPLAY_NAME: testPointCorrectionWithLargerText()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 147
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:170 NavigationFlightUITests/testPointCorrectionWithLargerText(): XCTAssertEqual failed: ("XCTWaiterResult(rawValue: 2)") is not equal to ("XCTWaiterResult(rawValue: 1)")
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 6/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testMapToolsCorrectionWithLargerText()
+TEST_DISPLAY_NAME: testMapToolsCorrectionWithLargerText()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 85
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:107 NavigationFlightUITests/testMapToolsCorrectionWithLargerText(): XCTAssertTrue failed
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 7/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testDirectDrawingOverlapOffersEditThenRejoin()
+TEST_DISPLAY_NAME: testDirectDrawingOverlapOffersEditThenRejoin()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 4254
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:4262 NavigationFlightUITests/testDirectDrawingOverlapOffersEditThenRejoin(): XCTAssertGreaterThanOrEqual failed: ("43.99999999999997") is less than ("44.0")
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 8/8
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testDeliberateRejoinCompletesDirectDrawing()
+TEST_DISPLAY_NAME: testDeliberateRejoinCompletesDirectDrawing()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 4300
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

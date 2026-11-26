@@ -47,6 +47,27 @@ D04 supersedes only plotting/continuation controls, plotting-off
 value-editor gating and short-point correction in G01–G03 and affected AP tasks.
 The linked D04 proposal records the approval boundary and issue patch drafts.
 
+### AP-07 implementation · D04 point correction · 2026-11-26
+
+The owner selected D04's direct long-press drag and release-without-drag Delete
+offer during implementation (native popover anchored to the map point at regular
+sizes, native alert at accessibility text sizes). This replaces the retained F02 persistent Move/Remove
+card. Map tools provides a native named Departure / Point N / Rejoin action list
+with Move/Delete in a native alert at all text sizes. Holding an editable point
+immediately enlarges its marker to show pickup/draggability; release or cancellation
+clears that transient effect. Owner decision (2026-11-26): maximum accessibility
+text on small iPhone cockpit screens is excluded; iPad and normal iPhone Pro use
+remain supported.
+Move waits for the next eligible location; invalid anchor drops retain the draft
+with feedback. Deleting departure retains vias/rejoin; deleting rejoin reopens
+drawing. Geometry edits clear only changed adjacent required values and retain
+cues on surviving directed edges. New merged edges start empty. Local Undo
+restores geometry, selection and complete partial entries/cues together.
+
+[AP-07 acceptance matrix and verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-07-implementation.md)
+tracks verification and pending human visual acceptance. Assisted recalculation,
+Flight Undo/history and active-route editing remain outside AP-07.
+
 ### AP-03 implementation checkpoint · D04 · 2026-11-24
 
 Working-tree implementation for #227 now uses direct pencil drawing and automatic

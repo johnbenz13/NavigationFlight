@@ -16,6 +16,8 @@ struct RouteAmendmentConsole: View {
     let onPlaceAtMapCenter: () -> Void
     let onDiscard: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var correctionTarget: RouteAmendmentDraft.CorrectionPoint?
+    @State private var isCorrectionActionsPresented = false
 
     private let actionColor = Color(red: 0, green: 0.40, blue: 0.75)
 
@@ -374,13 +376,16 @@ struct RouteAmendmentConsole: View {
                     isPointPickerPresented = false
                     onPlaceAtMapCenter()
                 }
-                if draft.step == .drawing {
-                    Button("Change departure") { sendPickerIntent(.chooseDeparture) }
-                    // Retain the existing correction commands until AP-06 replaces their presentation.
-                    if let selected = draft.points.first(where: { $0.id == draft.selectedPointID }) {
-                        Section(pointName(selected)) {
-                            Button("Move point") { sendPickerIntent(.movePoint(selected.id)) }
-                            Button("Remove point", role: .destructive) { sendPickerIntent(.removePoint(selected.id)) }
+                if draft.acceptsPointCorrection {
+                    Section("Correct route points") {
+                        ForEach(draft.correctionPoints(on: route)) { point in
+                            Button {
+                                correctionTarget = point
+                                isCorrectionActionsPresented = true
+                            } label: {
+                                correctionLabel(point.name)
+                            }
+                            .accessibilityIdentifier("amendment-correct-\(point.name)")
                         }
                     }
                 }
@@ -407,6 +412,18 @@ struct RouteAmendmentConsole: View {
                 }
             }
         }
+        .alert(correctionTarget?.name ?? "Point", isPresented: $isCorrectionActionsPresented,
+               presenting: correctionTarget) { point in
+            Button("Move") { sendPickerIntent(.movePoint(point.id)) }
+            Button("Delete", role: .destructive) { sendPickerIntent(.removePoint(point.id)) }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func correctionLabel(_ name: String) -> some View {
+        Text(name)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(.rect)
     }
 
     private func sendPickerIntent(_ intent: RouteAmendmentDraft.Intent) {

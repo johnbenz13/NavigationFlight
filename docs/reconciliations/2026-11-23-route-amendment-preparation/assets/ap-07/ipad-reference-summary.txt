@@ -1,0 +1,86 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-26T10:23:55Z
+Total Results: 6
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/6
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/anchorCorrectionsRespectProgressAndCanonicalOccurrences()
+TEST_DISPLAY_NAME: anchorCorrectionsRespectProgressAndCanonicalOccurrences()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 108
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/6
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testMapToolsCorrectsAndRecoversBothAnchors()
+TEST_DISPLAY_NAME: testMapToolsCorrectsAndRecoversBothAnchors()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 80
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/6
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()
+TEST_DISPLAY_NAME: testAnchorDragRejectsInvalidDropsAndUndoRestoresValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 12
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/6
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionVoiceOverNamesAndActions()
+TEST_DISPLAY_NAME: testPointCorrectionVoiceOverNamesAndActions()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 35
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 5/6
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionInLandscape()
+TEST_DISPLAY_NAME: testPointCorrectionInLandscape()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 141
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 6/6
+TEST_TARGET: NavigationFlightUITests
+TEST_IDENTIFIER: NavigationFlightUITests/testPointCorrectionWithLargerText()
+TEST_DISPLAY_NAME: testPointCorrectionWithLargerText()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift
+TEST_LINE_NUMBER: 147
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlightUITests/testPointCorrectionWithLargerText(): Modifying state during view update, this will cause undefined behavior.
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

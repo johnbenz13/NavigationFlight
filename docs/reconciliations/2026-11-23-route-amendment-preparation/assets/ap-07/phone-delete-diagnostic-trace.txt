@@ -1,0 +1,16 @@
+Original app stdout/stderr exported with xcresulttool export diagnostics.
+Result: /Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_12-51-14-+0200.xcresult
+Fixture A/correction cues, reference iPhone; temporary logging removed after diagnosis.
+
+AP07 deletion intent removePoint(2164A4BF-F8C9-439E-9B62-C014214A0061), step drawing, panel nil, paused false
+2026-11-26 12:55:21.249171+0200 [66381:26551234] [Default] Sending animations idle reply with error: (null)
+2026-11-26 12:55:21.251019+0200 [66381:26553937] [Default] Received request to fetch matches for query: ↪︎ Descendants matching type Button
+    ↪︎ Elements matching predicate '"edit-amendment-leg" IN identifiers'
+2026-11-26 12:55:21.251075+0200 [66381:26553937] [Default] Evaluating query:
+ ↪︎ Descendants matching type Button
+    ↪︎ Elements matching predicate '"edit-amendment-leg" IN identifiers'
+2026-11-26 12:55:21.251095+0200 [66381:26553937] [Default] Getting root element snapshot
+2026-11-26 12:55:21.251118+0200 [66381:26553937] [Default] Getting snapshot for App element pid: 66381 for query ↪︎ Descendants matching type Button
+    ↪︎ Elements matching predicate '"edit-amendment-leg" IN identifiers'
+2026-11-26 12:55:21.251153+0200 [66381:26553937] [Default] Query requires iOS snapshot attributes XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeElementType, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeLabel, XC_kAXXCAttributeValue, XC_kAXXCAttributeTraits, XC_kAXXCAttributePlaceholderValue.
+2026-11-26 12:55:21.251187+0200 [66381:26553937] [Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform

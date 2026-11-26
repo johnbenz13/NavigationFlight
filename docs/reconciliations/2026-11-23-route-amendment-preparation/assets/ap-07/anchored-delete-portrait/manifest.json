@@ -1,0 +1,62 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "41B7D0D5-A6C4-4DAA-AAFA-5F20894B1BAE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-portrait_0_7BAE30D7-2157-467E-83E7-4EAD89DF988B.png",
+        "timestamp" : 1795694706.53
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "52FE3D90-3CA7-4D73-9C22-BEB5355544A7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-portrait_0_829272F9-6B05-420C-AE80-5DC4FF4D0005.png",
+        "timestamp" : 1795694700.291
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "66F97157-A0C0-4B3F-B491-192DBB128E81.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-confirm-portrait_0_A8E2D6E4-084B-4539-8DD4-CAFA8D197163.png",
+        "timestamp" : 1795694696.839
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "136FAFE6-A410-4842-99BE-638423854F78.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-portrait_0_F49906F7-781B-4774-901E-8309A0F36F66.png",
+        "timestamp" : 1795694690.541
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "C6151616-FAB9-4A64-8103-7027D2BBBF34.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-undo-cues_0_CD0B84A5-556A-4FBC-9F8F-4BA0C0EB5C44.png",
+        "timestamp" : 1795694649.892
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "C408A30C-11DA-4E7C-9CAC-48241EE3EF65.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-portrait_0_CB6230ED-5149-4292-BB1B-6232E82764CF.png",
+        "timestamp" : 1795694602.714
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionDragDeleteAndUndo"
+  }
+]

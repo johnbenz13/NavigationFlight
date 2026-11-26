@@ -808,6 +808,11 @@ extension CockpitFeatureState {
                 updateRouteAmendment(.editLegField(.heading, headings[index]))
                 updateRouteAmendment(.editLegField(.minutes, minutes[index]))
                 updateRouteAmendment(.editLegField(.seconds, seconds[index]))
+                if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES"] == "1" {
+                    updateRouteAmendment(.editLegField(.altitude, "\(2500 + index * 100)"))
+                    updateRouteAmendment(.editLegField(.frequency, "123.50"))
+                    updateRouteAmendment(.editLegField(.visualReference, "Correction cue \(index + 1)"))
+                }
             }
             updateRouteAmendment(.saveLegValues)
         }

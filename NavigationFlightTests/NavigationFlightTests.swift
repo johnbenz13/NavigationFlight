@@ -13,6 +13,195 @@ import UIKit
 private final class FixtureLocator {}
 
 struct NavigationFlightTests {
+    @MainActor
+    @Test(arguments: [0, 1, 2])
+    func pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_ index: Int) throws {
+        let (route, original) = try correctionDraft()
+        let before = original.reviewLegs(on: route)
+        let point = original.points[index]
+        var draft = original
+        let moved = WGS84Coordinate(latitudeDegrees: point.position.latitudeDegrees + 0.001,
+                                    longitudeDegrees: point.position.longitudeDegrees + 0.002)
+        draft.update(.plot(.init(position: moved, correction: .move(point.id))), route: route)
+        let after = draft.reviewLegs(on: route)
+        #expect(draft.points[index].position == moved)
+        for edge in before.indices {
+            let affected = edge == index || edge == index + 1
+            #expect(after[edge].entry.altitude == before[edge].entry.altitude)
+            #expect(after[edge].entry.frequency == before[edge].entry.frequency)
+            #expect(after[edge].entry.visualReference == before[edge].entry.visualReference)
+            if affected {
+                #expect(after[edge].entry.heading.isEmpty)
+                #expect(after[edge].entry.minutes.isEmpty && after[edge].entry.seconds.isEmpty)
+            } else {
+                #expect(after[edge].entry == before[edge].entry)
+            }
+        }
+        draft.update(.undo, route: route)
+        #expect(draft.points == original.points)
+        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
+        #expect(draft.selectedPointID == original.selectedPointID)
+        #expect(draft.reviewLegs(on: route) == before)
+
+        draft.update(.removePoint(point.id), route: route)
+        let remaining = draft.reviewLegs(on: route)
+        #expect(remaining.count == before.count - 1)
+        #expect(remaining[index].entry == RouteAmendmentLegEntry())
+        for leg in remaining where leg.id != remaining[index].id {
+            #expect(leg.entry == before.first(where: { $0.id == leg.id })?.entry)
+        }
+        draft.update(.undo, route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+        #expect(draft.points == original.points)
+    }
+
+    @MainActor
+    @Test(arguments: [true, false])
+    func anchorCorrectionRejectsInvalidDropsAndRecoversDeletion(_ isDeparture: Bool) throws {
+        let (route, original) = try correctionDraft()
+        let target = try #require(original.correctionPoints(on: route).first {
+            $0.name == (isDeparture ? "Departure" : "Rejoin")
+        })
+        var draft = original
+        let before = original.reviewLegs(on: route)
+        let invalid = isDeparture ? try #require(original.rejoin) : try #require(original.departure)
+        draft.update(.plot(.init(position: route.coordinate(at: invalid), anchors: [invalid],
+                                  isRouteTap: true, correction: .move(target.id))), route: route)
+        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
+        #expect(draft.reviewLegs(on: route) == before)
+        #expect(draft.selectedPointID == original.selectedPointID)
+        #expect(draft.message != nil)
+        draft.update(.plot(.init(position: .init(latitudeDegrees: 50, longitudeDegrees: 50),
+                                  correction: .move(target.id))), route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+
+        draft.update(.offerPointDeletion(target.id), route: route)
+        draft.update(.dismissPointDeletion, route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+        draft.update(.removePoint(target.id), route: route)
+        #expect(draft.points == original.points)
+        #expect(isDeparture ? draft.departure == nil : draft.rejoin == nil)
+        let surviving = draft.reviewLegs(on: route)
+        #expect(surviving.count == before.count - 1)
+        #expect(surviving.allSatisfy { leg in before.first(where: { $0.id == leg.id })?.entry == leg.entry })
+        draft.update(.undo, route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+        #expect(draft.departure == original.departure && draft.rejoin == original.rejoin)
+
+        draft.update(.removePoint(target.id), route: route)
+        let replacement = route.anchor(at: isDeparture ? 0 : 1, fraction: isDeparture ? 0.3 : 0.7)
+        draft.update(.plot(.init(position: route.coordinate(at: replacement), anchors: [replacement], isRouteTap: true)), route: route)
+        #expect(isDeparture ? draft.departure == replacement : draft.rejoin == replacement)
+        #expect(draft.points == original.points)
+
+        draft = original
+        draft.update(.movePoint(target.id), route: route)
+        draft.update(.plot(.init(position: route.coordinate(at: replacement), anchors: [replacement], isRouteTap: true)), route: route)
+        #expect(isDeparture ? draft.departure == replacement : draft.rejoin == replacement)
+        let changed = draft.reviewLegs(on: route)[isDeparture ? 0 : before.count - 1]
+        #expect(changed.entry.heading.isEmpty)
+        #expect(changed.entry.visualReference == before[isDeparture ? 0 : before.count - 1].entry.visualReference)
+        draft.update(.undo, route: route)
+        #expect(draft.reviewLegs(on: route) == before)
+    }
+
+    @MainActor
+    @Test func anchorCorrectionsRespectProgressAndCanonicalOccurrences() throws {
+        let (route, original) = try correctionDraft()
+        let remaining = RouteAmendmentRoute(legs: route.legs, firstAvailable: route.anchor(at: 0, fraction: 0.1))
+        var draft = original
+        let departure = try #require(draft.correctionPoints(on: remaining).first { $0.name == "Departure" })
+        let completed = route.anchor(at: 0, fraction: 0.05)
+        let before = draft.reviewLegs(on: remaining)
+        draft.update(.plot(.init(position: route.coordinate(at: completed), anchors: [completed],
+                                  isRouteTap: true, correction: .move(departure.id))), route: remaining)
+        #expect(draft.departure == original.departure)
+        #expect(draft.reviewLegs(on: remaining) == before)
+        #expect(draft.message != nil)
+
+        let rejoin = try #require(draft.correctionPoints(on: remaining).first { $0.name == "Rejoin" })
+        let crossing = [route.anchor(at: 0, fraction: 0.7), route.anchor(at: 1, fraction: 0.7)]
+        draft.update(.plot(.init(position: route.coordinate(at: crossing[0]), anchors: crossing,
+                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
+        #expect(draft.rejoin == original.rejoin)
+        #expect(draft.reviewLegs(on: remaining) == before)
+        #expect(draft.message != nil)
+
+        let shared = route.anchor(at: 0, fraction: 1)
+        draft.update(.plot(.init(position: route.coordinate(at: shared),
+                                  anchors: [shared, route.anchor(at: 1, fraction: 0)],
+                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
+        #expect(draft.rejoin == shared)
+        draft.update(.undo, route: remaining)
+        #expect(draft.reviewLegs(on: remaining) == before)
+        let sameLeg = route.anchor(at: 0, fraction: 0.8)
+        draft.update(.plot(.init(position: route.coordinate(at: sameLeg), anchors: [sameLeg],
+                                  isRouteTap: true, correction: .move(rejoin.id))), route: remaining)
+        #expect(draft.rejoin == sameLeg)
+        #expect(draft.points == original.points)
+    }
+
+    @MainActor
+    @Test func correctionRejectionCancellationAndOperationalIsolation() throws {
+        let (route, original) = try correctionDraft()
+        var draft = original
+        let point = try #require(draft.points.first)
+        let originalLegs = draft.reviewLegs(on: route)
+        let adjacent = try #require(draft.departure)
+        draft.update(.plot(.init(position: route.coordinate(at: adjacent), correction: .move(point.id))), route: route)
+        #expect(draft.points == original.points)
+        #expect(draft.reviewLegs(on: route) == originalLegs)
+        #expect(draft.selectedPointID == original.selectedPointID)
+        #expect(draft.message != nil)
+        draft.update(.offerPointDeletion(point.id), route: route)
+        draft.update(.dismissPointDeletion, route: route)
+        #expect(draft.points == original.points && draft.pointDeletionID == nil)
+        draft.update(.movePoint(point.id), route: route)
+        draft.update(.back, route: route)
+        #expect(draft.points == original.points && draft.reviewLegs(on: route) == originalLegs)
+
+        var state = CockpitFeatureState()
+        try state.accept(twoLegFlight())
+        try state.startLeg(at: Date(timeIntervalSince1970: 100))
+        let flight = state.flight
+        let source = try #require(state.routeForAmendment)
+        state.updateRouteAmendment(.open)
+        state.updateRouteAmendment(.chooseAnchor(source.anchor(at: 0, fraction: 0.2)))
+        state.updateRouteAmendment(.plot(.init(position: point.position)))
+        let target = try #require(state.routeAmendmentDraft?.points.first)
+        state.updateRouteAmendment(.removePoint(target.id))
+        state.updateRouteAmendment(.undo)
+        #expect(state.flight == flight)
+        #expect(state.routeAmendmentDraft?.points.first == target)
+    }
+
+    @MainActor
+    private func correctionDraft() throws -> (RouteAmendmentRoute, RouteAmendmentDraft) {
+        let plan = try twoLegFlight()
+        let route = RouteAmendmentRoute(legs: plan.legs,
+                                       firstAvailable: .init(legIndex: 0, legID: plan.legs[0].id, fraction: 0))
+        var draft = RouteAmendmentDraft(flightID: UUID())
+        draft.update(.chooseAnchor(route.anchor(at: 0, fraction: 0.2)), route: route)
+        for index in 0..<3 {
+            draft.update(.plot(.init(position: .init(latitudeDegrees: 32 + Double(index) * 0.01,
+                                                      longitudeDegrees: 35 + Double(index) * 0.01))), route: route)
+        }
+        draft.update(.plot(.init(position: route.coordinate(at: route.anchor(at: 1, fraction: 0.8)),
+                                  anchors: [route.anchor(at: 1, fraction: 0.8)], isRouteTap: true)), route: route)
+        for (index, leg) in draft.reviewLegs(on: route).enumerated() {
+            draft.update(.editLeg(leg.id), route: route)
+            draft.update(.editLegField(.heading, "\(87 + index)"), route: route)
+            // Include independent unfinished duration fields in the snapshot contract.
+            draft.update(.editLegField(.minutes, index == 1 ? "" : "03"), route: route)
+            draft.update(.editLegField(.seconds, "\(20 + index)"), route: route)
+            draft.update(.editLegField(.altitude, "\(2500 + index * 100)"), route: route)
+            draft.update(.editLegField(.frequency, "123.50"), route: route)
+            draft.update(.editLegField(.visualReference, "Cue \(index)"), route: route)
+            draft.update(.saveLegValues, route: route)
+        }
+        return (route, draft)
+    }
+
     @Test(arguments: ["", "00:00", "00:01", "59:59", "60:00", "60:01", "61:00"])
     func legTimeBoundaryValidation(_ duration: String) {
         var entry = RouteAmendmentLegEntry()

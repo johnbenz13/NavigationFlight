@@ -1,0 +1,14 @@
+{
+  "device": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "build": "BuildProject-Log-20261126-140244.txt",
+  "sourceBaseline": "27a22f44962bb2db616d0ebc3a64829454673dab",
+  "video": "/private/tmp/ap07-held-final.mp4",
+  "videoSHA256": "d70002c7b3628f16a6b972d40d0cdde6e5a78502edb35d7b0c3c16aebcde6e4e",
+  "frames": {
+    "held.png": 12,
+    "released-delete.png": 14
+  },
+  "interaction": "Real 3 second long press at361,626; frame12 during hold, frame14 after release. Directly inspected by root. Actual Reduce Motion ON offer additionally verified; restoredOFF.",
+  "sourcePatchSHA256": "a4035aeecf4b8da6796acb5cfc00a0c6082d30eee83d8797175b1840368d4cc3"
+}

@@ -1,0 +1,11 @@
+Done Button
+Route waypoints Heading
+Use map center Button
+Correct route points Heading
+Departure Button
+Point 1 Button
+Point 2 Button
+Rejoin Button
+NavigationFlight Point 1
+Move Button
+Delete Button

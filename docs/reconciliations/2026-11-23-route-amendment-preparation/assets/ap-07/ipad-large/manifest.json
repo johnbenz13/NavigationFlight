@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "1D6D2E28-B764-4843-9277-5958F57BE6C3.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-restored-portrait_0_D4D16576-8D87-48E9-BD27-BC3AFD1BBD1C.png",
+        "timestamp" : 1795688634.117
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "F0C4AD3B-7A9D-4AE5-BB76-D73E10AC0427.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-deleted-portrait_0_1CAB8184-A398-4381-87A9-7637F46F7980.png",
+        "timestamp" : 1795688625.291
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "91B5A9F3-9485-4A6E-9F50-651EEF73FCF4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-delete-offer-portrait_0_A54607FA-76AF-41CC-9BA3-F5862DD07E3D.png",
+        "timestamp" : 1795688617.779
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "59C460B7-4EFF-4BCA-8A82-B7B4E35109CE.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap07-moved-portrait-larger_0_D874C6AE-5778-4DF4-9BE5-13480976DE27.png",
+        "timestamp" : 1795688604.776
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testPointCorrectionWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testPointCorrectionWithLargerText"
+  }
+]

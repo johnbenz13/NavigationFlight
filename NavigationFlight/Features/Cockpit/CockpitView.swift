@@ -831,6 +831,7 @@ struct CockpitView: View {
                 pendingAmendment: pendingAmendmentMapPresentation,
                 amendmentCenterRequest: amendmentCenterRequest,
                 onAmendmentPlot: { onRouteAmendment(.plot($0)) },
+                onAmendmentCorrection: onRouteAmendment,
                 onMapInteraction: mapInteractionOccurred
                 )
                 .id(mapIdentity)
@@ -1146,7 +1147,7 @@ struct CockpitView: View {
                 onShowPlanInspection()
             },
             onClose: { cockpitPresentationState.setMapToolsPresented(false) },
-            onAmendmentPointInput: isEditingRouteAmendment && isAmendmentPlotting ? {
+            onAmendmentPointInput: isEditingRouteAmendment && routeAmendmentDraft?.legPanel == nil ? {
                 cockpitPresentationState.setMapToolsPresented(false)
                 isAmendmentPointPickerPresented = true
             } : nil

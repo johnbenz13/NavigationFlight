@@ -1,0 +1,9 @@
+{
+  "tool": "Xcode BuildProject(buildForTesting: true)",
+  "result": "passed",
+  "elapsedSeconds": 46.559,
+  "errors": [],
+  "originalLog": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/BuildProject/BuildProject-Log-20261126-175225.txt",
+  "sourceBase": "b093fc9fea6143e0ada5001857abe2e9f2d21551",
+  "productionSourcePatch": "ipad-portrait/source.patch"
+}

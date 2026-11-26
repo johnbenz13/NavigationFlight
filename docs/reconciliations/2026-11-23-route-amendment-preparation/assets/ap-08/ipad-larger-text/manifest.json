@@ -1,0 +1,62 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "4DC9FD86-D4CF-4E3E-AB96-57FEFBCB7DD7.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-undo-restored_0_D2350FA4-2BF9-4551-983A-5674954DF72C.png",
+        "timestamp" : 1795711502.725
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "26DB05E1-63CB-4495-ADE8-45DA8B848A63.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-estimates-updated_0_C5635082-BE98-4623-82C4-60A2B20E79C2.png",
+        "timestamp" : 1795711489.496
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "C14E6395-501D-479F-88B8-14F2257290CA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-drift-off_0_70351BDC-ABCD-4ECF-8C7A-37EF7C6068D9.png",
+        "timestamp" : 1795711482.951
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "B9AED0E3-13FB-419D-B260-DBF60E31A5A0.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-time-0300_0_3F05A53A-93B6-4CB9-992A-257B162BDF0B.png",
+        "timestamp" : 1795711415.91
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "1606094C-E9A5-4073-80C8-EBC65F9F4975.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-time-0215_0_5B4CBF19-9140-4DF5-86AC-9B905905963F.png",
+        "timestamp" : 1795711333.678
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "7BBBCCEE-AC12-482A-98C3-34510B4D5B0F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-prefilled_0_78DCAB48-36C0-42C7-97C0-547AE4A964E5.png",
+        "timestamp" : 1795711170.248
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAssistedPreparationWithLargerText()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAssistedPreparationWithLargerText"
+  }
+]

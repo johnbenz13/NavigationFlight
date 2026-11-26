@@ -292,6 +292,30 @@ The [approved Cockpit revision](https://www.figma.com/design/o6gfoVEgyzJ0UA51d9V
 
 ## Draft, map, and estimates
 
+### AP-08 preparation ownership · 2026-11-26
+
+`RouteAmendmentDraft.update` compares stable directed-leg IDs and geometry
+signatures across each command. Newly formed/changed Assisted geometries receive
+the existing estimator result once. Unchanged geometry, Check, editor reopening
+and Undo do not re-estimate. The common `RouteAmendmentLegEntry` stores estimate
+source, independent heading/time override flags and geometry-update provenance.
+Deleting a via marks the resulting merged edge updated even though it has a new
+logical ID; unaffected edges retain their entries.
+Existing complete-value adapters and `PendingRouteAmendment.Leg` carry this
+optional metadata losslessly; older archives without it still decode.
+
+The existing complete-entry/geometry Undo snapshot restores provenance together
+with fields and cues. Preparation aids use `AviationMapSymbology.preparationAids`
+and the existing minute/drift geometry functions. `RouteAmendmentMapOverlay`
+draws them only for Assisted drafts, using working duration, the plan drift angle
+and the existing drift visibility control. Operational projections are unchanged.
+New estimates outside the preparation time range leave duration missing; legacy
+accepted durations retain their existing compatibility boundary. Durable unarmed
+draft storage remains AP-09, and arming/flying behavior is outside AP-08.
+
+See the [AP-08 ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md)
+for verification and the owner's approved recalculation-label treatment.
+
 AP-07 / D04 point corrections (2026-11-26): `RouteAmendmentDraft` owns validation,
 named correction points and atomic geometry/entry snapshots. Directed review-edge
 identity uses departure/rejoin roles or via UUIDs; coordinates remain a separate

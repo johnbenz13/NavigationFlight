@@ -47,6 +47,25 @@ D04 supersedes only plotting/continuation controls, plotting-off
 value-editor gating and short-point correction in G01–G03 and affected AP tasks.
 The linked D04 proposal records the approval boundary and issue patch drafts.
 
+### AP-08 implementation · Assisted preparation · 2026-11-26
+
+Assisted drafts capture their mode at creation and prefill newly formed replacement
+legs using the Flight's existing estimator inputs. Heading and duration remain
+independently editable; unavailable or out-of-range duration estimates require
+pilot entry rather than clamping or wrapping. Check remains a separate reference.
+Moving geometry recalculates only changed segments; unchanged and restored entries
+retain their values. Undo restores geometry, partial fields, cues and provenance.
+Minute marks follow the working duration and remain visible when drift is off;
+Manual replacement legs continue to show neither aid.
+
+John approved **Estimates updated** in F06's secondary row text style on
+2026-11-26. This identifies recalculated Assisted legs; Undo restores the previous
+labels/provenance. Existing D03 layout, D04 correction rules and D05.2
+compass/cyclic-time controls remain authoritative.
+The [AP-08 acceptance matrix and verification ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-08-implementation.md)
+records verification and pending human acceptance. Unarmed draft persistence,
+Arm delivery and flying Assisted remain owned by their subsequent tickets.
+
 ### AP-07 implementation · D04 point correction · 2026-11-26
 
 The owner selected D04's direct long-press drag and release-without-drag Delete

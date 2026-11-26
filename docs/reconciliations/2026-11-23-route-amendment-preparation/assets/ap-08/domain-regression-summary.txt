@@ -1,0 +1,2666 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-26T16:02:13Z
+Total Results: 221
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .showDriftLines(false)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .progression(NavigationFlight.AppPreferences.Progression.manual)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.oneMinute)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.twoMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 5/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.fiveMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 6/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/typedFoundationValues(_:)
+TEST_DISPLAY_NAME: .recoveryWindow(NavigationFlight.AppPreferences.RecoveryWindow.tenMinutes)
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 7
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 7/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .tzeKivun
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 8/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .establishHeading
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 9/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/checklistRelaunch(_:)
+TEST_DISPLAY_NAME: .none
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 23
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 10/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 11/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "invalid"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 12/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{"version":1,"value":"unknown"}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 13/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/independentFallback(_:)
+TEST_DISPLAY_NAME: "{"version":99,"value":"none"}"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 37
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 14/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/failedWriteRetainsValue(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 56
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 15/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/failedWriteRetainsValue(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 56
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 16/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/amendmentModeDefaultsAndSavesIndependently()
+TEST_DISPLAY_NAME: Legacy settings default to Manual and a failed save preserves that choice
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 75
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 17/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/dismissFailure()
+TEST_DISPLAY_NAME: Dismiss never retries or changes effective value
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 96
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 18/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/queuedChoices()
+TEST_DISPLAY_NAME: Queued choices commit in order and preserve unrelated changes
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 109
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 19/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/accurateWarning()
+TEST_DISPLAY_NAME: Presentation-only warning does not claim track loss
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 124
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 20/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/presentationFailureDoesNotBlockNavigation()
+TEST_DISPLAY_NAME: A presentation write failure retains durable state and leaves navigation available
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 132
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 21/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: SettingsTests/suspendedSaveOrdering()
+TEST_DISPLAY_NAME: A suspended older save cannot publish an optimistic value or override a newer attempt
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/SettingsTests.swift
+TEST_LINE_NUMBER: 173
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 22/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentModeIsCapturedUntilTheNextDraft(_:)
+TEST_DISPLAY_NAME: .manual
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 16
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 23/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentModeIsCapturedUntilTheNextDraft(_:)
+TEST_DISPLAY_NAME: .assisted
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 16
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 24/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/assistedGeometryOverrideUndoAndSavedProvenance()
+TEST_DISPLAY_NAME: assistedGeometryOverrideUndoAndSavedProvenance()
+TEST_STATE: Failed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 34
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 1
+
+TEST_ISSUES:
+    NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift:97 NavigationFlightTests/assistedGeometryOverrideUndoAndSavedProvenance(): Caught error: .invalidGeometry
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 25/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/assistedUnavailableAndOutOfRangePrefillRequirePilotEntry()
+TEST_DISPLAY_NAME: assistedUnavailableAndOutOfRangePrefillRequirePilotEntry()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 105
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 26/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_:)
+TEST_DISPLAY_NAME: .manual
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 121
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 27/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_:)
+TEST_DISPLAY_NAME: .assisted
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 121
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 28/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_:)
+TEST_DISPLAY_NAME: 0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 29/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_:)
+TEST_DISPLAY_NAME: 1
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 30/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pointCorrectionRetainsOnlySurvivingEdgesAndUndoRestoresAllFields(_:)
+TEST_DISPLAY_NAME: 2
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 144
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 31/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/anchorCorrectionRejectsInvalidDropsAndRecoversDeletion(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 186
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 32/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/anchorCorrectionRejectsInvalidDropsAndRecoversDeletion(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 186
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 33/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/anchorCorrectionsRespectProgressAndCanonicalOccurrences()
+TEST_DISPLAY_NAME: anchorCorrectionsRespectProgressAndCanonicalOccurrences()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 236
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 34/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/correctionRejectionCancellationAndOperationalIsolation()
+TEST_DISPLAY_NAME: correctionRejectionCancellationAndOperationalIsolation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 272
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 35/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/legTimeBoundaryValidation(_:)
+TEST_DISPLAY_NAME: "60:01"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 332
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 36/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/deliberateTimeSelectionAndIndependentClearing(_:)
+TEST_DISPLAY_NAME: .minutes
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 348
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 37/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/deliberateTimeSelectionAndIndependentClearing(_:)
+TEST_DISPLAY_NAME: .seconds
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 348
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 38/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/acceptedLegTimeIsLosslessUntilDeliberatelyEdited(_:)
+TEST_DISPLAY_NAME: 3600
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 377
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 39/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/acceptedLegTimeIsLosslessUntilDeliberatelyEdited(_:)
+TEST_DISPLAY_NAME: 3601
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 377
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 40/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/acceptedLegTimeIsLosslessUntilDeliberatelyEdited(_:)
+TEST_DISPLAY_NAME: 5400
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 377
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 41/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cyclicDurationMatchesAllSecondsAndBothDirections()
+TEST_DISPLAY_NAME: cyclicDurationMatchesAllSecondsAndBothDirections()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 398
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 42/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cyclicDurationPreservesPartialAndLegacyUntilEdited()
+TEST_DISPLAY_NAME: cyclicDurationPreservesPartialAndLegacyUntilEdited()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 411
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 43/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/unsetTimeIsOutsideTheNumericCycle(_:)
+TEST_DISPLAY_NAME: .minutes
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 435
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 44/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/unsetTimeIsOutsideTheNumericCycle(_:)
+TEST_DISPLAY_NAME: .seconds
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 435
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 45/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/compassMotionNeverJumpsOnContactAndCrossesNorthContinuously()
+TEST_DISPLAY_NAME: compassMotionNeverJumpsOnContactAndCrossesNorthContinuously()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 448
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 46/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/timeReadinessAndPartialExitUseSharedValidation(_:)
+TEST_DISPLAY_NAME: ""
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 472
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 47/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/partialHeadingAndTimeSurviveDoneClearAndPencil(_:_:)
+TEST_DISPLAY_NAME: "001", "02:15"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 510
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 48/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/optionalCueWheelsNeverChangeReadinessOrOperationalFlight()
+TEST_DISPLAY_NAME: optionalCueWheelsNeverChangeReadinessOrOperationalFlight()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 558
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 49/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/invalidEnteredCuesRemainVisibleUntilCorrected(_:)
+TEST_DISPLAY_NAME: .frequency
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 596
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 50/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checkPreservesEveryPilotFieldAndManualAidEligibility(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 639
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 51/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cancellingDepartureOccurrencesStillRequiresDeparture()
+TEST_DISPLAY_NAME: cancellingDepartureOccurrencesStillRequiresDeparture()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 694
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 52/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cancellingAutomaticRejoinResumesFreeDrawingAndLegEditing(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 712
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 53/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cancellingAutomaticRejoinResumesFreeDrawingAndLegEditing(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 712
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 54/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/directDrawingOverlapResolvesEditOrRejoin(_:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 744
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 55/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/directDrawingOverlapResolvesEditOrRejoin(_:)
+TEST_DISPLAY_NAME: true
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 744
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 56/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/deliberateRejoinValidatesRouteOrder(_:_:_:)
+TEST_DISPLAY_NAME: 0, 0.3, false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 767
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 57/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/deliberateRejoinClosesDrawingAndRetainsGeometryAndValues()
+TEST_DISPLAY_NAME: deliberateRejoinClosesDrawingAndRetainsGeometryAndValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 785
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 58/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/deliberateRejoinChoiceRevalidatesProgress()
+TEST_DISPLAY_NAME: deliberateRejoinChoiceRevalidatesProgress()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 820
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 59/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/changingReturnRetainsIntermediateIdentitiesAndRejectsCompletedTap()
+TEST_DISPLAY_NAME: changingReturnRetainsIntermediateIdentitiesAndRejectsCompletedTap()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 850
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 60/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/partialAmendmentProjectsAdjacentLegsWithStableIdentities()
+TEST_DISPLAY_NAME: partialAmendmentProjectsAdjacentLegsWithStableIdentities()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 877
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 61/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/partialAmendmentStopsEditsAndResumesWithoutFlightEffects()
+TEST_DISPLAY_NAME: partialAmendmentStopsEditsAndResumesWithoutFlightEffects()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 901
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 62/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentRoutesPlottingAndSelectionInputsSeparately()
+TEST_DISPLAY_NAME: amendmentRoutesPlottingAndSelectionInputsSeparately()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 947
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 63/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/movedPointKeepsLegIdentityWhileGeometryInvalidatesValues()
+TEST_DISPLAY_NAME: movedPointKeepsLegIdentityWhileGeometryInvalidatesValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 971
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 64/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/stoppingPlottingCancelsOccurrenceOrReturnChoiceWithoutLosingPartialLegs()
+TEST_DISPLAY_NAME: stoppingPlottingCancelsOccurrenceOrReturnChoiceWithoutLosingPartialLegs()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 995
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 65/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentWorkspaceUntouchedExitHasNoDraftOrFlightEffects()
+TEST_DISPLAY_NAME: amendmentWorkspaceUntouchedExitHasNoDraftOrFlightEffects()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1013
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 66/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentDrawingStartsAtPencilAndStopsOnExit()
+TEST_DISPLAY_NAME: amendmentDrawingStartsAtPencilAndStopsOnExit()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1033
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 67/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentWorkspaceRetainsSelectionAndUnfinishedEntriesWithPlottingOffOnReturn()
+TEST_DISPLAY_NAME: amendmentWorkspaceRetainsSelectionAndUnfinishedEntriesWithPlottingOffOnReturn()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1055
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 68/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentWorkspaceReusesGeometryUndoFromReviewWithoutAFlightTransition()
+TEST_DISPLAY_NAME: amendmentWorkspaceReusesGeometryUndoFromReviewWithoutAFlightTransition()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1081
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 69/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentFailedSaveCanBeHiddenAndReopenedWithoutAFlightCommand()
+TEST_DISPLAY_NAME: amendmentFailedSaveCanBeHiddenAndReopenedWithoutAFlightCommand()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1097
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 70/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentLifecycleUsesFlightTimingRatherThanWorkspaceOrLegReadiness()
+TEST_DISPLAY_NAME: amendmentLifecycleUsesFlightTimingRatherThanWorkspaceOrLegReadiness()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1124
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 71/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/flightsHaveDistinctIdentityAndShareTheirSourceFlightPlanIdentity()
+TEST_DISPLAY_NAME: flightsHaveDistinctIdentityAndShareTheirSourceFlightPlanIdentity()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1147
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 72/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/headingNormalization(input:expected:)
+TEST_DISPLAY_NAME: 721, 1
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1172
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 73/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pilotHeadingHistoryAndLegLifecycleAreScoped()
+TEST_DISPLAY_NAME: pilotHeadingHistoryAndLegLifecycleAreScoped()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1179
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 74/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/representativeV5MapsIntoDomain()
+TEST_DISPLAY_NAME: representativeV5MapsIntoDomain()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1231
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 75/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/documentMetadataIdentifiesV5()
+TEST_DISPLAY_NAME: documentMetadataIdentifiesV5()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1261
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 76/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/editorOnlyAndUnknownPropertiesAreIgnored()
+TEST_DISPLAY_NAME: editorOnlyAndUnknownPropertiesAreIgnored()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1267
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 77/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/unsupportedVersionIsTyped()
+TEST_DISPLAY_NAME: unsupportedVersionIsTyped()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1278
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 78/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/brokenWaypointRelationshipIsTyped()
+TEST_DISPLAY_NAME: brokenWaypointRelationshipIsTyped()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1287
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 79/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/samePositionEventsRemainIndependentAndRepresentable()
+TEST_DISPLAY_NAME: samePositionEventsRemainIndependentAndRepresentable()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1303
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 80/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/officialV7MapsSavedExecutionWithoutRecalculation()
+TEST_DISPLAY_NAME: officialV7MapsSavedExecutionWithoutRecalculation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1316
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 81/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/suppliedLLHZLLIBV7FixtureProvidesPopulatedFrequencyPlan()
+TEST_DISPLAY_NAME: suppliedLLHZLLIBV7FixtureProvidesPopulatedFrequencyPlan()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1347
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 82/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/editorV7VectorsDecode(_:)
+TEST_DISPLAY_NAME: "editor-calm"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1371
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 83/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/validEmptyV7IsDecodedButNotFlightEligible()
+TEST_DISPLAY_NAME: validEmptyV7IsDecodedButNotFlightEligible()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1413
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 84/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/invalidV7ExecutionIsRejected(_:)
+TEST_DISPLAY_NAME: unexpectedWind
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1439
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 85/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitPresentationUsesSavedModes(_:)
+TEST_DISPLAY_NAME: "editor-wind"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1454
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 86/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitPresentationUsesSavedModes(_:)
+TEST_DISPLAY_NAME: "editor-no-wind"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1454
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 87/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitPresentationUsesSavedModes(_:)
+TEST_DISPLAY_NAME: "editor-calm"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1454
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 88/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitUsesThreeDigitAviationDegrees(_:_:)
+TEST_DISPLAY_NAME: 5.0, "005°"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1501
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 89/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitCollapsesIdenticalFrequenciesAcrossPhasesForDisplayOnly()
+TEST_DISPLAY_NAME: cockpitCollapsesIdenticalFrequenciesAcrossPhasesForDisplayOnly()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1513
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 90/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitKeepsMeaningfullyDifferentFrequenciesDistinct()
+TEST_DISPLAY_NAME: cockpitKeepsMeaningfullyDifferentFrequenciesDistinct()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1547
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 91/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/newFlightSessionIsReadyForExpectedLegAndMode()
+TEST_DISPLAY_NAME: newFlightSessionIsReadyForExpectedLegAndMode()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1564
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 92/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/startingLegRecordsTimestampAndDerivesElapsedTime()
+TEST_DISPLAY_NAME: startingLegRecordsTimestampAndDerivesElapsedTime()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1582
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 93/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/startingActiveLegDoesNotReplaceOriginalTimestamp()
+TEST_DISPLAY_NAME: startingActiveLegDoesNotReplaceOriginalTimestamp()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1597
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 94/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/startingLegDoesNotMutateImportedPlannedNavigation()
+TEST_DISPLAY_NAME: startingLegDoesNotMutateImportedPlannedNavigation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1613
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 95/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/featureStartIsAtomicAndPreservesOriginalStartAfterDuplicateCommand()
+TEST_DISPLAY_NAME: featureStartIsAtomicAndPreservesOriginalStartAfterDuplicateCommand()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1633
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 96/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/positionCheckLifecycleNeverMutatesFlightContracts()
+TEST_DISPLAY_NAME: positionCheckLifecycleNeverMutatesFlightContracts()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1651
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 97/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/elapsedTimeIncludesIntervalsWithoutUITimerUpdates()
+TEST_DISPLAY_NAME: elapsedTimeIncludesIntervalsWithoutUITimerUpdates()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1688
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 98/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/automaticWaypointProgressionUsesOneAtomicTimestamp()
+TEST_DISPLAY_NAME: automaticWaypointProgressionUsesOneAtomicTimestamp()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1704
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 99/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/destinationIdentificationRecordsOnceWithoutChangingActiveTiming()
+TEST_DISPLAY_NAME: destinationIdentificationRecordsOnceWithoutChangingActiveTiming()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1729
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 100/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reachingWithoutIdentificationDoesNotFabricateIdentification()
+TEST_DISPLAY_NAME: reachingWithoutIdentificationDoesNotFabricateIdentification()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1754
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 101/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/identifyThenReachPreservesDistinctObservationsAndActualETA()
+TEST_DISPLAY_NAME: identifyThenReachPreservesDistinctObservationsAndActualETA()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1771
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 102/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/manualWaypointProgressionWaitsForASecondStartTimestamp()
+TEST_DISPLAY_NAME: manualWaypointProgressionWaitsForASecondStartTimestamp()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1794
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 103/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/waypointCannotBeReachedWhileReady()
+TEST_DISPLAY_NAME: waypointCannotBeReachedWhileReady()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1818
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 104/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/duplicateFinalWaypointDoesNotOverwriteRecordedTimestamp()
+TEST_DISPLAY_NAME: duplicateFinalWaypointDoesNotOverwriteRecordedTimestamp()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1832
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 105/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/progressionDoesNotMutateImportedPlannedNavigation()
+TEST_DISPLAY_NAME: progressionDoesNotMutateImportedPlannedNavigation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1851
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 106/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitFeatureStateAdvancesPresentationInManualMode()
+TEST_DISPLAY_NAME: cockpitFeatureStateAdvancesPresentationInManualMode()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1868
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 107/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/nextLegPreparationUsesSavedResolvedValuesAndIsAbsentOnFinalLeg()
+TEST_DISPLAY_NAME: nextLegPreparationUsesSavedResolvedValuesAndIsAbsentOnFinalLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1896
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 108/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/nextLegPreparationLabelsSavedCourseWhenNoHeadingExists()
+TEST_DISPLAY_NAME: nextLegPreparationLabelsSavedCourseWhenNoHeadingExists()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1921
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 109/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/nextLegPreparationUsesExplicitSavedStartChanges()
+TEST_DISPLAY_NAME: nextLegPreparationUsesExplicitSavedStartChanges()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1936
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 110/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/previousLegSummaryUsesSavedValuesAndSessionTiming()
+TEST_DISPLAY_NAME: previousLegSummaryUsesSavedValuesAndSessionTiming()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1952
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 111/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/previousLegHistoryProjectsTargetsETACommitOrderDisclosuresAndHeadingCommits()
+TEST_DISPLAY_NAME: previousLegHistoryProjectsTargetsETACommitOrderDisclosuresAndHeadingCommits()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 1991
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 112/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/previousLegSummaryUsesCompletedLegRevisedDestinationETAAsComparisonBasis()
+TEST_DISPLAY_NAME: previousLegSummaryUsesCompletedLegRevisedDestinationETAAsComparisonBasis()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2062
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 113/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/previousLegSummaryOnlyExposesMostRecentlyCompletedLeg()
+TEST_DISPLAY_NAME: previousLegSummaryOnlyExposesMostRecentlyCompletedLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2093
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 114/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/advancingToSecondLegPreservesFirstLegRevisedETAHistoricalComparison()
+TEST_DISPLAY_NAME: advancingToSecondLegPreservesFirstLegRevisedETAHistoricalComparison()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2113
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 115/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/startingFirstLegCreatesPendingChecklistWithoutChangingTimingOrPlannedNavigation()
+TEST_DISPLAY_NAME: startingFirstLegCreatesPendingChecklistWithoutChangingTimingOrPlannedNavigation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2142
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 116/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/builtInLegStartTemplateDefinesTzeKivunAndGamadWithoutFlightValues()
+TEST_DISPLAY_NAME: builtInLegStartTemplateDefinesTzeKivunAndGamadWithoutFlightValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2161
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 117/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/bundledLegStartTemplatesAreValidatedAndEquivalent()
+TEST_DISPLAY_NAME: bundledLegStartTemplatesAreValidatedAndEquivalent()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2184
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 118/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/waypointIdentificationHidesChecklistWithoutChangingReviewOrTiming(wasNoted:)
+TEST_DISPLAY_NAME: false
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2204
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 119/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reachedNowHidesPendingChecklistWithoutFabricatingNoted()
+TEST_DISPLAY_NAME: reachedNowHidesPendingChecklistWithoutFabricatingNoted()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2230
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 120/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentLegChooserDistinguishesRepeatedOriginalOccurrences()
+TEST_DISPLAY_NAME: amendmentLegChooserDistinguishesRepeatedOriginalOccurrences()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2244
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 121/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentOriginalReferenceUsesFullPlannedValuesInTheFlightMode()
+TEST_DISPLAY_NAME: amendmentOriginalReferenceUsesFullPlannedValuesInTheFlightMode()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2265
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 122/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/manualAmendmentKeepsCapturedModeAndPilotEntriesThroughCheckAndPause()
+TEST_DISPLAY_NAME: manualAmendmentKeepsCapturedModeAndPilotEntriesThroughCheckAndPause()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2293
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 123/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/amendmentTimingUsesTheLegStartAndFlagsOnlyAnExceededETA()
+TEST_DISPLAY_NAME: amendmentTimingUsesTheLegStartAndFlagsOnlyAnExceededETA()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2390
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 124/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/partwayAnchorsRoundTripAndSplitAlongTheProjectedLine()
+TEST_DISPLAY_NAME: partwayAnchorsRoundTripAndSplitAlongTheProjectedLine()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2399
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 125/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/drawingNearAnAnchorKeepsTheFreeLocationUntilAnExactRouteTap()
+TEST_DISPLAY_NAME: drawingNearAnAnchorKeepsTheFreeLocationUntilAnExactRouteTap()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2436
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 126/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/anExactWaypointCanonicalizesTheSameLegBeforeAutomaticRejoin()
+TEST_DISPLAY_NAME: anExactWaypointCanonicalizesTheSameLegBeforeAutomaticRejoin()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2460
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 127/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/waypointPickerRespectsProgressAndTheOppositeAnchor()
+TEST_DISPLAY_NAME: waypointPickerRespectsProgressAndTheOppositeAnchor()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2476
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 128/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/automaticRejoinRetainsIntermediatePointsAndCanBeUndone()
+TEST_DISPLAY_NAME: automaticRejoinRetainsIntermediatePointsAndCanBeUndone()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2494
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 129/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/automaticRejoinDisambiguatesOverlappingLegsAndKeepsFreePointCorrection()
+TEST_DISPLAY_NAME: automaticRejoinDisambiguatesOverlappingLegsAndKeepsFreePointCorrection()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2530
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 130/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/draftPausesAcrossReportedProgressAndRetainsPointsWhenDepartureIsOvertaken()
+TEST_DISPLAY_NAME: draftPausesAcrossReportedProgressAndRetainsPointsWhenDepartureIsOvertaken()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2566
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 131/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/draftRequiresForwardRejoinAndBypassesExactlyTheChosenInterval()
+TEST_DISPLAY_NAME: draftRequiresForwardRejoinAndBypassesExactlyTheChosenInterval()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2623
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 132/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/draftCanonicalizesAdjacentWaypointsAndOffersCrossingOccurrences()
+TEST_DISPLAY_NAME: draftCanonicalizesAdjacentWaypointsAndOffersCrossingOccurrences()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2678
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 133/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/previousDrawerCollapseDoesNotAcknowledgeChecklist()
+TEST_DISPLAY_NAME: previousDrawerCollapseDoesNotAcknowledgeChecklist()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2700
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 134/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/automaticProgressionCreatesFreshPendingChecklistForNewLeg()
+TEST_DISPLAY_NAME: automaticProgressionCreatesFreshPendingChecklistForNewLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2713
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 135/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/manualProgressionWaitsUntilStartBeforeCreatingChecklist()
+TEST_DISPLAY_NAME: manualProgressionWaitsUntilStartBeforeCreatingChecklist()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2731
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 136/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checklistCollapseReopenAndNotedAreScopedToActiveLeg()
+TEST_DISPLAY_NAME: checklistCollapseReopenAndNotedAreScopedToActiveLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2749
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 137/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checklistInteractionsDoNotChangeTimerOrResolvedNavigationValues()
+TEST_DISPLAY_NAME: checklistInteractionsDoNotChangeTimerOrResolvedNavigationValues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2768
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 138/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checklistUsesOnlySavedDirectionAltitudeAndContractSupportedIAS()
+TEST_DISPLAY_NAME: checklistUsesOnlySavedDirectionAltitudeAndContractSupportedIAS()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2785
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 139/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitFeatureStateLoadsWindPlanUsingNoWindAndPreservesLegWhileBrowsing()
+TEST_DISPLAY_NAME: cockpitFeatureStateLoadsWindPlanUsingNoWindAndPreservesLegWhileBrowsing()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2834
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 140/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/fileLoaderOpensAStagedV7Fixture()
+TEST_DISPLAY_NAME: fileLoaderOpensAStagedV7Fixture()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2866
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 141/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/cockpitAdapterPresentsTheSelectedResolvedLegAndOnlySumsSavedTime()
+TEST_DISPLAY_NAME: cockpitAdapterPresentsTheSelectedResolvedLegAndOnlySumsSavedTime()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2876
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 142/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapPresentationUsesDomainRouteOrderAndSessionActiveLeg()
+TEST_DISPLAY_NAME: mapPresentationUsesDomainRouteOrderAndSessionActiveLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2895
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 143/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapPresentationSelectsBeginningOfFollowingLeg()
+TEST_DISPLAY_NAME: mapPresentationSelectsBeginningOfFollowingLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2931
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 144/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/destinationIdentificationDoesNotChangeMapPresentation()
+TEST_DISPLAY_NAME: destinationIdentificationDoesNotChangeMapPresentation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2952
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 145/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapBearingIsStable(from:to:expected:)
+TEST_DISPLAY_NAME: AviationMapCoordinate(latitude: 0.0, longitude: 0.0), AviationMapCoordinate(latitude: 1.0, longitude: 0.0), 0.0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2969
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 146/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapBearingIsStable(from:to:expected:)
+TEST_DISPLAY_NAME: AviationMapCoordinate(latitude: 0.0, longitude: 0.0), AviationMapCoordinate(latitude: 0.0, longitude: 1.0), 90.0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2969
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 147/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapBearingIsStable(from:to:expected:)
+TEST_DISPLAY_NAME: AviationMapCoordinate(latitude: 0.0, longitude: 0.0), AviationMapCoordinate(latitude: -1.0, longitude: 0.0), 180.0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2969
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 148/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapBearingIsStable(from:to:expected:)
+TEST_DISPLAY_NAME: AviationMapCoordinate(latitude: 0.0, longitude: 0.0), AviationMapCoordinate(latitude: 0.0, longitude: -1.0), 270.0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2969
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 149/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/selectedMapCalloutRepresentsOnlyOneOperationalTarget()
+TEST_DISPLAY_NAME: selectedMapCalloutRepresentsOnlyOneOperationalTarget()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 2983
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 150/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapMinuteMarkersUseEveryFullMinuteOfSavedPlannedDuration()
+TEST_DISPLAY_NAME: mapMinuteMarkersUseEveryFullMinuteOfSavedPlannedDuration()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3005
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 151/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapVisualStyleMakesEvenMinuteTicksLonger()
+TEST_DISPLAY_NAME: mapVisualStyleMakesEvenMinuteTicksLonger()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3023
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 152/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapVisualStyleUsesTranslucentSurfacesAndOpaqueDetails()
+TEST_DISPLAY_NAME: mapVisualStyleUsesTranslucentSurfacesAndOpaqueDetails()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3031
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 153/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/movingIdentificationLabelKeepsResolvedEllipseAnchorAndPlanUnchanged()
+TEST_DISPLAY_NAME: movingIdentificationLabelKeepsResolvedEllipseAnchorAndPlanUnchanged()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3058
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 154/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/committedETAPropagatesToMapPresentationWithoutMutatingFlight()
+TEST_DISPLAY_NAME: committedETAPropagatesToMapPresentationWithoutMutatingFlight()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3079
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 155/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/movingEtaCalloutOffsetDoesNotMoveDestinationOrPlannedNavigation()
+TEST_DISPLAY_NAME: movingEtaCalloutOffsetDoesNotMoveDestinationOrPlannedNavigation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3108
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 156/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapMinuteMarkersOmitDurationsShorterThanOneMinute()
+TEST_DISPLAY_NAME: mapMinuteMarkersOmitDurationsShorterThanOneMinute()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3130
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 157/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapMinuteMarkersAtExactMinuteDoNotExtendBeyondArrival()
+TEST_DISPLAY_NAME: mapMinuteMarkersAtExactMinuteDoNotExtendBeyondArrival()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3139
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 158/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/mapDestinationCalloutFormatsSavedDurationWithoutChangingIt()
+TEST_DISPLAY_NAME: mapDestinationCalloutFormatsSavedDurationWithoutChangingIt()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3153
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 159/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/importedIdentificationPointOrderingAndResolvedLegETAArePreserved()
+TEST_DISPLAY_NAME: importedIdentificationPointOrderingAndResolvedLegETAArePreserved()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3159
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 160/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/identificationPointReachRecordsOnceWithoutChangingLeg()
+TEST_DISPLAY_NAME: identificationPointReachRecordsOnceWithoutChangingLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3178
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 161/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reportingLaterIdentificationPointPassesEarlierFuturePointsAtomically()
+TEST_DISPLAY_NAME: reportingLaterIdentificationPointPassesEarlierFuturePointsAtomically()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3224
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 162/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/destinationReachPassesEveryRemainingIdentificationPointAtomically(progressionPolicy:)
+TEST_DISPLAY_NAME: .automaticNextLeg
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3271
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 163/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/finalDestinationReachPassesRemainingPointsWithoutStartingSuccessor()
+TEST_DISPLAY_NAME: finalDestinationReachPassesRemainingPointsWithoutStartingSuccessor()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3348
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 164/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/invalidDestinationReachContextDoesNotMutateSession()
+TEST_DISPLAY_NAME: invalidDestinationReachContextDoesNotMutateSession()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3376
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 165/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/rejectedIdentificationPointReportsDoNotMutateState()
+TEST_DISPLAY_NAME: rejectedIdentificationPointReportsDoNotMutateState()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3401
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 166/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/featureAndMapPresentationProjectPassedReachedAndFutureOutcomes()
+TEST_DISPLAY_NAME: featureAndMapPresentationProjectPassedReachedAndFutureOutcomes()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3440
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 167/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/identificationPointReachUndoRestoresCompleteAtomicSnapshot()
+TEST_DISPLAY_NAME: identificationPointReachUndoRestoresCompleteAtomicSnapshot()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3477
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 168/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reachUndoUsesStrictWallClockDeadlineAndPassiveActionsPreserveIt()
+TEST_DISPLAY_NAME: reachUndoUsesStrictWallClockDeadlineAndPassiveActionsPreserveIt()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3522
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 169/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reachUndoExpiresAcrossProcessTermination()
+TEST_DISPLAY_NAME: reachUndoExpiresAcrossProcessTermination()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3547
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 170/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/rejectedReachPreservesUndoWhileSuccessfulFlightStateCommitInvalidatesIt()
+TEST_DISPLAY_NAME: rejectedReachPreservesUndoWhileSuccessfulFlightStateCommitInvalidatesIt()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3567
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 171/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/arrivalReachUndoRestoresAtomicSnapshotAcrossProgressionPolicies(progressionPolicy:)
+TEST_DISPLAY_NAME: .automaticNextLeg
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3593
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 172/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/arrivalReachUndoRestoresAtomicSnapshotAcrossProgressionPolicies(progressionPolicy:)
+TEST_DISPLAY_NAME: .manualNextLeg
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3593
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 173/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/finalNavigationCompletionUndoRestoresActiveFinalLeg()
+TEST_DISPLAY_NAME: finalNavigationCompletionUndoRestoresActiveFinalLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3662
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 174/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/arrivalUndoExpiresAcrossBackgroundTimeAndLaterSuccessorActivityInvalidatesIt()
+TEST_DISPLAY_NAME: arrivalUndoExpiresAcrossBackgroundTimeAndLaterSuccessorActivityInvalidatesIt()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3705
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 175/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/driftReferenceGeometryUsesConfiguredAngleAndResolvedEndpoints()
+TEST_DISPLAY_NAME: driftReferenceGeometryUsesConfiguredAngleAndResolvedEndpoints()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3728
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 176/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/driftVisibilityIsCurrentFlightPresentationState()
+TEST_DISPLAY_NAME: driftVisibilityIsCurrentFlightPresentationState()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3772
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 177/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/timingAndReachChangesDoNotAlterActiveLegDriftGeometry()
+TEST_DISPLAY_NAME: timingAndReachChangesDoNotAlterActiveLegDriftGeometry()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3788
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 178/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/identificationPointTimingDeltaAndTargetProgressionAreDeterministic()
+TEST_DISPLAY_NAME: identificationPointTimingDeltaAndTargetProgressionAreDeterministic()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3815
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 179/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/lowerConsoleArrivalETAUsesDestinationRevision()
+TEST_DISPLAY_NAME: Lower-console arrival ETA uses the committed destination revision
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3853
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 180/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pilotETARoundsAndAdjustsWithoutMutatingPlan()
+TEST_DISPLAY_NAME: pilotETARoundsAndAdjustsWithoutMutatingPlan()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3893
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 181/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pilotETAMinimumUsesExactAndRoundedRunningTimerFloors()
+TEST_DISPLAY_NAME: pilotETAMinimumUsesExactAndRoundedRunningTimerFloors()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3937
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 182/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/pilotETADecrementStopsAtCurrentRunningTimerFloor()
+TEST_DISPLAY_NAME: pilotETADecrementStopsAtCurrentRunningTimerFloor()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3942
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 183/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/stalePilotETADraftReturnsTypedErrorAndRemainsOpenWithoutCommit()
+TEST_DISPLAY_NAME: stalePilotETADraftReturnsTypedErrorAndRemainsOpenWithoutCommit()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3961
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 184/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/repeatedPilotETACommitsRetainOrderedHistoryAndCancelPreservesIt()
+TEST_DISPLAY_NAME: repeatedPilotETACommitsRetainOrderedHistoryAndCancelPreservesIt()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 3981
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 185/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/destinationAndIdentificationTargetsUseTheSameCanonicalETAStateMachine()
+TEST_DISPLAY_NAME: destinationAndIdentificationTargetsUseTheSameCanonicalETAStateMachine()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4002
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 186/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/unreachedIdentificationPointWithoutAmendmentKeepsReachPrimaryAndETASecondary()
+TEST_DISPLAY_NAME: unreachedIdentificationPointWithoutAmendmentKeepsReachPrimaryAndETASecondary()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4038
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 187/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/unreachedIdentificationPointWithRevisedETAKeepsReachPrimary()
+TEST_DISPLAY_NAME: unreachedIdentificationPointWithRevisedETAKeepsReachPrimary()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4054
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 188/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/settingIdentificationPointETADoesNotReachOrProgressTheLeg()
+TEST_DISPLAY_NAME: settingIdentificationPointETADoesNotReachOrProgressTheLeg()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4071
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 189/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/reachingIdentificationPointAfterETARevisionRecordsReachAndPreservesRevision()
+TEST_DISPLAY_NAME: reachingIdentificationPointAfterETARevisionRecordsReachAndPreservesRevision()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4096
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 190/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/legTwoIdentificationPointRevisionDoesNotImplyReachAndRemainsLegScoped()
+TEST_DISPLAY_NAME: legTwoIdentificationPointRevisionDoesNotImplyReachAndRemainsLegScoped()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4133
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 191/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/nextTargetShortcutAndDirectLookupResolveTheSameCanonicalKey()
+TEST_DISPLAY_NAME: nextTargetShortcutAndDirectLookupResolveTheSameCanonicalKey()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4164
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 192/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/directTargetEditorReusesShortcutStateAndKeepsItsObservationSource()
+TEST_DISPLAY_NAME: directTargetEditorReusesShortcutStateAndKeepsItsObservationSource()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4191
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 193/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/consecutiveLegIdentificationPointStateIsIsolated()
+TEST_DISPLAY_NAME: consecutiveLegIdentificationPointStateIsIsolated()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4215
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 194/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checkDisclosureRoundsOnlyAfterFullPrecisionCalculationAndNeverChangesRevision()
+TEST_DISPLAY_NAME: checkDisclosureRoundsOnlyAfterFullPrecisionCalculationAndNeverChangesRevision()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4271
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 195/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/checkSelectsLatestReachedPredecessorAtRequestTime()
+TEST_DISPLAY_NAME: checkSelectsLatestReachedPredecessorAtRequestTime()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4295
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 196/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/hidingCheckPreservesRequestedHistoryAndNeverRequestedCheckHasNone()
+TEST_DISPLAY_NAME: hidingCheckPreservesRequestedHistoryAndNeverRequestedCheckHasNone()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4324
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 197/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/invalidCheckTimingProducesNoPartialMutation()
+TEST_DISPLAY_NAME: invalidCheckTimingProducesNoPartialMutation()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4348
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 198/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/proportionalReferenceAndInvalidCases()
+TEST_DISPLAY_NAME: proportionalReferenceAndInvalidCases()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 4370
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 199/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/editorTimingAndDirection(mode:wind:heading:seconds:provenance:)
+TEST_DISPLAY_NAME: .noWind, nil, 355.0, 40, .noWind
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 9
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 200/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/editorTimingAndDirection(mode:wind:heading:seconds:provenance:)
+TEST_DISPLAY_NAME: .wind, Wind(directionFromTrue: NavigationFlight.Degrees(value: 0.0), speed: NavigationFlight.Knots(value: 0.0)), 355.0, 40, .plannedWind(NavigationFlight.Wind(directionFromTrue: NavigationFlight.Degrees(value: 0.0), speed: NavigationFlight.Knots(value: 0.0)))
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 9
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 201/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/editorTimingAndDirection(mode:wind:heading:seconds:provenance:)
+TEST_DISPLAY_NAME: .wind, Wind(directionFromTrue: NavigationFlight.Degrees(value: 90.0), speed: NavigationFlight.Knots(value: 45.0)), 25.0, 46, .plannedWind(NavigationFlight.Wind(directionFromTrue: NavigationFlight.Degrees(value: 90.0), speed: NavigationFlight.Knots(value: 45.0)))
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 9
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 202/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/unavailablePlannedWind(_:)
+TEST_DISPLAY_NAME: Wind(directionFromTrue: NavigationFlight.Degrees(value: 0.0), speed: NavigationFlight.Knots(value: 100.0))
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 28
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 203/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/unavailableWithoutPositiveDurationOrAirspeed()
+TEST_DISPLAY_NAME: unavailableWithoutPositiveDurationOrAirspeed()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 38
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 204/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/rejectsInvalidTime(_:)
+TEST_DISPLAY_NAME: "00:00"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 43
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 205/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/acceptsPilotValuesAndUntimedCues()
+TEST_DISPLAY_NAME: acceptsPilotValuesAndUntimedCues()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 52
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 206/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/legacyCompleteValuesRemainLosslessWhileOtherFieldsChange()
+TEST_DISPLAY_NAME: legacyCompleteValuesRemainLosslessWhileOtherFieldsChange()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 68
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 207/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/headingEntryRejectsOutOfRangeEditsAndWrapsAtNorth()
+TEST_DISPLAY_NAME: headingEntryRejectsOutOfRangeEditsAndWrapsAtNorth()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 91
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 208/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/secondsEntryRejectsOutOfRangeEditsAndPadsSingleDigits()
+TEST_DISPLAY_NAME: secondsEntryRejectsOutOfRangeEditsAndPadsSingleDigits()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 108
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 209/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/timeStepsRetainExactSecondsAndStayPositive()
+TEST_DISPLAY_NAME: timeStepsRetainExactSecondsAndStayPositive()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 122
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 210/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelSupportsNegativeAndBoundaryValues(_:)
+TEST_DISPLAY_NAME: -1500
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 211/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelSupportsNegativeAndBoundaryValues(_:)
+TEST_DISPLAY_NAME: -1400
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 212/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelSupportsNegativeAndBoundaryValues(_:)
+TEST_DISPLAY_NAME: 0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 213/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelSupportsNegativeAndBoundaryValues(_:)
+TEST_DISPLAY_NAME: 2500
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 214/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelSupportsNegativeAndBoundaryValues(_:)
+TEST_DISPLAY_NAME: 20000
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 138
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 215/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/altitudeWheelRejectsInvalidNewValues(_:)
+TEST_DISPLAY_NAME: 20100
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 148
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 216/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/inheritedCustomAltitudeRemainsLossless(_:)
+TEST_DISPLAY_NAME: 25000.0
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 156
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 217/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/radioWheelsOnlyConstructValidChannels()
+TEST_DISPLAY_NAME: radioWheelsOnlyConstructValidChannels()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 172
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 218/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/customRadioIsNeverRoundedOnPresentation(_:)
+TEST_DISPLAY_NAME: "122.52500000001"
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 191
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 219/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/inheritedRadioPresentationDoesNotUseRoundedAdapterText(_:)
+TEST_DISPLAY_NAME: 122.123456789
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 203
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 220/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/cueClearsAndEditsPreserveOtherFieldsAndAcceptedPrecision()
+TEST_DISPLAY_NAME: cueClearsAndEditsPreserveOtherFieldsAndAcceptedPrecision()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 216
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 221/221
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: RouteAmendmentEstimateTests/deliberateCueChoiceReplacesCustomValueEvenWhenAdapterTextIsIdentical()
+TEST_DISPLAY_NAME: deliberateCueChoiceReplacesCustomValueEvenWhenAdapterTextIsIdentical()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/RouteAmendmentEstimateTests.swift
+TEST_LINE_NUMBER: 240
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

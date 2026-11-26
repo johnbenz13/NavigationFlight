@@ -1,0 +1,142 @@
+{
+  "device": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "session": "AP08 Canonical iPad",
+  "sourceBuild": "BuildProject buildForTesting passed19:03, prior to isolated removePoint status change",
+  "headAtRetention": "b093fc9fea6143e0ada5001857abe2e9f2d21551",
+  "files": [
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/prefilled-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_05_03_216-screenshot.png",
+      "sha256": "0b135c4f103d2251fb582fc1d6f75886a38b66efbed1de439fc5eaafd9c867f9"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/prefilled-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_05_03_216-hierarchy.txt",
+      "sha256": "ffd1d55bb8fbb2e2d993d0489cb481e4b4e36af786629eaacfc799d16bbaaca2"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/editor-prefilled-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_05_53_011-screenshot.png",
+      "sha256": "dbe374ba20b2590eddc00f6451bc890b1d96469e8c2d2caa46cdc28250fd3919"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/editor-prefilled-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_05_53_011-hierarchy.txt",
+      "sha256": "96eab408781afd46b0596765e765642dffaef7fd6757cfc4aa1c8010cf04d783"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/editor-time-0300-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_08_25_929-screenshot.png",
+      "sha256": "b89106153647ea006631ab23a8cc38defb65385ea7b6a1356b438e5b651447ad"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/editor-time-0300-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_08_25_929-hierarchy.txt",
+      "sha256": "ce12712b139f392a789c6ec97b9e955a47ae75caaa968d5a2808acc0c6d31274"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/override-saved-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_01_572-screenshot.png",
+      "sha256": "bed7799be081574d200d906c748044c6d9815556a448f5d8996ea50229f01574"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/override-saved-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_01_572-hierarchy.txt",
+      "sha256": "200b710140cc1a61ce3131c7cec08cb183416b79d9b7e291ee9e442d98fbc707"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/drift-off-menu-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_22_628-screenshot.png",
+      "sha256": "970a347dc30dd521ea9fcb7c6e0c2478d0f6a9f0e5b5139b596bcf900a8b3563"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/drift-off-menu-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_22_628-hierarchy.txt",
+      "sha256": "55a4fcf67f1e804268d6cb611e4613e379b51d60c6c63003c6cc836a74bba844"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/drift-off-0300-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_24_718-screenshot.png",
+      "sha256": "bc1a984689316fcdcc81d0da5ca45c54322c48aac8f6b74426095d99070d6d8a"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/drift-off-0300-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_24_718-hierarchy.txt",
+      "sha256": "200b710140cc1a61ce3131c7cec08cb183416b79d9b7e291ee9e442d98fbc707"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/estimates-updated-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_33_918-screenshot.png",
+      "sha256": "bb44207c9d83c15a63b39629af70b6ff9b709ba936f0fc21fba44a51d77937e7"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/estimates-updated-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_33_918-hierarchy.txt",
+      "sha256": "441d00416ad299af02e132a678f8d5ab1c32fda637af4c92007e2ac1b65acb16"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/undo-restored-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_53_489-screenshot.png",
+      "sha256": "ba55cb8ddbc531b036a56b17b28b50554dad8accc6fc1543035e434b9a160ab8"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/undo-restored-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_09_53_489-hierarchy.txt",
+      "sha256": "200b710140cc1a61ce3131c7cec08cb183416b79d9b7e291ee9e442d98fbc707"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-on-setting-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_41_928-screenshot.png",
+      "sha256": "2803e0d3f89090c8d848ae7b1d7fc3f129dbb5c9cb213a26da10522e46c9cf09"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-on-setting-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_41_928-hierarchy.txt",
+      "sha256": "a2a806fe941d845a752103956fd5fb24913840d1605baf3126c0698993dc86fc"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-updated-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_56_657-screenshot.png",
+      "sha256": "d0967dd995f9f9d8e8002256033a81f488aa27f919f57610bf3f3d04eab9af66"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-updated-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_56_657-hierarchy.txt",
+      "sha256": "9a21effa026d1fbfb7cdc3b68452668ab0b60df9c96ebd8cb9b3d4b6054caf56"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-undo-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_58_192-screenshot.png",
+      "sha256": "cd75c0b18a4463a1735bbeacb03db774ced76abbd728886c615f0c4b81123ca7"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-undo-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_10_58_192-hierarchy.txt",
+      "sha256": "335f5d0b2c7096e81e3fac585ff69e7086b593cc00b020d323ad63a610c61b02"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/landscape-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_11_12_658-screenshot.png",
+      "sha256": "cc65f611dd1459f186c0adc7ea71fa7d497c43ffc3f4896058b771296803bb10"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/landscape-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_11_12_658-hierarchy.txt",
+      "sha256": "11d1b515dca21497741fd9d87dfe6e6c29169c446f08cb9789a295f7a6cc8e50"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-off-restored-screenshot.png",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_11_19_153-screenshot.png",
+      "sha256": "776a76a8e98d70abffa3cfccab0cc69f2d90e7f2a1c765733eed5852893d806b"
+    },
+    {
+      "file": "docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/canonical-ipad/reduce-motion-off-restored-hierarchy.txt",
+      "original": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/204A6E7F-7A38-4388-9F23-E9B67568FC62/DeviceInteractionSynthesize/AP08 Canonical iPad-19_11_19_153-hierarchy.txt",
+      "sha256": "017b033d933e84f5a9a6555dcfdd8ced53500d016ed45f93237cf810f29a2eed"
+    }
+  ],
+  "buildAppPath": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Build/Products/Debug-iphonesimulator/NavigationFlight.app",
+  "configuration": "Debug",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "heldPreviewLimit": "DeviceInteractionSynthesize returns after touch release; captures prove released sustained drag only. Midgesture not captured."
+}

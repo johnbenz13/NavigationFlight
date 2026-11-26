@@ -311,6 +311,11 @@ struct RouteAmendmentChartPanel: View {
         _ editor: RouteAmendmentDraft.Editor, invalid: Set<RouteAmendmentLegEntry.Field>,
         focused: RouteAmendmentLegEntry.Field?
     ) -> some View {
+        if let status = editor.entry.estimateStatus {
+            Text(status).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("amendment-estimate-status")
+        }
         if focused == nil {
             RouteAmendmentHeadingSection(entry: editor.entry, onIntent: onIntent)
                 .id(editor.id)

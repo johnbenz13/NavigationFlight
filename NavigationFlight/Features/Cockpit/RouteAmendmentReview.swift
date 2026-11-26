@@ -19,7 +19,7 @@ struct RouteAmendmentReview: View {
                 .buttonStyle(RouteAmendmentLegButtonStyle())
                 .id(leg.id)
                 .accessibilityLabel("Proposed leg \(index + 1), \(leg.name)")
-                .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))")
+                .accessibilityValue("Magnetic heading \(heading(leg)), leg time \(duration(leg))\(leg.entry.estimateStatus.map { ", " + $0 } ?? "")")
                 .accessibilityAddTraits(draft.editor?.id == leg.id ? .isSelected : [])
                 .accessibilityIdentifier("edit-amendment-leg")
             }
@@ -52,6 +52,10 @@ struct RouteAmendmentReview: View {
                 } else {
                     Text(boundary(leg))
                         .font(.caption).foregroundStyle(.secondary)
+                }
+                if compact, let status = leg.entry.estimateStatus {
+                    Text(status).font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -86,7 +90,7 @@ struct RouteAmendmentReview: View {
             case .rejoin: "Rejoin"
             }
         }
-        return "\(role(leg.id.from)) → \(role(leg.id.to))"
+        return "\(role(leg.id.from)) → \(role(leg.id.to))\(leg.entry.estimateStatus.map { " · " + $0 } ?? "")"
     }
 
     private func duration(_ leg: RouteAmendmentDraft.ReviewLeg) -> String {

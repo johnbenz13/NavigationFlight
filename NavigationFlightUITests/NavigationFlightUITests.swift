@@ -10,6 +10,122 @@ import XCTest
 final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
+    func testAssistedPreparationOverridesGeometryAndUndo() throws {
+        try verifyAssistedPreparation()
+    }
+
+    @MainActor
+    func testAssistedPreparationInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyAssistedPreparation(landscape: true)
+    }
+
+    @MainActor
+    func testAssistedPreparationWithLargerText() throws {
+        try verifyAssistedPreparation(largerText: true)
+    }
+
+    @MainActor
+    func testAssistedEstimateStatusIsSpokenByVoiceOver() throws {
+        let service = XCUIDevice.shared.voiceOverService
+        let wasEnabled = service.isEnabled
+        if wasEnabled { try service.disable() }
+        defer {
+            if service.isEnabled { try? service.disable() }
+            if wasEnabled { try? service.enable() }
+        }
+        let app = try launchPartialAmendment(fixture: "A", assisted: true)
+        openCorrectionWorkspace(in: app, landscape: false)
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let point = try correctionPointCoordinate(in: app, map: map)
+        point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
+        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+        XCTAssertTrue((row.value as? String ?? "").contains("Estimates updated"))
+        try service.enable()
+        var speech: [String] = []
+        for _ in 0..<45 {
+            speech.append(try service.moveForward().utterance)
+            if speech.joined(separator: " ").contains("Estimates updated") { break }
+        }
+        let spoken = speech.joined(separator: " ")
+        XCTAssertTrue(spoken.contains("Estimates updated"), spoken)
+        XCTAssertTrue(spoken.lowercased().contains("heading"), spoken)
+        XCTAssertTrue(spoken.lowercased().contains("leg time"), spoken)
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "AP08 actual VoiceOver estimate speech"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        captureAmendmentState("ap08-voiceover-updated", in: app)
+    }
+
+    @MainActor
+    private func verifyAssistedPreparation(landscape: Bool = false, largerText: Bool = false) throws {
+        let app = try launchPartialAmendment(largerText: largerText, fixture: "A", assisted: true)
+        openCorrectionWorkspace(in: app, landscape: landscape)
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertFalse((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
+        captureAmendmentState("ap08-prefilled", in: app)
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        tapAmendmentControl(rows.element(boundBy: 1), in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        selectAmendmentWheel("seconds", value: "15", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "02", in: app, panel: panel)
+        captureAmendmentState("ap08-time-0215", in: app)
+        selectAmendmentWheel("seconds", value: "00", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, 03 minutes, 00 seconds")
+        captureAmendmentState("ap08-time-0300", in: app)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        XCTAssertTrue(rows.element(boundBy: 1).waitForExistence(timeout: 4))
+        let before = rows.allElementsBoundByIndex.map { $0.value as? String }
+        XCTAssertTrue((before[1] ?? "").contains("03:00"))
+        app.buttons["Map tools"].firstMatch.tap()
+        let drift = app.buttons["map-tools-toggle-drift-lines"]
+        XCTAssertTrue(drift.waitForExistence(timeout: 3))
+        if drift.label.contains("On") { drift.tap() }
+        XCTAssertTrue(drift.label.contains("Off"))
+        captureAmendmentState("ap08-drift-off", in: app)
+        app.buttons["Close"].firstMatch.tap()
+        XCTAssertFalse(drift.exists)
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let point = try correctionPointCoordinate(in: app, map: map)
+        point.press(forDuration: 0.65, thenDragTo: point.withOffset(CGVector(dx: 55, dy: -35)))
+        let updated = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            (rows.firstMatch.value as? String ?? "").contains("Estimates updated")
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [updated], timeout: 4), .completed)
+        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Estimates updated"))
+        XCTAssertEqual(rows.element(boundBy: 2).value as? String, before[2])
+        captureAmendmentState("ap08-estimates-updated", in: app)
+        undoPointCorrection(in: app)
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, before)
+        captureAmendmentState("ap08-undo-restored", in: app)
+        app.buttons["amend-route"].tap()
+        app.buttons["amend-route"].tap()
+        XCTAssertEqual(rows.allElementsBoundByIndex.map { $0.value as? String }, before)
+    }
+
+    @MainActor
+    func testAssistedUnavailableEstimatesAcceptPilotValues() throws {
+        let app = try launchPartialAmendment(fixture: "A", assisted: true, unavailableEstimate: true)
+        openCorrectionWorkspace(in: app, landscape: false)
+        let row = app.buttons.matching(identifier: "edit-amendment-leg").firstMatch
+        XCTAssertTrue((row.value as? String ?? "").contains("Not set"))
+        captureAmendmentState("ap08-unavailable", in: app)
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        tapAmendmentControl(row, in: console)
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        selectAmendmentWheel("heading", value: "087", in: app, panel: panel)
+        selectAmendmentWheel("minutes", value: "03", in: app, panel: panel)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        XCTAssertTrue((row.value as? String ?? "").contains("087°"))
+        XCTAssertTrue((row.value as? String ?? "").contains("03:00"))
+        captureAmendmentState("ap08-unavailable-pilot-entry", in: app)
+    }
+
+    @MainActor
     func testAnchorDragRejectsInvalidDropsAndUndoRestoresValues() throws {
         let app = try launchPartialAmendment(fixture: "A", correctionCues: true)
         app.buttons["amend-route"].tap()
@@ -3661,29 +3777,32 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
     }
 
+    /// Keep the imported execution speed consistent with its planning input so
+    /// decoding succeeds while the amendment estimator rounds new durations to zero.
+    private func planWithUnavailableAmendmentEstimates(_ data: Data) throws -> Data {
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
+        var parameters = try XCTUnwrap(navigation["parameters"] as? [String: Any])
+        let speed = 1_000_000.0
+        parameters["planningAirspeedKnots"] = speed
+        navigation["parameters"] = parameters
+        document["navigation"] = navigation
+        var execution = try XCTUnwrap(document["execution"] as? [String: Any])
+        var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
+        for index in legs.indices {
+            var timing = try XCTUnwrap(legs[index]["noWind"] as? [String: Any])
+            timing["plannedGroundSpeedKnots"] = speed
+            legs[index]["noWind"] = timing
+        }
+        execution["legs"] = legs
+        document["execution"] = execution
+        return try JSONSerialization.data(withJSONObject: document)
+    }
+
     @MainActor
     private func launchManualAmendmentReview(unavailable: Bool = false, contentSize: String? = nil) throws -> XCUIApplication {
         var plan = try realFlightPlanData(named: "llhz-llib-via-jerusalem")
-        if unavailable {
-            // A positive but very large plan-wide speed rounds both plotted estimates to zero.
-            var document = try XCTUnwrap(JSONSerialization.jsonObject(with: plan) as? [String: Any])
-            var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
-            var parameters = try XCTUnwrap(navigation["parameters"] as? [String: Any])
-            let speed = 1_000_000.0
-            parameters["planningAirspeedKnots"] = speed
-            navigation["parameters"] = parameters
-            document["navigation"] = navigation
-            var execution = try XCTUnwrap(document["execution"] as? [String: Any])
-            var legs = try XCTUnwrap(execution["legs"] as? [[String: Any]])
-            for index in legs.indices {
-                var timing = try XCTUnwrap(legs[index]["noWind"] as? [String: Any])
-                timing["plannedGroundSpeedKnots"] = speed
-                legs[index]["noWind"] = timing
-            }
-            execution["legs"] = legs
-            document["execution"] = execution
-            plan = try JSONSerialization.data(withJSONObject: document)
-        }
+        if unavailable { plan = try planWithUnavailableAmendmentEstimates(plan) }
         let app = launchCockpit(planData: plan, preferredContentSizeCategory: contentSize)
         app.buttons["start-leg"].tap()
         closeStartChecklist(in: app)
@@ -4414,9 +4533,10 @@ final class NavigationFlightUITests: XCTestCase {
     @MainActor
     private func launchPartialAmendment(
         largerText: Bool = false, fixture: String = "A-partial", legacyDuration: Bool = false,
-        correctionCues: Bool = false
+        correctionCues: Bool = false, assisted: Bool = false, unavailableEstimate: Bool = false
     ) throws -> XCUIApplication {
         var planData = try crossingAmendmentPlanData()
+        if unavailableEstimate { planData = try planWithUnavailableAmendmentEstimates(planData) }
         if fixture.hasPrefix("A-progress") {
             var document = try XCTUnwrap(JSONSerialization.jsonObject(with: planData) as? [String: Any])
             var navigation = try XCTUnwrap(document["navigation"] as? [String: Any])
@@ -4437,6 +4557,7 @@ final class NavigationFlightUITests: XCTestCase {
                 "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": fixture,
                 "NAVIGATION_FLIGHT_UI_TEST_LEGACY_DURATION": legacyDuration ? "1" : "0",
                 "NAVIGATION_FLIGHT_UI_TEST_CORRECTION_CUES": correctionCues ? "1" : "0",
+                "NAVIGATION_FLIGHT_UI_TEST_ASSISTED": assisted ? "1" : "0",
                 "NAVIGATION_FLIGHT_UI_TEST_CAMERA": "1"
             ]
         )

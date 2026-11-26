@@ -614,6 +614,15 @@ struct AviationMapPresentationFactory {
 enum AviationMapSymbology {
     static let minuteLabelCadence = 2
 
+    static func preparationAids(
+        from: AviationMapCoordinate, to: AviationMapCoordinate, duration: Int?,
+        mode: RouteAmendmentMode, showsDrift: Bool, driftAngle: Double
+    ) -> (minutes: [AviationMapMinuteMarker], drift: [AviationMapDriftReferenceArm]) {
+        guard mode == .assisted else { return ([], []) }
+        return (duration.map { minuteMarkers(from: from, to: to, plannedDurationSeconds: $0) } ?? [],
+                showsDrift ? AviationMapGeometry.driftReferenceArms(from: from, to: to, angleDegrees: driftAngle) : [])
+    }
+
     static func minuteMarkers(
         from: AviationMapCoordinate,
         to: AviationMapCoordinate,

@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "CC69DDC8-3A92-4054-B79F-FF0EF72F93B4.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap08-voiceover-updated_0_A8D6561D-31E1-43A3-B3C0-070730E372D3.png",
+        "timestamp" : 1795710867.743
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0F915431-D1D4-4A72-A07C-19BF5914ABD6",
+        "deviceName" : "UIEvidence-iPad",
+        "exportedFileName" : "E0D0E5F9-E8A2-40F0-B507-3C79FD0FBBF0.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "AP08 actual VoiceOver estimate speech_0_E15465B4-EEF9-4D01-8951-26A4615207C2.txt",
+        "timestamp" : 1795710866.114
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testAssistedEstimateStatusIsSpokenByVoiceOver()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testAssistedEstimateStatusIsSpokenByVoiceOver"
+  }
+]

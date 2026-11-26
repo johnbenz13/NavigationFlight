@@ -93,7 +93,9 @@ struct CockpitFeatureState: Equatable, Sendable {
 
     var routeForAmendment: RouteAmendmentRoute? {
         guard let flightPlan else { return nil }
-        return flight?.routeForAmendment(in: flightPlan)
+        var route = flight?.routeForAmendment(in: flightPlan)
+        route?.driftAngleDegrees = flightPlan.parameters.driftAngle.value
+        return route
     }
 
     mutating func updateRouteAmendment(
@@ -142,11 +144,8 @@ struct CockpitFeatureState: Equatable, Sendable {
         case .open, .resume:
             isAmendmentWorkspaceVisible = true
             isAmendmentPlotting = false
-        case .plot(let input):
+        case .plot:
             guard isAmendmentWorkspaceVisible else { return }
-            routeAmendmentDraft?.update(.plot(input), route: route)
-            isAmendmentPlotting = routeAmendmentDraft?.rejoin == nil
-            return
         case .editLeg, .checkLeg, .chooseLeg:
             guard isAmendmentWorkspaceVisible else { return }
         case .movePoint, .chooseDeparture, .chooseRejoin:
@@ -755,7 +754,8 @@ extension CockpitFeatureState {
             : route.firstAvailable.legIndex
         let departureIndex = availableIndex + (isFutureDeparture ? 1 : 0)
         guard route.legs.indices.contains(departureIndex + 1) else { return }
-        updateRouteAmendment(.open)
+        let assistedFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_ASSISTED"] == "1"
+        updateRouteAmendment(.open, mode: assistedFixture ? .assisted : .manual)
         updateRouteAmendment(.togglePlotting)
         let departure = route.anchor(at: departureIndex, fraction: workspaceFixture ? 0.46 : rejoinFixture == "partway" ? 0.25 : 0.5)
         let rejoin: RouteAmendmentAnchor = switch rejoinFixture {
@@ -792,6 +792,7 @@ extension CockpitFeatureState {
         updateRouteAmendment(.confirmRejoin)
         updateRouteAmendment(.review)
         for (index, leg) in (routeAmendmentDraft?.reviewLegs(on: route) ?? []).enumerated() {
+            if assistedFixture { continue }
             updateRouteAmendment(.editLeg(leg.id))
             let distinctSuccessor = includesAdvisoryValues && index == 1
             updateRouteAmendment(.editLegField(.heading, distinctSuccessor ? "024" : "087"))

@@ -277,7 +277,8 @@ struct CockpitView: View {
 
     private var amendmentMapPresentation: RouteAmendmentMapOverlay.Presentation? {
         guard isAmendmentWorkspaceVisible, let routeForAmendment, let routeAmendmentDraft else { return nil }
-        return .init(draft: routeAmendmentDraft, route: routeForAmendment, isPlotting: isAmendmentPlotting)
+        return .init(draft: routeAmendmentDraft, route: routeForAmendment, isPlotting: isAmendmentPlotting,
+                     showsDrift: areDriftLinesVisible)
     }
 
     private var pendingAmendmentMapPresentation: RouteAmendmentMapOverlay.Pending? {

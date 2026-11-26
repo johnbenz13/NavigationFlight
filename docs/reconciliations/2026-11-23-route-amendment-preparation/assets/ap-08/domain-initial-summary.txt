@@ -1,0 +1,59 @@
+================================================================================
+TEST RESULTS SUMMARY
+================================================================================
+Generated: 2026-11-26T15:53:11Z
+Total Results: 4
+================================================================================
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 1/4
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/assistedGeometryOverrideUndoAndSavedProvenance()
+TEST_DISPLAY_NAME: assistedGeometryOverrideUndoAndSavedProvenance()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 16
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 2/4
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/assistedUnavailableAndOutOfRangePrefillRequirePilotEntry()
+TEST_DISPLAY_NAME: assistedUnavailableAndOutOfRangePrefillRequirePilotEntry()
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 76
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 3/4
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_:)
+TEST_DISPLAY_NAME: .manual
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 92
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+--------------------------------------------------------------------------------
+TEST_RESULT_INDEX: 4/4
+TEST_TARGET: NavigationFlightTests
+TEST_IDENTIFIER: NavigationFlightTests/preparationMapAidsUseWorkingDurationIndependentlyOfDrift(_:)
+TEST_DISPLAY_NAME: .assisted
+TEST_STATE: Passed
+TEST_FILE_PATH: NavigationFlight/NavigationFlightTests/NavigationFlightTests.swift
+TEST_LINE_NUMBER: 92
+TEST_TAGS: (none)
+
+TEST_ISSUE_COUNT: 0
+
+
+================================================================================
+END OF TEST RESULTS SUMMARY
+================================================================================

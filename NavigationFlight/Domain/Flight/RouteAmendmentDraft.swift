@@ -16,6 +16,7 @@ struct RouteAmendmentRoute: Equatable, Sendable {
     let legs: [NavigationLeg]
     let firstAvailable: RouteAmendmentAnchor
     let identificationPoints: [IdentificationPoint]
+    var driftAngleDegrees: Double = 10
 
     struct OriginalLeg: Identifiable, Equatable, Sendable {
         let id: UUID
@@ -49,10 +50,12 @@ struct RouteAmendmentRoute: Equatable, Sendable {
 
     init(legs: [NavigationLeg], firstAvailable: RouteAmendmentAnchor,
          planning: [PlannedLegNavigation] = [], navigationMode: NavigationMode = .noWind,
-         identificationPoints: [IdentificationPoint] = [], amendmentLegs: [PendingRouteAmendment.Leg] = []) {
+         identificationPoints: [IdentificationPoint] = [], amendmentLegs: [PendingRouteAmendment.Leg] = [],
+         driftAngleDegrees: Double = 10) {
         self.legs = legs
         self.firstAvailable = firstAvailable
         self.identificationPoints = identificationPoints
+        self.driftAngleDegrees = driftAngleDegrees
         self.planning = planning
         self.amendmentLegs = amendmentLegs
         self.navigationMode = navigationMode
@@ -494,7 +497,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
                 headingMagnetic: saved.headingMagnetic, durationSeconds: saved.durationSeconds,
                 altitude: saved.altitudeFeet.map(AltitudeFeet.init(value:)),
                 frequency: saved.frequencyMHz.map(FrequencyMHz.init(value:)),
-                visualReference: saved.visualReference
+                visualReference: saved.visualReference,
+                estimateProvenance: saved.estimateProvenance
             ))
         }
         validateDeparture(on: route)
@@ -560,6 +564,25 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     mutating func update(
         _ intent: Intent, route: RouteAmendmentRoute, estimateInputs: RouteAmendmentEstimator.Inputs? = nil
     ) {
+        let previous = reviewLegs(on: route)
+        let restoresSnapshot: Bool
+        if case .undo = intent { restoresSnapshot = true } else { restoresSnapshot = false }
+        let removesPoint: Bool
+        if case .removePoint = intent { removesPoint = true } else { removesPoint = false }
+        defer {
+            // Geometry signatures, not row offsets, determine estimate invalidation.
+            // Undo restores its complete snapshot without consulting today's inputs.
+            if mode == .assisted, !restoresSnapshot {
+                let old = Dictionary(uniqueKeysWithValues: previous.map { ($0.id, $0.geometry) })
+                for leg in reviewLegs(on: route) where old[leg.id] != leg.geometry {
+                    var entry = leg.entry
+                    // Removing a via merges existing edges into a new logical ID.
+                    entry.prefill(estimate(for: leg, inputs: estimateInputs),
+                                  geometryUpdated: old[leg.id] != nil || removesPoint)
+                    legEntries[leg.geometry] = entry
+                }
+            }
+        }
         switch intent {
         case .pause:
             isPaused = true

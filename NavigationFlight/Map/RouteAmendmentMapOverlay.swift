@@ -10,6 +10,7 @@ final class RouteAmendmentMapOverlay: UIView {
         let draft: RouteAmendmentDraft
         let route: RouteAmendmentRoute
         let isPlotting: Bool
+        var showsDrift = true
     }
 
     struct Pending: Equatable {
@@ -206,6 +207,7 @@ final class RouteAmendmentMapOverlay: UIView {
         let segments = draft.segments(on: route)
         drawSegments(segments, proposedDashed: false, on: map, in: context)
         drawOriginalMinuteMarks(presentation, on: map, in: context)
+        drawPreparationAids(presentation, on: map, in: context)
         drawSelectedLeg(presentation, on: map, in: context)
         let reserved = [draft.departure, draft.rejoin].compactMap { $0 }
         let plottedStops = draft.points.filter { $0.name != nil }
@@ -384,6 +386,36 @@ final class RouteAmendmentMapOverlay: UIView {
                 let color = bypassed ? Self.bypassedColor.withAlphaComponent(0.75) : Self.retainedColor
                 stroke(point, tip, color: style.minuteTickCasingColor, width: 4, dashed: false, in: context)
                 stroke(point, tip, color: color, width: 2, dashed: false, in: context)
+            }
+        }
+    }
+
+    private func drawPreparationAids(_ presentation: Presentation, on map: MLNMapView, in context: CGContext) {
+        for leg in presentation.draft.reviewLegs(on: presentation.route) {
+            let aids = AviationMapSymbology.preparationAids(
+                from: .init(latitude: leg.from.latitudeDegrees, longitude: leg.from.longitudeDegrees),
+                to: .init(latitude: leg.to.latitudeDegrees, longitude: leg.to.longitudeDegrees),
+                duration: leg.entry.durationSeconds, mode: presentation.draft.mode,
+                showsDrift: presentation.showsDrift, driftAngle: presentation.route.driftAngleDegrees
+            )
+            func point(_ coordinate: AviationMapCoordinate) -> CGPoint {
+                project(.init(latitudeDegrees: coordinate.latitude, longitudeDegrees: coordinate.longitude), on: map)
+            }
+            let start = project(leg.from, on: map)
+            let end = project(leg.to, on: map)
+            let dx = end.x - start.x, dy = end.y - start.y
+            let length = hypot(dx, dy)
+            guard length > 0 else { continue }
+            for mark in aids.minutes {
+                let anchor = point(mark.coordinate)
+                let size: CGFloat = mark.showsLabel ? 10 : 7
+                let tip = CGPoint(x: anchor.x + dy / length * size, y: anchor.y - dx / length * size)
+                stroke(anchor, tip, color: .white, width: 4, dashed: false, in: context)
+                stroke(anchor, tip, color: Self.proposedColor, width: 2, dashed: false, in: context)
+            }
+            for arm in aids.drift {
+                stroke(point(arm.from), point(arm.to), color: .white, width: 3, dashed: true, in: context)
+                stroke(point(arm.from), point(arm.to), color: Self.proposedColor, width: 1, dashed: true, in: context)
             }
         }
     }

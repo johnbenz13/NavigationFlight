@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "11708BF4-E98C-49EC-82BF-EE7E8A0D58F6.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-save-retried_0_28906EEC-3A49-4426-940B-6A3509830C1D.png",
+        "timestamp" : 1795725200.375
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "4849C6E3-6D13-4D47-A95B-DAB4F218CE73.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-unsaved-cockpit_0_93F6D867-CD8A-4C86-B9DB-0F4ED91AE5C1.png",
+        "timestamp" : 1795725193.812
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "4D93B4DE-3E82-4A0D-8AC5-CF83CF7F3533.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-save-failure_0_E548991D-A542-4ED7-AF8B-500946A61FB6.png",
+        "timestamp" : 1795725191.402
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit"
+  }
+]

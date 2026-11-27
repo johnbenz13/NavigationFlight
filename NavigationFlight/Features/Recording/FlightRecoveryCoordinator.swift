@@ -46,6 +46,7 @@ nonisolated struct RecoveredFlight: Equatable, Sendable {
     let flight: Flight
     let recording: FlightRecording
     var cockpitContext: RecordingCockpitContext? = nil
+    var lastAmendmentSequence: UInt64? = nil
 }
 
 nonisolated enum FlightRecoveryError: Error, Equatable, Sendable {
@@ -329,7 +330,15 @@ final class FlightRecoveryCoordinator {
             flightPlan: flightPlan,
             flight: flight,
             recording: recording,
-            cockpitContext: try replayCockpitContext(snapshot: snapshot, flight: flight)
+            cockpitContext: try replayCockpitContext(snapshot: snapshot, flight: flight),
+            lastAmendmentSequence: snapshot.events.compactMap { event -> UInt64? in
+                switch event.payload {
+                case .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced,
+                     .pendingRouteAmendmentCancelled, .routeAmendmentActivated, .routeAmendmentRejoined:
+                    event.sequence
+                default: nil
+                }
+            }.max()
         )
     }
 

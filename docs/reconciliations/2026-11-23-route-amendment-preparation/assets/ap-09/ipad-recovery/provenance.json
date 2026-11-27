@@ -1,0 +1,114 @@
+{
+  "exportedAt": "2026-11-26T20:18:50.477582+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_22-11-43-+0200.xcresult",
+  "resultInfoSHA256": "c33684116d12a20137ef781b318469be59d51101511dcbd13ed8856b0e30d7e2",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 14,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795724240.22,
+    "passedTests": 14,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795723903.996,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 14
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "bdce6337094e8ad009a82ee7e3605b050dadfad2",
+    "status": " M .gitattributes\n M NavigationFlight/App/RootView.swift\nAM NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Domain/Navigation/NavigationTypes.swift\nAM NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift\n?? NavigationFlight/Domain/Flight/AmendmentDraftStore.swift\n?? NavigationFlightTests/AmendmentDraftPersistenceTests.swift\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-09/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "1EEED4C2-8B7B-49BF-81A7-D1AB1961B864.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-partial-editor-before_0_DC6BD81C-538A-46F3-A649-62C6A272C645.png",
+        "timestamp": 1795724126.03
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "02cdd10230b6f016def10758d1a32f201835f59d6436263ac9a2f5d66b9a1f9b"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "A88CDAC3-90EC-484B-BB2B-611BEE2C3D81.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-recovered-cockpit_0_81AD5411-6BF9-4807-AF4D-0DD39A41F0B9.png",
+        "timestamp": 1795724149.603
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "3bbf8c802ba726028f69e038db6f81966f93d9fded6bb301a75dea7a0d67b5b6"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "F9350591-A504-4D3C-B696-85BCD215388C.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-partial-editor-restored_0_E7B827D0-B43A-42F2-A70D-FD8A68116976.png",
+        "timestamp": 1795724186.004
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "55cdf9f4b4acd0d2a84912dd218756fc619127f554be8d73b49d25e57e70c779"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "EF5521D0-01A0-4F73-A4D6-B93C959E265D.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-recovered-undo_0_8697AD30-BDC8-4FCB-A570-7777753DC513.png",
+        "timestamp": 1795724239.724
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "6bbdcb7a10a23941b6e399e969b1fa958ec520f8dc0f609455337d87c830c060"
+    }
+  ]
+}

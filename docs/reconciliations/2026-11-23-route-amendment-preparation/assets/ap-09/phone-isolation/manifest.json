@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "8DCA424A-FE2D-442E-BE86-000EEF3B6828.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-other-flight-empty_0_3DB86804-A216-4E54-B62E-189C442DD0E7.png",
+        "timestamp" : 1795725135.131
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftDoesNotCarryToAnotherFlight()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftDoesNotCarryToAnotherFlight"
+  }
+]

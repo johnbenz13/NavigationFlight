@@ -1,0 +1,27 @@
+{
+  "revision": "bdce6337094e8ad009a82ee7e3605b050dadfad2",
+  "device": "UIEvidence-iPad, iPad Pro 11-inch M5, iOS27.2, 834x1210",
+  "fixture": "disposable A-partial",
+  "artifacts": [
+    {
+      "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/6E866180-4247-4683-988E-A11BB1FA1552/DeviceInteractionSynthesize/Issue 233 Baseline-21_51_09_199-screenshot.png",
+      "file": "hidden.png",
+      "sha256": "c032242a54b39a74f423f0821699c0274cb9eb6b8b21e5955e218210824840bc"
+    },
+    {
+      "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/6E866180-4247-4683-988E-A11BB1FA1552/DeviceInteractionSynthesize/Issue 233 Baseline-21_51_09_199-hierarchy.txt",
+      "file": "hidden-hierarchy.txt",
+      "sha256": "6ab69ea40060aa8fb27ab47fb8ea02093a9086a714dbf193203e6c0ce0b20ec4"
+    },
+    {
+      "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/6E866180-4247-4683-988E-A11BB1FA1552/DeviceInteractionSynthesize/Issue 233 Baseline-21_51_17_927-screenshot.png",
+      "file": "open.png",
+      "sha256": "69dd54b59a7368d5325849b77d8a4733b86246ce004f098582babfe51f61e486"
+    },
+    {
+      "source": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/6E866180-4247-4683-988E-A11BB1FA1552/DeviceInteractionSynthesize/Issue 233 Baseline-21_51_17_927-hierarchy.txt",
+      "file": "open-hierarchy.txt",
+      "sha256": "75650484787eea30a28513bc6931b575d79b9ed1452b09302e6300bf29897330"
+    }
+  ]
+}

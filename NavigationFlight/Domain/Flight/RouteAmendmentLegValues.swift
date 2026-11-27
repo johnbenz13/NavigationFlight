@@ -5,7 +5,7 @@ nonisolated enum RouteAmendmentMode: String, CaseIterable, Sendable, Codable {
     case assisted
 }
 
-nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
+nonisolated struct RouteAmendmentLegValues: Codable, Equatable, Sendable {
     let headingMagnetic: Int
     let durationSeconds: Int
     let altitude: AltitudeFeet?
@@ -18,7 +18,7 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
     }
 }
 
-nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
+nonisolated struct RouteAmendmentLegEntry: Codable, Equatable, Sendable {
     struct EstimateProvenance: Codable, Equatable, Sendable {
         enum Source: String, Codable, Sendable { case noWind, plannedWind, unavailable }
         var source: Source

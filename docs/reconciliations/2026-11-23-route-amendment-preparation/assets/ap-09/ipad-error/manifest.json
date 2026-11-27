@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "AFC7BA8E-FD5D-4D5C-9693-A1071D10C02E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovery-operational_0_DE4F8730-0351-467F-B291-AC83716B91C5.png",
+        "timestamp" : 1795724079.718
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "E16E3457-4491-4F46-9511-F50D772036E9.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovery-unavailable_0_5774D5A7-CDEB-472F-A746-FD7A89DF6F73.png",
+        "timestamp" : 1795724075.462
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftRecoveryFailureKeepsOperationalCockpitUsable()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftRecoveryFailureKeepsOperationalCockpitUsable"
+  }
+]

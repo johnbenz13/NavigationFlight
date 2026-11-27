@@ -1,0 +1,21 @@
+·
+LEG 1 OF 25
+·
+From Kadima to Ramat
+Hide amendment workspace Ready · not armed, changes not saved Button
+Map tools Button
+Compass south-southwest Button Rotates the map to face due north
+Original retained , Original bypassed , Proposed , Original minute marks
+CURRENT LEG · LEG 1 OF 25
+Timer
+Leg time · planned
+⁨Kadima⁩ → ⁨Ramat⁩
+07:22
+04:17
+Over planned
+Amend route Heading
+Manual · 3 legs
+Rejoined
+Draft not saved
+Work is kept in memory. Retry to make it recoverable after restart.
+Retry saving draft Button

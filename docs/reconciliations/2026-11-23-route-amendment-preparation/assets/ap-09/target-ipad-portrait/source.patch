@@ -1,0 +1,1286 @@
+diff --git a/.gitattributes b/.gitattributes
+index aa9e30e..64f93a4 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -4,3 +4,4 @@
+ docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-06/**/source.patch whitespace=-blank-at-eol
+ docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-07/**/source.patch whitespace=-blank-at-eol
+ docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-08/**/source.patch whitespace=-blank-at-eol
++docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-09/**/source.patch whitespace=-blank-at-eol
+diff --git a/NavigationFlight/App/RootView.swift b/NavigationFlight/App/RootView.swift
+index 3d000f5..5749489 100644
+--- a/NavigationFlight/App/RootView.swift
++++ b/NavigationFlight/App/RootView.swift
+@@ -23,6 +23,7 @@ struct RootView: View {
+     @State private var idleTimerCoordinator: IdleTimerCoordinator
+     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
+     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
++    @State private var amendmentDraftPersistence: AmendmentDraftPersistence
+     private let flightPlanLibrary: FlightPlanLibrary
+     private let flightRecordingLibrary: FlightRecordingLibrary
+     private let flightPlanFileReader = FlightPlanFileReader()
+@@ -282,6 +283,33 @@ struct RootView: View {
+ #else
+         recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
+         debugFlightsActiveRecordingID = nil
++#endif
++        let draftDirectory = libraryDirectory.deletingLastPathComponent()
++            .appending(path: libraryDirectory.lastPathComponent + "-amendment-drafts", directoryHint: .isDirectory)
++#if DEBUG
++        let draftWriteFailure = OSAllocatedUnfairLock(initialState: environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "save")
++        let draftDeleteFailure = OSAllocatedUnfairLock(initialState: environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "delete")
++        let draftReadFailure = environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "recover"
++        let draftStore = DiskAmendmentDraftStore(rootDirectory: draftDirectory, beforeLoad: {
++            if draftReadFailure { throw AmendmentDraftStoreError.invalidData }
++        }, beforeWrite: {
++            if draftWriteFailure.withLock({ $0 }) {
++                throw AmendmentDraftStoreError.operationFailed
++            }
++        }, beforeRemove: {
++            if draftDeleteFailure.withLock({ fail in let result = fail; fail = false; return result }) {
++                throw AmendmentDraftStoreError.operationFailed
++            }
++        })
++#else
++        let draftStore = DiskAmendmentDraftStore(rootDirectory: draftDirectory)
++#endif
++#if DEBUG
++        _amendmentDraftPersistence = State(initialValue: AmendmentDraftPersistence(store: draftStore, beforeRetry: {
++            draftWriteFailure.withLock { $0 = false }
++        }))
++#else
++        _amendmentDraftPersistence = State(initialValue: AmendmentDraftPersistence(store: draftStore))
+ #endif
+         _flightRecordingCoordinator = State(
+             initialValue: FlightRecordingCoordinator(
+@@ -315,6 +343,16 @@ struct RootView: View {
+                 )
+             }
+         }
++        .onChange(of: appState.cockpit.routeAmendmentDraft?.persistence) { previous, current in
++            saveAmendmentDraft()
++            if previous != nil, current == nil, let draft = appState.cockpit.routeAmendmentDraft,
++               !draft.hasContent, appState.cockpit.flight?.id == draft.flightID {
++                Task { _ = await amendmentDraftPersistence.discard(flightID: draft.flightID) }
++            }
++        }
++        .onChange(of: scenePhase) { _, phase in
++            if phase != .active { saveAmendmentDraft() }
++        }
+         .onChange(of: appState.cockpit.recordingCockpitContext) { _, context in
+             guard let context else { return }
+             Task { await flightRecordingCoordinator.recordPresentation(context) }
+@@ -373,6 +411,7 @@ struct RootView: View {
+                     positionCheckTiming: positionCheckTiming,
+                     isSectionSelected: appState.selectedAppSection == .cockpit,
+                     recordingCoordinator: flightRecordingCoordinator,
++                    draftPersistence: amendmentDraftPersistence,
+                     checklistSelection: { settingsController.preferences.startChecklist },
+                     amendmentMode: { settingsController.preferences.routeAmendmentMode },
+                     chartCatalog: chartCatalog,
+@@ -558,6 +597,17 @@ struct RootView: View {
+         }
+     }
+ 
++    private func saveAmendmentDraft() {
++        guard let draft = appState.cockpit.routeAmendmentDraft,
++              draft.hasContent, appState.cockpit.flight?.pendingRouteAmendment == nil,
++              appState.cockpit.flight?.activatedRouteAmendment == nil,
++              appState.cockpit.flight?.legState != .completed,
++              flightRecordingCoordinator.activeRecordingID != nil,
++              let recording = flightRecordingCoordinator.snapshot.recording,
++              recording.flightID == draft.flightID, recording.closure == nil else { return }
++        amendmentDraftPersistence.save(draft, recordingSequence: recording.nextEventSequence)
++    }
++
+     private func continueRecoveredFlight(id: UUID) {
+         Task {
+             do {
+@@ -569,10 +619,21 @@ struct RootView: View {
+                     eventID: UUID()
+                 )
+                 await flightRecordingCoordinator.restore(recovered)
++                let draft = await amendmentDraftPersistence.recover(
++                    flight: recovered.flight,
++                    route: recovered.flight.routeForAmendment(in: recovered.flightPlan),
++                    lastAmendmentSequence: recovered.lastAmendmentSequence
++                )
+                 appState.restoreRecoveredFlight(
+                     recovered,
+                     sourceData: recovered.recording.flightPlanSnapshot.sourceData
+                 )
++                if let draft, appState.cockpit.flight?.id == recovered.flight.id,
++                   appState.cockpit.routeAmendmentDraft == nil {
++                    var cockpit = appState.cockpit
++                    cockpit.restoreAmendmentDraft(draft)
++                    appState.updateCockpit(cockpit)
++                }
+             } catch {
+                 await flightRecoveryCoordinator.bootstrap()
+             }
+diff --git a/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift b/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift
+new file mode 100644
+index 0000000..da32de9
+--- /dev/null
++++ b/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift
+@@ -0,0 +1,49 @@
++import Foundation
++
++actor DiskAmendmentDraftStore: AmendmentDraftStore {
++    private let rootDirectory: URL
++    private let beforeLoad: @Sendable () throws -> Void
++    private let beforeWrite: @Sendable () throws -> Void
++    private let beforeRemove: @Sendable () throws -> Void
++
++    init(rootDirectory: URL,
++         beforeLoad: @escaping @Sendable () throws -> Void = {},
++         beforeWrite: @escaping @Sendable () throws -> Void = {},
++         beforeRemove: @escaping @Sendable () throws -> Void = {}) {
++        self.rootDirectory = rootDirectory
++        self.beforeLoad = beforeLoad
++        self.beforeWrite = beforeWrite
++        self.beforeRemove = beforeRemove
++    }
++
++    func load(flightID: UUID) throws -> AmendmentDraftRecord? {
++        try beforeLoad()
++        let url = fileURL(flightID)
++        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
++        let record: AmendmentDraftRecord
++        do { record = try JSONDecoder().decode(AmendmentDraftRecord.self, from: Data(contentsOf: url)) }
++        catch { throw AmendmentDraftStoreError.invalidData }
++        try record.validate(for: flightID)
++        return record
++    }
++
++    func save(_ record: AmendmentDraftRecord) throws {
++        try record.validate(for: record.flightID)
++        // Inspect before replacing: unreadable/newer bytes must never be silently
++        // overwritten. This actor performs no suspension inside a file operation.
++        if let previous = try load(flightID: record.flightID), previous.revision > record.revision { return }
++        try beforeWrite()
++        try FileManager.default.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
++        try JSONEncoder().encode(record).write(to: fileURL(record.flightID), options: .atomic)
++    }
++
++    func remove(flightID: UUID) throws {
++        try beforeRemove()
++        let url = fileURL(flightID)
++        if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
++    }
++
++    private func fileURL(_ flightID: UUID) -> URL {
++        rootDirectory.appending(path: "\(flightID.uuidString.lowercased()).json")
++    }
++}
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+index 9417dee..d7e6d13 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift
+@@ -249,7 +249,7 @@ extension Flight {
+ }
+ 
+ struct RouteAmendmentDraft: Equatable, Sendable {
+-    struct Point: Identifiable, Equatable, Sendable {
++    struct Point: Codable, Identifiable, Equatable, Sendable {
+         let id: UUID
+         let position: WGS84Coordinate
+         let name: String?
+@@ -309,14 +309,14 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         let role: Role
+     }
+ 
+-    private struct Sketch: Equatable, Sendable {
++    fileprivate struct Sketch: Codable, Equatable, Sendable {
+         var departure: RouteAmendmentAnchor?
+         var points: [Point] = []
+         var rejoin: RouteAmendmentAnchor?
+         var selection: UUID?
+     }
+ 
+-    private struct Snapshot: Equatable, Sendable {
++    fileprivate struct Snapshot: Codable, Equatable, Sendable {
+         let sketch: Sketch
+         let entries: [LegGeometry: RouteAmendmentLegEntry]
+     }
+@@ -327,8 +327,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         let position: WGS84Coordinate
+     }
+ 
+-    private let departurePointID = UUID()
+-    private let rejoinPointID = UUID()
++    private var departurePointID = UUID()
++    private var rejoinPointID = UUID()
+     private(set) var pointDeletionID: UUID?
+ 
+     func correctionPoints(on route: RouteAmendmentRoute) -> [CorrectionPoint] {
+@@ -349,12 +349,12 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+     }
+ 
+     struct ReviewLeg: Identifiable, Equatable, Sendable {
+-        enum Endpoint: Hashable, Sendable {
++        enum Endpoint: Codable, Hashable, Sendable {
+             case departure, rejoin
+             case point(UUID)
+         }
+ 
+-        struct ID: Hashable, Sendable {
++        struct ID: Codable, Hashable, Sendable {
+             let from: Endpoint
+             let to: Endpoint
+         }
+@@ -376,7 +376,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         }
+     }
+ 
+-    fileprivate struct LegGeometry: Hashable, Sendable {
++    fileprivate struct LegGeometry: Codable, Hashable, Sendable {
+         let id: ReviewLeg.ID
+         let fromLatitude: Double
+         let fromLongitude: Double
+@@ -384,7 +384,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         let toLongitude: Double
+     }
+ 
+-    enum LegChoice: Hashable, Sendable {
++    enum LegChoice: Codable, Hashable, Sendable {
+         case original(UUID)
+         case proposed(ReviewLeg.ID)
+     }
+@@ -400,7 +400,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         }
+     }
+ 
+-    struct Editor: Equatable, Sendable {
++    struct Editor: Codable, Equatable, Sendable {
+         let id: ReviewLeg.ID
+         var entry: RouteAmendmentLegEntry
+         var showsCues = false
+@@ -408,7 +408,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         var referenceID: UUID?
+     }
+ 
+-    enum LegPanel: Equatable, Sendable {
++    enum LegPanel: Codable, Equatable, Sendable {
+         case editor
+         case drawingOverlap([LegChoice], [RouteAmendmentAnchor])
+         case inspection
+@@ -1042,3 +1042,71 @@ struct RouteAmendmentDraft: Equatable, Sendable {
+         if applyPlot(candidate, route: route) { step = departure == nil ? .departure : .drawing }
+     }
+ }
++
++
++extension RouteAmendmentDraft {
++    /// Versioned by the draft-store envelope. Visibility, plotting, gestures and
++    /// pending map choices are deliberately absent from the durable representation.
++    struct Persistence: Codable, Equatable {
++        fileprivate let flightID: UUID
++        fileprivate let departurePointID: UUID
++        fileprivate let rejoinPointID: UUID
++        fileprivate let mode: RouteAmendmentMode
++        fileprivate let sketch: Sketch
++        fileprivate let history: [Snapshot]
++        fileprivate let entries: [LegGeometry: RouteAmendmentLegEntry]
++        fileprivate let editor: Editor?
++        fileprivate let panel: LegPanel?
++    }
++
++    var persistence: Persistence? {
++        guard hasContent else { return nil }
++        let panel: LegPanel?
++        switch legPanel {
++        case .editor, .inspection, .original: panel = legPanel
++        default: panel = nil
++        }
++        return Persistence(flightID: flightID, departurePointID: departurePointID, rejoinPointID: rejoinPointID,
++                           mode: mode, sketch: sketch,
++                           history: plotHistory, entries: legEntries, editor: editor, panel: panel)
++    }
++
++    init(recovering saved: Persistence, flightID: UUID, route: RouteAmendmentRoute) throws {
++        func valid(_ anchor: RouteAmendmentAnchor) -> Bool {
++            route.legs.indices.contains(anchor.legIndex)
++                && route.legs[anchor.legIndex].id == anchor.legID
++                && (0...1).contains(anchor.fraction)
++        }
++        func valid(_ sketch: Sketch) -> Bool {
++            let anchors = [sketch.departure, sketch.rejoin].compactMap { $0 }
++                + sketch.points.flatMap(\.routeCandidates)
++            return anchors.allSatisfy(valid)
++                && Set(sketch.points.map(\.id)).count == sketch.points.count
++                && !sketch.points.contains(where: { $0.id == saved.departurePointID || $0.id == saved.rejoinPointID })
++                && sketch.points.allSatisfy {
++                    (-90...90).contains($0.position.latitudeDegrees)
++                        && (-180...180).contains($0.position.longitudeDegrees)
++                }
++        }
++        guard saved.flightID == flightID, saved.departurePointID != saved.rejoinPointID, valid(saved.sketch),
++              saved.history.allSatisfy({ valid($0.sketch) }) else {
++            throw AmendmentDraftStoreError.invalidData
++        }
++        self.init(flightID: flightID, mode: saved.mode)
++        departurePointID = saved.departurePointID
++        rejoinPointID = saved.rejoinPointID
++        sketch = saved.sketch
++        plotHistory = saved.history
++        legEntries = saved.entries
++        editor = saved.editor
++        legPanel = saved.panel
++        step = departure == nil ? .departure : rejoin == nil ? .drawing : .review
++        isPaused = true
++        // Staleness is an eligibility failure, not corrupt storage. Preserve the
++        // full saved editor/partial values; resume performs the normal recheck.
++        if let departure, !route.contains(departure) { step = .staleDeparture }
++        if let editor, !reviewLegs(on: route).contains(where: { $0.id == editor.id }) {
++            throw AmendmentDraftStoreError.invalidData
++        }
++    }
++}
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift b/NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift
+index 77abbee..f4c76c2 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift
+@@ -8,8 +8,8 @@ nonisolated enum RouteAmendmentEstimator {
+         let defaultWind: Wind?
+     }
+ 
+-    enum Result: Equatable, Sendable {
+-        enum Provenance: Equatable, Sendable {
++    enum Result: Codable, Equatable, Sendable {
++        enum Provenance: Codable, Equatable, Sendable {
+             case noWind
+             case plannedWind(Wind)
+         }
+diff --git a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+index b573fd8..be3f018 100644
+--- a/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
++++ b/NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift
+@@ -5,7 +5,7 @@ nonisolated enum RouteAmendmentMode: String, CaseIterable, Sendable, Codable {
+     case assisted
+ }
+ 
+-nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
++nonisolated struct RouteAmendmentLegValues: Codable, Equatable, Sendable {
+     let headingMagnetic: Int
+     let durationSeconds: Int
+     let altitude: AltitudeFeet?
+@@ -18,7 +18,7 @@ nonisolated struct RouteAmendmentLegValues: Equatable, Sendable {
+     }
+ }
+ 
+-nonisolated struct RouteAmendmentLegEntry: Equatable, Sendable {
++nonisolated struct RouteAmendmentLegEntry: Codable, Equatable, Sendable {
+     struct EstimateProvenance: Codable, Equatable, Sendable {
+         enum Source: String, Codable, Sendable { case noWind, plannedWind, unavailable }
+         var source: Source
+diff --git a/NavigationFlight/Domain/Navigation/NavigationTypes.swift b/NavigationFlight/Domain/Navigation/NavigationTypes.swift
+index d0f00fa..fda9433 100644
+--- a/NavigationFlight/Domain/Navigation/NavigationTypes.swift
++++ b/NavigationFlight/Domain/Navigation/NavigationTypes.swift
+@@ -1,23 +1,23 @@
+ import Foundation
+ 
+-struct WGS84Coordinate: Equatable, Sendable {
++struct WGS84Coordinate: Codable, Equatable, Sendable {
+     let latitudeDegrees: Double
+     let longitudeDegrees: Double
+ }
+ 
+-struct AltitudeFeet: Equatable, Sendable {
++struct AltitudeFeet: Codable, Equatable, Sendable {
+     let value: Double
+ }
+ 
+-struct Degrees: Equatable, Sendable {
++struct Degrees: Codable, Equatable, Sendable {
+     let value: Double
+ }
+ 
+-struct Knots: Equatable, Sendable {
++struct Knots: Codable, Equatable, Sendable {
+     let value: Double
+ }
+ 
+-struct FrequencyMHz: Equatable, Sendable {
++struct FrequencyMHz: Codable, Equatable, Sendable {
+     let value: Double
+ }
+ 
+@@ -33,7 +33,7 @@ struct LegProgress: Equatable, Sendable {
+     let fraction: Double
+ }
+ 
+-struct Wind: Equatable, Sendable {
++struct Wind: Codable, Equatable, Sendable {
+     /// Direction the wind comes from, measured clockwise from true north.
+     let directionFromTrue: Degrees
+     let speed: Knots
+diff --git a/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+new file mode 100644
+index 0000000..96f3649
+--- /dev/null
++++ b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+@@ -0,0 +1,134 @@
++import Foundation
++import Observation
++
++@MainActor
++@Observable
++final class AmendmentDraftPersistence {
++    enum Status: Equatable {
++        case saving, saved, saveFailed, deleting, deleteFailed, recoveryFailed
++    }
++
++    private let store: any AmendmentDraftStore
++    private let beforeRetry: () -> Void
++    private(set) var statuses: [UUID: Status] = [:]
++    private var revisions: [UUID: UInt64] = [:]
++    private var latest: [UUID: AmendmentDraftRecord] = [:]
++    private var latestSnapshots: [UUID: RouteAmendmentDraft.Persistence] = [:]
++    private var pending: [UUID: AmendmentDraftRecord] = [:]
++    private var blocked: Set<UUID> = []
++    private var deleting: Set<UUID> = []
++    @ObservationIgnored private var writer: Task<Void, Never>?
++
++    init(store: any AmendmentDraftStore, beforeRetry: @escaping () -> Void = {}) {
++        self.store = store
++        self.beforeRetry = beforeRetry
++    }
++
++    func save(_ draft: RouteAmendmentDraft, recordingSequence: UInt64) {
++        let id = draft.flightID
++        guard !blocked.contains(id), !deleting.contains(id), let snapshot = draft.persistence else { return }
++        guard latestSnapshots[id] != snapshot else { return }
++        do {
++            let data = try JSONEncoder().encode(snapshot)
++            let (revision, overflow) = (revisions[id] ?? 0).addingReportingOverflow(1)
++            guard !overflow else { statuses[id] = .saveFailed; return }
++            revisions[id] = revision
++            let record = AmendmentDraftRecord(flightID: id, revision: revision,
++                                             recordingSequence: recordingSequence, payload: data)
++            latest[id] = record
++            latestSnapshots[id] = snapshot
++            pending[id] = record
++            statuses[id] = .saving
++            startWriter()
++        } catch {
++            statuses[id] = .saveFailed
++        }
++    }
++
++    func retry(flightID: UUID) {
++        guard !blocked.contains(flightID), !deleting.contains(flightID), let record = latest[flightID] else { return }
++        beforeRetry()
++        pending[flightID] = record
++        statuses[flightID] = .saving
++        startWriter()
++    }
++
++    /// One worker owns all writes, independent of view-task cancellation. Coalesce
++    /// pending edits and ignore completion status from superseded revisions.
++    private func startWriter() {
++        guard writer == nil else { return }
++        writer = Task {
++            while let (id, record) = pending.first {
++                pending[id] = nil
++                do {
++                    try await store.save(record)
++                    if latest[id]?.revision == record.revision, !deleting.contains(id) { statuses[id] = .saved }
++                } catch {
++                    if latest[id]?.revision == record.revision, !deleting.contains(id) { statuses[id] = .saveFailed }
++                }
++            }
++            writer = nil
++        }
++    }
++
++    func flush() async {
++        while let writer { await writer.value }
++    }
++
++    func discard(flightID: UUID) async -> Bool {
++        guard !deleting.contains(flightID), !blocked.contains(flightID) else { return false }
++        deleting.insert(flightID)
++        statuses[flightID] = .deleting
++        pending[flightID] = nil
++        // A previous save must finish before delete, so it cannot recreate a
++        // successfully discarded draft. Failed deletion retains the in-memory work.
++        await flush()
++        do {
++            try await store.remove(flightID: flightID)
++            latest[flightID] = nil
++            latestSnapshots[flightID] = nil
++            statuses[flightID] = nil
++            deleting.remove(flightID)
++            return true
++        } catch {
++            statuses[flightID] = .deleteFailed
++            deleting.remove(flightID)
++            return false
++        }
++    }
++
++    func recover(flight: Flight, route: RouteAmendmentRoute?, lastAmendmentSequence: UInt64?) async -> RouteAmendmentDraft? {
++        guard flight.legState != .completed, flight.pendingRouteAmendment == nil,
++              flight.activatedRouteAmendment == nil, let route else { return nil }
++        await flush()
++        do {
++            guard let record = try await store.load(flightID: flight.id) else { return nil }
++            try record.validate(for: flight.id)
++            revisions[flight.id] = record.revision
++            // A confirmed route operation after this snapshot makes it obsolete,
++            // even if cleanup failed and the armed amendment was later cancelled.
++            if let lastAmendmentSequence, lastAmendmentSequence >= record.recordingSequence { return nil }
++            let snapshot = try JSONDecoder().decode(RouteAmendmentDraft.Persistence.self, from: record.payload)
++            let draft = try RouteAmendmentDraft(recovering: snapshot, flightID: flight.id, route: route)
++            latest[flight.id] = record
++            latestSnapshots[flight.id] = snapshot
++            statuses[flight.id] = .saved
++            return draft
++        } catch {
++            blocked.insert(flight.id)
++            statuses[flight.id] = .recoveryFailed
++            return nil
++        }
++    }
++
++    /// Call only after the existing operational transaction reports success.
++    /// The journal recovery fence protects against a crash or failed cleanup.
++    func retire(flightID: UUID) async {
++        _ = await discard(flightID: flightID)
++        latest[flightID] = nil
++        latestSnapshots[flightID] = nil
++        statuses[flightID] = nil
++        // Cleanup failure is not an unsaved operational amendment. Recovery uses
++        // the journal fence rather than exposing this obsolete preparation.
++    }
++}
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+index 2fd4fc5..86c5b9d 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureState.swift
+@@ -293,6 +293,14 @@ struct CockpitFeatureState: Equatable, Sendable {
+         clearAmendmentDraft()
+     }
+ 
++    mutating func restoreAmendmentDraft(_ draft: RouteAmendmentDraft) {
++        guard draft.flightID == flight?.id, flight?.legState != .completed,
++              flight?.pendingRouteAmendment == nil, flight?.activatedRouteAmendment == nil else { return }
++        routeAmendmentDraft = draft
++        isAmendmentWorkspaceVisible = false
++        isAmendmentPlotting = false
++    }
++
+     mutating func clearAmendmentDraft() {
+         isAmendmentWorkspaceVisible = false
+         isAmendmentPlotting = false
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+index eb4a555..f81ccdd 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+@@ -29,6 +29,7 @@ struct CockpitFeatureView: View {
+     private let locationService: AircraftLocationService
+     private let isSectionSelected: Bool
+     private let recordingCoordinator: FlightRecordingCoordinator
++    private let draftPersistence: AmendmentDraftPersistence?
+     private let chartCatalog: ChartCatalog?
+     private let chartResources: ChartResources
+     private let shouldSimulateRecordingDegradation: Bool
+@@ -40,6 +41,7 @@ struct CockpitFeatureView: View {
+         positionCheckTiming: PositionCheckTiming = .standard,
+         isSectionSelected: Bool,
+         recordingCoordinator: FlightRecordingCoordinator,
++        draftPersistence: AmendmentDraftPersistence? = nil,
+         checklistSelection: @escaping () -> StartChecklistSelection = { .tzeKivun },
+         amendmentMode: @escaping () -> RouteAmendmentMode,
+         chartCatalog: ChartCatalog? = nil,
+@@ -54,6 +56,7 @@ struct CockpitFeatureView: View {
+         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
+         self.isSectionSelected = isSectionSelected
+         self.recordingCoordinator = recordingCoordinator
++        self.draftPersistence = draftPersistence
+         self.chartCatalog = chartCatalog
+         self.chartResources = chartResources
+         self.shouldSimulateRecordingDegradation = shouldSimulateRecordingDegradation
+@@ -226,6 +229,9 @@ struct CockpitFeatureView: View {
+                         pendingManagementSave: state.pendingAmendmentManagementSave,
+                         onManagePendingAmendment: managePendingAmendment,
+                         amendmentSaveStatus: state.amendmentSave?.status,
++                        draftPersistenceStatus: draftPersistence?.statuses[flight.id],
++                        onRetryDraftSave: { draftPersistence?.retry(flightID: flight.id) },
++                        onRetryDraftDiscard: discardAmendmentDraft,
+                         onConfirmAmendment: { confirmAmendment(startNow: false) },
+                         onStartAmendmentNow: { confirmAmendment(startNow: true) },
+                         canStartAmendmentNow: canConfirmAmendment(startNow: true),
+@@ -306,7 +312,8 @@ struct CockpitFeatureView: View {
+ 
+     private var amendmentDisplayDate: Date? {
+ #if DEBUG
+-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]?.hasPrefix("A") == true,
++        let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
++        if fixture?.hasPrefix("A") == true || fixture == "C",
+            let start = state.flight?.legStartedAt {
+             return start.addingTimeInterval(442)
+         }
+@@ -337,7 +344,7 @@ struct CockpitFeatureView: View {
+                 state.installCockpitContext(transition.cockpitContext)
+ #if DEBUG
+                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
+-                if ["A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
++                if ["C", "A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                    state.flight?.activatedRouteAmendment == nil {
+                     state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
+                                                               partialWorkspaceFixture: ["A-partial", "A-progress-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
+@@ -357,6 +364,13 @@ struct CockpitFeatureView: View {
+                             state.updateRouteAmendment(.saveLegValues)
+                         }
+                     }
++                    if workspaceFixture == "C", let route = state.routeForAmendment,
++                       let leg = state.routeAmendmentDraft?.reviewLegs(on: route).dropFirst().first {
++                        state.updateRouteAmendment(.editLeg(leg.id))
++                        state.updateRouteAmendment(.editLegField(.duration, ""))
++                        state.updateRouteAmendment(.editLegField(.visualReference, "Fixture C · junction"))
++                        state.updateRouteAmendment(.toggleCues)
++                    }
+                     state.updateRouteAmendment(.pause)
+                     if workspaceFixture == "armed" { confirmAmendment(startNow: false) }
+                 }
+@@ -398,7 +412,31 @@ struct CockpitFeatureView: View {
+         }
+     }
+ 
++    private func discardAmendmentDraft() {
++        guard let id = state.flight?.id else { return }
++        guard let draftPersistence else { state.updateRouteAmendment(.discard); return }
++        Task {
++            if await draftPersistence.discard(flightID: id), state.flight?.id == id {
++                state.updateRouteAmendment(.discard)
++            }
++        }
++    }
++
+     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
++        if case .discard = intent, state.replacingPendingAmendmentID == nil {
++            discardAmendmentDraft()
++            return
++        }
++        if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
++            presentedError = .init(title: "Amendment draft unavailable",
++                                   message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
++            return
++        }
++        if let id = state.flight?.id, draftPersistence?.statuses[id] == .deleting {
++            if case .pause = intent { state.updateRouteAmendment(.pause) }
++            if case .toggleWorkspace = intent, state.isAmendmentWorkspaceVisible { state.updateRouteAmendment(.pause) }
++            return
++        }
+         state.updateRouteAmendment(intent, mode: amendmentMode())
+ #if DEBUG
+         let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"]
+@@ -492,6 +530,7 @@ struct CockpitFeatureView: View {
+                 )
+                 guard state.amendmentSave?.amendment.id == operation.amendment.id else { return }
+                 state.installPendingAmendment(transition)
++                await draftPersistence?.retire(flightID: flight.id)
+                 progressionNotice = nil
+                 if flight.activeLegID != transition.flight.activeLegID
+                     || flight.activePartwayDeparture != transition.flight.activePartwayDeparture {
+diff --git a/NavigationFlight/Features/Cockpit/CockpitView.swift b/NavigationFlight/Features/Cockpit/CockpitView.swift
+index 3fa146e..40c0ff2 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitView.swift
+@@ -206,6 +206,9 @@ struct CockpitView: View {
+     var pendingManagementSave: CockpitFeatureState.PendingAmendmentManagementSave?
+     var onManagePendingAmendment: (PendingAmendmentManagement.Intent) -> Void = { _ in }
+     var amendmentSaveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
++    var draftPersistenceStatus: AmendmentDraftPersistence.Status?
++    var onRetryDraftSave: () -> Void = {}
++    var onRetryDraftDiscard: () -> Void = {}
+     var onConfirmAmendment: () -> Void = {}
+     var onStartAmendmentNow: () -> Void = {}
+     var canStartAmendmentNow = false
+@@ -342,11 +345,11 @@ struct CockpitView: View {
+         cockpitContent
+         .accessibilityHidden(pendingAmendmentDialogContent != nil)
+         .background(Color(.systemBackground))
+-        .alert("Discard this draft?", isPresented: $amendmentDiscardConfirmation) {
+-            Button("Keep editing", role: .cancel) {}
+-            Button("Discard draft", role: .destructive) { onRouteAmendment(.discard) }
++        .alert("Discard amendment?", isPresented: $amendmentDiscardConfirmation) {
++            Button("Keep draft", role: .cancel) {}
++            Button("Discard", role: .destructive) { onRouteAmendment(.discard) }
+         } message: {
+-            Text("The current route will continue. The waypoints in this draft will be removed.")
++            Text("Remove the prepared route and its saved entries?")
+         }
+         .onChange(of: isEditingRouteAmendment) { _, editing in
+             guard editing else { return }
+@@ -751,6 +754,9 @@ struct CockpitView: View {
+             isPlotting: isAmendmentPlotting,
+             onIntent: onRouteAmendment,
+             saveStatus: amendmentSaveStatus,
++            draftPersistenceStatus: draftPersistenceStatus,
++            onRetryDraftSave: onRetryDraftSave,
++            onRetryDraftDiscard: onRetryDraftDiscard,
+             isReplacing: isReplacingPendingAmendment,
+             confirmationUnavailableWhileAmended: flight.activatedRouteAmendment != nil,
+             onConfirm: onConfirmAmendment,
+@@ -1333,12 +1339,15 @@ struct CockpitView: View {
+     }
+ 
+     private var hasUnsavedAmendmentChanges: Bool {
++        if draftPersistenceStatus == .saveFailed || draftPersistenceStatus == .deleteFailed
++            || draftPersistenceStatus == .recoveryFailed || draftPersistenceStatus == .saving { return true }
+         if case .failed = amendmentSaveStatus { return true }
+         return false
+     }
+ 
+     private var amendmentStatusDescription: String {
+-        amendmentLifecycle.title + (hasUnsavedAmendmentChanges ? ", changes not saved" : "")
++        if draftPersistenceStatus == .recoveryFailed { return "Saved draft unavailable; data preserved" }
++        return amendmentLifecycle.title + (hasUnsavedAmendmentChanges ? ", changes not saved" : "")
+     }
+ 
+     @ViewBuilder
+diff --git a/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift b/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
+index e998ee3..f08e605 100644
+--- a/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
++++ b/NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift
+@@ -8,6 +8,9 @@ struct RouteAmendmentConsole: View {
+     var isPlotting = false
+     let onIntent: (RouteAmendmentDraft.Intent) -> Void
+     let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
++    var draftPersistenceStatus: AmendmentDraftPersistence.Status?
++    var onRetryDraftSave: () -> Void = {}
++    var onRetryDraftDiscard: () -> Void = {}
+     var isReplacing = false
+     var confirmationUnavailableWhileAmended = false
+     let onConfirm: () -> Void
+@@ -16,6 +19,7 @@ struct RouteAmendmentConsole: View {
+     let onPlaceAtMapCenter: () -> Void
+     let onDiscard: () -> Void
+     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
++    @Environment(\.colorScheme) private var colorScheme
+     @State private var correctionTarget: RouteAmendmentDraft.CorrectionPoint?
+     @State private var isCorrectionActionsPresented = false
+ 
+@@ -53,6 +57,7 @@ struct RouteAmendmentConsole: View {
+             ScrollViewReader { proxy in
+                 ScrollView {
+                     VStack(alignment: .leading, spacing: 4) {
++                        persistenceWarning
+                         if let message = draft.message, !draft.isInspecting {
+                             Label(message, systemImage: "exclamationmark.circle")
+                                 .font(.subheadline)
+@@ -98,6 +103,35 @@ struct RouteAmendmentConsole: View {
+         }
+     }
+ 
++    @ViewBuilder
++    private var persistenceWarning: some View {
++        if draftPersistenceStatus == .saveFailed || draftPersistenceStatus == .deleteFailed {
++            VStack(alignment: .leading, spacing: 10) {
++                Text(draftPersistenceStatus == .deleteFailed ? "Couldn’t discard amendment" : "Draft not saved")
++                    .font(.title3.bold())
++                    .accessibilityIdentifier("amendment-draft-failure")
++                Text(draftPersistenceStatus == .deleteFailed
++                     ? "The saved draft couldn’t be removed. Retry to remove its route and entries."
++                     : "Work is kept in memory. Retry to make it recoverable after restart.")
++                    .font(.subheadline)
++                Button {
++                    if draftPersistenceStatus == .deleteFailed { onRetryDraftDiscard() }
++                    else { onRetryDraftSave() }
++                } label: {
++                    Text(draftPersistenceStatus == .deleteFailed ? "Retry discarding draft" : "Retry saving draft")
++                        .frame(minHeight: 44)
++                }
++                .buttonStyle(.bordered)
++                .foregroundStyle(colorScheme == .dark ? PendingAmendmentPalette.quietAction : actionColor)
++                .accessibilityIdentifier("retry-amendment-draft")
++            }
++            .frame(maxWidth: .infinity, alignment: .leading)
++        } else if draftPersistenceStatus == .deleting {
++            ProgressView("Discarding amendment…")
++                .frame(minHeight: 44)
++        }
++    }
++
+     @ViewBuilder
+     private var workspaceHeading: some View {
+         if dynamicTypeSize.isAccessibilitySize {
+diff --git a/NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift b/NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift
+index 0b98830..3d88fa2 100644
+--- a/NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift
++++ b/NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift
+@@ -46,6 +46,7 @@ nonisolated struct RecoveredFlight: Equatable, Sendable {
+     let flight: Flight
+     let recording: FlightRecording
+     var cockpitContext: RecordingCockpitContext? = nil
++    var lastAmendmentSequence: UInt64? = nil
+ }
+ 
+ nonisolated enum FlightRecoveryError: Error, Equatable, Sendable {
+@@ -329,7 +330,15 @@ final class FlightRecoveryCoordinator {
+             flightPlan: flightPlan,
+             flight: flight,
+             recording: recording,
+-            cockpitContext: try replayCockpitContext(snapshot: snapshot, flight: flight)
++            cockpitContext: try replayCockpitContext(snapshot: snapshot, flight: flight),
++            lastAmendmentSequence: snapshot.events.compactMap { event -> UInt64? in
++                switch event.payload {
++                case .pendingRouteAmendmentConfirmed, .pendingRouteAmendmentReplaced,
++                     .pendingRouteAmendmentCancelled, .routeAmendmentActivated, .routeAmendmentRejoined:
++                    event.sequence
++                default: nil
++                }
++            }.max()
+         )
+     }
+ 
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index ced6093..7dd45d2 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -9,6 +9,255 @@ import XCTest
+ 
+ final class NavigationFlightUITests: XCTestCase {
+ 
++    @MainActor
++    func testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo() throws {
++        let app = try launchPartialAmendment(fixture: "C", correctionCues: true)
++        app.buttons["amend-route"].tap()
++        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
++        XCTAssertTrue(panel.waitForExistence(timeout: 5))
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, seconds Not set")
++        captureAmendmentState("ap09-partial-editor-before", in: app)
++        app.buttons["amend-route"].tap()
++        waitForDraftSaved(in: app)
++        app.terminate()
++        app.launch()
++        let resume = app.buttons["Continue Flight"]
++        XCTAssertTrue(resume.waitForExistence(timeout: 8))
++        resume.tap()
++        dismissCockpitSidebar(in: app)
++        let pencil = app.buttons["amend-route"]
++        XCTAssertTrue(pencil.waitForExistence(timeout: 8))
++        XCTAssertFalse(panel.exists)
++        XCTAssertFalse(app.buttons["pending-amendment-pencil"].exists)
++        captureAmendmentState("ap09-recovered-cockpit", in: app)
++        pencil.tap()
++        XCTAssertTrue(panel.waitForExistence(timeout: 5))
++        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, seconds Not set")
++        XCTAssertTrue(app.textFields["amendment-field-visualReference"].exists || app.textFields.containing(NSPredicate(format: "value == %@", "Fixture C · junction")).firstMatch.exists)
++        captureAmendmentState("ap09-partial-editor-restored", in: app)
++        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
++        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
++        XCTAssertEqual(rows.count, 3)
++        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("176"))
++        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
++        undoPointCorrection(in: app)
++        XCTAssertTrue(app.staticTexts["Drawing"].waitForExistence(timeout: 4))
++        XCTAssertEqual(rows.count, 2)
++        captureAmendmentState("ap09-recovered-undo", in: app)
++    }
++
++    @MainActor
++    func testDraftSaveFailureRetryAndNondestructiveExit() throws {
++        try verifyDraftSaveFailure()
++    }
++
++    @MainActor
++    func testDraftSaveFailureRetryInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyDraftSaveFailure(landscape: true)
++    }
++
++    @MainActor
++    func testDraftSaveFailureRetryWithLargerText() throws {
++        try verifyDraftSaveFailure(largerText: true)
++    }
++
++    @MainActor
++    private func verifyDraftSaveFailure(landscape: Bool = false, largerText: Bool = false) throws {
++        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
++                                preferredContentSizeCategory: largerText ? "UICTContentSizeCategoryAccessibilityXXXL" : nil,
++                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
++                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "save"])
++        startAmendmentFixture(in: app)
++        openCorrectionWorkspace(in: app, landscape: landscape)
++        let warning = app.descendants(matching: .any)["amendment-draft-failure"].firstMatch
++        XCTAssertTrue(warning.waitForExistence(timeout: 5))
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        let retry = app.buttons["retry-amendment-draft"]
++        tapAmendmentControl(retry, in: console, performTap: false, requireFullyVisible: true)
++        XCTAssertGreaterThanOrEqual(retry.frame.width, 44)
++        XCTAssertGreaterThanOrEqual(retry.frame.height, 44)
++        captureAmendmentState("ap09-save-failure", in: app)
++        let pencil = app.buttons["amend-route"]
++        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
++        let mapFrame = map.frame
++        pencil.tap()
++        XCTAssertFalse(warning.exists)
++        XCTAssertEqual(map.frame, mapFrame)
++        XCTAssertTrue((pencil.value as? String ?? "").contains("changes not saved"))
++        captureAmendmentState("ap09-unsaved-cockpit", in: app)
++        pencil.tap()
++        XCTAssertTrue(warning.waitForExistence(timeout: 5))
++        tapAmendmentControl(retry, in: console, requireFullyVisible: true)
++        waitForDraftSaved(in: app)
++        XCTAssertTrue(warning.waitForNonExistence(timeout: 5))
++        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 3)
++        captureAmendmentState("ap09-save-retried", in: app)
++    }
++
++    @MainActor
++    func testDraftDiscardCancellationFailureAndRetry() throws {
++        try verifyDraftDiscard()
++    }
++
++    @MainActor
++    func testDraftDiscardFailureInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyDraftDiscard(landscape: true)
++    }
++
++    @MainActor
++    func testDraftDiscardWithLargerText() throws {
++        try verifyDraftDiscard(largerText: true)
++    }
++
++    @MainActor
++    private func verifyDraftDiscard(landscape: Bool = false, largerText: Bool = false) throws {
++        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
++                                preferredContentSizeCategory: largerText ? "UICTContentSizeCategoryAccessibilityXXXL" : nil,
++                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
++                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "delete"])
++        startAmendmentFixture(in: app)
++        openCorrectionWorkspace(in: app, landscape: landscape)
++        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
++        let discard = app.buttons["discard-amendment-draft"]
++        if !discard.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
++        discard.tap()
++        let alert = app.alerts["Discard amendment?"]
++        XCTAssertTrue(alert.waitForExistence(timeout: 4))
++        captureAmendmentState("ap09-discard-confirmation", in: app)
++        alert.buttons["Keep draft"].tap()
++        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 3)
++        if !discard.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
++        discard.tap()
++        alert.buttons["Discard"].tap()
++        let retry = app.buttons["retry-amendment-draft"]
++        XCTAssertTrue(retry.waitForExistence(timeout: 4))
++        tapAmendmentControl(retry, in: console, performTap: false, requireFullyVisible: true)
++        XCTAssertGreaterThanOrEqual(retry.frame.width, 44)
++        XCTAssertGreaterThanOrEqual(retry.frame.height, 44)
++        captureAmendmentState("ap09-discard-failed", in: app)
++        tapAmendmentControl(retry, in: console, requireFullyVisible: true)
++        XCTAssertTrue(console.waitForNonExistence(timeout: 5))
++        XCTAssertEqual(app.buttons["amend-route"].value as? String, "")
++        XCUIDevice.shared.orientation = .portrait
++        app.terminate()
++        app.launch()
++        let resume = app.buttons["Continue Flight"]
++        XCTAssertTrue(resume.waitForExistence(timeout: 8))
++        resume.tap()
++        dismissCockpitSidebar(in: app)
++        XCTAssertTrue(app.buttons["amend-route"].waitForExistence(timeout: 8))
++        XCTAssertEqual(app.buttons["amend-route"].value as? String, "")
++        app.buttons["amend-route"].tap()
++        XCTAssertTrue(app.staticTexts["Choose departure"].waitForExistence(timeout: 4))
++        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 0)
++        captureAmendmentState("ap09-discard-restart-empty", in: app)
++    }
++
++    @MainActor
++    func testDraftRecoveryFailureKeepsOperationalCockpitUsable() throws {
++        try verifyDraftRecoveryFailure()
++    }
++
++    @MainActor
++    func testDraftRecoveryFailureInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyDraftRecoveryFailure(landscape: true)
++    }
++
++    @MainActor
++    private func verifyDraftRecoveryFailure(landscape: Bool = false) throws {
++        let app = try launchPartialAmendment(fixture: "A")
++        waitForDraftSaved(in: app)
++        app.terminate()
++        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
++        app.launch()
++        let resume = app.buttons["Continue Flight"]
++        XCTAssertTrue(resume.waitForExistence(timeout: 8))
++        resume.tap()
++        dismissCockpitSidebar(in: app)
++        let pencil = app.buttons["amend-route"]
++        XCTAssertTrue(pencil.waitForExistence(timeout: 8))
++        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
++        if landscape {
++            XCUIDevice.shared.orientation = .landscapeLeft
++            let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
++            XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
++        }
++        pencil.tap()
++        let alert = app.alerts["Amendment draft unavailable"]
++        XCTAssertTrue(alert.waitForExistence(timeout: 4))
++        captureAmendmentState("ap09-recovery-unavailable", in: app)
++        alert.buttons["OK"].tap()
++        app.buttons["waypoint-identified"].tap()
++        XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
++        XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].exists)
++        captureAmendmentState("ap09-recovery-operational", in: app)
++    }
++
++    @MainActor
++    func testDraftDoesNotCarryToAnotherFlight() throws {
++        let original = try launchPartialAmendment(fixture: "A")
++        waitForDraftSaved(in: original)
++        original.terminate()
++        // Keep the same disposable library/store while ending the old Flight.
++        // A new Flight of the same plan must not inherit its retained draft file.
++        original.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] = "A-empty"
++        original.launch()
++        let end = original.buttons["End as Incomplete"]
++        XCTAssertTrue(end.waitForExistence(timeout: 8))
++        end.tap()
++        XCTAssertTrue(original.staticTexts["End this Flight as incomplete?"].waitForExistence(timeout: 4))
++        original.buttons.matching(identifier: "End as Incomplete").element(boundBy: 1).tap()
++        XCTAssertTrue(original.buttons["start-leg"].waitForExistence(timeout: 8))
++        startAmendmentFixture(in: original)
++        let other = original
++        other.buttons["amend-route"].tap()
++        XCTAssertTrue(other.staticTexts["Choose departure"].waitForExistence(timeout: 4))
++        XCTAssertEqual(other.buttons.matching(identifier: "edit-amendment-leg").count, 0)
++        captureAmendmentState("ap09-other-flight-empty", in: other)
++    }
++
++    @MainActor
++    func testDraftFailureStatusAndRetryWithVoiceOver() throws {
++        let service = XCUIDevice.shared.voiceOverService
++        let wasEnabled = service.isEnabled
++        if wasEnabled { try service.disable() }
++        defer {
++            if service.isEnabled { try? service.disable() }
++            if wasEnabled { try? service.enable() }
++        }
++        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
++                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
++                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "save"])
++        startAmendmentFixture(in: app)
++        openCorrectionWorkspace(in: app, landscape: false)
++        XCTAssertTrue(app.staticTexts["amendment-draft-failure"].waitForExistence(timeout: 5))
++        try service.enable()
++        var speech: [String] = []
++        for _ in 0..<55 {
++            speech.append(try service.moveForward().utterance)
++            if speech.joined(separator: " ").contains("Retry saving draft") { break }
++        }
++        let spoken = speech.joined(separator: " ")
++        XCTAssertTrue(spoken.contains("Draft not saved"), spoken)
++        XCTAssertTrue(spoken.contains("Retry saving draft"), spoken)
++        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
++        attachment.name = "AP09 actual VoiceOver save failure speech"
++        attachment.lifetime = .keepAlways
++        add(attachment)
++        captureAmendmentState("ap09-voiceover-warning", in: app)
++    }
++
++    @MainActor
++    private func waitForDraftSaved(in app: XCUIApplication) {
++        let saved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
++            !(app.buttons["amend-route"].value as? String ?? "").contains("changes not saved")
++        }, object: nil)
++        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 5), .completed)
++    }
++
+     @MainActor
+     func testAssistedPreparationOverridesGeometryAndUndo() throws {
+         try verifyAssistedPreparation()
+@@ -3825,7 +4074,7 @@ final class NavigationFlightUITests: XCTestCase {
+ 
+     @MainActor
+     private func tapAmendmentControl(
+-        _ element: XCUIElement, in console: XCUIElement, scrollDown: Bool = true, beforeTap: () -> Void = {}
++        _ element: XCUIElement, in console: XCUIElement, scrollDown: Bool = true, performTap: Bool = true, requireFullyVisible: Bool = false, beforeTap: () -> Void = {}
+     ) {
+         let compact = console.frame.width < 430
+         for attempt in 0..<14 {
+@@ -3835,12 +4084,15 @@ final class NavigationFlightUITests: XCTestCase {
+                 let isReviewRow = element.identifier == "edit-amendment-leg"
+                 let bottomClearance = compact && !isReviewRow && viewport.height > 150 ? 65.0 : 0.0
+                 let bottom = viewport.maxY - bottomClearance
+-                if element.isHittable, frame.midY >= viewport.minY, frame.midY < bottom {
++                let visible = requireFullyVisible
++                    ? frame.minY >= viewport.minY && frame.maxY <= bottom
++                    : frame.midY >= viewport.minY && frame.midY < bottom
++                if element.isHittable, visible {
+                     beforeTap()
+-                    element.tap()
++                    if performTap { element.tap() }
+                     return
+                 }
+-                scrollAmendmentConsole(console, down: frame.midY >= bottom)
++                scrollAmendmentConsole(console, down: requireFullyVisible ? frame.maxY > bottom : frame.midY >= bottom)
+             } else {
+                 scrollAmendmentConsole(console, down: attempt < 7 ? scrollDown : !scrollDown)
+             }
+@@ -3956,13 +4208,13 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertTrue(selected.waitForExistence(timeout: 3))
+ 
+         app.buttons["discard-amendment-draft"].tap()
+-        let dialog = app.buttons["Keep editing"]
++        let dialog = app.alerts.buttons["Keep draft"]
+         XCTAssertTrue(dialog.waitForExistence(timeout: 3))
+         captureAmendmentState("discard", in: app)
+         dialog.tap()
+         XCTAssertTrue(selected.waitForExistence(timeout: 3))
+         app.buttons["discard-amendment-draft"].tap()
+-        app.alerts.buttons["Discard draft"].tap()
++        app.alerts.buttons["Discard"].tap()
+         XCTAssertTrue(pencil.waitForExistence(timeout: 3))
+         XCTAssertTrue(pencil.isEnabled)
+         XCTAssertFalse(selected.exists)
+@@ -5539,6 +5791,17 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertTrue(app.buttons["leg-start-checklist-chip"].waitForExistence(timeout: 3))
+     }
+ 
++    @MainActor
++    private func dismissCockpitSidebar(in app: XCUIApplication) {
++        // iPad's system sidebar can survive a prior landscape run as a modal
++        // overlay. Its scrim intercepts cockpit controls even when AX reports them hittable.
++        let hideSidebar = app.buttons["ToggleSidebar"]
++        if hideSidebar.exists, hideSidebar.label == "Hide Sidebar", app.cells["cockpit-tab"].exists {
++            hideSidebar.tap()
++            XCTAssertTrue(hideSidebar.waitForNonExistence(timeout: 4))
++        }
++    }
++
+     @MainActor
+     private func startAmendmentFixture(in app: XCUIApplication) {
+         // XCTest worker clones can retain VoiceOver independently of the visible
+@@ -5553,13 +5816,7 @@ final class NavigationFlightUITests: XCTestCase {
+             }
+             XCTAssertFalse(voiceOver.isEnabled)
+         }
+-        // iPad's system sidebar can survive a prior landscape run as a modal
+-        // overlay. Its scrim intercepts Start even when AX reports it hittable.
+-        let hideSidebar = app.buttons["ToggleSidebar"]
+-        if hideSidebar.exists, hideSidebar.label == "Hide Sidebar", app.cells["cockpit-tab"].exists {
+-            hideSidebar.tap()
+-            XCTAssertTrue(hideSidebar.waitForNonExistence(timeout: 4))
+-        }
++        dismissCockpitSidebar(in: app)
+         let start = app.buttons["start-leg"]
+         XCTAssertTrue(start.waitForExistence(timeout: 8))
+         XCTAssertTrue(start.isHittable)
+diff --git a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+index a35079c..8f6c179 100644
+--- a/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
++++ b/docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md
+@@ -187,6 +187,29 @@ those checkpoints remain historical. Implemented visual acceptance is separate.
+    camera contracts remain unchanged. These are preparation durations, not ETA or
+    operational flight timers. Existing Inspect original remains available.
+ 
++## AP-09 unfinished draft recovery · 2026-11-26
++
++Issue #233 implements G05's local per-Flight preparation persistence. After work
++begins, route/partial fields/cues, captured mode and provenance, selected editor
++and complete plotting Undo snapshots are saved separately from operational
++recordings and exports. Untouched exit creates no draft. Recovery of the same
++unfinished Flight returns to ordinary Cockpit, unarmed; pencil reopening restores
++its editor and geometry-derived D04 interaction. Existing armed recovery wins.
++
++Failed writes retain current in-memory work, expose an independent unsaved pencil
++badge and F10 Retry warning, and permit nondestructive pencil exit. Confirmed
++unarmed discard returns to Cockpit only after deletion succeeds; cancellation and
++deletion failure preserve work. Unsupported/corrupt saved bytes remain preserved
++with a scoped recovery error; they cannot arm or silently be replaced. Drafts
++never transfer to another Flight or resume with closed/deleted Flights. A later
++recorded amendment operation fences an obsolete draft even after failed cleanup.
++
++This supersedes only older statements that restart discards unarmed preparation.
++Operational recording schemas, recovery policy, Arm/disarm and exports retain their
++existing contracts. Arm remains the AP-11 placeholder in preparation. Runtime
++verification and human visual acceptance are recorded separately in the
++[AP-09 matrix and ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md).
++
+ ## Approved future preparation revision · 2026-11-24
+ 
+ John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)
+diff --git a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+index f34daf4..5a07e81 100644
+--- a/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
++++ b/docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md
+@@ -79,6 +79,48 @@ preparation only; the remaining operational decisions below are retained. Reuse
+ flying/rejoin/recovery evidence contracts. Each implementing task updates only
+ its delivered technical section after the approved planning baseline lands.
+ 
++## AP-09 local preparation storage · 2026-11-26
++
++`RouteAmendmentDraft.Persistence` captures geometry, stable plotted/anchor IDs,
++partial entries and accepted legacy values, mode/provenance, editor/inspection
++context and full Undo history. It excludes workspace visibility, plotting,
++transient gesture/delete offers and map choices. Recovery validates Flight and
++route-anchor identities before projection, preserves stale-departure work and
++normalizes interaction from geometry. `CockpitFeatureState.restoreAmendmentDraft`
++installs it hidden and cannot replace pending/activated operational amendments.
++
++`AmendmentDraftStore` accepts a schema-versioned Flight-keyed envelope with revision,
++recording sequence and snapshot payload. `DiskAmendmentDraftStore` owns atomic local
++JSON replacement in a sibling `FlightPlans-amendment-drafts` directory, outside
++recording packages. It rejects older revisions and preserves unsupported,
++mismatched or corrupt envelopes. `InMemoryAmendmentDraftStore` supplies injected
++failure/retry tests. Codable additions to immutable navigation/value types support
++this local snapshot only; operational DTOs and schemas are unchanged.
++
++`AmendmentDraftPersistence` owns a single serialized, coalescing writer independent
++of view-task cancellation. Status publication checks revision identity; failures
++retain the latest memory snapshot. Delete waits for in-flight writes, prevents
++competing edits and reports success only after removal. An unreadable recovered
++snapshot quarantines that Flight's draft writes for the process lifetime. It does
++not block ordinary navigation or remove the saved bytes.
++
++`RootView` owns/injects the store/coordinator, observes durable draft state and
++attempts a final save on scene departure. Flight recovery completes through its
++existing coordinator before a matching unarmed draft is attached. The recovered
++Flight exposes the greatest existing amendment-event sequence as a read-only
++fence: a draft saved before a later operational amendment is obsolete, including
++when cleanup failed and pending cancellation subsequently committed. No new
++operational event is generated by draft persistence. Arm cleanup runs only after
++the existing durable transaction succeeds. AP-11/AP-12's future operational
++redesign remains outside this checkpoint.
++
++`RouteAmendmentConsole` places native F10 retry content within its existing scroll
++extent; `CockpitView` reuses the independent F07 unsaved badge and native discard
++confirmation. DEBUG C extends the shared disposable bootstrap with a selected
++heading-only leg, nil duration and cues. Failure switches affect only injected
++draft operations. See the [AP-09 matrix/ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md)
++for evidence, remaining checks and separate owner acceptance.
++
+ ## AP-04 partial values and heading editor · 2026-11-25
+ 
+ `RouteAmendmentDraft` stores `RouteAmendmentLegEntry` by the existing leg geometry
+diff --git a/scripts/UI-TEST-HELPERS.md b/scripts/UI-TEST-HELPERS.md
+index ee8a645..38c0ad3 100644
+--- a/scripts/UI-TEST-HELPERS.md
++++ b/scripts/UI-TEST-HELPERS.md
+@@ -22,6 +22,7 @@ action (including actual keyboard dismissal), rather than relying only on
+   first checklist; readiness accepts the operational amendment control too.
+   It explicitly closes an identified system sidebar overlay before Start: after
+   rotation, that overlay can intercept a tap even when AX reports Start hittable.
++  `dismissCockpitSidebar` exposes that same step for cold-recovery Continue paths.
+   `launchPartialAmendment` uses this path for existing empty, partial, progress,
+   heading and overlap fixtures, including accessibility text sizes.
+ - `launchPendingAmendmentForManagement` uses the existing `armed` workspace fixture.
+@@ -40,6 +41,9 @@ action (including actual keyboard dismissal), rather than relying only on
+ - Reuse `tapAmendmentControl` for the adaptive console and `tapChartPanelControl`
+   for the editor's scroll viewport and pinned footer. After cancellation, assert
+   the next allowed interaction's result, not just that a panel exists.
++  `tapAmendmentControl(requireFullyVisible: true)` requires the full action frame
++  inside the console before tapping/capturing; use it for draft Retry controls.
++  `performTap: false` reveals the control for an evidence capture without activation.
+   Editor scrolling uses measured, bounded slow drags beside the wheels to avoid
+   overshooting controls in the compact accessibility viewport. Fully visible,
+   enabled buttons may use their measured center when native AX incorrectly reports

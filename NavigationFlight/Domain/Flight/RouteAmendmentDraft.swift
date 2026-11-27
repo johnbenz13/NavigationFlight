@@ -249,7 +249,7 @@ extension Flight {
 }
 
 struct RouteAmendmentDraft: Equatable, Sendable {
-    struct Point: Identifiable, Equatable, Sendable {
+    struct Point: Codable, Identifiable, Equatable, Sendable {
         let id: UUID
         let position: WGS84Coordinate
         let name: String?
@@ -309,14 +309,14 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let role: Role
     }
 
-    private struct Sketch: Equatable, Sendable {
+    fileprivate struct Sketch: Codable, Equatable, Sendable {
         var departure: RouteAmendmentAnchor?
         var points: [Point] = []
         var rejoin: RouteAmendmentAnchor?
         var selection: UUID?
     }
 
-    private struct Snapshot: Equatable, Sendable {
+    fileprivate struct Snapshot: Codable, Equatable, Sendable {
         let sketch: Sketch
         let entries: [LegGeometry: RouteAmendmentLegEntry]
     }
@@ -327,8 +327,8 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let position: WGS84Coordinate
     }
 
-    private let departurePointID = UUID()
-    private let rejoinPointID = UUID()
+    private var departurePointID = UUID()
+    private var rejoinPointID = UUID()
     private(set) var pointDeletionID: UUID?
 
     func correctionPoints(on route: RouteAmendmentRoute) -> [CorrectionPoint] {
@@ -349,12 +349,12 @@ struct RouteAmendmentDraft: Equatable, Sendable {
     }
 
     struct ReviewLeg: Identifiable, Equatable, Sendable {
-        enum Endpoint: Hashable, Sendable {
+        enum Endpoint: Codable, Hashable, Sendable {
             case departure, rejoin
             case point(UUID)
         }
 
-        struct ID: Hashable, Sendable {
+        struct ID: Codable, Hashable, Sendable {
             let from: Endpoint
             let to: Endpoint
         }
@@ -376,7 +376,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
 
-    fileprivate struct LegGeometry: Hashable, Sendable {
+    fileprivate struct LegGeometry: Codable, Hashable, Sendable {
         let id: ReviewLeg.ID
         let fromLatitude: Double
         let fromLongitude: Double
@@ -384,7 +384,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         let toLongitude: Double
     }
 
-    enum LegChoice: Hashable, Sendable {
+    enum LegChoice: Codable, Hashable, Sendable {
         case original(UUID)
         case proposed(ReviewLeg.ID)
     }
@@ -400,7 +400,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         }
     }
 
-    struct Editor: Equatable, Sendable {
+    struct Editor: Codable, Equatable, Sendable {
         let id: ReviewLeg.ID
         var entry: RouteAmendmentLegEntry
         var showsCues = false
@@ -408,7 +408,7 @@ struct RouteAmendmentDraft: Equatable, Sendable {
         var referenceID: UUID?
     }
 
-    enum LegPanel: Equatable, Sendable {
+    enum LegPanel: Codable, Equatable, Sendable {
         case editor
         case drawingOverlap([LegChoice], [RouteAmendmentAnchor])
         case inspection
@@ -1040,5 +1040,73 @@ struct RouteAmendmentDraft: Equatable, Sendable {
             candidate.selection = nil
         }
         if applyPlot(candidate, route: route) { step = departure == nil ? .departure : .drawing }
+    }
+}
+
+
+extension RouteAmendmentDraft {
+    /// Versioned by the draft-store envelope. Visibility, plotting, gestures and
+    /// pending map choices are deliberately absent from the durable representation.
+    struct Persistence: Codable, Equatable {
+        fileprivate let flightID: UUID
+        fileprivate let departurePointID: UUID
+        fileprivate let rejoinPointID: UUID
+        fileprivate let mode: RouteAmendmentMode
+        fileprivate let sketch: Sketch
+        fileprivate let history: [Snapshot]
+        fileprivate let entries: [LegGeometry: RouteAmendmentLegEntry]
+        fileprivate let editor: Editor?
+        fileprivate let panel: LegPanel?
+    }
+
+    var persistence: Persistence? {
+        guard hasContent else { return nil }
+        let panel: LegPanel?
+        switch legPanel {
+        case .editor, .inspection, .original: panel = legPanel
+        default: panel = nil
+        }
+        return Persistence(flightID: flightID, departurePointID: departurePointID, rejoinPointID: rejoinPointID,
+                           mode: mode, sketch: sketch,
+                           history: plotHistory, entries: legEntries, editor: editor, panel: panel)
+    }
+
+    init(recovering saved: Persistence, flightID: UUID, route: RouteAmendmentRoute) throws {
+        func valid(_ anchor: RouteAmendmentAnchor) -> Bool {
+            route.legs.indices.contains(anchor.legIndex)
+                && route.legs[anchor.legIndex].id == anchor.legID
+                && (0...1).contains(anchor.fraction)
+        }
+        func valid(_ sketch: Sketch) -> Bool {
+            let anchors = [sketch.departure, sketch.rejoin].compactMap { $0 }
+                + sketch.points.flatMap(\.routeCandidates)
+            return anchors.allSatisfy(valid)
+                && Set(sketch.points.map(\.id)).count == sketch.points.count
+                && !sketch.points.contains(where: { $0.id == saved.departurePointID || $0.id == saved.rejoinPointID })
+                && sketch.points.allSatisfy {
+                    (-90...90).contains($0.position.latitudeDegrees)
+                        && (-180...180).contains($0.position.longitudeDegrees)
+                }
+        }
+        guard saved.flightID == flightID, saved.departurePointID != saved.rejoinPointID, valid(saved.sketch),
+              saved.history.allSatisfy({ valid($0.sketch) }) else {
+            throw AmendmentDraftStoreError.invalidData
+        }
+        self.init(flightID: flightID, mode: saved.mode)
+        departurePointID = saved.departurePointID
+        rejoinPointID = saved.rejoinPointID
+        sketch = saved.sketch
+        plotHistory = saved.history
+        legEntries = saved.entries
+        editor = saved.editor
+        legPanel = saved.panel
+        step = departure == nil ? .departure : rejoin == nil ? .drawing : .review
+        isPaused = true
+        // Staleness is an eligibility failure, not corrupt storage. Preserve the
+        // full saved editor/partial values; resume performs the normal recheck.
+        if let departure, !route.contains(departure) { step = .staleDeparture }
+        if let editor, !reviewLegs(on: route).contains(where: { $0.id == editor.id }) {
+            throw AmendmentDraftStoreError.invalidData
+        }
     }
 }

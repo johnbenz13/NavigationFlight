@@ -1,0 +1,115 @@
+{
+  "exportedAt": "2026-11-26T20:11:27.177984+00:00",
+  "originalResultBundle": "/private/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/6E866180-4247-4683-988E-A11BB1FA1552/RunSomeTests/Test-NavigationFlight-2026.11.26_22-04-02-+0200.xcresult",
+  "resultInfoSHA256": "53bd511d0c080d06340e3b36f6ae9920523695a61278fff5b725a469cb57cdfb",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 2,
+        "passedTests": 11,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 2,
+    "finishTime": 1795723843.146,
+    "passedTests": 11,
+    "result": "Failed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795723442.993,
+    "statistics": [],
+    "testFailures": [
+      {
+        "failureText": "failed - Could not reveal amendment control: \"discard-amendment-draft\" Button, console: (20.0, 998.0, 794.0, 128.0)",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 11,
+        "testIdentifierString": "NavigationFlightUITests/testDraftDiscardCancellationFailureAndRetry()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftDiscardCancellationFailureAndRetry",
+        "testName": "testDraftDiscardCancellationFailureAndRetry()"
+      },
+      {
+        "failureText": "failed - Could not reveal amendment control: \"undo-amendment-plot\" Button, console: (20.0, 998.0, 794.0, 128.0)",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 13,
+        "testIdentifierString": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo",
+        "testName": "testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 13
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "bdce6337094e8ad009a82ee7e3605b050dadfad2",
+    "status": " M NavigationFlight/App/RootView.swift\nAM NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Domain/Navigation/NavigationTypes.swift\nAM NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift\n?? NavigationFlight/Domain/Flight/AmendmentDraftStore.swift\n?? NavigationFlightTests/AmendmentDraftPersistenceTests.swift\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "0C3DA6C2-8461-4D07-B01E-F2547AC86696.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-save-failure_0_88006F85-F451-4BF5-BADD-6B7B1F1F4D73.png",
+        "timestamp": 1795723620.946
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "1818952e0e23e032ff346c9fe1be77833c35a119e770f3775a364bd56a58b714"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "E436F184-8AEC-4226-A1ED-136F8E54B0E9.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-unsaved-cockpit_0_2F2EB9E5-7409-45AF-9C89-8FE041E43843.png",
+        "timestamp": 1795723623.771
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "66487b0f892bb0a4f43f61882059cccf740cc73576ee08115f12dcc64990e3d7"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "A196A2FD-817B-4AC2-B4E1-0DF7E07F458B.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-save-retried_0_FDF3DBDA-49D5-44BC-BF73-EBBABD089A58.png",
+        "timestamp": 1795723631.897
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "dc6cdb879318c62672adbe1b745ad27f43085327404a6a6de11f37b3d33a6814"
+    }
+  ]
+}

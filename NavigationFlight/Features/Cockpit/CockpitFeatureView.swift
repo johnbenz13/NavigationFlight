@@ -29,6 +29,7 @@ struct CockpitFeatureView: View {
     private let locationService: AircraftLocationService
     private let isSectionSelected: Bool
     private let recordingCoordinator: FlightRecordingCoordinator
+    private let draftPersistence: AmendmentDraftPersistence?
     private let chartCatalog: ChartCatalog?
     private let chartResources: ChartResources
     private let shouldSimulateRecordingDegradation: Bool
@@ -40,6 +41,7 @@ struct CockpitFeatureView: View {
         positionCheckTiming: PositionCheckTiming = .standard,
         isSectionSelected: Bool,
         recordingCoordinator: FlightRecordingCoordinator,
+        draftPersistence: AmendmentDraftPersistence? = nil,
         checklistSelection: @escaping () -> StartChecklistSelection = { .tzeKivun },
         amendmentMode: @escaping () -> RouteAmendmentMode,
         chartCatalog: ChartCatalog? = nil,
@@ -54,6 +56,7 @@ struct CockpitFeatureView: View {
         _positionCheckCoordinator = State(initialValue: PositionCheckCoordinator(timing: positionCheckTiming))
         self.isSectionSelected = isSectionSelected
         self.recordingCoordinator = recordingCoordinator
+        self.draftPersistence = draftPersistence
         self.chartCatalog = chartCatalog
         self.chartResources = chartResources
         self.shouldSimulateRecordingDegradation = shouldSimulateRecordingDegradation
@@ -226,6 +229,9 @@ struct CockpitFeatureView: View {
                         pendingManagementSave: state.pendingAmendmentManagementSave,
                         onManagePendingAmendment: managePendingAmendment,
                         amendmentSaveStatus: state.amendmentSave?.status,
+                        draftPersistenceStatus: draftPersistence?.statuses[flight.id],
+                        onRetryDraftSave: { draftPersistence?.retry(flightID: flight.id) },
+                        onRetryDraftDiscard: discardAmendmentDraft,
                         onConfirmAmendment: { confirmAmendment(startNow: false) },
                         onStartAmendmentNow: { confirmAmendment(startNow: true) },
                         canStartAmendmentNow: canConfirmAmendment(startNow: true),
@@ -306,7 +312,8 @@ struct CockpitFeatureView: View {
 
     private var amendmentDisplayDate: Date? {
 #if DEBUG
-        if ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]?.hasPrefix("A") == true,
+        let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
+        if fixture?.hasPrefix("A") == true || fixture == "C",
            let start = state.flight?.legStartedAt {
             return start.addingTimeInterval(442)
         }
@@ -337,7 +344,7 @@ struct CockpitFeatureView: View {
                 state.installCockpitContext(transition.cockpitContext)
 #if DEBUG
                 let workspaceFixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"]
-                if ["A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
+                if ["C", "A", "A-progress", "A-progress-cues", "A-progress-heading", "A-progress-partial", "A-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences", "armed"].contains(workspaceFixture ?? ""), state.routeAmendmentDraft == nil,
                    state.flight?.activatedRouteAmendment == nil {
                     state.prepareAmendmentConfirmationFixture(workspaceFixture: true,
                                                               partialWorkspaceFixture: ["A-partial", "A-progress-partial", "B-open-overlap", "B-overlap-choice", "B-multiple-choice", "B-overlap-occurrences"].contains(workspaceFixture ?? ""),
@@ -356,6 +363,13 @@ struct CockpitFeatureView: View {
                             else { state.updateRouteAmendment(.editLegField(.duration, "")) }
                             state.updateRouteAmendment(.saveLegValues)
                         }
+                    }
+                    if workspaceFixture == "C", let route = state.routeForAmendment,
+                       let leg = state.routeAmendmentDraft?.reviewLegs(on: route).dropFirst().first {
+                        state.updateRouteAmendment(.editLeg(leg.id))
+                        state.updateRouteAmendment(.editLegField(.duration, ""))
+                        state.updateRouteAmendment(.editLegField(.visualReference, "Fixture C · junction"))
+                        state.updateRouteAmendment(.toggleCues)
                     }
                     state.updateRouteAmendment(.pause)
                     if workspaceFixture == "armed" { confirmAmendment(startNow: false) }
@@ -398,7 +412,31 @@ struct CockpitFeatureView: View {
         }
     }
 
+    private func discardAmendmentDraft() {
+        guard let id = state.flight?.id else { return }
+        guard let draftPersistence else { state.updateRouteAmendment(.discard); return }
+        Task {
+            if await draftPersistence.discard(flightID: id), state.flight?.id == id {
+                state.updateRouteAmendment(.discard)
+            }
+        }
+    }
+
     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
+        if case .discard = intent, state.replacingPendingAmendmentID == nil {
+            discardAmendmentDraft()
+            return
+        }
+        if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
+            presentedError = .init(title: "Amendment draft unavailable",
+                                   message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+            return
+        }
+        if let id = state.flight?.id, draftPersistence?.statuses[id] == .deleting {
+            if case .pause = intent { state.updateRouteAmendment(.pause) }
+            if case .toggleWorkspace = intent, state.isAmendmentWorkspaceVisible { state.updateRouteAmendment(.pause) }
+            return
+        }
         state.updateRouteAmendment(intent, mode: amendmentMode())
 #if DEBUG
         let fixture = ProcessInfo.processInfo.environment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_CONFIRMATION"]
@@ -492,6 +530,7 @@ struct CockpitFeatureView: View {
                 )
                 guard state.amendmentSave?.amendment.id == operation.amendment.id else { return }
                 state.installPendingAmendment(transition)
+                await draftPersistence?.retire(flightID: flight.id)
                 progressionNotice = nil
                 if flight.activeLegID != transition.flight.activeLegID
                     || flight.activePartwayDeparture != transition.flight.activePartwayDeparture {

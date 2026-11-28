@@ -1,0 +1,17 @@
+{
+  "device": "AP01-iPad-11-Reference",
+  "udid": "07C2B017-8241-45BD-B859-E82C930C634F",
+  "pid": 80832,
+  "configuration": "NavigationFlight / Debug-iphonesimulator",
+  "candidateApp": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Build/Products/Debug-iphonesimulator/NavigationFlight.app",
+  "bundleID": "com.bensaidj.NavigationFlight",
+  "source": "feature/recover-unfinished-flight-draft, base bdce633, final uncommitted AP09 source; identical to final passing test export; no later code changes",
+  "library": "issue233-owner-preview-final-20261127",
+  "fixture": "Shared C, camera1, normal text; Start \u2192 close checklist \u2192 pencil",
+  "observed": "Selected leg2, heading176, unset time, noteFixtureC junction, threelegs, unarmed; implementer inspected current screenshot",
+  "handoff": "DeviceHub opened. App process and current screenshot verified; select AP01-iPad-11-Reference in DeviceHub if canvas is not selected. Interaction session closed; app left running. Previous library data preserved.",
+  "sha256": {
+    "preview.png": "cd2304297addc4d6f776f860e83406f19c12a70f96d7649f9f3eb6183ca62cac",
+    "hierarchy.txt": "5f6f03f78e90f3e1fc84389818655e96e58852b366b52e6015eafba6ca7ece8c"
+  }
+}

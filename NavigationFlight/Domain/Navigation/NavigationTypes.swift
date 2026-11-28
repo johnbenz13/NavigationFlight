@@ -1,23 +1,23 @@
 import Foundation
 
-struct WGS84Coordinate: Equatable, Sendable {
+struct WGS84Coordinate: Codable, Equatable, Sendable {
     let latitudeDegrees: Double
     let longitudeDegrees: Double
 }
 
-struct AltitudeFeet: Equatable, Sendable {
+struct AltitudeFeet: Codable, Equatable, Sendable {
     let value: Double
 }
 
-struct Degrees: Equatable, Sendable {
+struct Degrees: Codable, Equatable, Sendable {
     let value: Double
 }
 
-struct Knots: Equatable, Sendable {
+struct Knots: Codable, Equatable, Sendable {
     let value: Double
 }
 
-struct FrequencyMHz: Equatable, Sendable {
+struct FrequencyMHz: Codable, Equatable, Sendable {
     let value: Double
 }
 
@@ -33,7 +33,7 @@ struct LegProgress: Equatable, Sendable {
     let fraction: Double
 }
 
-struct Wind: Equatable, Sendable {
+struct Wind: Codable, Equatable, Sendable {
     /// Direction the wind comes from, measured clockwise from true north.
     let directionFromTrue: Degrees
     let speed: Knots

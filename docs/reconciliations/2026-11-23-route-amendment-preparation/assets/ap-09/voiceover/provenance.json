@@ -1,0 +1,89 @@
+{
+  "exportedAt": "2026-11-26T20:31:36.306344+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.26_22-17-58-+0200.xcresult",
+  "resultInfoSHA256": "bf80f8be7e1b650c15b8f3816934bd270c3973dedd023b70a7270c83550233eb",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 1,
+        "passedTests": 130,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 1,
+    "finishTime": 1795724545.925,
+    "passedTests": 77,
+    "result": "Failed",
+    "runtimeWarnings": [
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      },
+      {
+        "issueType": "Runtime Warning",
+        "message": "Modifying state during view update, this will cause undefined behavior."
+      }
+    ],
+    "skippedTests": 0,
+    "startTime": 1795724278.725,
+    "statistics": [
+      {
+        "subtitle": "73 test runs",
+        "title": "20 tests ran with dynamic parameters"
+      }
+    ],
+    "testFailures": [
+      {
+        "failureText": "XCTAssertTrue failed",
+        "targetName": "NavigationFlightUITests",
+        "testIdentifier": 74,
+        "testIdentifierString": "NavigationFlightUITests/testDraftDiscardWithLargerText()",
+        "testIdentifierURL": "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftDiscardWithLargerText",
+        "testName": "testDraftDiscardWithLargerText()"
+      }
+    ],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 78
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "bdce6337094e8ad009a82ee7e3605b050dadfad2",
+    "status": " M .gitattributes\n M NavigationFlight/App/RootView.swift\nAM NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentDraft.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentEstimator.swift\n M NavigationFlight/Domain/Flight/RouteAmendmentLegValues.swift\n M NavigationFlight/Domain/Navigation/NavigationTypes.swift\nAM NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureState.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlight/Features/Cockpit/CockpitView.swift\n M NavigationFlight/Features/Cockpit/RouteAmendmentConsole.swift\n M NavigationFlight/Features/Recording/FlightRecoveryCoordinator.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n M docs/features/IN-FLIGHT-ROUTE-AMENDMENT_SPEC.md\n M docs/technical/IN-FLIGHT-ROUTE-AMENDMENT-TECHNICAL-DESIGN.md\n?? NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift\n?? NavigationFlight/Domain/Flight/AmendmentDraftStore.swift\n?? NavigationFlightTests/AmendmentDraftPersistenceTests.swift\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/assets/ap-09/\n?? docs/reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testDraftFailureStatusAndRetryWithVoiceOver()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "8D5FCBAC-2D0D-4507-99B6-16EAF3AC8661.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-voiceover-warning_0_FF7277E5-257B-4B95-AF01-E6D7C9D5B5CB.png",
+        "timestamp": 1795724432.255
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "9664a2ad2018a9e48c0177b98ed076c61036dfc4a93387a425955e63b5dc5b9f"
+    }
+  ]
+}

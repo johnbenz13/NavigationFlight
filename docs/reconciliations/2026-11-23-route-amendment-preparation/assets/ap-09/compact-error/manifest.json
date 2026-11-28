@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "CBBFEEA5-FEF3-4E98-A0B5-1759FDB28A89.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovery-operational_0_419A5396-2720-4AC3-AB98-31F8E3F5D70A.png",
+        "timestamp" : 1795725790.576
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0EA30CE0-20EA-42F9-ADCC-D0B18046FFB7",
+        "deviceName" : "iPhone 17e",
+        "exportedFileName" : "25D77E94-398E-4CAD-B4CD-7FB9BE61845C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovery-unavailable_0_21C2C86A-79C6-4DE0-9461-1F919D9235D6.png",
+        "timestamp" : 1795725786.354
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftRecoveryFailureKeepsOperationalCockpitUsable()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftRecoveryFailureKeepsOperationalCockpitUsable"
+  }
+]

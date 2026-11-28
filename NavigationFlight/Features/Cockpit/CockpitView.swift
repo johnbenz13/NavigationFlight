@@ -206,6 +206,9 @@ struct CockpitView: View {
     var pendingManagementSave: CockpitFeatureState.PendingAmendmentManagementSave?
     var onManagePendingAmendment: (PendingAmendmentManagement.Intent) -> Void = { _ in }
     var amendmentSaveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
+    var draftPersistenceStatus: AmendmentDraftPersistence.Status?
+    var onRetryDraftSave: () -> Void = {}
+    var onRetryDraftDiscard: () -> Void = {}
     var onConfirmAmendment: () -> Void = {}
     var onStartAmendmentNow: () -> Void = {}
     var canStartAmendmentNow = false
@@ -265,6 +268,7 @@ struct CockpitView: View {
     @State private var amendmentLegendHeight: CGFloat = 0
     @State private var amendmentDiscardConfirmation = false
     @State private var isPendingAmendmentMenuPresented = false
+    @State private var isPendingDraftRecoveryErrorPresented = false
     @State private var pendingAmendmentConfirmation: PendingAmendmentManagement.Confirmation?
     @AccessibilityFocusState(for: .voiceOver) private var pendingAmendmentPencilFocused: Bool
 
@@ -342,11 +346,11 @@ struct CockpitView: View {
         cockpitContent
         .accessibilityHidden(pendingAmendmentDialogContent != nil)
         .background(Color(.systemBackground))
-        .alert("Discard this draft?", isPresented: $amendmentDiscardConfirmation) {
-            Button("Keep editing", role: .cancel) {}
-            Button("Discard draft", role: .destructive) { onRouteAmendment(.discard) }
+        .alert("Discard amendment?", isPresented: $amendmentDiscardConfirmation) {
+            Button("Keep draft", role: .cancel) {}
+            Button("Discard", role: .destructive) { onRouteAmendment(.discard) }
         } message: {
-            Text("The current route will continue. The waypoints in this draft will be removed.")
+            Text("Remove the prepared route and its saved entries?")
         }
         .onChange(of: isEditingRouteAmendment) { _, editing in
             guard editing else { return }
@@ -751,6 +755,9 @@ struct CockpitView: View {
             isPlotting: isAmendmentPlotting,
             onIntent: onRouteAmendment,
             saveStatus: amendmentSaveStatus,
+            draftPersistenceStatus: draftPersistenceStatus,
+            onRetryDraftSave: onRetryDraftSave,
+            onRetryDraftDiscard: onRetryDraftDiscard,
             isReplacing: isReplacingPendingAmendment,
             confirmationUnavailableWhileAmended: flight.activatedRouteAmendment != nil,
             onConfirm: onConfirmAmendment,
@@ -1333,12 +1340,15 @@ struct CockpitView: View {
     }
 
     private var hasUnsavedAmendmentChanges: Bool {
+        if draftPersistenceStatus == .saveFailed || draftPersistenceStatus == .deleteFailed
+            || draftPersistenceStatus == .recoveryFailed || draftPersistenceStatus == .saving { return true }
         if case .failed = amendmentSaveStatus { return true }
         return false
     }
 
     private var amendmentStatusDescription: String {
-        amendmentLifecycle.title + (hasUnsavedAmendmentChanges ? ", changes not saved" : "")
+        if draftPersistenceStatus == .recoveryFailed { return "Saved draft unavailable; data preserved" }
+        return amendmentLifecycle.title + (hasUnsavedAmendmentChanges ? ", changes not saved" : "")
     }
 
     @ViewBuilder
@@ -1413,6 +1423,10 @@ struct CockpitView: View {
                 management: management, compact: horizontalSizeClass == .compact,
                 onDone: { isPendingAmendmentMenuPresented = false },
                 onReplace: {
+                    if draftPersistenceStatus == .recoveryFailed {
+                        isPendingDraftRecoveryErrorPresented = true
+                        return
+                    }
                     isPendingAmendmentMenuPresented = false
                     onManagePendingAmendment(.replace(management.id))
                 },
@@ -1422,6 +1436,11 @@ struct CockpitView: View {
                 }
             )
             .presentationCompactAdaptation(.sheet)
+            .alert("Amendment draft unavailable", isPresented: $isPendingDraftRecoveryErrorPresented) {
+                Button("OK") { isPendingAmendmentMenuPresented = false }
+            } message: {
+                Text("The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+            }
         }
     }
 

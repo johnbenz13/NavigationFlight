@@ -8,6 +8,9 @@ struct RouteAmendmentConsole: View {
     var isPlotting = false
     let onIntent: (RouteAmendmentDraft.Intent) -> Void
     let saveStatus: CockpitFeatureState.RouteAmendmentSave.Status?
+    var draftPersistenceStatus: AmendmentDraftPersistence.Status?
+    var onRetryDraftSave: () -> Void = {}
+    var onRetryDraftDiscard: () -> Void = {}
     var isReplacing = false
     var confirmationUnavailableWhileAmended = false
     let onConfirm: () -> Void
@@ -16,6 +19,7 @@ struct RouteAmendmentConsole: View {
     let onPlaceAtMapCenter: () -> Void
     let onDiscard: () -> Void
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.colorScheme) private var colorScheme
     @State private var correctionTarget: RouteAmendmentDraft.CorrectionPoint?
     @State private var isCorrectionActionsPresented = false
 
@@ -53,6 +57,7 @@ struct RouteAmendmentConsole: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 4) {
+                        persistenceWarning
                         if let message = draft.message, !draft.isInspecting {
                             Label(message, systemImage: "exclamationmark.circle")
                                 .font(.subheadline)
@@ -95,6 +100,35 @@ struct RouteAmendmentConsole: View {
             workspaceActions
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var persistenceWarning: some View {
+        if draftPersistenceStatus == .saveFailed || draftPersistenceStatus == .deleteFailed {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(draftPersistenceStatus == .deleteFailed ? "Couldn’t discard amendment" : "Draft not saved")
+                    .font(.title3.bold())
+                    .accessibilityIdentifier("amendment-draft-failure")
+                Text(draftPersistenceStatus == .deleteFailed
+                     ? "The saved draft couldn’t be removed. Retry to remove its route and entries."
+                     : "Work is kept in memory. Retry to make it recoverable after restart.")
+                    .font(.subheadline)
+                Button {
+                    if draftPersistenceStatus == .deleteFailed { onRetryDraftDiscard() }
+                    else { onRetryDraftSave() }
+                } label: {
+                    Text(draftPersistenceStatus == .deleteFailed ? "Retry discarding draft" : "Retry saving draft")
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.bordered)
+                .foregroundStyle(colorScheme == .dark ? PendingAmendmentPalette.quietAction : actionColor)
+                .accessibilityIdentifier("retry-amendment-draft")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else if draftPersistenceStatus == .deleting {
+            ProgressView("Discarding amendment…")
+                .frame(minHeight: 44)
         }
     }
 

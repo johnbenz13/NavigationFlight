@@ -10,6 +10,358 @@ import XCTest
 final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
+    func testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo() throws {
+        let app = try launchPartialAmendment(fixture: "C", correctionCues: true)
+        app.buttons["amend-route"].tap()
+        let panel = app.descendants(matching: .any)["amendment-chart-panel"].firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, seconds Not set")
+        captureAmendmentState("ap09-partial-editor-before", in: app)
+        app.buttons["amend-route"].tap()
+        waitForDraftSaved(in: app)
+        app.terminate()
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 8))
+        resume.tap()
+        dismissCockpitSidebar(in: app)
+        let pencil = app.buttons["amend-route"]
+        XCTAssertTrue(pencil.waitForExistence(timeout: 8))
+        XCTAssertFalse(panel.exists)
+        XCTAssertFalse(app.buttons["pending-amendment-pencil"].exists)
+        captureAmendmentState("ap09-recovered-cockpit", in: app)
+        pencil.tap()
+        XCTAssertTrue(panel.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["amendment-duration-readout"].label, "Leg time, minutes Not set, seconds Not set")
+        XCTAssertTrue(app.textFields["amendment-field-visualReference"].exists || app.textFields.containing(NSPredicate(format: "value == %@", "Fixture C · junction")).firstMatch.exists)
+        captureAmendmentState("ap09-partial-editor-restored", in: app)
+        tapChartPanelControl(app.buttons["save-amendment-leg-values"], in: panel)
+        let rows = app.buttons.matching(identifier: "edit-amendment-leg")
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("176"))
+        XCTAssertTrue((rows.element(boundBy: 1).value as? String ?? "").contains("Not set"))
+        undoPointCorrection(in: app)
+        XCTAssertTrue(app.staticTexts["Drawing"].waitForExistence(timeout: 4))
+        XCTAssertEqual(rows.count, 2)
+        captureAmendmentState("ap09-recovered-undo", in: app)
+    }
+
+    @MainActor
+    func testDraftSaveFailureRetryAndNondestructiveExit() throws {
+        try verifyDraftSaveFailure()
+    }
+
+    @MainActor
+    func testDraftSaveFailureRetryInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyDraftSaveFailure(landscape: true)
+    }
+
+    @MainActor
+    func testDraftSaveFailureRetryWithLargerText() throws {
+        try verifyDraftSaveFailure(largerText: true)
+    }
+
+    @MainActor
+    private func verifyDraftSaveFailure(landscape: Bool = false, largerText: Bool = false) throws {
+        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
+                                preferredContentSizeCategory: largerText ? "UICTContentSizeCategoryAccessibilityXXXL" : nil,
+                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
+                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "save"])
+        startAmendmentFixture(in: app)
+        openCorrectionWorkspace(in: app, landscape: landscape)
+        let warning = app.descendants(matching: .any)["amendment-draft-failure"].firstMatch
+        XCTAssertTrue(warning.waitForExistence(timeout: 5))
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        let retry = app.buttons["retry-amendment-draft"]
+        tapAmendmentControl(retry, in: console, performTap: false, requireFullyVisible: true)
+        XCTAssertGreaterThanOrEqual(retry.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(retry.frame.height, 44)
+        captureAmendmentState("ap09-save-failure", in: app)
+        let pencil = app.buttons["amend-route"]
+        let map = app.descendants(matching: .any)["aviation-map"].firstMatch
+        let mapFrame = map.frame
+        pencil.tap()
+        XCTAssertFalse(warning.exists)
+        XCTAssertEqual(map.frame, mapFrame)
+        XCTAssertTrue((pencil.value as? String ?? "").contains("changes not saved"))
+        captureAmendmentState("ap09-unsaved-cockpit", in: app)
+        pencil.tap()
+        XCTAssertTrue(warning.waitForExistence(timeout: 5))
+        tapAmendmentControl(retry, in: console, requireFullyVisible: true)
+        waitForDraftSaved(in: app)
+        XCTAssertTrue(warning.waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 3)
+        captureAmendmentState("ap09-save-retried", in: app)
+    }
+
+    @MainActor
+    func testDraftDiscardCancellationFailureAndRetry() throws {
+        try verifyDraftDiscard()
+    }
+
+    @MainActor
+    func testDraftDiscardFailureInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyDraftDiscard(landscape: true)
+    }
+
+    @MainActor
+    func testDraftDiscardWithLargerText() throws {
+        try verifyDraftDiscard(largerText: true)
+    }
+
+    @MainActor
+    private func verifyDraftDiscard(landscape: Bool = false, largerText: Bool = false) throws {
+        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
+                                preferredContentSizeCategory: largerText ? "UICTContentSizeCategoryAccessibilityXXXL" : nil,
+                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
+                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "delete"])
+        startAmendmentFixture(in: app)
+        openCorrectionWorkspace(in: app, landscape: landscape)
+        let console = app.descendants(matching: .any)["route-amendment-console"].firstMatch
+        let discard = app.buttons["discard-amendment-draft"]
+        if !discard.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
+        discard.tap()
+        let alert = app.alerts["Discard amendment?"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 4))
+        captureAmendmentState("ap09-discard-confirmation", in: app)
+        alert.buttons["Keep draft"].tap()
+        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 3)
+        if !discard.isHittable, app.buttons["Actions"].exists { app.buttons["Actions"].tap() }
+        discard.tap()
+        alert.buttons["Discard"].tap()
+        let retry = app.buttons["retry-amendment-draft"]
+        XCTAssertTrue(retry.waitForExistence(timeout: 4))
+        tapAmendmentControl(retry, in: console, performTap: false, requireFullyVisible: true)
+        XCTAssertGreaterThanOrEqual(retry.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(retry.frame.height, 44)
+        captureAmendmentState("ap09-discard-failed", in: app)
+        tapAmendmentControl(retry, in: console, requireFullyVisible: true)
+        XCTAssertTrue(console.waitForNonExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["amend-route"].value as? String, "")
+        XCUIDevice.shared.orientation = .portrait
+        app.terminate()
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 8))
+        resume.tap()
+        dismissCockpitSidebar(in: app)
+        XCTAssertTrue(app.buttons["amend-route"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.buttons["amend-route"].value as? String, "")
+        app.buttons["amend-route"].tap()
+        XCTAssertTrue(app.staticTexts["Choose departure"].waitForExistence(timeout: 4))
+        XCTAssertEqual(app.buttons.matching(identifier: "edit-amendment-leg").count, 0)
+        captureAmendmentState("ap09-discard-restart-empty", in: app)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsPreparationAfterCancellation() throws {
+        try verifyArmedDraftLoadFailure()
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureAfterCancellationInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyArmedDraftLoadFailure(landscape: true)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsReplacementWithoutChangingPendingRoute() throws {
+        try verifyArmedDraftLoadFailure(replace: true)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsReplacementInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyArmedDraftLoadFailure(landscape: true, replace: true)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsReplacementWithLargerText() throws {
+        try verifyArmedDraftLoadFailure(replace: true, preferredContentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+    }
+
+    @MainActor
+    private func verifyArmedDraftLoadFailure(
+        landscape: Bool = false, replace: Bool = false, preferredContentSize: String? = nil
+    ) throws {
+        let app = try launchPendingAmendmentForManagement(preferredContentSize: preferredContentSize)
+        app.terminate()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE")
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE")
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 8))
+        resume.tap()
+        dismissCockpitSidebar(in: app)
+        let pending = app.buttons["pending-amendment-pencil"]
+        XCTAssertTrue(pending.waitForExistence(timeout: 8))
+        XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
+        captureAmendmentState("ap09-r2-armed-recovery", in: app)
+        if replace {
+            if landscape {
+                XCUIDevice.shared.orientation = .landscapeLeft
+                let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+                XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
+            }
+            let savedLabel = pending.label
+            pending.tap()
+            let replacement = app.buttons["replace-pending-amendment"]
+            XCTAssertTrue(replacement.waitForExistence(timeout: 4))
+            replacement.tap()
+            let alert = app.alerts["Amendment draft unavailable"]
+            XCTAssertTrue(alert.waitForExistence(timeout: 4))
+            XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
+            XCTAssertFalse(app.buttons["confirm-amendment-replacement"].exists)
+            captureAmendmentState("ap09-r3-replacement-entry-rejected", in: app)
+            alert.buttons["OK"].tap()
+            XCTAssertTrue(pending.waitForExistence(timeout: 4))
+            XCTAssertEqual(pending.label, savedLabel)
+            XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
+            app.buttons["waypoint-identified"].tap()
+            XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
+            XCTAssertTrue(pending.exists)
+            XCTAssertEqual(pending.label, savedLabel)
+            captureAmendmentState("ap09-r3-pending-route-continues", in: app)
+            return
+        }
+        pending.tap()
+        let cancel = app.buttons["cancel-pending-amendment"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
+        cancel.tap()
+        let commit = app.buttons["confirm-pending-amendment-management"]
+        XCTAssertTrue(commit.waitForExistence(timeout: 4))
+        commit.tap()
+        XCTAssertTrue(pending.waitForNonExistence(timeout: 8))
+        let pencil = app.buttons["amend-route"]
+        XCTAssertTrue(pencil.waitForExistence(timeout: 5))
+        XCTAssertTrue((pencil.value as? String ?? "").contains("Saved draft unavailable"))
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
+        }
+        // After pending cancellation, AX can temporarily report the entire
+        // header as the button frame. Target the visible pencil within it.
+        let icon = pencil.images["pencil"]
+        XCTAssertTrue(icon.waitForExistence(timeout: 4))
+        icon.tap()
+        let alert = app.alerts["Amendment draft unavailable"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 4))
+        XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
+        captureAmendmentState("ap09-r2-cancelled-preparation-rejected", in: app)
+        alert.buttons["OK"].tap()
+        app.buttons["waypoint-identified"].tap()
+        XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
+        captureAmendmentState("ap09-r2-operational-route-continues", in: app)
+    }
+
+    @MainActor
+    func testDraftRecoveryFailureKeepsOperationalCockpitUsable() throws {
+        try verifyDraftRecoveryFailure()
+    }
+
+    @MainActor
+    func testDraftRecoveryFailureInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyDraftRecoveryFailure(landscape: true)
+    }
+
+    @MainActor
+    private func verifyDraftRecoveryFailure(landscape: Bool = false) throws {
+        let app = try launchPartialAmendment(fixture: "A")
+        waitForDraftSaved(in: app)
+        app.terminate()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 8))
+        resume.tap()
+        dismissCockpitSidebar(in: app)
+        let pencil = app.buttons["amend-route"]
+        XCTAssertTrue(pencil.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["waypoint-identified"].exists)
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
+        }
+        pencil.tap()
+        let alert = app.alerts["Amendment draft unavailable"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 4))
+        captureAmendmentState("ap09-recovery-unavailable", in: app)
+        alert.buttons["OK"].tap()
+        app.buttons["waypoint-identified"].tap()
+        XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
+        XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].exists)
+        captureAmendmentState("ap09-recovery-operational", in: app)
+    }
+
+    @MainActor
+    func testDraftDoesNotCarryToAnotherFlight() throws {
+        let original = try launchPartialAmendment(fixture: "A")
+        waitForDraftSaved(in: original)
+        original.terminate()
+        // Keep the same disposable library/store while ending the old Flight.
+        // A new Flight of the same plan must not inherit its retained draft file.
+        original.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE"] = "A-empty"
+        original.launch()
+        let end = original.buttons["End as Incomplete"]
+        XCTAssertTrue(end.waitForExistence(timeout: 8))
+        end.tap()
+        XCTAssertTrue(original.staticTexts["End this Flight as incomplete?"].waitForExistence(timeout: 4))
+        original.buttons.matching(identifier: "End as Incomplete").element(boundBy: 1).tap()
+        XCTAssertTrue(original.buttons["start-leg"].waitForExistence(timeout: 8))
+        startAmendmentFixture(in: original)
+        let other = original
+        other.buttons["amend-route"].tap()
+        XCTAssertTrue(other.staticTexts["Choose departure"].waitForExistence(timeout: 4))
+        XCTAssertEqual(other.buttons.matching(identifier: "edit-amendment-leg").count, 0)
+        captureAmendmentState("ap09-other-flight-empty", in: other)
+    }
+
+    @MainActor
+    func testDraftFailureStatusAndRetryWithVoiceOver() throws {
+        let service = XCUIDevice.shared.voiceOverService
+        let wasEnabled = service.isEnabled
+        if wasEnabled { try service.disable() }
+        defer {
+            if service.isEnabled { try? service.disable() }
+            if wasEnabled { try? service.enable() }
+        }
+        let app = launchCockpit(planData: try crossingAmendmentPlanData(),
+                                fixtureEnvironment: ["NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE": "A",
+                                                     "NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE": "save"])
+        startAmendmentFixture(in: app)
+        openCorrectionWorkspace(in: app, landscape: false)
+        XCTAssertTrue(app.staticTexts["amendment-draft-failure"].waitForExistence(timeout: 5))
+        try service.enable()
+        var speech: [String] = []
+        for _ in 0..<55 {
+            speech.append(try service.moveForward().utterance)
+            if speech.joined(separator: " ").contains("Retry saving draft") { break }
+        }
+        let spoken = speech.joined(separator: " ")
+        XCTAssertTrue(spoken.contains("Draft not saved"), spoken)
+        XCTAssertTrue(spoken.contains("Retry saving draft"), spoken)
+        let attachment = XCTAttachment(string: speech.joined(separator: "\n"))
+        attachment.name = "AP09 actual VoiceOver save failure speech"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        captureAmendmentState("ap09-voiceover-warning", in: app)
+    }
+
+    @MainActor
+    private func waitForDraftSaved(in app: XCUIApplication) {
+        let saved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            !(app.buttons["amend-route"].value as? String ?? "").contains("changes not saved")
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [saved], timeout: 5), .completed)
+    }
+
+    @MainActor
     func testAssistedPreparationOverridesGeometryAndUndo() throws {
         try verifyAssistedPreparation()
     }
@@ -3825,7 +4177,7 @@ final class NavigationFlightUITests: XCTestCase {
 
     @MainActor
     private func tapAmendmentControl(
-        _ element: XCUIElement, in console: XCUIElement, scrollDown: Bool = true, beforeTap: () -> Void = {}
+        _ element: XCUIElement, in console: XCUIElement, scrollDown: Bool = true, performTap: Bool = true, requireFullyVisible: Bool = false, beforeTap: () -> Void = {}
     ) {
         let compact = console.frame.width < 430
         for attempt in 0..<14 {
@@ -3835,12 +4187,15 @@ final class NavigationFlightUITests: XCTestCase {
                 let isReviewRow = element.identifier == "edit-amendment-leg"
                 let bottomClearance = compact && !isReviewRow && viewport.height > 150 ? 65.0 : 0.0
                 let bottom = viewport.maxY - bottomClearance
-                if element.isHittable, frame.midY >= viewport.minY, frame.midY < bottom {
+                let visible = requireFullyVisible
+                    ? frame.minY >= viewport.minY && frame.maxY <= bottom
+                    : frame.midY >= viewport.minY && frame.midY < bottom
+                if element.isHittable, visible {
                     beforeTap()
-                    element.tap()
+                    if performTap { element.tap() }
                     return
                 }
-                scrollAmendmentConsole(console, down: frame.midY >= bottom)
+                scrollAmendmentConsole(console, down: requireFullyVisible ? frame.maxY > bottom : frame.midY >= bottom)
             } else {
                 scrollAmendmentConsole(console, down: attempt < 7 ? scrollDown : !scrollDown)
             }
@@ -3956,13 +4311,13 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(selected.waitForExistence(timeout: 3))
 
         app.buttons["discard-amendment-draft"].tap()
-        let dialog = app.buttons["Keep editing"]
+        let dialog = app.alerts.buttons["Keep draft"]
         XCTAssertTrue(dialog.waitForExistence(timeout: 3))
         captureAmendmentState("discard", in: app)
         dialog.tap()
         XCTAssertTrue(selected.waitForExistence(timeout: 3))
         app.buttons["discard-amendment-draft"].tap()
-        app.alerts.buttons["Discard draft"].tap()
+        app.alerts.buttons["Discard"].tap()
         XCTAssertTrue(pencil.waitForExistence(timeout: 3))
         XCTAssertTrue(pencil.isEnabled)
         XCTAssertFalse(selected.exists)
@@ -5540,6 +5895,17 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    private func dismissCockpitSidebar(in app: XCUIApplication) {
+        // iPad's system sidebar can survive a prior landscape run as a modal
+        // overlay. Its scrim intercepts cockpit controls even when AX reports them hittable.
+        let hideSidebar = app.buttons["ToggleSidebar"]
+        if hideSidebar.exists, hideSidebar.label == "Hide Sidebar", app.cells["cockpit-tab"].exists {
+            hideSidebar.tap()
+            XCTAssertTrue(hideSidebar.waitForNonExistence(timeout: 4))
+        }
+    }
+
+    @MainActor
     private func startAmendmentFixture(in app: XCUIApplication) {
         // XCTest worker clones can retain VoiceOver independently of the visible
         // simulator. Ordinary bootstrap taps require it off; speech tests enable
@@ -5553,13 +5919,7 @@ final class NavigationFlightUITests: XCTestCase {
             }
             XCTAssertFalse(voiceOver.isEnabled)
         }
-        // iPad's system sidebar can survive a prior landscape run as a modal
-        // overlay. Its scrim intercepts Start even when AX reports it hittable.
-        let hideSidebar = app.buttons["ToggleSidebar"]
-        if hideSidebar.exists, hideSidebar.label == "Hide Sidebar", app.cells["cockpit-tab"].exists {
-            hideSidebar.tap()
-            XCTAssertTrue(hideSidebar.waitForNonExistence(timeout: 4))
-        }
+        dismissCockpitSidebar(in: app)
         let start = app.buttons["start-leg"]
         XCTAssertTrue(start.waitForExistence(timeout: 8))
         XCTAssertTrue(start.isHittable)

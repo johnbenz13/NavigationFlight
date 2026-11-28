@@ -8,8 +8,8 @@ nonisolated enum RouteAmendmentEstimator {
         let defaultWind: Wind?
     }
 
-    enum Result: Equatable, Sendable {
-        enum Provenance: Equatable, Sendable {
+    enum Result: Codable, Equatable, Sendable {
+        enum Provenance: Codable, Equatable, Sendable {
             case noWind
             case plannedWind(Wind)
         }

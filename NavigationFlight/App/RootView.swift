@@ -23,6 +23,7 @@ struct RootView: View {
     @State private var idleTimerCoordinator: IdleTimerCoordinator
     @State private var flightRecordingCoordinator: FlightRecordingCoordinator
     @State private var flightRecoveryCoordinator: FlightRecoveryCoordinator
+    @State private var amendmentDraftPersistence: AmendmentDraftPersistence
     private let flightPlanLibrary: FlightPlanLibrary
     private let flightRecordingLibrary: FlightRecordingLibrary
     private let flightPlanFileReader = FlightPlanFileReader()
@@ -283,6 +284,33 @@ struct RootView: View {
         recordingStore = DiskFlightRecordingStore(rootDirectory: recordingDirectory)
         debugFlightsActiveRecordingID = nil
 #endif
+        let draftDirectory = libraryDirectory.deletingLastPathComponent()
+            .appending(path: libraryDirectory.lastPathComponent + "-amendment-drafts", directoryHint: .isDirectory)
+#if DEBUG
+        let draftWriteFailure = OSAllocatedUnfairLock(initialState: environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "save")
+        let draftDeleteFailure = OSAllocatedUnfairLock(initialState: environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "delete")
+        let draftReadFailure = environment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] == "recover"
+        let draftStore = DiskAmendmentDraftStore(rootDirectory: draftDirectory, beforeLoad: {
+            if draftReadFailure { throw AmendmentDraftStoreError.invalidData }
+        }, beforeWrite: {
+            if draftWriteFailure.withLock({ $0 }) {
+                throw AmendmentDraftStoreError.operationFailed
+            }
+        }, beforeRemove: {
+            if draftDeleteFailure.withLock({ fail in let result = fail; fail = false; return result }) {
+                throw AmendmentDraftStoreError.operationFailed
+            }
+        })
+#else
+        let draftStore = DiskAmendmentDraftStore(rootDirectory: draftDirectory)
+#endif
+#if DEBUG
+        _amendmentDraftPersistence = State(initialValue: AmendmentDraftPersistence(store: draftStore, beforeRetry: {
+            draftWriteFailure.withLock { $0 = false }
+        }))
+#else
+        _amendmentDraftPersistence = State(initialValue: AmendmentDraftPersistence(store: draftStore))
+#endif
         _flightRecordingCoordinator = State(
             initialValue: FlightRecordingCoordinator(
                 store: recordingStore,
@@ -314,6 +342,16 @@ struct RootView: View {
                     onDismissUnavailable: flightRecoveryCoordinator.dismissUnavailableRecovery
                 )
             }
+        }
+        .onChange(of: appState.cockpit.routeAmendmentDraft?.persistence) { previous, current in
+            saveAmendmentDraft()
+            if previous != nil, current == nil, let draft = appState.cockpit.routeAmendmentDraft,
+               !draft.hasContent, appState.cockpit.flight?.id == draft.flightID {
+                Task { _ = await amendmentDraftPersistence.discard(flightID: draft.flightID) }
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { saveAmendmentDraft() }
         }
         .onChange(of: appState.cockpit.recordingCockpitContext) { _, context in
             guard let context else { return }
@@ -373,6 +411,7 @@ struct RootView: View {
                     positionCheckTiming: positionCheckTiming,
                     isSectionSelected: appState.selectedAppSection == .cockpit,
                     recordingCoordinator: flightRecordingCoordinator,
+                    draftPersistence: amendmentDraftPersistence,
                     checklistSelection: { settingsController.preferences.startChecklist },
                     amendmentMode: { settingsController.preferences.routeAmendmentMode },
                     chartCatalog: chartCatalog,
@@ -558,6 +597,17 @@ struct RootView: View {
         }
     }
 
+    private func saveAmendmentDraft() {
+        guard let draft = appState.cockpit.routeAmendmentDraft,
+              draft.hasContent, appState.cockpit.flight?.pendingRouteAmendment == nil,
+              appState.cockpit.flight?.activatedRouteAmendment == nil,
+              appState.cockpit.flight?.legState != .completed,
+              flightRecordingCoordinator.activeRecordingID != nil,
+              let recording = flightRecordingCoordinator.snapshot.recording,
+              recording.flightID == draft.flightID, recording.closure == nil else { return }
+        amendmentDraftPersistence.save(draft, recordingSequence: recording.nextEventSequence)
+    }
+
     private func continueRecoveredFlight(id: UUID) {
         Task {
             do {
@@ -569,10 +619,21 @@ struct RootView: View {
                     eventID: UUID()
                 )
                 await flightRecordingCoordinator.restore(recovered)
+                let draft = await amendmentDraftPersistence.recover(
+                    flight: recovered.flight,
+                    route: recovered.flight.routeForAmendment(in: recovered.flightPlan),
+                    lastAmendmentSequence: recovered.lastAmendmentSequence
+                )
                 appState.restoreRecoveredFlight(
                     recovered,
                     sourceData: recovered.recording.flightPlanSnapshot.sourceData
                 )
+                if let draft, appState.cockpit.flight?.id == recovered.flight.id,
+                   appState.cockpit.routeAmendmentDraft == nil {
+                    var cockpit = appState.cockpit
+                    cockpit.restoreAmendmentDraft(draft)
+                    appState.updateCockpit(cockpit)
+                }
             } catch {
                 await flightRecoveryCoordinator.bootstrap()
             }

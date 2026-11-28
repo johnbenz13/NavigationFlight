@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "5596D06C-4E71-4855-9BCA-6230348C176D.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovered-undo_0_669F4542-ED34-462E-BAE8-068D195543C0.png",
+        "timestamp" : 1795858723.239
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "08E83EA3-ACEC-489D-895D-A52D9CAE3625.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-partial-editor-restored_0_AF913314-2D9B-4742-9BAF-CE58053FFFF4.png",
+        "timestamp" : 1795858687.606
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "920D35D1-AF4F-47D3-8F7F-2A1B2FED9039.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovered-cockpit_0_E1614F42-54EC-4616-B1F7-5559E843BE68.png",
+        "timestamp" : 1795858672.222
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "7BF899FF-E43B-4C1E-B709-E128D98C072C.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-partial-editor-before_0_3E5E94C2-42F4-47F6-A2CD-1B342A2D392B.png",
+        "timestamp" : 1795858656.1
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo"
+  }
+]

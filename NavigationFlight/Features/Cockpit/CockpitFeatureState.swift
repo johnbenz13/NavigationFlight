@@ -293,6 +293,14 @@ struct CockpitFeatureState: Equatable, Sendable {
         clearAmendmentDraft()
     }
 
+    mutating func restoreAmendmentDraft(_ draft: RouteAmendmentDraft) {
+        guard draft.flightID == flight?.id, flight?.legState != .completed,
+              flight?.pendingRouteAmendment == nil, flight?.activatedRouteAmendment == nil else { return }
+        routeAmendmentDraft = draft
+        isAmendmentWorkspaceVisible = false
+        isAmendmentPlotting = false
+    }
+
     mutating func clearAmendmentDraft() {
         isAmendmentWorkspaceVisible = false
         isAmendmentPlotting = false

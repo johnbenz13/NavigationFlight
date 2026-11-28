@@ -1,0 +1,377 @@
+{
+  "review": "https://github.com/johnbenz13/NavigationFlight/pull/251#issuecomment-7237455028",
+  "reviewedHead": "2470f6a3d5fb4933c25c2790fd47013dc0ec9a92",
+  "red": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 1,
+      "notRun": 0,
+      "passed": 0,
+      "skipped": 0,
+      "total": 1
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/test-console-log-2026-11-28T12-00-49+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/4ADD9F40-49D4-4801-8E0D-DCA7B68C950C.txt",
+    "results": [
+      {
+        "displayName": "\"load\"",
+        "errorMessages": [
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:319 AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:): Expectation failed: restarted.statuses[flight.id] == .recoveryFailed\nrestarted.statuses[flight.id] → nil",
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:325 AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:): Expectation failed: restarted.statuses[flight.id] == .recoveryFailed\nrestarted.statuses[flight.id] → nil",
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:328 AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:): Expectation failed: restarted.statuses[flight.id] == .recoveryFailed\nrestarted.statuses[flight.id] → nil",
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:330 AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:): Expectation failed: restarted.statuses[flight.id] == .recoveryFailed\nrestarted.statuses[flight.id] → nil"
+        ],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Failed",
+        "targetName": "NavigationFlightTests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "1 tests: 0 passed, 1 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 1,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/Test-NavigationFlight-2026.11.28_12-00-49-+0200.xcresult"
+  },
+  "initialUnit": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 0,
+      "notRun": 0,
+      "passed": 16,
+      "skipped": 0,
+      "total": 16
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/test-console-log-2026-11-28T12-00-32+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/8F2FC75F-6042-4906-96ED-08E049ED3EE6.txt",
+    "results": [
+      {
+        "displayName": "losslessPartialEditorAndUndoRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/losslessPartialEditorAndUndoRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "untouchedExitStoresNothing()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/untouchedExitStoresNothing()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedSaveRetainsLatestAndRetryPersistsIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedSaveRetainsLatestAndRetryPersistsIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedDeletePreservesDraftThenRetryRemovesIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedDeletePreservesDraftThenRetryRemovesIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "flightIsolationClosedAndArmedPrecedence()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/flightIsolationClosedAndArmedPrecedence()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"corrupt\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"unsupported\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"load\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "16 tests: 16 passed, 0 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 16,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/Test-NavigationFlight-2026.11.28_12-00-32-+0200.xcresult"
+  },
+  "combined": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 1,
+      "notRun": 0,
+      "passed": 18,
+      "skipped": 0,
+      "total": 19
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/test-console-log-2026-11-28T12-01-31+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/BCDFDE3D-A45A-4FE0-812A-289AFF3451E7.txt",
+    "results": [
+      {
+        "displayName": "testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "errorMessages": [
+          "NavigationFlight/NavigationFlightUITests/NavigationFlightUITests.swift:203 NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation(): XCTAssertTrue failed"
+        ],
+        "identifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "state": "Failed",
+        "targetName": "NavigationFlightUITests"
+      },
+      {
+        "displayName": "losslessPartialEditorAndUndoRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/losslessPartialEditorAndUndoRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "untouchedExitStoresNothing()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/untouchedExitStoresNothing()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedSaveRetainsLatestAndRetryPersistsIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedSaveRetainsLatestAndRetryPersistsIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedDeletePreservesDraftThenRetryRemovesIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedDeletePreservesDraftThenRetryRemovesIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "flightIsolationClosedAndArmedPrecedence()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/flightIsolationClosedAndArmedPrecedence()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"corrupt\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"unsupported\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "\"load\"",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/armedLoadFailureRemainsVisibleAfterCancellation(failure:)",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "testArmedDraftLoadFailureAfterCancellationInLandscape()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testArmedDraftLoadFailureAfterCancellationInLandscape()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      },
+      {
+        "displayName": "testDraftRecoveryFailureKeepsOperationalCockpitUsable()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testDraftRecoveryFailureKeepsOperationalCockpitUsable()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "19 tests: 18 passed, 1 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 19,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/Test-NavigationFlight-2026.11.28_12-01-31-+0200.xcresult"
+  },
+  "portrait": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 0,
+      "notRun": 0,
+      "passed": 1,
+      "skipped": 0,
+      "total": 1
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/test-console-log-2026-11-28T12-09-57+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/640427A9-3149-4020-A0CE-7F48BB80C135.txt",
+    "results": [
+      {
+        "displayName": "testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "1 tests: 1 passed, 0 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 1,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/Test-NavigationFlight-2026.11.28_12-09-57-+0200.xcresult"
+  },
+  "phone": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 0,
+      "notRun": 0,
+      "passed": 1,
+      "skipped": 0,
+      "total": 1
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/test-console-log-2026-11-28T12-11-03+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/1FF305F6-8722-41A5-928C-BF37F23C78EA.txt",
+    "results": [
+      {
+        "displayName": "testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "1 tests: 1 passed, 0 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 1,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/673BDE0F-BCCD-42D2-90FF-84CF22B0FC82/RunSomeTests/Test-NavigationFlight-2026.11.28_12-11-03-+0200.xcresult"
+  }
+}

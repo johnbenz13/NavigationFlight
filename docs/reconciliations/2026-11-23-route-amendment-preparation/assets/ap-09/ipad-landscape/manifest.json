@@ -1,0 +1,35 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "838DA39C-46E1-4F0E-AB11-CF9897E59B1E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-discard-restart-empty_0_3DA2B9BA-E936-4388-81F7-CCF92ABB9B29.png",
+        "timestamp" : 1795724334.587
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "9CA30274-34A8-4FF1-9EB6-E2F32854A9B5.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-discard-failed_0_8F639B66-7C5B-4A1B-A426-8FBC2E66F0BE.png",
+        "timestamp" : 1795724317.397
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "130FC417-D742-41A1-9AC9-F99DC61E00DA.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-discard-confirmation_0_AE302893-7A17-4C1D-8414-0430107AC3AC.png",
+        "timestamp" : 1795724311.684
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftDiscardFailureInLandscape()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftDiscardFailureInLandscape"
+  }
+]

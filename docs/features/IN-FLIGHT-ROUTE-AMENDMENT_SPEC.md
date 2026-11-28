@@ -187,6 +187,29 @@ those checkpoints remain historical. Implemented visual acceptance is separate.
    camera contracts remain unchanged. These are preparation durations, not ETA or
    operational flight timers. Existing Inspect original remains available.
 
+## AP-09 unfinished draft recovery · 2026-11-26
+
+Issue #233 implements G05's local per-Flight preparation persistence. After work
+begins, route/partial fields/cues, captured mode and provenance, selected editor
+and complete plotting Undo snapshots are saved separately from operational
+recordings and exports. Untouched exit creates no draft. Recovery of the same
+unfinished Flight returns to ordinary Cockpit, unarmed; pencil reopening restores
+its editor and geometry-derived D04 interaction. Existing armed recovery wins.
+
+Failed writes retain current in-memory work, expose an independent unsaved pencil
+badge and F10 Retry warning, and permit nondestructive pencil exit. Confirmed
+unarmed discard returns to Cockpit only after deletion succeeds; cancellation and
+deletion failure preserve work. Unsupported/corrupt saved bytes remain preserved
+with a scoped recovery error; they cannot arm or silently be replaced. Drafts
+never transfer to another Flight or resume with closed/deleted Flights. A later
+recorded amendment operation fences an obsolete draft even after failed cleanup.
+
+This supersedes only older statements that restart discards unarmed preparation.
+Operational recording schemas, recovery policy, Arm/disarm and exports retain their
+existing contracts. Arm remains the AP-11 placeholder in preparation. Runtime
+verification and human visual acceptance are recorded separately in the
+[AP-09 matrix and ledger](../reconciliations/2026-11-23-route-amendment-preparation/evidence/ap-09-implementation.md).
+
 ## Approved future preparation revision · 2026-11-24
 
 John approved the [preparation behavior](../reconciliations/2026-11-23-route-amendment-preparation/proposed/preparing-an-amendment.md)

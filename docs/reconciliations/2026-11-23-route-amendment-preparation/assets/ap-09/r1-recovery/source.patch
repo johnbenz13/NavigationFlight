@@ -1,0 +1,162 @@
+diff --git a/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift b/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift
+index da32de9..6024c46 100644
+--- a/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift
++++ b/NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift
+@@ -31,7 +31,9 @@ actor DiskAmendmentDraftStore: AmendmentDraftStore {
+         try record.validate(for: record.flightID)
+         // Inspect before replacing: unreadable/newer bytes must never be silently
+         // overwritten. This actor performs no suspension inside a file operation.
+-        if let previous = try load(flightID: record.flightID), previous.revision > record.revision { return }
++        if let previous = try load(flightID: record.flightID), previous.revision > record.revision {
++            throw AmendmentDraftStoreError.staleRevision
++        }
+         try beforeWrite()
+         try FileManager.default.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
+         try JSONEncoder().encode(record).write(to: fileURL(record.flightID), options: .atomic)
+diff --git a/NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift b/NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift
+index db27aed..4b7f77d 100644
+--- a/NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift
++++ b/NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift
+@@ -23,7 +23,7 @@ actor InMemoryAmendmentDraftStore: AmendmentDraftStore {
+         try record.validate(for: record.flightID)
+         if failure == .save { throw AmendmentDraftStoreError.operationFailed }
+         try records[record.flightID]?.validate(for: record.flightID)
+-        guard records[record.flightID].map({ $0.revision <= record.revision }) ?? true else { return }
++        guard records[record.flightID].map({ $0.revision <= record.revision }) ?? true else { throw AmendmentDraftStoreError.staleRevision }
+         records[record.flightID] = record
+     }
+ 
+diff --git a/NavigationFlight/Domain/Flight/AmendmentDraftStore.swift b/NavigationFlight/Domain/Flight/AmendmentDraftStore.swift
+index 0a03835..210ef67 100644
+--- a/NavigationFlight/Domain/Flight/AmendmentDraftStore.swift
++++ b/NavigationFlight/Domain/Flight/AmendmentDraftStore.swift
+@@ -4,6 +4,7 @@ nonisolated enum AmendmentDraftStoreError: Error, Equatable {
+     case invalidData
+     case unsupportedSchema(Int)
+     case operationFailed
++    case staleRevision
+ }
+ 
+ /// Local preparation data only. No recording package, journal or export owns it.
+@@ -34,6 +35,7 @@ nonisolated struct AmendmentDraftRecord: Codable, Equatable, Sendable {
+ 
+ nonisolated protocol AmendmentDraftStore: Sendable {
+     func load(flightID: UUID) async throws -> AmendmentDraftRecord?
++    /// Returns only after accepting the record; rejected revisions must throw.
+     func save(_ record: AmendmentDraftRecord) async throws
+     func remove(flightID: UUID) async throws
+ }
+diff --git a/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+index 96f3649..98fefc9 100644
+--- a/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
++++ b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+@@ -98,13 +98,16 @@ final class AmendmentDraftPersistence {
+     }
+ 
+     func recover(flight: Flight, route: RouteAmendmentRoute?, lastAmendmentSequence: UInt64?) async -> RouteAmendmentDraft? {
+-        guard flight.legState != .completed, flight.pendingRouteAmendment == nil,
+-              flight.activatedRouteAmendment == nil, let route else { return nil }
++        guard flight.legState != .completed else { return nil }
++        let canRecover = flight.pendingRouteAmendment == nil && flight.activatedRouteAmendment == nil && route != nil
+         await flush()
+         do {
+             guard let record = try await store.load(flightID: flight.id) else { return nil }
+             try record.validate(for: flight.id)
+-            revisions[flight.id] = record.revision
++            // Operational recovery still wins, but a later cancellation can create
++            // another draft in this process. Its revision must advance past disk.
++            revisions[flight.id] = max(revisions[flight.id] ?? 0, record.revision)
++            guard canRecover, let route else { return nil }
+             // A confirmed route operation after this snapshot makes it obsolete,
+             // even if cleanup failed and the armed amendment was later cancelled.
+             if let lastAmendmentSequence, lastAmendmentSequence >= record.recordingSequence { return nil }
+@@ -116,7 +119,7 @@ final class AmendmentDraftPersistence {
+             return draft
+         } catch {
+             blocked.insert(flight.id)
+-            statuses[flight.id] = .recoveryFailed
++            if canRecover { statuses[flight.id] = .recoveryFailed }
+             return nil
+         }
+     }
+diff --git a/NavigationFlightTests/AmendmentDraftPersistenceTests.swift b/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
+index 817f513..6e4ad2c 100644
+--- a/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
++++ b/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
+@@ -252,6 +252,65 @@ struct AmendmentDraftPersistenceTests {
+         #expect(after.trackSegments == before.trackSegments)
+     }
+ 
++    @Test func failedRetirementRestartCancellationAndNewDraftRoundTrip() async throws {
++        var cockpit = try state()
++        var flight = try #require(cockpit.flight)
++        let route = try #require(cockpit.routeForAmendment)
++        let original = try #require(cockpit.routeAmendmentDraft)
++        let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
++        defer { try? FileManager.default.removeItem(at: root) }
++        let store = DiskAmendmentDraftStore(rootDirectory: root, beforeRemove: {
++            throw AmendmentDraftStoreError.operationFailed
++        })
++        try await store.save(.init(flightID: flight.id, revision: 9, recordingSequence: 2,
++                                  payload: JSONEncoder().encode(original.persistence)))
++        await AmendmentDraftPersistence(store: store).retire(flightID: flight.id)
++        #expect(try await store.load(flightID: flight.id)?.revision == 9)
++        let amendment = try PendingRouteAmendment(id: UUID(), draft: original, flight: flight, route: route)
++        try flight.installPendingAmendment(amendment, in: #require(cockpit.flightPlan))
++        let restarted = AmendmentDraftPersistence(store: DiskAmendmentDraftStore(rootDirectory: root))
++        #expect(await restarted.recover(flight: flight, route: route, lastAmendmentSequence: 3) == nil)
++        #expect(restarted.statuses[flight.id] == nil)
++        try flight.cancelPendingAmendment(id: amendment.id)
++        try partial(&cockpit)
++        let fresh = try #require(cockpit.routeAmendmentDraft)
++        restarted.save(fresh, recordingSequence: 5)
++        await restarted.flush()
++        #expect(restarted.statuses[flight.id] == .saved)
++        #expect(try await store.load(flightID: flight.id)?.revision == 10)
++        let cold = AmendmentDraftPersistence(store: DiskAmendmentDraftStore(rootDirectory: root))
++        let restored = try #require(await cold.recover(flight: flight, route: route, lastAmendmentSequence: 4))
++        #expect(restored.persistence == fresh.persistence)
++        var expected = fresh
++        var actual = restored
++        expected.update(.open, route: route)
++        actual.update(.open, route: route)
++        expected.update(.saveLegValues, route: route)
++        actual.update(.saveLegValues, route: route)
++        expected.update(.undo, route: route)
++        actual.update(.undo, route: route)
++        #expect(actual.persistence == expected.persistence)
++    }
++
++    @Test func rejectedDiskWriteAndRetryNeverPublishSaved() async throws {
++        let cockpit = try state()
++        let draft = try #require(cockpit.routeAmendmentDraft)
++        let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
++        defer { try? FileManager.default.removeItem(at: root) }
++        let store = DiskAmendmentDraftStore(rootDirectory: root)
++        let newest = AmendmentDraftRecord(flightID: draft.flightID, revision: 9, recordingSequence: 2,
++                                         payload: try JSONEncoder().encode(draft.persistence))
++        try await store.save(newest)
++        let persistence = AmendmentDraftPersistence(store: store)
++        persistence.save(draft, recordingSequence: 3)
++        await persistence.flush()
++        #expect(persistence.statuses[draft.flightID] == .saveFailed)
++        persistence.retry(flightID: draft.flightID)
++        await persistence.flush()
++        #expect(persistence.statuses[draft.flightID] == .saveFailed)
++        #expect(try await store.load(flightID: draft.flightID) == newest)
++    }
++
+     @Test func diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes() async throws {
+         let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
+         defer { try? FileManager.default.removeItem(at: root) }
+@@ -259,7 +318,9 @@ struct AmendmentDraftPersistenceTests {
+         let id = UUID()
+         let newest = AmendmentDraftRecord(flightID: id, revision: 9, recordingSequence: 3, payload: Data("new".utf8))
+         try await store.save(newest)
+-        try await store.save(.init(flightID: id, revision: 2, recordingSequence: 2, payload: Data("old".utf8)))
++        await #expect(throws: AmendmentDraftStoreError.staleRevision) {
++            try await store.save(.init(flightID: id, revision: 2, recordingSequence: 2, payload: Data("old".utf8)))
++        }
+         #expect(try await store.load(flightID: id) == newest)
+         let file = root.appending(path: "\(id.uuidString.lowercased()).json")
+         for record in [AmendmentDraftRecord(flightID: id, revision: 10, recordingSequence: 3, payload: Data(), schemaVersion: 99),

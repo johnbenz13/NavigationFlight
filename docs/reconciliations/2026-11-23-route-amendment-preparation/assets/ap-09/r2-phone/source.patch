@@ -1,0 +1,159 @@
+diff --git a/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+index 98fefc9..f28e8e5 100644
+--- a/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
++++ b/NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift
+@@ -119,7 +119,10 @@ final class AmendmentDraftPersistence {
+             return draft
+         } catch {
+             blocked.insert(flight.id)
+-            if canRecover { statuses[flight.id] = .recoveryFailed }
++            // Keep quarantine visible even while operational recovery wins. After
++            // cancellation, preparation must show the scoped error rather than
++            // accepting work whose saves and discard would be blocked.
++            statuses[flight.id] = .recoveryFailed
+             return nil
+         }
+     }
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+index f81ccdd..d6df7ba 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+@@ -423,15 +423,15 @@ struct CockpitFeatureView: View {
+     }
+ 
+     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
+-        if case .discard = intent, state.replacingPendingAmendmentID == nil {
+-            discardAmendmentDraft()
+-            return
+-        }
+         if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
+             presentedError = .init(title: "Amendment draft unavailable",
+                                    message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+             return
+         }
++        if case .discard = intent, state.replacingPendingAmendmentID == nil {
++            discardAmendmentDraft()
++            return
++        }
+         if let id = state.flight?.id, draftPersistence?.statuses[id] == .deleting {
+             if case .pause = intent { state.updateRouteAmendment(.pause) }
+             if case .toggleWorkspace = intent, state.isAmendmentWorkspaceVisible { state.updateRouteAmendment(.pause) }
+diff --git a/NavigationFlightTests/AmendmentDraftPersistenceTests.swift b/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
+index 6e4ad2c..22ad2ff 100644
+--- a/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
++++ b/NavigationFlightTests/AmendmentDraftPersistenceTests.swift
+@@ -292,6 +292,45 @@ struct AmendmentDraftPersistenceTests {
+         #expect(actual.persistence == expected.persistence)
+     }
+ 
++    @Test(arguments: ["corrupt", "unsupported", "load"])
++    func armedLoadFailureRemainsVisibleAfterCancellation(failure: String) async throws {
++        let cockpit = try state()
++        var flight = try #require(cockpit.flight)
++        let route = try #require(cockpit.routeForAmendment)
++        let draft = try #require(cockpit.routeAmendmentDraft)
++        let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
++        defer { try? FileManager.default.removeItem(at: root) }
++        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
++        let file = root.appending(path: "\(flight.id.uuidString.lowercased()).json")
++        let record = AmendmentDraftRecord(flightID: flight.id, revision: 9, recordingSequence: 2,
++                                         payload: try JSONEncoder().encode(draft.persistence),
++                                         schemaVersion: failure == "unsupported" ? 99 : 1)
++        let bytes = failure == "corrupt" ? Data("{broken".utf8) : try JSONEncoder().encode(record)
++        try bytes.write(to: file)
++        let store = DiskAmendmentDraftStore(rootDirectory: root, beforeLoad: {
++            if failure == "load" { throw AmendmentDraftStoreError.operationFailed }
++        })
++        let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
++        try flight.installPendingAmendment(amendment, in: #require(cockpit.flightPlan))
++        let armed = flight
++        let restarted = AmendmentDraftPersistence(store: store)
++        #expect(await restarted.recover(flight: flight, route: route, lastAmendmentSequence: 3) == nil)
++        #expect(flight == armed)
++        #expect(restarted.statuses[flight.id] == .recoveryFailed)
++        try flight.cancelPendingAmendment(id: amendment.id)
++        // The editor's existing recoveryFailed gate rejects preparation. Even a
++        // direct persistence call must retain the visible error and original bytes.
++        restarted.save(draft, recordingSequence: 5)
++        await restarted.flush()
++        #expect(restarted.statuses[flight.id] == .recoveryFailed)
++        restarted.retry(flightID: flight.id)
++        await restarted.flush()
++        #expect(restarted.statuses[flight.id] == .recoveryFailed)
++        #expect(await restarted.discard(flightID: flight.id) == false)
++        #expect(restarted.statuses[flight.id] == .recoveryFailed)
++        #expect(try Data(contentsOf: file) == bytes)
++    }
++
+     @Test func rejectedDiskWriteAndRetryNeverPublishSaved() async throws {
+         let cockpit = try state()
+         let draft = try #require(cockpit.routeAmendmentDraft)
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index 7dd45d2..679245a 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -155,6 +155,64 @@ final class NavigationFlightUITests: XCTestCase {
+         captureAmendmentState("ap09-discard-restart-empty", in: app)
+     }
+ 
++    @MainActor
++    func testArmedDraftLoadFailureRejectsPreparationAfterCancellation() throws {
++        try verifyArmedDraftLoadFailure()
++    }
++
++    @MainActor
++    func testArmedDraftLoadFailureAfterCancellationInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyArmedDraftLoadFailure(landscape: true)
++    }
++
++    @MainActor
++    private func verifyArmedDraftLoadFailure(landscape: Bool = false) throws {
++        let app = try launchPendingAmendmentForManagement()
++        app.terminate()
++        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
++        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE")
++        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE")
++        app.launch()
++        let resume = app.buttons["Continue Flight"]
++        XCTAssertTrue(resume.waitForExistence(timeout: 8))
++        resume.tap()
++        dismissCockpitSidebar(in: app)
++        let pending = app.buttons["pending-amendment-pencil"]
++        XCTAssertTrue(pending.waitForExistence(timeout: 8))
++        XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
++        captureAmendmentState("ap09-r2-armed-recovery", in: app)
++        pending.tap()
++        let cancel = app.buttons["cancel-pending-amendment"]
++        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
++        cancel.tap()
++        let commit = app.buttons["confirm-pending-amendment-management"]
++        XCTAssertTrue(commit.waitForExistence(timeout: 4))
++        commit.tap()
++        XCTAssertTrue(pending.waitForNonExistence(timeout: 8))
++        let pencil = app.buttons["amend-route"]
++        XCTAssertTrue(pencil.waitForExistence(timeout: 5))
++        XCTAssertTrue((pencil.value as? String ?? "").contains("Saved draft unavailable"))
++        if landscape {
++            XCUIDevice.shared.orientation = .landscapeLeft
++            let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
++            XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
++        }
++        // After pending cancellation, AX can temporarily report the entire
++        // header as the button frame. Target the visible pencil within it.
++        let icon = pencil.images["pencil"]
++        XCTAssertTrue(icon.waitForExistence(timeout: 4))
++        icon.tap()
++        let alert = app.alerts["Amendment draft unavailable"]
++        XCTAssertTrue(alert.waitForExistence(timeout: 4))
++        XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
++        captureAmendmentState("ap09-r2-cancelled-preparation-rejected", in: app)
++        alert.buttons["OK"].tap()
++        app.buttons["waypoint-identified"].tap()
++        XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
++        captureAmendmentState("ap09-r2-operational-route-continues", in: app)
++    }
++
+     @MainActor
+     func testDraftRecoveryFailureKeepsOperationalCockpitUsable() throws {
+         try verifyDraftRecoveryFailure()

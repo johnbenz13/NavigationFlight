@@ -1,0 +1,44 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "F6632F12-ABD8-4E1F-9151-D6D06A4D4F6B.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovered-undo_0_CF76E55F-5F3B-4343-92B6-B399EB3D84CA.png",
+        "timestamp" : 1795725396.349
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "688443CD-DD60-4D27-AFA0-D0D4BB4A0F34.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-partial-editor-restored_0_24B7C542-5597-49BC-BF26-07469B954123.png",
+        "timestamp" : 1795725336.879
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "4B4F2937-80F0-4AD8-A040-4197EDDEC385.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-recovered-cockpit_0_0283127C-4FF2-4C81-872B-40F2FA30EF51.png",
+        "timestamp" : 1795725288.266
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "9F90CD21-A508-4DE1-9A64-E719176F17D7",
+        "deviceName" : "AP01-iPhone-16-Pro",
+        "exportedFileName" : "B868267C-01DF-430C-B167-C520F5B1F84E.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-partial-editor-before_0_E0CC5BCB-B7B0-42C7-A81D-39913AE8D50A.png",
+        "timestamp" : 1795725261.744
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo"
+  }
+]

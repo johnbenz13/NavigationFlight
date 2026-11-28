@@ -1,0 +1,26 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "8D5FCBAC-2D0D-4507-99B6-16EAF3AC8661.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Route amendment - ap09-voiceover-warning_0_FF7277E5-257B-4B95-AF01-E6D7C9D5B5CB.png",
+        "timestamp" : 1795724432.255
+      },
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName" : "AP01-iPad-11-Reference",
+        "exportedFileName" : "F238DD10-F993-466B-A59E-E82CDA4BF2CA.txt",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "AP09 actual VoiceOver save failure speech_0_64C9ADEE-5618-40BF-A29C-98B9D405B346.txt",
+        "timestamp" : 1795724430.78
+      }
+    ],
+    "testIdentifier" : "NavigationFlightUITests/testDraftFailureStatusAndRetryWithVoiceOver()",
+    "testIdentifierURL" : "test://com.apple.xcode/NavigationFlight/NavigationFlightUITests/NavigationFlightUITests/testDraftFailureStatusAndRetryWithVoiceOver"
+  }
+]

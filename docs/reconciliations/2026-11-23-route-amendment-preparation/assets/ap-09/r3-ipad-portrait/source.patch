@@ -1,0 +1,126 @@
+diff --git a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+index d6df7ba..6102cd5 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitFeatureView.swift
+@@ -422,12 +422,15 @@ struct CockpitFeatureView: View {
+         }
+     }
+ 
++    private func presentDraftRecoveryErrorIfNeeded() -> Bool {
++        guard let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed else { return false }
++        presentedError = .init(title: "Amendment draft unavailable",
++                               message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
++        return true
++    }
++
+     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
+-        if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
+-            presentedError = .init(title: "Amendment draft unavailable",
+-                                   message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+-            return
+-        }
++        if presentDraftRecoveryErrorIfNeeded() { return }
+         if case .discard = intent, state.replacingPendingAmendmentID == nil {
+             discardAmendmentDraft()
+             return
+@@ -552,6 +555,7 @@ struct CockpitFeatureView: View {
+     private func managePendingAmendment(_ intent: PendingAmendmentManagement.Intent) {
+         switch intent {
+         case .replace(let pendingID):
++            if presentDraftRecoveryErrorIfNeeded() { return }
+             state.openReplacementDraft(pendingID: pendingID)
+         case .dismissFailedSave:
+             if state.pendingAmendmentManagementSave?.status == .failed(canEdit: true) {
+diff --git a/NavigationFlight/Features/Cockpit/CockpitView.swift b/NavigationFlight/Features/Cockpit/CockpitView.swift
+index 40c0ff2..178d13b 100644
+--- a/NavigationFlight/Features/Cockpit/CockpitView.swift
++++ b/NavigationFlight/Features/Cockpit/CockpitView.swift
+@@ -268,6 +268,7 @@ struct CockpitView: View {
+     @State private var amendmentLegendHeight: CGFloat = 0
+     @State private var amendmentDiscardConfirmation = false
+     @State private var isPendingAmendmentMenuPresented = false
++    @State private var isPendingDraftRecoveryErrorPresented = false
+     @State private var pendingAmendmentConfirmation: PendingAmendmentManagement.Confirmation?
+     @AccessibilityFocusState(for: .voiceOver) private var pendingAmendmentPencilFocused: Bool
+ 
+@@ -1422,6 +1423,10 @@ struct CockpitView: View {
+                 management: management, compact: horizontalSizeClass == .compact,
+                 onDone: { isPendingAmendmentMenuPresented = false },
+                 onReplace: {
++                    if draftPersistenceStatus == .recoveryFailed {
++                        isPendingDraftRecoveryErrorPresented = true
++                        return
++                    }
+                     isPendingAmendmentMenuPresented = false
+                     onManagePendingAmendment(.replace(management.id))
+                 },
+@@ -1431,6 +1436,11 @@ struct CockpitView: View {
+                 }
+             )
+             .presentationCompactAdaptation(.sheet)
++            .alert("Amendment draft unavailable", isPresented: $isPendingDraftRecoveryErrorPresented) {
++                Button("OK") { isPendingAmendmentMenuPresented = false }
++            } message: {
++                Text("The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
++            }
+         }
+     }
+ 
+diff --git a/NavigationFlightUITests/NavigationFlightUITests.swift b/NavigationFlightUITests/NavigationFlightUITests.swift
+index 679245a..0cf6adb 100644
+--- a/NavigationFlightUITests/NavigationFlightUITests.swift
++++ b/NavigationFlightUITests/NavigationFlightUITests.swift
+@@ -167,7 +167,18 @@ final class NavigationFlightUITests: XCTestCase {
+     }
+ 
+     @MainActor
+-    private func verifyArmedDraftLoadFailure(landscape: Bool = false) throws {
++    func testArmedDraftLoadFailureRejectsReplacementWithoutChangingPendingRoute() throws {
++        try verifyArmedDraftLoadFailure(replace: true)
++    }
++
++    @MainActor
++    func testArmedDraftLoadFailureRejectsReplacementInLandscape() throws {
++        defer { XCUIDevice.shared.orientation = .portrait }
++        try verifyArmedDraftLoadFailure(landscape: true, replace: true)
++    }
++
++    @MainActor
++    private func verifyArmedDraftLoadFailure(landscape: Bool = false, replace: Bool = false) throws {
+         let app = try launchPendingAmendmentForManagement()
+         app.terminate()
+         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
+@@ -182,6 +193,33 @@ final class NavigationFlightUITests: XCTestCase {
+         XCTAssertTrue(pending.waitForExistence(timeout: 8))
+         XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
+         captureAmendmentState("ap09-r2-armed-recovery", in: app)
++        if replace {
++            if landscape {
++                XCUIDevice.shared.orientation = .landscapeLeft
++                let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
++                XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
++            }
++            let savedLabel = pending.label
++            pending.tap()
++            let replacement = app.buttons["replace-pending-amendment"]
++            XCTAssertTrue(replacement.waitForExistence(timeout: 4))
++            replacement.tap()
++            let alert = app.alerts["Amendment draft unavailable"]
++            XCTAssertTrue(alert.waitForExistence(timeout: 4))
++            XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
++            XCTAssertFalse(app.buttons["confirm-amendment-replacement"].exists)
++            captureAmendmentState("ap09-r3-replacement-entry-rejected", in: app)
++            alert.buttons["OK"].tap()
++            XCTAssertTrue(pending.waitForExistence(timeout: 4))
++            XCTAssertEqual(pending.label, savedLabel)
++            XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
++            app.buttons["waypoint-identified"].tap()
++            XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
++            XCTAssertTrue(pending.exists)
++            XCTAssertEqual(pending.label, savedLabel)
++            captureAmendmentState("ap09-r3-pending-route-continues", in: app)
++            return
++        }
+         pending.tap()
+         let cancel = app.buttons["cancel-pending-amendment"]
+         XCTAssertTrue(cancel.waitForExistence(timeout: 4))

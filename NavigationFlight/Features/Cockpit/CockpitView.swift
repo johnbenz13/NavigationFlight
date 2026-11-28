@@ -268,6 +268,7 @@ struct CockpitView: View {
     @State private var amendmentLegendHeight: CGFloat = 0
     @State private var amendmentDiscardConfirmation = false
     @State private var isPendingAmendmentMenuPresented = false
+    @State private var isPendingDraftRecoveryErrorPresented = false
     @State private var pendingAmendmentConfirmation: PendingAmendmentManagement.Confirmation?
     @AccessibilityFocusState(for: .voiceOver) private var pendingAmendmentPencilFocused: Bool
 
@@ -1422,6 +1423,10 @@ struct CockpitView: View {
                 management: management, compact: horizontalSizeClass == .compact,
                 onDone: { isPendingAmendmentMenuPresented = false },
                 onReplace: {
+                    if draftPersistenceStatus == .recoveryFailed {
+                        isPendingDraftRecoveryErrorPresented = true
+                        return
+                    }
                     isPendingAmendmentMenuPresented = false
                     onManagePendingAmendment(.replace(management.id))
                 },
@@ -1431,6 +1436,11 @@ struct CockpitView: View {
                 }
             )
             .presentationCompactAdaptation(.sheet)
+            .alert("Amendment draft unavailable", isPresented: $isPendingDraftRecoveryErrorPresented) {
+                Button("OK") { isPendingAmendmentMenuPresented = false }
+            } message: {
+                Text("The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+            }
         }
     }
 

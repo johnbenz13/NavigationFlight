@@ -422,12 +422,15 @@ struct CockpitFeatureView: View {
         }
     }
 
+    private func presentDraftRecoveryErrorIfNeeded() -> Bool {
+        guard let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed else { return false }
+        presentedError = .init(title: "Amendment draft unavailable",
+                               message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+        return true
+    }
+
     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
-        if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
-            presentedError = .init(title: "Amendment draft unavailable",
-                                   message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
-            return
-        }
+        if presentDraftRecoveryErrorIfNeeded() { return }
         if case .discard = intent, state.replacingPendingAmendmentID == nil {
             discardAmendmentDraft()
             return
@@ -552,6 +555,7 @@ struct CockpitFeatureView: View {
     private func managePendingAmendment(_ intent: PendingAmendmentManagement.Intent) {
         switch intent {
         case .replace(let pendingID):
+            if presentDraftRecoveryErrorIfNeeded() { return }
             state.openReplacementDraft(pendingID: pendingID)
         case .dismissFailedSave:
             if state.pendingAmendmentManagementSave?.status == .failed(canEdit: true) {

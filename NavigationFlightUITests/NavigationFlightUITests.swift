@@ -167,8 +167,26 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
-    private func verifyArmedDraftLoadFailure(landscape: Bool = false) throws {
-        let app = try launchPendingAmendmentForManagement()
+    func testArmedDraftLoadFailureRejectsReplacementWithoutChangingPendingRoute() throws {
+        try verifyArmedDraftLoadFailure(replace: true)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsReplacementInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyArmedDraftLoadFailure(landscape: true, replace: true)
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureRejectsReplacementWithLargerText() throws {
+        try verifyArmedDraftLoadFailure(replace: true, preferredContentSize: "UICTContentSizeCategoryAccessibilityXXXL")
+    }
+
+    @MainActor
+    private func verifyArmedDraftLoadFailure(
+        landscape: Bool = false, replace: Bool = false, preferredContentSize: String? = nil
+    ) throws {
+        let app = try launchPendingAmendmentForManagement(preferredContentSize: preferredContentSize)
         app.terminate()
         app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
         app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE")
@@ -182,6 +200,33 @@ final class NavigationFlightUITests: XCTestCase {
         XCTAssertTrue(pending.waitForExistence(timeout: 8))
         XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
         captureAmendmentState("ap09-r2-armed-recovery", in: app)
+        if replace {
+            if landscape {
+                XCUIDevice.shared.orientation = .landscapeLeft
+                let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+                XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
+            }
+            let savedLabel = pending.label
+            pending.tap()
+            let replacement = app.buttons["replace-pending-amendment"]
+            XCTAssertTrue(replacement.waitForExistence(timeout: 4))
+            replacement.tap()
+            let alert = app.alerts["Amendment draft unavailable"]
+            XCTAssertTrue(alert.waitForExistence(timeout: 4))
+            XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
+            XCTAssertFalse(app.buttons["confirm-amendment-replacement"].exists)
+            captureAmendmentState("ap09-r3-replacement-entry-rejected", in: app)
+            alert.buttons["OK"].tap()
+            XCTAssertTrue(pending.waitForExistence(timeout: 4))
+            XCTAssertEqual(pending.label, savedLabel)
+            XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
+            app.buttons["waypoint-identified"].tap()
+            XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
+            XCTAssertTrue(pending.exists)
+            XCTAssertEqual(pending.label, savedLabel)
+            captureAmendmentState("ap09-r3-pending-route-continues", in: app)
+            return
+        }
         pending.tap()
         let cancel = app.buttons["cancel-pending-amendment"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 4))

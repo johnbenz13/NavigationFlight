@@ -84,6 +84,12 @@ target-size correction retains these foreground/fill colors.
 | Owner preview | Primary iPad portrait, final Debug build | App left running, PID **80832**, new disposable `issue233-owner-preview-final-20261127`, C/camera1/normal text. Actual Start → close checklist → pencil opens selected second leg, **176° / Not set**, three legs, unarmed. Implementer inspected [current screenshot](../assets/ap-09/owner-preview/preview.png); [candidate/process/source provenance](../assets/ap-09/owner-preview/provenance.json). DeviceHub opened; select **AP01-iPad-11-Reference** if its canvas is not selected. Interaction session closed while app remains running. Previous libraries preserved. |
 | Final checkpoint review | Frozen source plus documentation/evidence | Tracked app/UI source matches the final passing export's source patch (13 files compared). Documentation and local references reviewed; local-link and `git diff --check` validation passed. No human visual/product acceptance recorded. |
 
+
+| R1 diagnosis / regression proof · 2026-11-28 | Reviewed head `566ba32`; fresh disk store/coordinator, failed revision-9 retirement → armed restart → cancellation → new partial editor → cold reopen | Both new tests **fail on the reviewed implementation**: disk remains revision 9, cold reopen returns nil, and rejected save/Retry publish `.saved`. This is application persistence logic, not a fixture/tool failure. |
+| R1 fixed persistence / final build | Revision initialized before operational precedence; stale disk/in-memory writes throw; no UI source changes | **13/13 persistence tests pass**, including both new regressions, armed precedence, journal fence, corruption/unsupported bytes, coalescing, isolation and snapshot integrity. New disk snapshot is revision 10 and exact partial/editor/Undo content survives fresh recovery. BuildProject passes, zero errors (final log `BuildProject-Log-20261128-113853.txt`). |
+| R1 integration / rendered states | Reference iPad `07C2B017-8241-45BD-B859-E82C930C634F`, iOS 27.2, portrait 834×1194, normal text; existing shared C/A bootstrap and evidence helpers | **2/2 UI checks pass**: cold reopen/editor/Undo and injected save-failure/exit/Retry. Combined final run **15/15**, original result `Test-NavigationFlight-2026.11.28_11-36-41-+0200.xcresult` in DerivedData/Logs/Test; complete retained copy `/tmp/pr251-r1-green.xcresult`. Inspected full-resolution [recovered editor](../assets/ap-09/r1-recovery/) and [warning/Retry success](../assets/ap-09/r1-save/), including F10 warning title/body and independent F07 status. These UI captures exercise existing generic failure/recovery fixtures; the full R1 cleanup/cancellation chain is proven by the disk-backed test, not claimed as a new UI fixture. No new Figma match or human acceptance is claimed. |
+| R1 reused checks / tooling | No SwiftUI, colors, geometry, controls, recording schema, exports or device-specific behavior changed | Prior landscape/phone/Larger Text, VoiceOver/Reduce Motion and 116 estimator/recovery/export checks remain applicable; not rerun. Export recovered from incomplete ActionArtifacts copy, then protected TestReport cache using permitted access; corrected exact `Route amendment - …` attachment names. No tests rerun for export. [Retained machine-readable results](../assets/ap-09/r1-results.json). Human visual/product acceptance and independent re-review remain pending. |
+
 ## Effort and reruns
 
 Approximate effort, including test waits and excluding the overnight pause:
@@ -97,3 +103,11 @@ The real contrast and native-target defects required scoped fixes and rechecks.
 Export-name/cache/incomplete-copy issues were recovered from original results
 without test reruns. The final target-size change reused valid domain, recovery,
 export, VoiceOver and Reduce Motion checks instead of repeating broad suites.
+
+
+R1 remediation effort: approximately **3 min diagnosis/contract**, **3 min code and
+regression tests**, **5 min verification/evidence**, **2 min delivery** (about
+**13 min**). The two-test baseline run intentionally proves the regressions fail;
+it is not avoidable rework. About **1 min** of avoidable export work came from
+retrying known incomplete/cache-restricted result paths and omitted attachment
+prefixes. No avoidable test reruns or application/fixture failures occurred.

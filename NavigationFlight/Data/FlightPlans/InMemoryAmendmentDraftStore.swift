@@ -23,7 +23,7 @@ actor InMemoryAmendmentDraftStore: AmendmentDraftStore {
         try record.validate(for: record.flightID)
         if failure == .save { throw AmendmentDraftStoreError.operationFailed }
         try records[record.flightID]?.validate(for: record.flightID)
-        guard records[record.flightID].map({ $0.revision <= record.revision }) ?? true else { return }
+        guard records[record.flightID].map({ $0.revision <= record.revision }) ?? true else { throw AmendmentDraftStoreError.staleRevision }
         records[record.flightID] = record
     }
 

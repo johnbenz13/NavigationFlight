@@ -1,0 +1,169 @@
+{
+  "reviewedHead": "566ba3225885db8bbc88c5cad6a4bc42c2650620",
+  "originalReview": "https://github.com/johnbenz13/NavigationFlight/pull/251#issuecomment-7237236783",
+  "red": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 2,
+      "notRun": 0,
+      "passed": 0,
+      "skipped": 0,
+      "total": 2
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/test-console-log-2026-11-28T11-36-27+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/A5A02692-E427-4CBA-9BAA-BCA1D0F927D2.txt",
+    "results": [
+      {
+        "displayName": "failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "errorMessages": [
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:280 AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip(): Expectation failed: try await store.load(flightID: flight.id)?.revision == 10",
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:282 AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip(): Expectation failed: await cold.recover(flight: flight, route: route, lastAmendmentSequence: 4)"
+        ],
+        "identifier": "AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "state": "Failed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "errorMessages": [
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:307 AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved(): Expectation failed: persistence.statuses[draft.flightID] == .saveFailed\npersistence.statuses[draft.flightID] → .saved",
+          "NavigationFlight/NavigationFlightTests/AmendmentDraftPersistenceTests.swift:310 AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved(): Expectation failed: persistence.statuses[draft.flightID] == .saveFailed\npersistence.statuses[draft.flightID] → .saved"
+        ],
+        "identifier": "AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "state": "Failed",
+        "targetName": "NavigationFlightTests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "2 tests: 0 passed, 2 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 2,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/Test-NavigationFlight-2026.11.28_11-36-27-+0200.xcresult"
+  },
+  "green": {
+    "activeTestPlanName": "NavigationFlight",
+    "counts": {
+      "expectedFailures": 0,
+      "failed": 0,
+      "notRun": 0,
+      "passed": 15,
+      "skipped": 0,
+      "total": 15
+    },
+    "fullConsoleLogsPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/test-console-log-2026-11-28T11-36-41+02-00.txt",
+    "fullSummaryPath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/5B50B212-2ED3-4C75-8DDB-79BE97DA6727.txt",
+    "results": [
+      {
+        "displayName": "losslessPartialEditorAndUndoRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/losslessPartialEditorAndUndoRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/recoveredOpenGeometryResumesDirectDrawingWithoutAddingOnOpen()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "untouchedExitStoresNothing()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/untouchedExitStoresNothing()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedSaveRetainsLatestAndRetryPersistsIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedSaveRetainsLatestAndRetryPersistsIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedDeletePreservesDraftThenRetryRemovesIt()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedDeletePreservesDraftThenRetryRemovesIt()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "flightIsolationClosedAndArmedPrecedence()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/flightIsolationClosedAndArmedPrecedence()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/corruptPayloadIsPreservedAndCannotBeOverwritten()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/assistedModeProvenanceAndStaleDepartureSurviveRestart()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/delayedSaveCannotWinOverNewEditsOrRecreateDiscard()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/draftWritesLeaveRecordingAndPlanSnapshotUnchanged()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/failedRetirementRestartCancellationAndNewDraftRoundTrip()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/rejectedDiskWriteAndRetryNeverPublishSaved()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "errorMessages": [],
+        "identifier": "AmendmentDraftPersistenceTests/diskRejectsOlderRevisionsAndPreservesUnsupportedAndMismatchedBytes()",
+        "state": "Passed",
+        "targetName": "NavigationFlightTests"
+      },
+      {
+        "displayName": "testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      },
+      {
+        "displayName": "testDraftSaveFailureRetryAndNondestructiveExit()",
+        "errorMessages": [],
+        "identifier": "NavigationFlightUITests/testDraftSaveFailureRetryAndNondestructiveExit()",
+        "state": "Passed",
+        "targetName": "NavigationFlightUITests"
+      }
+    ],
+    "schemeName": "NavigationFlight",
+    "summary": "15 tests: 15 passed, 0 failed, 0 skipped, 0 expected failures, 0 not run",
+    "totalResults": 15,
+    "truncated": false,
+    "xcresultBundlePath": "/var/folders/37/w2lgd8v96_348s1hxcxgwlcr0000gn/T/ActionArtifacts/9F6D859F-0529-4ED4-BB70-39F37F0ABFC6/RunSomeTests/Test-NavigationFlight-2026.11.28_11-36-41-+0200.xcresult"
+  }
+}

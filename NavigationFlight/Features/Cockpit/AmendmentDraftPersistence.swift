@@ -98,13 +98,16 @@ final class AmendmentDraftPersistence {
     }
 
     func recover(flight: Flight, route: RouteAmendmentRoute?, lastAmendmentSequence: UInt64?) async -> RouteAmendmentDraft? {
-        guard flight.legState != .completed, flight.pendingRouteAmendment == nil,
-              flight.activatedRouteAmendment == nil, let route else { return nil }
+        guard flight.legState != .completed else { return nil }
+        let canRecover = flight.pendingRouteAmendment == nil && flight.activatedRouteAmendment == nil && route != nil
         await flush()
         do {
             guard let record = try await store.load(flightID: flight.id) else { return nil }
             try record.validate(for: flight.id)
-            revisions[flight.id] = record.revision
+            // Operational recovery still wins, but a later cancellation can create
+            // another draft in this process. Its revision must advance past disk.
+            revisions[flight.id] = max(revisions[flight.id] ?? 0, record.revision)
+            guard canRecover, let route else { return nil }
             // A confirmed route operation after this snapshot makes it obsolete,
             // even if cleanup failed and the armed amendment was later cancelled.
             if let lastAmendmentSequence, lastAmendmentSequence >= record.recordingSequence { return nil }
@@ -116,7 +119,7 @@ final class AmendmentDraftPersistence {
             return draft
         } catch {
             blocked.insert(flight.id)
-            statuses[flight.id] = .recoveryFailed
+            if canRecover { statuses[flight.id] = .recoveryFailed }
             return nil
         }
     }

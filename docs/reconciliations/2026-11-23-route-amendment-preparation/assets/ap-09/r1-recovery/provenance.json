@@ -1,0 +1,66 @@
+{
+  "exportedAt": "2026-11-28T09:39:30.901910+00:00",
+  "originalResultBundle": "/private/tmp/pr251-r1-green.xcresult",
+  "resultInfoSHA256": "c1efb31caa54ebfc5ecf1b8bc4a24e43f6ea181cacccafdc4d36360254b6e699",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 15,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795858723.637,
+    "passedTests": 15,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795858601.624,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 15
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "566ba3225885db8bbc88c5cad6a4bc42c2650620",
+    "status": " M NavigationFlight/Data/FlightPlans/DiskAmendmentDraftStore.swift\n M NavigationFlight/Data/FlightPlans/InMemoryAmendmentDraftStore.swift\n M NavigationFlight/Domain/Flight/AmendmentDraftStore.swift\n M NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift\n M NavigationFlightTests/AmendmentDraftPersistenceTests.swift\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testUnfinishedDraftColdReopenRestoresSelectedPartialEditorAndUndo()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "08E83EA3-ACEC-489D-895D-A52D9CAE3625.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-partial-editor-restored_0_AF913314-2D9B-4742-9BAF-CE58053FFFF4.png",
+        "timestamp": 1795858687.606
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "4ba9aaf0e2437f121404ce2a0e9af553059cd7adc45d5f8e47120557325e64f8"
+    }
+  ]
+}

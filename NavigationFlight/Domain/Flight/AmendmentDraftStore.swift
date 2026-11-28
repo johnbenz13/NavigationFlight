@@ -4,6 +4,7 @@ nonisolated enum AmendmentDraftStoreError: Error, Equatable {
     case invalidData
     case unsupportedSchema(Int)
     case operationFailed
+    case staleRevision
 }
 
 /// Local preparation data only. No recording package, journal or export owns it.
@@ -34,6 +35,7 @@ nonisolated struct AmendmentDraftRecord: Codable, Equatable, Sendable {
 
 nonisolated protocol AmendmentDraftStore: Sendable {
     func load(flightID: UUID) async throws -> AmendmentDraftRecord?
+    /// Returns only after accepting the record; rejected revisions must throw.
     func save(_ record: AmendmentDraftRecord) async throws
     func remove(flightID: UUID) async throws
 }

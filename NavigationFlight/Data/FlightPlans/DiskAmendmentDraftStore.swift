@@ -31,7 +31,9 @@ actor DiskAmendmentDraftStore: AmendmentDraftStore {
         try record.validate(for: record.flightID)
         // Inspect before replacing: unreadable/newer bytes must never be silently
         // overwritten. This actor performs no suspension inside a file operation.
-        if let previous = try load(flightID: record.flightID), previous.revision > record.revision { return }
+        if let previous = try load(flightID: record.flightID), previous.revision > record.revision {
+            throw AmendmentDraftStoreError.staleRevision
+        }
         try beforeWrite()
         try FileManager.default.createDirectory(at: rootDirectory, withIntermediateDirectories: true)
         try JSONEncoder().encode(record).write(to: fileURL(record.flightID), options: .atomic)

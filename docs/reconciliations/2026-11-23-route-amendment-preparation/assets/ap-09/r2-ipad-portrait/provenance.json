@@ -1,0 +1,98 @@
+{
+  "exportedAt": "2026-11-28T10:12:29.637434+00:00",
+  "originalResultBundle": "/Users/john/Library/Developer/Xcode/DerivedData/NavigationFlight-dfguishsfjjxnvfpjmqicxhohumt/Logs/Test/Test-NavigationFlight-2026.11.28_12-09-57-+0200.xcresult",
+  "resultInfoSHA256": "7e458ed2a1385028be574846b154eba5e34496d217f693334792ee83756b64e6",
+  "testSummary": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+          "deviceName": "AP01-iPad-11-Reference",
+          "modelName": "iPad Pro (11-inch) (4th generation)",
+          "osBuildNumber": "24B8117",
+          "osVersion": "27.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "NavigationFlight \u00b7 Built with macOS 27.2.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1795860637.888,
+    "passedTests": 1,
+    "result": "Passed",
+    "runtimeWarnings": [],
+    "skippedTests": 0,
+    "startTime": 1795860597.142,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - NavigationFlight",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "source": {
+    "path": "/Users/john/Code/Aviation/NavigationFlight",
+    "head": "2470f6a3d5fb4933c25c2790fd47013dc0ec9a92",
+    "status": " M NavigationFlight/Features/Cockpit/AmendmentDraftPersistence.swift\n M NavigationFlight/Features/Cockpit/CockpitFeatureView.swift\n M NavigationFlightTests/AmendmentDraftPersistenceTests.swift\n M NavigationFlightUITests/NavigationFlightUITests.swift\n",
+    "note": "Source state recorded at export; verify this matches the test invocation. Untracked files are listed, not archived."
+  },
+  "screenshots": [
+    {
+      "testIdentifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "3CE354A4-8F8C-4A65-A565-CA8C200B66B6.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-r2-armed-recovery_0_DDEEDFD0-BD98-45FD-85B9-D99429CFDB8F.png",
+        "timestamp": 1795860623.232
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "3f393a9d9637367e200d6886ff88615c6be53dbbce5caa64419154d928c993cb"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "01B4CDEA-9782-44ED-A5A9-D38DD2C0E481.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-r2-cancelled-preparation-rejected_0_98E999AC-587B-4D3F-AC3C-6E8FB85F1BE9.png",
+        "timestamp": 1795860634.028
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "0e2f186595b398acdbb7e6b025b47c3a83daa081db31075912dacca8cab11f73"
+    },
+    {
+      "testIdentifier": "NavigationFlightUITests/testArmedDraftLoadFailureRejectsPreparationAfterCancellation()",
+      "attachment": {
+        "configurationName": "Test Scheme Action",
+        "deviceId": "07C2B017-8241-45BD-B859-E82C930C634F",
+        "deviceName": "AP01-iPad-11-Reference",
+        "exportedFileName": "1AF93357-92C9-43EE-A664-33428C3F280E.png",
+        "isAssociatedWithFailure": false,
+        "suggestedHumanReadableName": "Route amendment - ap09-r2-operational-route-continues_0_A57556DE-716D-44D3-A865-E98AA71EADA4.png",
+        "timestamp": 1795860637.556
+      },
+      "orientation": "portrait",
+      "pixelWidth": 1668,
+      "pixelHeight": 2388,
+      "sha256": "dbb6b26864f7c1e21eb738f8eac081fd337bdeb7cb67b38677f128fbd58261aa"
+    }
+  ]
+}

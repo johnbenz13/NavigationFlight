@@ -119,7 +119,10 @@ final class AmendmentDraftPersistence {
             return draft
         } catch {
             blocked.insert(flight.id)
-            if canRecover { statuses[flight.id] = .recoveryFailed }
+            // Keep quarantine visible even while operational recovery wins. After
+            // cancellation, preparation must show the scoped error rather than
+            // accepting work whose saves and discard would be blocked.
+            statuses[flight.id] = .recoveryFailed
             return nil
         }
     }

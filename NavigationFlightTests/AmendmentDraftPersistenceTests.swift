@@ -292,6 +292,45 @@ struct AmendmentDraftPersistenceTests {
         #expect(actual.persistence == expected.persistence)
     }
 
+    @Test(arguments: ["corrupt", "unsupported", "load"])
+    func armedLoadFailureRemainsVisibleAfterCancellation(failure: String) async throws {
+        let cockpit = try state()
+        var flight = try #require(cockpit.flight)
+        let route = try #require(cockpit.routeForAmendment)
+        let draft = try #require(cockpit.routeAmendmentDraft)
+        let root = URL.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let file = root.appending(path: "\(flight.id.uuidString.lowercased()).json")
+        let record = AmendmentDraftRecord(flightID: flight.id, revision: 9, recordingSequence: 2,
+                                         payload: try JSONEncoder().encode(draft.persistence),
+                                         schemaVersion: failure == "unsupported" ? 99 : 1)
+        let bytes = failure == "corrupt" ? Data("{broken".utf8) : try JSONEncoder().encode(record)
+        try bytes.write(to: file)
+        let store = DiskAmendmentDraftStore(rootDirectory: root, beforeLoad: {
+            if failure == "load" { throw AmendmentDraftStoreError.operationFailed }
+        })
+        let amendment = try PendingRouteAmendment(id: UUID(), draft: draft, flight: flight, route: route)
+        try flight.installPendingAmendment(amendment, in: #require(cockpit.flightPlan))
+        let armed = flight
+        let restarted = AmendmentDraftPersistence(store: store)
+        #expect(await restarted.recover(flight: flight, route: route, lastAmendmentSequence: 3) == nil)
+        #expect(flight == armed)
+        #expect(restarted.statuses[flight.id] == .recoveryFailed)
+        try flight.cancelPendingAmendment(id: amendment.id)
+        // The editor's existing recoveryFailed gate rejects preparation. Even a
+        // direct persistence call must retain the visible error and original bytes.
+        restarted.save(draft, recordingSequence: 5)
+        await restarted.flush()
+        #expect(restarted.statuses[flight.id] == .recoveryFailed)
+        restarted.retry(flightID: flight.id)
+        await restarted.flush()
+        #expect(restarted.statuses[flight.id] == .recoveryFailed)
+        #expect(await restarted.discard(flightID: flight.id) == false)
+        #expect(restarted.statuses[flight.id] == .recoveryFailed)
+        #expect(try Data(contentsOf: file) == bytes)
+    }
+
     @Test func rejectedDiskWriteAndRetryNeverPublishSaved() async throws {
         let cockpit = try state()
         let draft = try #require(cockpit.routeAmendmentDraft)

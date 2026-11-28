@@ -156,6 +156,64 @@ final class NavigationFlightUITests: XCTestCase {
     }
 
     @MainActor
+    func testArmedDraftLoadFailureRejectsPreparationAfterCancellation() throws {
+        try verifyArmedDraftLoadFailure()
+    }
+
+    @MainActor
+    func testArmedDraftLoadFailureAfterCancellationInLandscape() throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        try verifyArmedDraftLoadFailure(landscape: true)
+    }
+
+    @MainActor
+    private func verifyArmedDraftLoadFailure(landscape: Bool = false) throws {
+        let app = try launchPendingAmendmentForManagement()
+        app.terminate()
+        app.launchEnvironment["NAVIGATION_FLIGHT_UI_TEST_DRAFT_FAILURE"] = "recover"
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_MANAGEMENT_FAILURE")
+        app.launchEnvironment.removeValue(forKey: "NAVIGATION_FLIGHT_UI_TEST_AMENDMENT_WORKSPACE")
+        app.launch()
+        let resume = app.buttons["Continue Flight"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 8))
+        resume.tap()
+        dismissCockpitSidebar(in: app)
+        let pending = app.buttons["pending-amendment-pencil"]
+        XCTAssertTrue(pending.waitForExistence(timeout: 8))
+        XCTAssertEqual(app.buttons["waypoint-identified"].label, "Identify departure point")
+        captureAmendmentState("ap09-r2-armed-recovery", in: app)
+        pending.tap()
+        let cancel = app.buttons["cancel-pending-amendment"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 4))
+        cancel.tap()
+        let commit = app.buttons["confirm-pending-amendment-management"]
+        XCTAssertTrue(commit.waitForExistence(timeout: 4))
+        commit.tap()
+        XCTAssertTrue(pending.waitForNonExistence(timeout: 8))
+        let pencil = app.buttons["amend-route"]
+        XCTAssertTrue(pencil.waitForExistence(timeout: 5))
+        XCTAssertTrue((pencil.value as? String ?? "").contains("Saved draft unavailable"))
+        if landscape {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let wide = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in app.frame.width > app.frame.height }, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed)
+        }
+        // After pending cancellation, AX can temporarily report the entire
+        // header as the button frame. Target the visible pencil within it.
+        let icon = pencil.images["pencil"]
+        XCTAssertTrue(icon.waitForExistence(timeout: 4))
+        icon.tap()
+        let alert = app.alerts["Amendment draft unavailable"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 4))
+        XCTAssertFalse(app.descendants(matching: .any)["route-amendment-console"].firstMatch.exists)
+        captureAmendmentState("ap09-r2-cancelled-preparation-rejected", in: app)
+        alert.buttons["OK"].tap()
+        app.buttons["waypoint-identified"].tap()
+        XCTAssertTrue(app.buttons["waypoint-reached"].waitForExistence(timeout: 4))
+        captureAmendmentState("ap09-r2-operational-route-continues", in: app)
+    }
+
+    @MainActor
     func testDraftRecoveryFailureKeepsOperationalCockpitUsable() throws {
         try verifyDraftRecoveryFailure()
     }

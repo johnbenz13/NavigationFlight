@@ -423,13 +423,13 @@ struct CockpitFeatureView: View {
     }
 
     private func updateAmendmentDraft(_ intent: RouteAmendmentDraft.Intent) {
-        if case .discard = intent, state.replacingPendingAmendmentID == nil {
-            discardAmendmentDraft()
-            return
-        }
         if let id = state.flight?.id, draftPersistence?.statuses[id] == .recoveryFailed {
             presentedError = .init(title: "Amendment draft unavailable",
                                    message: "The saved draft couldn’t be recovered. Its data is preserved. The operational route continues.")
+            return
+        }
+        if case .discard = intent, state.replacingPendingAmendmentID == nil {
+            discardAmendmentDraft()
             return
         }
         if let id = state.flight?.id, draftPersistence?.statuses[id] == .deleting {
